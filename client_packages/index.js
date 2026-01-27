@@ -4,8 +4,8 @@ require('./disableDefaults.js');
 require('./interaction.js');
 require('./inventory_client.js');
 require('./cayo.js');
-require('./zones');
-
+require('./polygons/index.js');
+require('./zones/index.js');
 require('./phone/index.js');
 
 mp.events.add('client:setRoute', (blipId, enable, color) => {
