@@ -3,7 +3,6 @@ require('./overlay.js');
 require('./disableDefaults.js');
 require('./interaction.js');
 require('./inventory_client.js');
-require('./cayo.js');
 require('./phone/index.js');
 require('./zones/index.js');
 require('./draw-zone');
@@ -30,38 +29,6 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
         if (attempts > 50) clearInterval(interval); 
     }, 100);
 });
-
-// Keep waypoint routes visible when player sets a map marker manually
-let waypointRouteBlip = null;
-function clearWaypointRoute() {
-    if (waypointRouteBlip && mp.blips.exists(waypointRouteBlip)) {
-        waypointRouteBlip.setRoute(false);
-        waypointRouteBlip.destroy();
-    }
-    waypointRouteBlip = null;
-}
-
-mp.events.add('playerCreateWaypoint', () => {
-    clearWaypointRoute();
-    
-    // 8 is the blip ID for the Waypoint/Destination marker
-    const waypointBlip = mp.game.ui.getFirstBlipInfoId(8);
-
-    if (waypointBlip !== 0) {
-        const pos = mp.game.ui.getBlipInfoIdCoord(waypointBlip);
-        
-        waypointRouteBlip = mp.blips.new(8, new mp.Vector3(pos.x, pos.y, pos.z), {
-            name: 'Waypoint',
-            color: 27, // light purple
-            shortRange: false
-        });
-        
-        waypointRouteBlip.setRoute(true);
-        waypointRouteBlip.setRouteColour(27);
-    }
-});
-
-mp.events.add('playerRemoveWaypoint', clearWaypointRoute);
 
 mp.events.add('client:attachProp', (remoteId, bone, x, y, z, rx, ry, rz) => {
     // 1. Find the object by its Server ID
