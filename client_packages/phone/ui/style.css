@@ -1,0 +1,441 @@
+/* GLOBAL RESETS */
+* {
+    box-sizing: border-box; /* Fixes sizing issues */
+}
+
+body {
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    user-select: none;
+    overflow: hidden;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* PHONE SHELL (The Physical Device) */
+#phone-shell {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 320px;
+    height: 640px;
+    background: #000000; /* Black Bezel */
+    border-radius: 45px;
+    padding: 12px; /* This creates the bezel thickness */
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: 100;
+}
+
+/* SCREEN (The Lit Up Part) */
+.screen-content {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Brighter Blue Wallpaper */
+    border-radius: 35px;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    z-index: 101; /* Ensure screen is above the shell background */
+}
+
+/* --- LOCK SCREEN --- */
+#view-lock {
+    z-index: 150; 
+    background: rgba(0,0,0,0.1); /* Very slight tint */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-top: 60px;
+    padding-bottom: 20px;
+    cursor: pointer;
+}
+
+.lock-time-group {
+    text-align: center;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#lock-clock {
+    font-size: 58px;
+    font-weight: 300;
+    letter-spacing: -2px;
+}
+
+#lock-date {
+    font-size: 16px;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* Notifications */
+#lock-notification-list {
+    flex: 1;
+    overflow: hidden;
+    padding: 0 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lock-notif-item {
+    background: rgba(255, 255, 255, 0.2); /* More visible notification */
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: flex-start;
+    animation: slideIn 0.3s ease-out;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.lock-notif-icon {
+    width: 30px;
+    height: 30px;
+    background: #007aff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.lock-notif-content { flex: 1; overflow: hidden; }
+.lock-notif-title { font-size: 13px; font-weight: bold; margin-bottom: 2px; display: flex; justify-content: space-between; }
+.lock-notif-time { font-weight: normal; opacity: 0.8; font-size: 11px; }
+.lock-notif-msg { font-size: 13px; opacity: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.unlock-hint {
+    text-align: center;
+    opacity: 0.8;
+    animation: pulse 2s infinite;
+    padding-bottom: 10px;
+}
+.unlock-hint .bar {
+    width: 40px;
+    height: 4px;
+    background: white;
+    border-radius: 2px;
+    margin: 0 auto 5px auto;
+}
+.unlock-hint span { font-size: 12px; letter-spacing: 1px; }
+
+/* --- SYSTEM UI --- */
+.status-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 25px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 200;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.view {
+    position: absolute;
+    top: 0; bottom: 0; left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+}
+.view.hidden { display: none !important; }
+
+.home-bar-area { 
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 25px; 
+    display: flex; justify-content: center; align-items: center; 
+    cursor: pointer; z-index: 200; 
+}
+.home-bar { width: 100px; height: 5px; background: rgba(255,255,255,0.8); border-radius: 10px; }
+
+/* --- APPS --- */
+#view-home { padding-top: 50px; }
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px 10px;
+    padding: 20px;
+}
+
+.app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.1s; }
+.app-icon:active { transform: scale(0.95); }
+.icon-box { 
+    width: 55px; height: 55px; border-radius: 14px; 
+    position: relative; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 24px; color: white; margin-bottom: 5px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+}
+.app-name { font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.color-blue { background: linear-gradient(to bottom right, #36D1DC, #5B86E5); }
+.color-yellow { background: linear-gradient(to bottom right, #fce38a, #f38181); }
+.color-gray { background: linear-gradient(to bottom right, #434343, #000000); }
+.app-badge { 
+    position: absolute; top: -5px; right: -5px; 
+    background: #ff3b30; width: 18px; height: 18px; 
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    font-size: 10px; border: 2px solid white; 
+}
+
+/* Standard App View */
+.view:not(#view-home):not(#view-lock) { 
+    background: #f2f2f7; color: #000; z-index: 160; 
+    top: 30px; border-radius: 20px 20px 0 0; 
+    overflow: hidden;
+}
+.app-header { background: #fff; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #e5e5ea; font-weight: bold; font-size: 17px; }
+.back-btn { background: none; border: none; font-size: 18px; color: #007aff; margin-right: 10px; cursor: pointer; }
+.scrollable-content { flex: 1; overflow-y: auto; }
+
+/* Mail App */
+
+#mail-list {
+    background: #f2f2f7; /* Light gray background for the list */
+    padding: 10px;
+}
+
+.mail-item {
+    background: white;
+    margin-bottom: 8px; /* Space between mails */
+    padding: 15px;
+    border-radius: 12px; /* Rounded corners for each mail */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Subtle shadow */
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+    border: 1px solid transparent;
+}
+.mail-sender {
+    font-weight: 700;
+    font-size: 15px;
+    color: #000;
+    margin-bottom: 2px;
+}
+
+.mail-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.mail-msg {
+    color: #666;
+    font-size: 13px;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mail-item.read {
+    background: #ffffff;
+    opacity: 0.7; /* Make read mails look "faded" */
+}
+
+.mail-item.read .mail-sender, 
+.mail-item.read .mail-title {
+    color: #8e8e93; /* iOS Gray */
+    font-weight: 500;
+}
+
+.mail-item:active {
+    transform: scale(0.98);
+    background: #fafafa;
+}
+
+/* Vehicle App */
+.vehicle-item {
+    background: white; padding: 15px; border-bottom: 1px solid #eee;
+    display: flex; align-items: center; cursor: pointer;
+}
+.veh-icon { width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555; margin-right: 15px; }
+.veh-info { flex: 1; }
+.veh-model { font-weight: bold; font-size: 14px; text-transform: capitalize; }
+.veh-plate { font-size: 12px; color: #888; }
+.veh-status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+.status-active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+
+/* Details */
+.detail-container { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+.car-icon-large { width: 80px; height: 80px; background: #eef2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; color: #333; margin-bottom: 15px; }
+#detail-model { margin: 0; font-size: 22px; text-transform: capitalize; }
+#detail-plate { margin: 5px 0 20px 0; color: #888; font-family: monospace; font-size: 16px; background: #eee; padding: 2px 8px; border-radius: 4px; }
+.stat-box { width: 100%; background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+.status-tag { font-weight: bold; color: #888; }
+.tag-out { color: #2ecc71; }
+.action-buttons { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.action-btn { border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.btn-green { background: #2ecc71; }
+.btn-blue { background: #3498db; }
+.btn-red { background: #e74c3c; }
+.btn-disabled { background: #ccc; pointer-events: none; opacity: 0.5; }
+
+/* Animations */
+@keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
+
+/* --- PHANTOM PHONE NOTIFICATION --- */
+#toast-shell {
+    position: absolute;
+    bottom: -25px; 
+    right: 40px;
+    width: 320px; /* Slightly wider for better spacing */
+    height: 170px; /* Taller to fit content comfortably */
+    
+    /* THE PHONE FRAME (Bezel) */
+    background: #000000; 
+    border-radius: 45px 45px 25px 25px; /* Round top corners, softer bottom corners */
+    padding: 12px; /* This creates the Thickness of the black bezel */
+    
+    /* Fix for "Strange Frame" - ensure corners are cut */
+    overflow: hidden; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    
+    /* Animation */
+    z-index: 90; 
+    transform: translateY(150%);
+    transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Slide up when active */
+#toast-shell.active {
+    transform: translateY(0);
+}
+
+.toast-card {
+    display: flex;
+    align-items: flex-start;
+    
+    /* Lock Screen Background Style */
+    background: rgba(255, 255, 255, 0.2); 
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 12px;
+    
+    /* Removed the border to match lock screen */
+    border: none; 
+    
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    
+    /* Match spacing of lock screen */
+    gap: 10px; 
+}
+
+.toast-screen {
+    width: 100%;
+    height: 100%;
+    /* Wallpaper */
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+    
+    /* Screen Corners (Must be slightly less than shell radius) */
+    border-radius: 32px 32px 15px 15px; 
+    
+    position: relative;
+    display: flex;
+    flex-direction: column; /* Stack StatusBar and Content vertically */
+    overflow: hidden;
+}
+
+/* 1. STATUS BAR (Fixed Height) */
+.toast-screen .status-bar {
+    height: 30px; /* Reserve top 30px for clock/wifi */
+    width: 100%;
+    padding: 0 15px; /* Side spacing for clock */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    z-index: 2; /* On top of content */
+    margin-top: 2px; /* Slight nudge from top bezel */
+}
+
+#toast-content-area {
+    flex: 1; 
+    /* This moves the notification down (Top Padding) */
+    padding: 45px 15px 0 15px; 
+    
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Make the card stretch to fill width */
+    
+    /* REMOVED: Border, Gap, Color (Moved to .toast-card) */
+}
+
+/* Icon Box */
+.toast-icon-box {
+    /* Smaller size (30px instead of 42px) */
+    width: 30px;
+    height: 30px;
+    
+    /* Apple Blue Background */
+    background: #007aff; 
+    border-radius: 6px; /* Squarer corners */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px; /* Smaller icon size */
+    flex-shrink: 0; 
+    margin-top: 0; /* Reset alignment */
+}
+
+.toast-text-group {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* Removed min-height constraint */
+}
+
+/* Headers */
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+#toast-sender {
+    /* Adjusted to match .lock-notif-title */
+    font-weight: bold;
+    font-size: 13px; 
+    letter-spacing: normal;
+}
+
+.toast-time {
+    font-size: 11px;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+#toast-message {
+    /* Make it look like a Title */
+    font-size: 13px;
+    font-weight: 600; /* Bold text */
+    opacity: 1;       /* Fully visible */
+    
+    /* Limit to 1 line only */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    
+    margin-top: 1px; /* Slight spacing from sender name */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

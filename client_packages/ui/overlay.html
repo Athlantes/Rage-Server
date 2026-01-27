@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent; 
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- EXISTING: TOP RIGHT HUD --- */
+        .hud-container {
+            position: fixed; top: 25px; right: 25px; min-width: 220px; text-align: right;
+            background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%);
+            padding: 15px 20px; border-radius: 8px; border-right: 5px solid #ffcc00; 
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.2s; /* Smooth fade */
+        }
+        .hud-username { font-size: 20px; font-weight: 800; color: #ffcc00; text-transform: uppercase; margin-bottom: 2px; }
+        .hud-money { font-size: 26px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+        .hud-money span { color: #4caf50; font-weight: 400; margin-right: 2px; }
+        .hud-datetime { font-size: 13px; color: #bbbbbb; background-color: rgba(255, 255, 255, 0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+
+        /* --- EXISTING: BOTTOM RIGHT SPEEDO --- */
+        .speedo-container {
+            position: fixed; bottom: 30px; right: 30px; width: 200px;
+            background: rgba(0, 0, 0, 0.85); color: white; padding: 15px;
+            border-radius: 8px; border-bottom: 4px solid #ffcc00;
+            display: none; box-shadow: 0px 5px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.2s;
+        }
+        .speed-text { font-size: 36px; font-weight: 900; text-align: right; letter-spacing: -1px; }
+        .label { font-size: 12px; color: #ffcc00; font-weight: bold; }
+        .info-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 13px; font-weight: 600; color: #ddd; }
+        .locked { color: #ff4444; } .unlocked { color: #44ff44; } .fuel-low { color: #ffaa00; }
+
+        /* --- NEW: NOTIFICATIONS --- */
+        #notif-stack {
+            position: fixed; bottom: 250px; left: 20px; width: 300px;
+            display: flex; flex-direction: column-reverse;
+        }
+        .notif-card {
+            background: rgba(0, 0, 0, 0.85); border-left: 4px solid #ffcc00;
+            color: white; padding: 15px; margin-top: 10px; border-radius: 4px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            opacity: 0; transform: translateX(-20px);
+            animation: slideIn 0.3s forwards; transition: opacity 0.5s;
+        }
+        .notif-title { font-size: 14px; font-weight: bold; color: #ffcc00; text-transform: uppercase; margin-bottom: 4px; }
+        .notif-msg { font-size: 13px; line-height: 1.4; color: #ddd; }
+
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+        /* --- JOB HUD --- */
+        .job-hud {
+            position: fixed; top: 50%; right: 25px; transform: translateY(-50%);
+            width: 260px; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%);
+            border-right: 5px solid #ffcc00; padding: 20px; border-radius: 8px;
+            color: white; display: none; box-shadow: 0px 5px 20px rgba(0,0,0,0.6);
+            text-align: right; font-family: 'Segoe UI', sans-serif; transition: opacity 0.2s;
+        }
+        .job-label { font-size: 11px; color: #ffcc00; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .job-instruction { font-size: 18px; font-weight: 700; color: #ffffff; line-height: 1.2; margin-bottom: 15px; }
+        .job-divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin-bottom: 15px; }
+        .job-progress-bg { background: rgba(255, 255, 255, 0.1); height: 8px; width: 100%; border-radius: 4px; overflow: hidden; position: relative; margin-top: 5px; }
+        .job-progress-fill { background: #ffcc00; height: 100%; width: 0%; transition: width 0.5s ease-in-out; box-shadow: 0 0 10px rgba(255, 204, 0, 0.5); }
+        .job-counter { font-size: 14px; color: #ddd; font-weight: 600; margin-top: 5px; }
+
+        /* --- INTERACTION PROMPT --- */
+        .interaction-box {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9); color: white; padding: 15px 25px;
+            border-radius: 50px; display: none; align-items: center;
+            border: 1px solid #333; box-shadow: 0px 0px 20px rgba(255, 204, 0, 0.2);
+            transition: opacity 0.2s;
+        }
+        .key-circle { width: 32px; height: 32px; background: #ffcc00; color: #000; border-radius: 50%; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; margin-right: 15px; box-shadow: 0px 0px 10px #ffcc00; }
+        .inter-content { display: flex; flex-direction: column; }
+        .inter-title { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .inter-action { font-size: 16px; font-weight: bold; color: white; }
+
+        /* --- POP-UP HOTBAR --- */
+        .pop-hotbar {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px;
+            border-radius: 50px; border: 1px solid #333; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .pop-slot { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 4px; position: relative; border: 1px solid transparent; display: flex; justify-content: center; align-items: center; }
+        .pop-slot.active { border-color: #ffcc00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); background: rgba(255, 204, 0, 0.1); }
+        .pop-img { width: 30px; height: 30px; object-fit: contain; }
+        .pop-key { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-container" id="hud-container">
+        <div class="hud-username" id="hud-name">Player</div>
+        <div class="hud-money"><span>$</span><b id="hud-cash">0</b></div>
+        <div class="hud-datetime" id="hud-date">00:00 | Jan 01</div>
+    </div>
+
+    <div class="speedo-container" id="speedo">
+        <div class="speed-text"><span id="speed">0</span> <span class="label">KM/H</span></div>
+        <div class="info-row">
+            <span>FUEL <b id="fuel">100%</b></span><span id="lock">OPEN</span>
+        </div>
+    </div>
+
+    <div id="notif-stack"></div>
+
+    <div class="interaction-box" id="interaction">
+        <div class="key-circle">E</div>
+        <div class="inter-content">
+            <span class="inter-title" id="inter-title">Title</span>
+            <span class="inter-action" id="inter-text">Press E to Interact</span>
+        </div>
+    </div>
+
+    <div class="job-hud" id="job-hud">
+        <div class="job-label">Current Objective</div>
+        <div class="job-instruction" id="job-text">Wait for instructions...</div>
+        <div class="job-divider"></div>
+        <div class="job-label">Van Inventory</div>
+        <div class="job-progress-bg"><div class="job-progress-fill" id="job-bar"></div></div>
+        <div class="job-counter" id="job-count">0 / 3 Packages</div>
+    </div>
+
+    <div class="pop-hotbar" id="pop-hotbar"></div>
+
+    <script>
+        // --- 1. HUD & SPEEDO ---
+        function updateInfoHud(name, money, dateStr) {
+            document.getElementById('hud-name').innerText = name;
+            document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
+            document.getElementById('hud-date').innerText = dateStr;
+        }
+
+        function updateSpeedo(speed, fuel, isLocked) {
+            const hudEl = document.getElementById('hud-container');
+            
+            // FIX 2: Safety check + Opacity logic
+            // If the HUD is hidden (opacity 0), we don't update/show speedo
+            if (hudEl && hudEl.style.opacity === '0') return;
+
+            document.getElementById('speedo').style.display = 'block';
+            document.getElementById('speed').innerText = Math.floor(speed);
+            
+            let f = document.getElementById('fuel'); 
+            f.innerText = Math.floor(fuel) + '%'; 
+            f.className = fuel < 20 ? 'fuel-low' : '';
+            
+            let l = document.getElementById('lock'); 
+            l.innerText = isLocked ? "LOCKED" : "OPEN"; 
+            l.className = isLocked ? "locked" : "unlocked";
+        }
+
+        function hideSpeedo() { 
+            document.getElementById('speedo').style.display = 'none'; 
+        }
+
+        // --- 2. NOTIFICATIONS ---
+        function showNotification(title, message) {
+            const container = document.getElementById('notif-stack');
+            const card = document.createElement('div');
+            card.className = 'notif-card';
+            card.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${message}</div>`;
+            container.appendChild(card);
+            setTimeout(() => {
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 500);
+            }, 5000);
+        }
+
+        // --- 3. INTERACTION ---
+        function setInteraction(visible, title, text) {
+            const box = document.getElementById('interaction');
+            if (visible) {
+                document.getElementById('inter-title').innerText = title;
+                document.getElementById('inter-text').innerText = text;
+                box.style.display = 'flex';
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        // --- 4. JOB HUD ---
+        function updateJobUI(visible, text, current, max) {
+            const hud = document.getElementById('job-hud');
+            if (!visible) {
+                hud.style.display = 'none';
+                return;
+            }
+            hud.style.display = 'block';
+            document.getElementById('job-text').innerText = text;
+            let pct = max > 0 ? (current / max) * 100 : 0;
+            document.getElementById('job-bar').style.width = pct + '%';
+            document.getElementById('job-count').innerText = `${current} / ${max} Packages`;
+        }
+
+        // --- 5. VISIBILITY TOGGLE (Called by Inventory) ---
+        function setGameHUD(visible) {
+            // FIX 3: Correct IDs: 'speedo' instead of 'speedo-container'
+            const idsToToggle = ['hud-container', 'speedo', 'job-hud', 'interaction'];
+
+            idsToToggle.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.opacity = visible ? '1' : '0';
+                    // We also toggle pointer events so invisible buttons aren't clickable
+                    el.style.pointerEvents = visible ? 'auto' : 'none';
+                }
+            });
+        }
+
+        let hotbarTimer = null;
+        function updateHotbar(itemsJson) {
+            const items = JSON.parse(itemsJson); 
+            const container = document.getElementById('pop-hotbar');
+            container.innerHTML = '';
+            for(let i=0; i<5; i++) {
+                const realSlot = -51 - i; 
+                const item = items.find(x => x.slot === realSlot);
+                let html = `<span class="pop-key">${i+1}</span>`;
+                if(item) html += `<img src="items/${item.itemId}.png" class="pop-img">`;
+                let div = document.createElement('div');
+                div.className = 'pop-slot';
+                div.id = `pop-slot-${i}`;
+                div.innerHTML = html;
+                container.appendChild(div);
+            }
+        }
+        function showHotbar(activeIndex) {
+            const bar = document.getElementById('pop-hotbar');
+            for(let i=0; i<5; i++) {
+                const el = document.getElementById(`pop-slot-${i}`);
+                if(el) el.classList.remove('active');
+            }
+            const activeEl = document.getElementById(`pop-slot-${activeIndex}`);
+            if(activeEl) activeEl.classList.add('active');
+            bar.style.opacity = '1';
+            if(hotbarTimer) clearTimeout(hotbarTimer);
+            hotbarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
+        }
+    </script>
+</body>
+</html>

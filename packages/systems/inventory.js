@@ -1,0 +1,477 @@
+const ItemRegistry = require('../data/items');
+const db = require('../core/database');
+
+class InventorySystem {
+    
+    constructor() {
+        this.groundItems = new Map();
+
+        mp.events.add('server:loadAccount', (player) => this.onPlayerJoin(player));
+
+        mp.events.addCommand('testinv', async (player) => {
+            if (player.logged === false) return player.call('showNotification', ['Error', 'Please login first!']);
+
+            await this.addItem(player, 'burger', 2);
+            await this.addItem(player, 'water', 5);
+            await this.addItem(player, 'pistol', 1); 
+            await this.addItem(player, 'pistol_ammo', 50);
+            
+            player.call('showNotification', ['Admin', 'Test items added.']);
+        });
+        
+        mp.events.add('server:moveItem', (player, fromSlot, toSlot) => {
+            if (toSlot === 'GROUND') {
+                this.dropItem(player, fromSlot);
+            } else if (typeof fromSlot === 'string' && fromSlot.startsWith('ground_')) {
+                const groundId = fromSlot.replace('ground_', '');
+                this.pickupItem(player, groundId, toSlot);
+            } else {
+                this.moveItem(player, fromSlot, toSlot);
+            }
+        });
+
+        mp.events.add('server:useItem', (player, slotIndex) => {
+            this.useItem(player, slotIndex);
+        });
+
+        mp.events.add('server:useFastSlot', (player, slotIndex) => {
+            const realSlot = -51 - slotIndex;
+            this.useItem(player, realSlot);
+        });
+
+        mp.events.add('server:equipItem', (player, slot) => {
+            const item = player.inventory.find(i => i.slot === slot);
+            if (!item) return;
+
+            const def = ItemRegistry[item.itemId];
+            if (!def || def.type !== 'clothing' || !def.data.componentId) return;
+
+            const targetSlot = -1 * def.data.componentId;
+            this.moveItem(player, slot, targetSlot);
+        });
+
+        mp.events.add('server:splitItem', async (player, slot, amount) => {
+            amount = parseInt(amount);
+            if (amount <= 0) return;
+
+            const item = player.inventory.find(i => i.slot === slot);
+            if (!item || item.count <= amount) return;
+
+            let freeSlot = 0;
+            while (player.inventory.find(i => i.slot === freeSlot)) { freeSlot++; }
+
+            item.count -= amount;
+            await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
+
+            try {
+                const [result] = await db.query(
+                    'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
+                    [player.data.dbId, item.itemId, amount, freeSlot, JSON.stringify(item.data)]
+                );
+                player.inventory.push({
+                    id: result.insertId, itemId: item.itemId, count: amount, slot: freeSlot, data: item.data
+                });
+                this.syncClient(player);
+            } catch (err) { console.error(err); }
+        });
+
+        mp.events.add('server:stackItem', async (player, targetSlot) => {
+            const targetItem = player.inventory.find(i => i.slot === targetSlot);
+            if (!targetItem) return;
+
+            const def = ItemRegistry[targetItem.itemId];
+            if (!def || def.maxStack <= 1) return; 
+
+            const targetMeta = JSON.stringify(targetItem.data);
+            
+            const siblingItems = player.inventory.filter(i => 
+                i.itemId === targetItem.itemId && 
+                i.slot >= 0 && 
+                JSON.stringify(i.data) === targetMeta
+            );
+
+            if (siblingItems.length < 2) return player.call('showNotification', ['Inventory', 'Nothing to stack.']);
+
+            let totalCount = siblingItems.reduce((sum, item) => sum + item.count, 0);
+            
+            siblingItems.sort((a, b) => {
+                if (a.slot === targetSlot) return -1;
+                if (b.slot === targetSlot) return 1;
+                return a.slot - b.slot;
+            });
+
+            let updates = [];
+            let deletes = [];
+
+            for (let item of siblingItems) {
+                if (totalCount > 0) {
+                    const countToSet = Math.min(totalCount, def.maxStack);
+                    item.count = countToSet;
+                    updates.push(db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [countToSet, item.id]));
+                    totalCount -= countToSet;
+                } else {
+                    const idx = player.inventory.indexOf(item);
+                    if (idx > -1) player.inventory.splice(idx, 1);
+                    deletes.push(db.query('DELETE FROM character_inventory WHERE id = ?', [item.id]));
+                }
+            }
+
+            try {
+                await Promise.all([...updates, ...deletes]);
+                this.syncClient(player);
+                player.call('showNotification', ['Inventory', 'Items consolidated.']);
+            } catch (err) {
+                console.error("Stacking error:", err);
+            }
+        });
+
+        mp.events.add('server:sortInventory', async (player) => {
+            if (!player.inventory) return;
+
+            let mainItems = player.inventory.filter(i => i.slot >= 0);
+            if (mainItems.length === 0) return;
+
+            mainItems.sort((a, b) => {
+                const defA = ItemRegistry[a.itemId];
+                const defB = ItemRegistry[b.itemId];
+                const nameA = defA ? (defA.name || a.itemId) : a.itemId;
+                const nameB = defB ? (defB.name || b.itemId) : b.itemId;
+
+                const nameCompare = nameA.localeCompare(nameB);
+                if (nameCompare !== 0) return nameCompare;
+
+                return b.count - a.count;
+            });
+
+            const updates = [];
+            for (let i = 0; i < mainItems.length; i++) {
+                const item = mainItems[i];
+                if (item.slot !== i) {
+                    item.slot = i;
+                    updates.push(db.query('UPDATE character_inventory SET slot = ? WHERE id = ?', [i, item.id]));
+                }
+            }
+
+            try {
+                if (updates.length > 0) await Promise.all(updates);
+                this.syncClient(player);
+                player.call('showNotification', ['Inventory', 'Sorted items alphabetically.']);
+            } catch (err) {
+                console.error("Sort Error:", err);
+            }
+        });
+
+        mp.events.add('server:stackAllItems', async (player) => {
+            if (!player.inventory) return;
+
+            const groups = {};
+            player.inventory.forEach(item => {
+                if (item.slot < 0) return;
+                const signature = item.itemId + "|" + JSON.stringify(item.data);
+                if (!groups[signature]) groups[signature] = [];
+                groups[signature].push(item);
+            });
+
+            let updates = [];
+            let deletes = [];
+            let changed = false;
+
+            for (const signature in groups) {
+                const items = groups[signature];
+                if (items.length < 2) continue;
+
+                const firstItem = items[0];
+                const def = ItemRegistry[firstItem.itemId];
+                if (!def || def.maxStack <= 1) continue;
+
+                let totalCount = items.reduce((sum, i) => sum + i.count, 0);
+                items.sort((a, b) => a.slot - b.slot);
+
+                for (const item of items) {
+                    if (totalCount > 0) {
+                        const newCount = Math.min(totalCount, def.maxStack);
+                        if (item.count !== newCount) {
+                            item.count = newCount;
+                            updates.push(db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [newCount, item.id]));
+                            changed = true;
+                        }
+                        totalCount -= newCount;
+                    } else {
+                        const idx = player.inventory.indexOf(item);
+                        if (idx > -1) player.inventory.splice(idx, 1);
+                        deletes.push(db.query('DELETE FROM character_inventory WHERE id = ?', [item.id]));
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed) {
+                try {
+                    await Promise.all([...updates, ...deletes]);
+                    this.syncClient(player);
+                    player.call('showNotification', ['Inventory', 'All items stacked.']);
+                } catch (err) {
+                    console.error("Stack All Error:", err);
+                }
+            } else {
+                player.call('showNotification', ['Inventory', 'Nothing to stack.']);
+            }
+        });
+
+        mp.events.add('playerRequestInventory', (player) => this.syncClient(player));
+        
+        mp.events.add('playerQuit', (player) => {
+            player.inventory = null;
+        });
+    }
+
+    async onPlayerJoin(player) {
+        player.inventory = []; 
+        const charId = player.data.dbId; 
+        if (!charId) return;
+
+        try {
+            const [rows] = await db.query('SELECT * FROM character_inventory WHERE character_id = ?', [charId]);
+            rows.forEach(row => {
+                player.inventory.push({
+                    id: row.id, itemId: row.item_id, count: row.count, slot: row.slot,
+                    data: row.metadata ? JSON.parse(row.metadata) : {}
+                });
+            });
+            this.refreshClothes(player);
+            this.syncClient(player);
+        } catch (err) { console.error(err); }
+    }
+
+    getWeight(player) {
+        let total = 0.0;
+        if (player.inventory) {
+            player.inventory.forEach(item => {
+                const def = ItemRegistry[item.itemId];
+                if (def) total += (def.weight * item.count);
+            });
+        }
+        return total.toFixed(2);
+    }
+    
+    async addItem(player, itemId, amount) {
+        const itemDef = ItemRegistry[itemId];
+        if (!itemDef) return false;
+        if (!player.inventory) player.inventory = [];
+
+        if (parseFloat(this.getWeight(player)) + (itemDef.weight * amount) > 40.0) {
+            player.call('showNotification', ['Inventory', 'Pockets are too full!']);
+            return false;
+        }
+
+        if (itemDef.maxStack > 1) {
+            const stackItem = player.inventory.find(i => i.itemId === itemId && i.count < itemDef.maxStack && i.slot >= 0);
+            if (stackItem) {
+                const space = itemDef.maxStack - stackItem.count;
+                const toAdd = Math.min(amount, space);
+                stackItem.count += toAdd;
+                amount -= toAdd;
+                db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [stackItem.count, stackItem.id]);
+                if (amount <= 0) {
+                    this.syncClient(player);
+                    return true;
+                }
+            }
+        }
+
+        let freeSlot = 0;
+        while (player.inventory.find(item => item.slot === freeSlot)) { freeSlot++; }
+
+        try {
+            const [result] = await db.query(
+                'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
+                [player.data.dbId, itemId, amount, freeSlot, '{}']
+            );
+            player.inventory.push({
+                id: result.insertId, itemId: itemId, count: amount, slot: freeSlot, data: {}
+            });
+            this.syncClient(player);
+            return true;
+        } catch (err) { console.error(err); return false; }
+    }
+
+    async moveItem(player, fromSlot, toSlot) {
+        if (!player.inventory) return;
+        const getItem = (s) => player.inventory.find(i => i.slot === s);
+        const itemFrom = getItem(fromSlot);
+        const itemTo = getItem(toSlot);
+
+        if (!itemFrom) return;
+
+        const isHotbar = (toSlot <= -51 && toSlot >= -55);
+        const isClothing = (toSlot < 0 && !isHotbar); 
+
+        if (isClothing) {
+            const def = ItemRegistry[itemFrom.itemId];
+            if (!def || def.type !== 'clothing') return player.call('showNotification', ['Item Error', 'Not clothing!']);
+            if (def.data.componentId !== Math.abs(toSlot)) return player.call('showNotification', ['Item Error', 'Wrong slot!']);
+        }
+
+        if (isHotbar) {
+            const def = ItemRegistry[itemFrom.itemId];
+            if (!def || !def.isEquippable) {
+                return player.call('showNotification', ['Inventory', 'You cannot equip this item!']);
+            }
+        }
+
+        if (!itemTo) {
+            itemFrom.slot = toSlot;
+            await db.query('UPDATE character_inventory SET slot = ? WHERE id = ?', [toSlot, itemFrom.id]);
+        } else {
+            itemFrom.slot = toSlot;
+            itemTo.slot = fromSlot;
+            await db.query('UPDATE character_inventory SET slot = ? WHERE id = ?', [toSlot, itemFrom.id]);
+            await db.query('UPDATE character_inventory SET slot = ? WHERE id = ?', [fromSlot, itemTo.id]);
+        }
+
+        if (fromSlot < 0 || toSlot < 0) this.refreshClothes(player);
+        this.syncClient(player);
+    }
+
+    useItem(player, slot) {
+        const item = player.inventory.find(i => i.slot === slot);
+        if (!item) return;
+
+        const def = ItemRegistry[item.itemId];
+        if (!def) return;
+
+        if (def.type === 'weapon') {
+            const weaponHash = mp.joaat(def.data.hash);
+            if (player.weapon === weaponHash) {
+                player.weapon = 2725352035; 
+                player.call('showNotification', ['Weapons', `Holstered ${def.name}`]);
+            } else {
+                player.weapon = weaponHash;
+                player.setWeaponAmmo(weaponHash, 200); 
+                player.call('showNotification', ['Weapons', `Equipped ${def.name}`]);
+            }
+        } 
+        else if (def.type === 'food' || def.type === 'drink') {
+            player.call('showNotification', ['Consumable', `Used ${def.name}`]);
+            if (item.count > 1) {
+                item.count--;
+                db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
+            } else {
+                this.removeItem(player, item);
+            }
+            this.syncClient(player);
+        }
+    }
+
+    async removeItem(player, item) {
+        await db.query('DELETE FROM character_inventory WHERE id = ?', [item.id]);
+        player.inventory = player.inventory.filter(i => i !== item);
+    }
+
+    async dropItem(player, fromSlot) {
+        const item = player.inventory.find(i => i.slot === fromSlot);
+        if (!item) return;
+
+        const groundId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        const groundObj = mp.objects.new('v_serv_abox_02', 
+            new mp.Vector3(player.position.x, player.position.y, player.position.z - 0.95),
+            { dimension: player.dimension }
+        );
+
+        this.groundItems.set(groundId, {
+            id: groundId, itemId: item.itemId, count: item.count,
+            position: player.position, dimension: player.dimension,
+            object: groundObj, data: item.data
+        });
+
+        await this.removeItem(player, item);
+        if (fromSlot < 0) this.refreshClothes(player);
+        this.syncClient(player);
+    }
+    
+    async pickupItem(player, groundId, targetSlot) {
+        const groundItem = this.groundItems.get(groundId);
+        if (!groundItem) return player.call('showNotification', ['Vicinity', 'Item invalid.']);
+        if (player.dist(groundItem.position) > 5) return player.call('showNotification', ['Vicinity', 'Too far away!']);
+
+        const def = ItemRegistry[groundItem.itemId];
+        if (parseFloat(this.getWeight(player)) + (def.weight * groundItem.count) > 40.0) return player.call('showNotification', ['Inventory', 'Too heavy!']);
+
+        if (player.inventory.find(i => i.slot === targetSlot)) return player.call('showNotification', ['Inventory', 'Slot occupied.']);
+
+        try {
+            const [result] = await db.query(
+                'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
+                [player.data.dbId, groundItem.itemId, groundItem.count, targetSlot, JSON.stringify(groundItem.data)]
+            );
+            player.inventory.push({
+                id: result.insertId, itemId: groundItem.itemId, count: groundItem.count, slot: targetSlot, data: groundItem.data
+            });
+
+            if (mp.objects.exists(groundItem.object)) groundItem.object.destroy();
+            this.groundItems.delete(groundId);
+            this.syncClient(player);
+        } catch (err) { console.error(err); }
+    }
+    
+    refreshClothes(player) {
+        const equipment = player.inventory.filter(i => i.slot < 0 && i.slot > -50); 
+        
+        const defaults = {
+            mask: { id: 1, drawable: 0, texture: 0 },
+            torso: { id: 3, drawable: 15, texture: 0 },
+            legs: { id: 4, drawable: 21, texture: 0 },
+            shoes: { id: 6, drawable: 34, texture: 0 },
+            top: { id: 11, drawable: 15, texture: 0 },
+            undershirt: { id: 8, drawable: 15, texture: 0 }
+        };
+
+        player.setClothes(defaults.mask.id, defaults.mask.drawable, defaults.mask.texture, 0);
+        player.setClothes(defaults.torso.id, defaults.torso.drawable, defaults.torso.texture, 0);
+        player.setClothes(defaults.legs.id, defaults.legs.drawable, defaults.legs.texture, 0);
+        player.setClothes(defaults.shoes.id, defaults.shoes.drawable, defaults.shoes.texture, 0);
+        player.setClothes(defaults.top.id, defaults.top.drawable, defaults.top.texture, 0);
+        player.setClothes(defaults.undershirt.id, defaults.undershirt.drawable, defaults.undershirt.texture, 0);
+
+        equipment.forEach(equip => {
+            const def = ItemRegistry[equip.itemId];
+            if (def && def.data) {
+                player.setClothes(def.data.componentId, def.data.drawable, def.data.texture, 0);
+                if (def.data.componentId === 11) {
+                    player.setClothes(3, def.data.torso || 15, 0, 0);
+                }
+            }
+        });
+    }
+
+    syncClient(player) {
+        if (!player.inventory) player.inventory = [];
+        
+        const nearbyItems = [];
+        this.groundItems.forEach((gItem) => {
+            if (gItem.dimension === player.dimension && player.dist(gItem.position) < 5.0) {
+                nearbyItems.push({ id: gItem.id, itemId: gItem.itemId, count: gItem.count });
+            }
+        });
+
+        // === UPDATED: Send Name property for Search System ===
+        const clientInventory = player.inventory.map(item => {
+            const def = ItemRegistry[item.itemId];
+            return {
+                ...item,
+                type: def ? def.type : 'misc',
+                maxStack: def ? def.maxStack : 1,
+                name: def ? def.name : item.itemId // Fallback to ID if no name
+            };
+        });
+
+        const payload = {
+            inventory: clientInventory, 
+            vicinity: nearbyItems,
+            weight: this.getWeight(player), 
+            maxWeight: 40.0
+        };
+        player.call('client:updateInventory', [JSON.stringify(payload)]);
+    }
+}
+module.exports = new InventorySystem();

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RPGOS Mobile</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="phone-shell" class="hidden">
+        <div class="screen-content">
+            
+            <div class="status-bar">
+                <span id="clock-small">12:00</span>
+                <div class="status-icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+            </div>
+
+            <div id="view-lock" class="view active" onclick="app.unlock()">
+                <div class="lock-content">
+                    <div class="lock-time-group">
+                        <div id="lock-clock">12:00</div>
+                        <div id="lock-date">Monday, January 1</div>
+                    </div>
+                    <div id="lock-notification-list"></div>
+                </div>
+
+                <div class="unlock-hint">
+                    <div class="bar"></div>
+                    <span>Click to Unlock</span>
+                </div>
+            </div>
+
+            <div id="view-home" class="view hidden">
+                <div class="app-grid">
+                    <div class="app-icon" onclick="app.open('mail')">
+                        <div class="icon-box color-blue">
+                            <i class="fas fa-envelope"></i>
+                            <div id="badge-mail" class="app-badge hidden">!</div>
+                        </div>
+                        <span class="app-name">Mail</span>
+                    </div>
+
+                    <div class="app-icon" onclick="app.open('vehicles')">
+                        <div class="icon-box color-yellow">
+                            <i class="fas fa-truck-moving"></i>
+                        </div>
+                        <span class="app-name">My Cars</span>
+                    </div>
+
+                    <div class="app-icon" onclick="app.open('settings')">
+                        <div class="icon-box color-gray">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span class="app-name">Settings</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-mail" class="view hidden">
+                <div class="app-header" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                        <span>Inbox</span>
+                    </div>
+                    <button onclick="app.readAllMails()" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer;">
+                        Read All
+                    </button>
+                </div>
+                <div id="mail-list" class="scrollable-content"></div>
+            </div>
+
+            <div id="view-mail-detail" class="view hidden">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.open('mail')"><i class="fas fa-chevron-left"></i></button>
+                    <span id="mail-detail-sender">From: Sender</span>
+                </div>
+                <div class="scrollable-content detail-container">
+                    <div class="stat-box">
+                        <h3 id="mail-detail-title" style="margin-top:0; color:#000;">Title</h3>
+                        <p id="mail-detail-body" style="color:#333; line-height:1.4; white-space: pre-wrap;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-vehicles" class="view hidden">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                    <span>My Cars</span>
+                </div>
+                <div id="vehicle-list" class="scrollable-content"></div>
+            </div>
+
+            <div id="view-vehicle-details" class="view hidden">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.open('vehicles')"><i class="fas fa-chevron-left"></i></button>
+                    <span id="detail-title">Vehicle</span>
+                </div>
+                
+                <div class="detail-container">
+                    <div class="car-icon-large">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h2 id="detail-model">Model Name</h2>
+                    <p id="detail-plate">AAA-111</p>
+
+                    <div class="stat-box">
+                        <div class="stat-row">
+                            <span>Status</span>
+                            <span id="detail-status" class="status-tag">In Garage</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Fuel</span>
+                            <span id="detail-fuel">100%</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button id="btn-spawn" class="action-btn btn-green" onclick="app.doVehicleAction('spawn')">
+                            <i class="fas fa-key"></i> Spawn
+                        </button>
+                        <button id="btn-locate" class="action-btn btn-blue" onclick="app.doVehicleAction('locate')">
+                            <i class="fas fa-map-marker-alt"></i> Locate
+                        </button>
+                        <button id="btn-tow" class="action-btn btn-red" onclick="app.doVehicleAction('despawn')">
+                            <i class="fas fa-warehouse"></i> Park (Tow)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-bar-area" onclick="app.goHome()">
+                <div class="home-bar"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast-shell">
+        <div class="toast-screen">
+            <div class="status-bar">
+                <span id="toast-clock">12:00</span>
+                <div class="status-icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+            </div>
+
+            <div id="toast-content-area">
+                <div class="toast-card">
+                    <div class="toast-icon-box">
+                        <i class="fas fa-comment"></i>
+                    </div>
+                    <div class="toast-text-group">
+                        <div class="toast-header">
+                            <span id="toast-sender">System</span>
+                            <span class="toast-time">Now</span>
+                        </div>
+                        <div id="toast-message">Message content...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
