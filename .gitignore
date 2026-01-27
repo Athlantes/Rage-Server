@@ -1,3 +1,4 @@
 /bin
 /BugTrap-x64.dll
 /dotnet
+/packages/node_modules
