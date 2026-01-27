@@ -60,9 +60,11 @@ const jobManager = {
             color: blipColor, 
             scale: 0.8,
             shortRange: false,
-            dimension: player.dimension 
+            dimension: player.dimension
         });
-        player.call('client:setRoute', [player.jobBlip.id, true, blipColor]);
+
+        // Explicitly enable the GPS route client-side (server route flag is unreliable)
+        player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
 
         // C. The Trigger
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
@@ -87,9 +89,11 @@ const jobManager = {
             color: blipColor, 
             scale: 0.8,
             shortRange: false,
-            dimension: player.dimension 
+            dimension: player.dimension
         });
-        player.call('client:setRoute', [player.jobBlip.id, true, blipColor]);
+
+        // Explicit GPS route
+        player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
 
         // B. Large Trigger Zone
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
@@ -103,7 +107,12 @@ const jobManager = {
 
     clearObjective: (player) => {
         if (player.jobVisual) { player.jobVisual.destroy(); player.jobVisual = null; }
-        if (player.jobBlip) { player.jobBlip.destroy(); player.jobBlip = null; }
+        if (player.jobBlip) {
+            // Turn off the GPS route before removing the blip
+            player.call('client:setRoute', [player.jobBlip.id, false]);
+            player.jobBlip.destroy();
+            player.jobBlip = null;
+        }
         if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
         player.jobCallback = null;
         

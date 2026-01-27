@@ -5,32 +5,69 @@ require('./interaction.js');
 require('./inventory_client.js');
 require('./cayo.js');
 require('./phone/index.js');
+require('./zones/index.js');
+require('./draw-zone');
 
 mp.events.add('client:setRoute', (blipId, enable, color) => {
-    // We use a small timer to retry finding the blip, in case it hasn't streamed in yet
     let attempts = 0;
     const interval = setInterval(() => {
-        // Find blip by its Server ID
-        const blip = mp.blips.atRemoteId(blipId);
+        // Try to find by Remote ID
+        let blip = mp.blips.atRemoteId(blipId);
         
-        if (blip) {
-            blip.setRoute(enable); // Native GTA: SetBlipRoute
+        if (!blip) {
+            mp.blips.forEach(_blip => {
+                if (_blip.remoteId === blipId) blip = _blip;
+            });
+        }
+
+        if (blip && mp.blips.exists(blip)) {
+            blip.setRoute(enable);
             if (color !== undefined) blip.setRouteColour(color);
             clearInterval(interval);
         }
         
         attempts++;
-        if (attempts > 20) clearInterval(interval); // Stop trying after 2 seconds
+        if (attempts > 50) clearInterval(interval); 
     }, 100);
 });
+
+// Keep waypoint routes visible when player sets a map marker manually
+let waypointRouteBlip = null;
+function clearWaypointRoute() {
+    if (waypointRouteBlip && mp.blips.exists(waypointRouteBlip)) {
+        waypointRouteBlip.setRoute(false);
+        waypointRouteBlip.destroy();
+    }
+    waypointRouteBlip = null;
+}
+
+mp.events.add('playerCreateWaypoint', () => {
+    clearWaypointRoute();
+    
+    // 8 is the blip ID for the Waypoint/Destination marker
+    const waypointBlip = mp.game.ui.getFirstBlipInfoId(8);
+
+    if (waypointBlip !== 0) {
+        const pos = mp.game.ui.getBlipInfoIdCoord(waypointBlip);
+        
+        waypointRouteBlip = mp.blips.new(8, new mp.Vector3(pos.x, pos.y, pos.z), {
+            name: 'Waypoint',
+            color: 27, // light purple
+            shortRange: false
+        });
+        
+        waypointRouteBlip.setRoute(true);
+        waypointRouteBlip.setRouteColour(27);
+    }
+});
+
+mp.events.add('playerRemoveWaypoint', clearWaypointRoute);
 
 mp.events.add('client:attachProp', (remoteId, bone, x, y, z, rx, ry, rz) => {
     // 1. Find the object by its Server ID
     const obj = mp.objects.atRemoteId(remoteId);
     
     if (obj) {
-        // 2. Attach it to the local player (Client-side attachment is smooth)
-        // Note: We use mp.players.local.handle for the target
         obj.attachTo(mp.players.local.handle, bone, x, y, z, rx, ry, rz, false, false, false, false, 2, true);
     } else {
         // Fallback: Sometimes the object hasn't streamed in yet. Retry once.

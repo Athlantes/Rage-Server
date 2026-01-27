@@ -1,28 +1,8 @@
 const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
+const HOUSES = require('../../data/houses');
 
-const MAX_PACKAGES = 3; 
-
-const HOUSES = [
-    {
-        id: 1,
-        address: "Mirror Park Blvd",
-        street: { x: 1255.72, y: -599.30, z: 69.00},
-        door: { x: 1240.70, y: -601.75, z: 69.78}
-    },
-    {
-        id: 2,
-        address: "Nikola Avenue",
-        street: { x: 1263.17, y: -619.23, z: 68.95},
-        door: { x: 1251.28, y: -621.55, z: 69.41}
-    },
-    {
-        id: 3,
-        address: "East Mirror Drive",
-        street: { x: 1273.88, y: -636.97, z: 68.53},
-        door: { x: 1265.43, y: -648.20, z: 67.92}
-    }
-];
+const MAX_PACKAGES = 2; 
 
 const DEPOT_CONFIG = {
     spawn: { x: 72.30, y: 119.94, z: 79.18, h: 156.31 },
@@ -53,7 +33,11 @@ function hideUI(player) {
 // --- LOGIC ---
 const logic = {
     onStart: (player) => {
-        player.courierData = { packages: 0, currentStop: null };
+        player.courierData = { 
+        packages: 0, 
+        currentStop: null, 
+        visitedHouses: []
+    };
 
         const veh = mp.vehicles.new(mp.joaat('boxville2'), new mp.Vector3(DEPOT_CONFIG.spawn.x, DEPOT_CONFIG.spawn.y, DEPOT_CONFIG.spawn.z), {
             heading: DEPOT_CONFIG.spawn.h,
@@ -92,9 +76,13 @@ const logic = {
 };
 
 function startLoadingPhase(player) {
+    if (!player.courierData.visitedHouses) player.courierData.visitedHouses = [];
+
     jobManager.createObjective(player, DEPOT_CONFIG.loadingBay, "Loading Bay", 4.0, (p) => {
         const veh = p.vehicle;
-        if (!veh || veh.id !== p.jobVehicle.id) return p.call('showNotification', ['Courier', 'Please bring your Job Van here.']);
+        if (!veh || veh.id !== p.jobVehicle.id) {
+            return p.call('showNotification', ['Courier', 'Please bring your Job Van here.']);
+        }
 
         veh.velocity = new mp.Vector3(0, 0, 0);
         veh.engine = false; 
@@ -105,47 +93,69 @@ function startLoadingPhase(player) {
         jobManager.clearObjective(p); 
 
         setTimeout(() => {
-            if(!mp.players.exists(p)) return;
-            if(p.vehicle) p.vehicle.frozen = false; 
+            if (!mp.players.exists(p)) return;
+            if (p.vehicle) p.vehicle.frozen = false; 
 
             p.courierData.packages = MAX_PACKAGES; 
+            p.courierData.visitedHouses = []; // Reset history for fresh route selection
+            
             p.outputChatBox("!{00FF00}[Courier] !{FFFFFF}Van Loaded! Route sent to GPS.");
             startDeliveryPhase(p);
         }, 4000);
-    }, { blipColor: 26 });
+    }, { 
+        blipColor: 26, 
+        markerColor: [0, 188, 255, 100]
+    });
 }
 
-/**
- * MODIFIED: Drive to STREET location first.
- */
 function startDeliveryPhase(player) {
-    const randomIdx = Math.floor(Math.random() * HOUSES.length);
-    const stop = HOUSES[randomIdx];
-    player.courierData.currentStop = stop;
+    // 1. Get all houses not yet visited in this run
+    let availableHouses = HOUSES.filter(h => !player.courierData.visitedHouses.includes(h.id));
 
-    // GPS points to stop.street now
+    if (availableHouses.length === 0) {
+        player.courierData.visitedHouses = [];
+        return startDeliveryPhase(player);
+    }
+
+    // 2. RADIUS CHECK LOGIC
+    const MAX_DISTANCE = 600.0; 
+    const pPos = player.position;
+    
+    let nearbyHouses = availableHouses.filter(h => {
+        const dist = Math.sqrt(
+            Math.pow(h.street.x - pPos.x, 2) + 
+            Math.pow(h.street.y - pPos.y, 2)
+        );
+        return dist <= MAX_DISTANCE;
+    });
+
+    const pool = nearbyHouses.length > 0 ? nearbyHouses : availableHouses;
+    const randomIdx = Math.floor(Math.random() * pool.length);
+    const stop = pool[randomIdx];
+    
+    player.courierData.currentStop = stop;
+    player.courierData.visitedHouses.push(stop.id);
+
     updateUI(player, "Drive to Street", player.courierData.packages);
 
-    jobManager.createArrivalObjective(player, stop.street, "Delivery Area", 5.0, (p) => {
+    jobManager.createObjective(player, stop.street, "Delivery Area", 8.0, (p) => {
         p.call('showNotification', ['Courier', 'You arrived! Park and exit the van to get the package.']);
         updateUI(p, "Exit Vehicle", p.courierData.packages);
-
         jobManager.clearObjective(p);
 
         if (p.jobExitCheck) clearInterval(p.jobExitCheck);
-
-        // Wait for player to get out of the car at the destination
         p.jobExitCheck = setInterval(() => {
             if (!mp.players.exists(p)) return;
-
             if (!p.vehicle) {
                 clearInterval(p.jobExitCheck);
                 p.jobExitCheck = null;
-                // Only now we spawn the trunk checkpoint
                 startTrunkPhase(p);
             }
         }, 500);
-    }, { blipColor: 26 });
+    }, { 
+        blipColor: 26, 
+        markerColor: [0, 188, 255, 100]
+    });
 }
 
 function startTrunkPhase(player) {
@@ -162,32 +172,24 @@ function startTrunkPhase(player) {
         veh.position.z
     );
 
-    // This spawns the marker behind the van
     jobManager.createObjective(player, trunkPos, "Grab Package", 1.5, (p) => {
         if (p.vehicle) return p.call('showNotification', ['Courier', 'Get out of the vehicle!']);
 
         p.playAnimation('anim@heists@box_carry@', 'idle', 1, 49);
-        
+        p.setVariable('isJobCarrying', true); // Added this so other players see the anim/box logic
+
         const box = mp.objects.new(mp.joaat('hei_prop_heist_box'), p.position, { dimension: p.dimension });
         p.courierBox = box; 
-
-        setTimeout(() => {
-            if (mp.players.exists(p) && mp.objects.exists(box)) {
-                p.setVariable('isJobCarrying', true);
-                p.call('client:attachProp', [
-                    box.id, 
-                    60309,              
-                    -0.05, 0.35, 0.20,     
-                    -180.0, 180.0, 0.0  
-                ]);
-            }
-        }, 250);
+        
+        // This triggers the dataHandler on all clients
+        p.setVariable('attachedObject', box.id); 
 
         p.call('showNotification', ['Courier', 'Package retrieved. Deliver to the door.']);
         startDoorPhase(p);
     }, { 
-        blipSprite: 478, // Box icon
-        blipColor: 26 
+        blipSprite: 478, 
+        blipColor: 26,
+        markerColor: [0, 188, 255, 100]
     });
 }
 
@@ -208,7 +210,8 @@ function startDoorPhase(player) {
         jobManager.clearObjective(p);
         
         p.setVariable('isJobCarrying', null);
-        p.stopAnimation(); 
+        p.setVariable('attachedObject', null);
+        p.stopAnimation();
         if (p.courierBox && mp.objects.exists(p.courierBox)) {
             p.courierBox.destroy();
             p.courierBox = null;
@@ -220,15 +223,28 @@ function startDoorPhase(player) {
         await playerManager.addMoneyAndSave(p, 200, "Courier Delivery");
         p.call('showNotification', ['Courier', 'Delivered! +$200 (Saved)']);
         
-        p.isProcessingPayout = false; // Unlock for next stop
+        p.isProcessingPayout = false; 
 
         if (p.courierData.packages > 0) {
             startDeliveryPhase(p);
         } else {
+            // FIX: Show 0/6 on the UI before transitioning
+            updateUI(p, "Return to Depot", 0); 
             p.outputChatBox("!{F0C400}[Courier] !{FFFFFF}Run complete! Return to Loading Bay.");
-            startLoadingPhase(p);
+            
+            // Give the player a new objective to actually drive back
+            jobManager.createObjective(p, DEPOT_CONFIG.loadingBay, "Loading Bay", 4.0, (pReturn) => {
+                startLoadingPhase(pReturn);
+            }, { 
+                blipColor: 26,
+                markerColor: [0, 188, 255, 100] // Added blue color
+            });
         }
-    }, { blipSprite: 40, blipColor: 26 });
+    }, { 
+        blipSprite: 40, 
+        blipColor: 26,
+        markerColor: [0, 188, 255, 100]
+    });
 }
 
 // Server-side safety
