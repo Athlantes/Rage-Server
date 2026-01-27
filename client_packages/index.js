@@ -7,6 +7,7 @@ require('./phone/index.js');
 require('./zones/index.js');
 require('./draw-zone');
 require('./dumpster.js');
+require('./returo.js');
 
 mp.events.add('client:setRoute', (blipId, enable, color) => {
     let attempts = 0;

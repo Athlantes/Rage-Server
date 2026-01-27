@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        :root {
+            --bg-body: rgba(0, 0, 0, 0.85);
+            --bg-card: #141414;
+            --accent: #ffcc00;
+            --accent-hover: #ffe066;
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: var(--bg-body);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* 1. Main Card Styling */
+        .container {
+            background: var(--bg-card);
+            border-top: 4px solid var(--accent);
+            padding: 30px;
+            width: 380px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            text-align: center;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { 
+            margin: 0 0 5px 0; 
+            color: var(--accent); 
+            text-transform: uppercase; 
+            font-size: 22px; 
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 11px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .highlight { color: var(--accent); font-weight: bold; font-size: 14px; }
+
+        /* 2. Input Group Styling */
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            transition: border-color 0.2s;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* 3. REMOVE SPINNERS (Arrows) */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+
+        /* The "MAX" Button inside the input */
+        .btn-max { 
+            background: rgba(255,255,255,0.1); 
+            color: #aaa; 
+            border: none;
+            padding: 6px 10px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            border-radius: 3px;
+            transition: 0.2s;
+        }
+        .btn-max:hover { background: var(--accent); color: #000; }
+
+        /* 4. Action Buttons */
+        .btn-confirm { 
+            width: 100%;
+            background: var(--accent); 
+            color: #000; 
+            border: none;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 204, 0, 0.2);
+        }
+        .btn-confirm:hover { 
+            background: var(--accent-hover); 
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 204, 0, 0.4);
+        }
+        .btn-confirm:active { transform: translateY(1px); }
+
+        .btn-close { 
+            background: transparent; 
+            color: var(--text-sub); 
+            border: none;
+            margin-top: 15px; 
+            font-size: 11px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-close:hover { color: white; }
+
+        /* Icon styling */
+        .icon { font-size: 32px; margin-bottom: 10px; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">♻️</div>
+        
+        <h2>Recycling Center</h2>
+        <div class="subtitle">Exchange bottles for cash</div>
+
+        <div class="stats-row">
+            <div>Inventory: <span id="max-count" class="highlight">0</span></div>
+            <div>Rate: <span class="highlight">$<span id="price">0</span></span></div>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="0" min="1">
+            <button class="btn-max" onclick="setMax()">MAX</button>
+        </div>
+
+        <button class="btn-confirm" onclick="submit()">CONFIRM EXCHANGE</button>
+        <button class="btn-close" onclick="closeUI()">Cancel</button>
+    </div>
+
+    <script>
+        let maxBottles = 0;
+
+        function updateInfo(max, price) {
+            maxBottles = max;
+            document.getElementById('max-count').innerText = max;
+            document.getElementById('price').innerText = price;
+        }
+
+        function setMax() {
+            const input = document.getElementById('amount');
+            input.value = maxBottles;
+            input.focus(); // Focus so they can type/edit immediately if they want
+        }
+
+        function submit() {
+            const val = document.getElementById('amount').value;
+            if(val > 0) {
+                if('mp' in window) mp.trigger('client:submitReturo', val);
+            }
+        }
+
+        function closeUI() {
+            if('mp' in window) mp.trigger('client:closeReturoBrowser');
+        }
+
+        // Quality of Life: Focus input automatically
+        setTimeout(() => {
+            document.getElementById('amount').focus();
+        }, 100);
+
+        // Quality of Life: Press Enter to submit
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submit();
+            if (e.key === 'Escape') closeUI();
+        });
+    </script>
+</body>
+</html>

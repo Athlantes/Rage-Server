@@ -2,112 +2,159 @@
 <html>
 <head>
     <style>
+        :root {
+            --bg-dark: rgba(10, 10, 10, 0.9);
+            --bg-gradient: linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.9) 100%);
+            --accent: #ffcc00;
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
         body {
             background-color: transparent; 
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             user-select: none;
-            -webkit-user-select: none;
         }
 
-        /* --- EXISTING: TOP RIGHT HUD --- */
+        /* --- TOP RIGHT HUD --- */
         .hud-container {
-            position: fixed; top: 25px; right: 25px; min-width: 220px; text-align: right;
-            background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%);
-            padding: 15px 20px; border-radius: 8px; border-right: 5px solid #ffcc00; 
-            box-shadow: 0px 5px 15px rgba(0,0,0,0.5);
-            transition: opacity 0.2s; /* Smooth fade */
+            position: fixed; top: 30px; right: 30px; 
+            background: var(--bg-gradient);
+            padding: 15px 25px; 
+            border-radius: 6px; 
+            border-right: 4px solid var(--accent); 
+            box-shadow: var(--shadow);
+            text-align: right;
+            min-width: 200px;
+            transition: opacity 0.3s ease;
         }
-        .hud-username { font-size: 20px; font-weight: 800; color: #ffcc00; text-transform: uppercase; margin-bottom: 2px; }
-        .hud-money { font-size: 26px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
-        .hud-money span { color: #4caf50; font-weight: 400; margin-right: 2px; }
-        .hud-datetime { font-size: 13px; color: #bbbbbb; background-color: rgba(255, 255, 255, 0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; }
 
-        /* --- EXISTING: BOTTOM RIGHT SPEEDO --- */
-        .speedo-container {
-            position: fixed; bottom: 30px; right: 30px; width: 200px;
-            background: rgba(0, 0, 0, 0.85); color: white; padding: 15px;
-            border-radius: 8px; border-bottom: 4px solid #ffcc00;
-            display: none; box-shadow: 0px 5px 15px rgba(0,0,0,0.5);
-            transition: opacity 0.2s;
+        .hud-username { 
+            font-size: 14px; color: var(--accent); 
+            font-weight: 800; text-transform: uppercase; letter-spacing: 1px; 
         }
-        .speed-text { font-size: 36px; font-weight: 900; text-align: right; letter-spacing: -1px; }
-        .label { font-size: 12px; color: #ffcc00; font-weight: bold; }
-        .info-row { display: flex; justify-content: space-between; margin-top: 5px; font-size: 13px; font-weight: 600; color: #ddd; }
+
+        .hud-money { 
+            font-size: 28px; font-weight: 700; color: white; 
+            margin: 2px 0 8px 0; letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
+        }
+        .hud-money span { font-size: 18px; color: #4caf50; vertical-align: top; margin-right: 2px; }
+
+        .hud-meta { 
+            display: flex; justify-content: flex-end; gap: 10px; 
+            font-size: 12px; font-weight: 600; color: var(--text-sub); 
+        }
+        .hud-date { background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; }
+
+        /* --- SPEEDOMETER --- */
+        .speedo-container {
+            position: fixed; bottom: 30px; right: 30px; width: 220px;
+            background: var(--bg-gradient); color: white; 
+            padding: 20px; border-radius: 6px; 
+            border-bottom: 4px solid var(--accent);
+            box-shadow: var(--shadow);
+            display: none; transition: opacity 0.3s;
+        }
+
+        .speed-main { 
+            display: flex; align-items: baseline; justify-content: flex-end; 
+            margin-bottom: 5px;
+        }
+        .speed-val { font-size: 48px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+        .speed-unit { font-size: 14px; color: var(--accent); font-weight: 800; margin-left: 5px; }
+
+        .speed-info { 
+            display: flex; justify-content: space-between; 
+            background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 4px;
+            font-size: 12px; font-weight: 700; color: #ccc;
+        }
         .locked { color: #ff4444; } .unlocked { color: #44ff44; } .fuel-low { color: #ffaa00; }
 
-        /* --- NEW: NOTIFICATIONS --- */
+        /* --- NOTIFICATIONS --- */
         #notif-stack {
-            position: fixed; bottom: 250px; left: 20px; width: 300px;
-            display: flex; flex-direction: column-reverse;
+            position: fixed; bottom: 250px; left: 30px; width: 320px;
+            display: flex; flex-direction: column-reverse; pointer-events: none;
         }
         .notif-card {
-            background: rgba(0, 0, 0, 0.85); border-left: 4px solid #ffcc00;
-            color: white; padding: 15px; margin-top: 10px; border-radius: 4px;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-            opacity: 0; transform: translateX(-20px);
-            animation: slideIn 0.3s forwards; transition: opacity 0.5s;
+            background: rgba(15, 15, 15, 0.95); 
+            border-left: 4px solid var(--accent);
+            padding: 15px; margin-top: 10px; border-radius: 0 4px 4px 0;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            animation: notifSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative; overflow: hidden;
         }
-        .notif-title { font-size: 14px; font-weight: bold; color: #ffcc00; text-transform: uppercase; margin-bottom: 4px; }
-        .notif-msg { font-size: 13px; line-height: 1.4; color: #ddd; }
+        /* Subtle shine effect */
+        .notif-card::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: skewX(-20deg); pointer-events: none;
+        }
+        
+        .notif-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
+        .notif-msg { font-size: 13px; color: #ddd; line-height: 1.4; }
 
-        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+        @keyframes notifSlide { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
 
         /* --- JOB HUD --- */
         .job-hud {
-            position: fixed; top: 50%; right: 25px; transform: translateY(-50%);
-            width: 260px; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%);
-            border-right: 5px solid #ffcc00; padding: 20px; border-radius: 8px;
-            color: white; display: none; box-shadow: 0px 5px 20px rgba(0,0,0,0.6);
-            text-align: right; font-family: 'Segoe UI', sans-serif; transition: opacity 0.2s;
+            position: fixed; top: 40%; right: 30px; width: 260px;
+            background: var(--bg-gradient);
+            border-right: 4px solid var(--accent); 
+            padding: 20px; border-radius: 6px; box-shadow: var(--shadow);
+            display: none; text-align: right;
         }
-        .job-label { font-size: 11px; color: #ffcc00; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-        .job-instruction { font-size: 18px; font-weight: 700; color: #ffffff; line-height: 1.2; margin-bottom: 15px; }
-        .job-divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin-bottom: 15px; }
-        .job-progress-bg { background: rgba(255, 255, 255, 0.1); height: 8px; width: 100%; border-radius: 4px; overflow: hidden; position: relative; margin-top: 5px; }
-        .job-progress-fill { background: #ffcc00; height: 100%; width: 0%; transition: width 0.5s ease-in-out; box-shadow: 0 0 10px rgba(255, 204, 0, 0.5); }
-        .job-counter { font-size: 14px; color: #ddd; font-weight: 600; margin-top: 5px; }
+        .job-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .job-instruction { font-size: 16px; font-weight: 700; color: white; margin: 5px 0 15px 0; line-height: 1.3; }
+        
+        .job-progress-bg { background: rgba(255,255,255,0.1); height: 6px; width: 100%; border-radius: 3px; overflow: hidden; }
+        .job-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s; box-shadow: 0 0 10px var(--accent); }
+        .job-counter { margin-top: 6px; font-size: 12px; color: #aaa; font-weight: 600; }
 
         /* --- INTERACTION PROMPT --- */
         .interaction-box {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9); color: white; padding: 15px 25px;
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(10, 10, 10, 0.9); padding: 12px 25px;
             border-radius: 50px; display: none; align-items: center;
-            border: 1px solid #333; box-shadow: 0px 0px 20px rgba(255, 204, 0, 0.2);
-            transition: opacity 0.2s;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .key-circle { width: 32px; height: 32px; background: #ffcc00; color: #000; border-radius: 50%; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; margin-right: 15px; box-shadow: 0px 0px 10px #ffcc00; }
-        .inter-content { display: flex; flex-direction: column; }
-        .inter-title { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .inter-action { font-size: 16px; font-weight: bold; color: white; }
+        .key-circle { 
+            width: 28px; height: 28px; background: var(--accent); color: black; 
+            border-radius: 50%; font-weight: 800; font-size: 14px; 
+            display: flex; align-items: center; justify-content: center; margin-right: 15px; 
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+        }
+        .inter-text { font-size: 14px; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* --- POP-UP HOTBAR --- */
+        /* --- HOTBAR --- */
         .pop-hotbar {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px;
-            border-radius: 50px; border: 1px solid #333; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            display: flex; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px 15px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); 
+            opacity: 0; transition: opacity 0.3s;
         }
-        .pop-slot { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 4px; position: relative; border: 1px solid transparent; display: flex; justify-content: center; align-items: center; }
-        .pop-slot.active { border-color: #ffcc00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); background: rgba(255, 204, 0, 0.1); }
-        .pop-img { width: 30px; height: 30px; object-fit: contain; }
-        .pop-key { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #888; }
+        .pop-slot { 
+            width: 40px; height: 40px; background: rgba(255,255,255,0.05); 
+            border-radius: 6px; display: flex; justify-content: center; align-items: center; position: relative;
+            border: 1px solid transparent; transition: 0.2s;
+        }
+        .pop-slot.active { border-color: var(--accent); background: rgba(255, 204, 0, 0.1); transform: scale(1.1); }
+        .pop-img { width: 28px; height: 28px; object-fit: contain; }
+        .pop-key { position: absolute; top: -8px; right: -5px; background: var(--accent); color: black; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; }
 
-        /* --- ZONE STATUS INDICATOR --- */
+        /* --- ZONES --- */
         .zone-status {
-            position: fixed; top: 12%; left: 50%; transform: translateX(-50%);
-            padding: 8px 25px; background: rgba(0, 0, 0, 0.9);
-            border-radius: 50px; display: none; text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            animation: slideDown 0.3s forwards;
+            position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
+            padding: 8px 20px; background: rgba(0,0,0,0.85); border-radius: 50px;
+            display: none; animation: slideDown 0.3s forwards;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        /* Colors for different zones */
-        .zone-status.safe { border-bottom: 3px solid #4caf50; }  /* Green */
-        .zone-status.noclip { border-bottom: 3px solid #2196f3; } /* Blue */
-
-        .zone-text { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: white; }
+        .zone-status.safe { border-bottom: 2px solid #4caf50; }
+        .zone-status.noclip { border-bottom: 2px solid #2196f3; }
+        .zone-text { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: white; }
 
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
@@ -115,15 +162,21 @@
 <body>
 
     <div class="hud-container" id="hud-container">
-        <div class="hud-username" id="hud-name">Player</div>
-        <div class="hud-money"><span>$</span><b id="hud-cash">0</b></div>
-        <div class="hud-datetime" id="hud-date">00:00 | Jan 01</div>
+        <div class="hud-username" id="hud-name">PLAYER</div>
+        <div class="hud-money"><span>$</span><span id="hud-cash">0</span></div>
+        <div class="hud-meta">
+            <div class="hud-date" id="hud-date">00:00 | JAN 01</div>
+        </div>
     </div>
 
     <div class="speedo-container" id="speedo">
-        <div class="speed-text"><span id="speed">0</span> <span class="label">KM/H</span></div>
-        <div class="info-row">
-            <span>FUEL <b id="fuel">100%</b></span><span id="lock">OPEN</span>
+        <div class="speed-main">
+            <div class="speed-val" id="speed">0</div>
+            <div class="speed-unit">KM/H</div>
+        </div>
+        <div class="speed-info">
+            <span>FUEL <span id="fuel">100%</span></span>
+            <span id="lock">OPEN</span>
         </div>
     </div>
 
@@ -135,19 +188,15 @@
 
     <div class="interaction-box" id="interaction">
         <div class="key-circle">E</div>
-        <div class="inter-content">
-            <span class="inter-title" id="inter-title">Title</span>
-            <span class="inter-action" id="inter-text">Press E to Interact</span>
-        </div>
+        <div class="inter-text" id="inter-text">INTERACT</div>
     </div>
 
     <div class="job-hud" id="job-hud">
-        <div class="job-label">Current Objective</div>
+        <div class="job-label">CURRENT OBJECTIVE</div>
         <div class="job-instruction" id="job-text">Wait for instructions...</div>
-        <div class="job-divider"></div>
-        <div class="job-label">Van Inventory</div>
+        <div class="job-label">PROGRESS</div>
         <div class="job-progress-bg"><div class="job-progress-fill" id="job-bar"></div></div>
-        <div class="job-counter" id="job-count">0 / 3 Packages</div>
+        <div class="job-counter" id="job-count">0 / 0</div>
     </div>
 
     <div class="pop-hotbar" id="pop-hotbar"></div>
@@ -162,20 +211,17 @@
 
         function updateSpeedo(speed, fuel, isLocked) {
             const hudEl = document.getElementById('hud-container');
-            
-            // FIX 2: Safety check + Opacity logic
-            // If the HUD is hidden (opacity 0), we don't update/show speedo
             if (hudEl && hudEl.style.opacity === '0') return;
 
             document.getElementById('speedo').style.display = 'block';
             document.getElementById('speed').innerText = Math.floor(speed);
             
-            let f = document.getElementById('fuel'); 
-            f.innerText = Math.floor(fuel) + '%'; 
+            const f = document.getElementById('fuel');
+            f.innerText = Math.floor(fuel) + '%';
             f.className = fuel < 20 ? 'fuel-low' : '';
-            
-            let l = document.getElementById('lock'); 
-            l.innerText = isLocked ? "LOCKED" : "OPEN"; 
+
+            const l = document.getElementById('lock');
+            l.innerText = isLocked ? "LOCKED" : "OPEN";
             l.className = isLocked ? "locked" : "unlocked";
         }
 
@@ -190,9 +236,12 @@
             card.className = 'notif-card';
             card.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${message}</div>`;
             container.appendChild(card);
+            
+            // Auto Remove
             setTimeout(() => {
                 card.style.opacity = '0';
-                setTimeout(() => card.remove(), 500);
+                card.style.transform = 'translateX(-20px)';
+                setTimeout(() => card.remove(), 400);
             }, 5000);
         }
 
@@ -200,8 +249,9 @@
         function setInteraction(visible, title, text) {
             const box = document.getElementById('interaction');
             if (visible) {
-                document.getElementById('inter-title').innerText = title;
-                document.getElementById('inter-text').innerText = text;
+                // We combine title and text nicely: "TITLE: Text" or just "Text"
+                const fullText = title ? `${title}: ${text}` : text;
+                document.getElementById('inter-text').innerText = fullText;
                 box.style.display = 'flex';
             } else {
                 box.style.display = 'none';
@@ -217,26 +267,24 @@
             }
             hud.style.display = 'block';
             document.getElementById('job-text').innerText = text;
-            let pct = max > 0 ? (current / max) * 100 : 0;
+            const pct = max > 0 ? (current / max) * 100 : 0;
             document.getElementById('job-bar').style.width = pct + '%';
-            document.getElementById('job-count').innerText = `${current} / ${max} Packages`;
+            document.getElementById('job-count').innerText = `${current} / ${max}`;
         }
 
-        // --- 5. VISIBILITY TOGGLE (Called by Inventory) ---
+        // --- 5. VISIBILITY TOGGLE ---
         function setGameHUD(visible) {
-            // FIX 3: Correct IDs: 'speedo' instead of 'speedo-container'
-            const idsToToggle = ['hud-container', 'speedo', 'job-hud', 'interaction'];
-
-            idsToToggle.forEach(id => {
+            const ids = ['hud-container', 'speedo', 'job-hud', 'interaction'];
+            ids.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) {
+                if(el) {
                     el.style.opacity = visible ? '1' : '0';
-                    // We also toggle pointer events so invisible buttons aren't clickable
                     el.style.pointerEvents = visible ? 'auto' : 'none';
                 }
             });
         }
 
+        // --- 6. HOTBAR ---
         let hotbarTimer = null;
         function updateHotbar(itemsJson) {
             const items = JSON.parse(itemsJson); 
@@ -246,7 +294,8 @@
                 const realSlot = -51 - i; 
                 const item = items.find(x => x.slot === realSlot);
                 let html = `<span class="pop-key">${i+1}</span>`;
-                if(item) html += `<img src="items/${item.itemId}.png" class="pop-img">`;
+                if(item) html += `<img src="items/${item.icon || item.itemId + '.png'}" class="pop-img" onerror="this.src='items/default.png'">`;
+                
                 let div = document.createElement('div');
                 div.className = 'pop-slot';
                 div.id = `pop-slot-${i}`;
@@ -260,34 +309,29 @@
                 const el = document.getElementById(`pop-slot-${i}`);
                 if(el) el.classList.remove('active');
             }
-            const activeEl = document.getElementById(`pop-slot-${activeIndex}`);
-            if(activeEl) activeEl.classList.add('active');
+            if(activeIndex !== undefined && activeIndex !== null) {
+                const activeEl = document.getElementById(`pop-slot-${activeIndex}`);
+                if(activeEl) activeEl.classList.add('active');
+            }
             bar.style.opacity = '1';
             if(hotbarTimer) clearTimeout(hotbarTimer);
             hotbarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
         }
 
-        // --- 6. ZONE STATUS ---
+        // --- 7. ZONES ---
         function updateZoneStatus(visible, type) {
             const el = document.getElementById('zone-status');
             const label = document.getElementById('zone-label');
-            
-            if (!visible) {
-                el.style.display = 'none';
-                return;
-            }
+            if (!visible) { el.style.display = 'none'; return; }
 
             el.style.display = 'block';
-            el.className = 'zone-status'; // Reset classes
-
+            el.className = 'zone-status'; 
             if (type === 'safe_zone') {
                 el.classList.add('safe');
-                label.innerText = "SAFE ZONE ACTIVE";
-                label.style.color = "#e8f5e9";
+                label.innerText = "SAFE ZONE";
             } else if (type === 'no_collision') {
                 el.classList.add('noclip');
-                label.innerText = "NO COLLISION AREA";
-                label.style.color = "#e3f2fd";
+                label.innerText = "NO COLLISION";
             }
         }
     </script>

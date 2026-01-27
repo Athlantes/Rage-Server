@@ -20,6 +20,7 @@ mp.keys.bind(0x49, true, () => {
     
     // 2. NEW: If typing in Search bar inside Inventory, ignore
     if (isSearchFocused) return;
+    if (global.isReturoOpen) return;
 
     isInventoryOpen = !isInventoryOpen;
     toggleInventory(isInventoryOpen);

@@ -54,7 +54,6 @@ module.exports = {
         icon: "empty_wallet.png"
     },
 
-    // --- CLOTHING (BLOCKED) ---
     "shirt_white": {
         name: "White T-Shirt",
         type: "clothing",

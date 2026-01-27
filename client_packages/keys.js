@@ -1,12 +1,14 @@
 // Key: '2' (Engine)
 mp.keys.bind(0x32, true, function() {
     if (mp.gui.cursor.visible) return; // Don't trigger if typing in chat
+    if (global.isReturoOpen) return;
     mp.events.callRemote('vehicle:toggleEngine');
 });
 
 // Key: 'L' (Lock)
 mp.keys.bind(0x4C, true, function() {
     if (mp.gui.cursor.visible) return;
+    if (global.isReturoOpen) return;
     mp.events.callRemote('vehicle:toggleLock');
 });
 

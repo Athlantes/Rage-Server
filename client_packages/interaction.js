@@ -1,37 +1,41 @@
 // --- INTERACTION SYSTEM ---
-// Listens for 'E' key and ColShapes to trigger your UI
-
-let activeInteraction = null; // Stores the event to call when E is pressed
+let activeInteraction = null; 
 
 // 1. Listen for Server ColShapes
-// The server should setVariable('interaction', {title: "Job", text: "Press E", event: "startJob"})
 mp.events.add("playerEnterColshape", (shape) => {
-    // Check if this shape has interaction data
     const data = shape.getVariable('interaction');
     
     if (data) {
-        // Show UI
+        // NEW: Check if this interaction requires being on foot
+        if (data.requireOnFoot && mp.players.local.vehicle) {
+            return; // Don't show UI if in a car
+        }
+
         mp.events.call('showInteraction', data.title, data.text);
         activeInteraction = data;
     }
 });
 
 mp.events.add("playerExitColshape", (shape) => {
+    // We only hide it if we were actually seeing it (activeInteraction is set)
+    // checking data exists to be safe
     const data = shape.getVariable('interaction');
     if (data) {
-        // Hide UI
         mp.events.call('hideInteraction');
         activeInteraction = null;
     }
 });
 
 // 2. Key Handler (E)
-mp.keys.bind(0x45, true, function() { // 0x45 is 'E'
-    if (mp.gui.cursor.visible) return; // Ignore if typing
+mp.keys.bind(0x45, true, function() {
+    if (mp.gui.cursor.visible) return;
     
     if (activeInteraction) {
-        // Trigger the event defined in the interaction data
-        // We call it on the SERVER
+        // NEW: Double check before sending (in case they got in a car while standing there)
+        if (activeInteraction.requireOnFoot && mp.players.local.vehicle) {
+            return;
+        }
+
         mp.events.callRemote(activeInteraction.event);
     }
 });
