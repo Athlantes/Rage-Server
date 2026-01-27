@@ -8,28 +8,22 @@ mp.events.add('playerJoin', (player) => {
     player.outputChatBox("!{FFFFFF}Use: /login [username] [password]");
     player.outputChatBox("!{FFFFFF}Or: /register [username] [password] [repeat_password]");
     
-    // Set a flag so they can't move until logged in
     player.logged = false;
-    player.dim = 100; // Hide them in a different dimension
-    player.position = new mp.Vector3(-1037, -2738, 13); // Airport view
-    player.call("client:freezePlayer", [true]); // Optional: freeze client side if you have that script
+    player.dim = 100; 
+    player.position = new mp.Vector3(-1037, -2738, 13);
+    player.call("client:freezePlayer", [true]); 
 });
 
 // 2. Register Command
-// Usage: /register [username] [password] [repeat_password]
 mp.events.addCommand('register', async (player, fullText, username, password, repeatPassword) => {
     if(player.logged) return player.outputChatBox("You are already logged in.");
-    
-    // ... validation checks ...
     if(!username || !password || !repeatPassword) return player.outputChatBox("Usage: /register [user] [pass] [repeat]");
     if(password !== repeatPassword) return player.outputChatBox("Passwords do not match.");
 
     try {
-        // PROTECTION 1: Check if Username is taken
         const [userCheck] = await db.query("SELECT id FROM users WHERE username = ?", [username]);
         if(userCheck.length > 0) return player.outputChatBox("!{FF0000}That username is taken.");
 
-        // PROTECTION 2: Check Social Club ID
         const [scidCheck] = await db.query("SELECT username FROM users WHERE social_id = ?", [player.rgscId]);
         if(scidCheck.length > 0) {
             return player.outputChatBox(`!{FF0000}You already have an account: ${scidCheck[0].username}`);
@@ -37,7 +31,6 @@ mp.events.addCommand('register', async (player, fullText, username, password, re
 
         const hash = await bcrypt.hash(password, 10);
 
-        // NOTE: We rely on the DB default '{}' for cooldowns, so we don't need to insert it manually here
         const [result] = await db.query(
             "INSERT INTO users (username, password, social_id, money, level, vehicle_slots) VALUES (?, ?, ?, 500, 1, 3)", 
             [username, hash, player.rgscId]
@@ -45,14 +38,13 @@ mp.events.addCommand('register', async (player, fullText, username, password, re
         
         player.outputChatBox("!{00FF00}Account Protected & Created!");
 
-        // Auto-Login
         const newUser = {
             id: result.insertId,
             username: username,
             money: 500,        
             level: 1,          
             vehicle_slots: 3,
-            cooldowns: '{}'    // Default empty JSON string for new user
+            cooldowns: '{}'    
         };
         loadAccount(player, newUser);
 
@@ -73,23 +65,19 @@ mp.events.addCommand('login', async (player, fullText, username, password) => {
         
         const user = rows[0];
 
-        // PROTECTION 3: The Hardware Check
         if (user.social_id && user.social_id !== player.rgscId) {
             console.log(`[Security] Login Blocked. User: ${username} | Saved SCID: ${user.social_id} | Attempt SCID: ${player.rgscId}`);
             return player.outputChatBox("!{FF0000}SECURITY ALERT: This account belongs to a different Social Club ID.");
         }
 
-        // Password Check
         const match = await bcrypt.compare(password, user.password);
         if(!match) return player.outputChatBox("!{FF0000}Incorrect password.");
 
-        // Link account if it's old (pre-security update)
         if (user.social_id === null) {
             await db.query("UPDATE users SET social_id = ? WHERE id = ?", [player.rgscId, user.id]);
             player.outputChatBox("!{F0C400}Account linked to your PC for security.");
         }
 
-        // Success
         loadAccount(player, user);
 
     } catch(err) {
@@ -107,7 +95,6 @@ function loadAccount(player, userData) {
     player.data.dbId = userData.id;
     player.data.username = userData.username;
 
-    // Load Stats
     player.data.money = userData.money;
     player.setVariable('money', userData.money);
     player.data.level = userData.level;
@@ -115,14 +102,16 @@ function loadAccount(player, userData) {
     
     // --- COOLDOWN SYSTEM UPGRADE ---
     try {
-        player.data.cooldowns = (typeof userData.cooldowns === 'string') 
+        // Load existing cooldowns or empty object
+        const loadedCooldowns = (typeof userData.cooldowns === 'string') 
             ? JSON.parse(userData.cooldowns || '{}') 
             : (userData.cooldowns || {});
+            
+        player.data.cooldowns = loadedCooldowns;
 
-        // NEW: Sync active cooldowns to Client immediately on login
-        // This ensures the UI is hidden if they reconnect while on cooldown
+        // Sync active cooldowns to Client immediately on login
         const now = Date.now();
-        for (const [key, expiry] of Object.entries(player.data.cooldowns)) {
+        for (const [key, expiry] of Object.entries(loadedCooldowns)) {
             if (expiry > now) {
                 player.setVariable('cooldown_' + key, expiry);
             }
@@ -133,29 +122,41 @@ function loadAccount(player, userData) {
         console.log(`[Auth] Error parsing cooldowns for ${player.name}:`, e);
     }
 
-    // Helper: Set Cooldown (Upgraded)
+    // Helper: Set Cooldown (FIXED FOR DB SAVING)
     player.setCooldown = function(name, minutes) {
         const expiresAt = Date.now() + (minutes * 60000);
-        this.data.cooldowns[name] = expiresAt;
         
-        // NEW: Sync to client so UI can react instantly
-        this.setVariable('cooldown_' + name, expiresAt);
+        // 1. Get current object (Local variable ensures reliability)
+        let currentCooldowns = player.data.cooldowns || {};
         
+        // 2. Update the key in the local object
+        currentCooldowns[name] = expiresAt;
+
+        // 3. Re-assign to player.data to ensure RageMP updates the proxy
+        player.data.cooldowns = currentCooldowns;
+        
+        // 4. Sync to client
+        player.setVariable('cooldown_' + name, expiresAt);
+        
+        // 5. Debug Log
+        console.log(`[Cooldown] Saving for ${player.name}:`, JSON.stringify(currentCooldowns));
+
+        // 6. Save to DB using the LOCAL variable (currentCooldowns)
         db.query('UPDATE users SET cooldowns = ? WHERE id = ?', 
-            [JSON.stringify(this.data.cooldowns), this.data.dbId]
+            [JSON.stringify(currentCooldowns), player.data.dbId]
         ).catch(err => console.error("[Auth] Cooldown Save Error:", err));
     };
 
     // Helper: Check Cooldown
     player.hasCooldown = function(name) {
-        if (!this.data.cooldowns[name]) return false;
-        return Date.now() < this.data.cooldowns[name];
+        if (!player.data.cooldowns || !player.data.cooldowns[name]) return false;
+        return Date.now() < player.data.cooldowns[name];
     };
 
     // Helper: Get Time Left
     player.getCooldownTime = function(name) {
-        if (!this.data.cooldowns[name]) return 0;
-        const diff = this.data.cooldowns[name] - Date.now();
+        if (!player.data.cooldowns || !player.data.cooldowns[name]) return 0;
+        const diff = player.data.cooldowns[name] - Date.now();
         return diff > 0 ? Math.ceil(diff / 60000) : 0; 
     };
     // ----------------------------

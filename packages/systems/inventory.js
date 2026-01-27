@@ -259,19 +259,19 @@ class InventorySystem {
         if (!itemDef) return false;
         if (!player.inventory) player.inventory = [];
 
-        // 1. Weight Check
+        // 1. Check Weight Limit
         if (parseFloat(this.getWeight(player)) + (itemDef.weight * amount) > 40.0) {
             player.call('showNotification', ['Inventory', 'Pockets are too full!']);
             return false;
         }
 
-        // 2. Fill Existing Stacks First
+        // 2. Try to fill EXISTING stacks first
         if (itemDef.maxStack > 1) {
-            // Find all valid stacks that aren't full
+            // Find all stacks of this item that aren't full
             const stacks = player.inventory.filter(i => i.itemId === itemId && i.count < itemDef.maxStack && i.slot >= 0);
             
             for (const stackItem of stacks) {
-                if (amount <= 0) break; // Stop if we are done
+                if (amount <= 0) break; 
 
                 const space = itemDef.maxStack - stackItem.count;
                 const toAdd = Math.min(amount, space);
@@ -279,13 +279,11 @@ class InventorySystem {
                 stackItem.count += toAdd;
                 amount -= toAdd;
 
-                // Important: Add 'await' to ensure DB syncs before client
+                // Update DB for this stack
                 await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [stackItem.count, stackItem.id]);
             }
         }
 
-        // 3. Create New Stacks for Remainder
-        // The Fix: We loop here. If we have 3 items and maxStack is 1, we create 3 separate slots.
         const maxStack = itemDef.maxStack || 1; 
 
         if (amount > 0) {
@@ -293,15 +291,17 @@ class InventorySystem {
                 while (amount > 0) {
                     const countToAdd = Math.min(amount, maxStack);
                     
-                    // Find a free slot for this specific chunk
+                    // Find the first available free slot
                     let freeSlot = 0;
                     while (player.inventory.find(item => item.slot === freeSlot)) { freeSlot++; }
 
+                    // Insert into Database
                     const [result] = await db.query(
                         'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
                         [player.data.dbId, itemId, countToAdd, freeSlot, '{}']
                     );
                     
+                    // Add to live inventory array
                     player.inventory.push({
                         id: result.insertId, itemId: itemId, count: countToAdd, slot: freeSlot, data: {}
                     });

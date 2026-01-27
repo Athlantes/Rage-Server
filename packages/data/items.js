@@ -23,14 +23,14 @@ module.exports = {
         type: "misc",
         weight: 0.5,
         maxStack: 10,
-        icon: "scrap.png" // Ensure you have this image or use a placeholder
+        icon: "scrap_metal.png" // Ensure you have this image or use a placeholder
     },
     "broken_glass": {
         name: "Broken Glass",
         type: "misc",
         weight: 0.1,
         maxStack: 20,
-        icon: "glass.png"
+        icon: "broken_glass.png"
     },
     "old_sandwich": {
         name: "Moldy Sandwich",
@@ -44,14 +44,14 @@ module.exports = {
         type: "misc",
         weight: 0.1,
         maxStack: 10,
-        icon: "bottle.png" 
+        icon: "plastic_bottle.png" 
     },
-    "wallet_stolen": {
+    "empty_wallet": {
         name: "Empty Wallet",
         type: "misc",
         weight: 0.2,
         maxStack: 1,
-        icon: "wallet.png"
+        icon: "empty_wallet.png"
     },
 
     // --- CLOTHING (BLOCKED) ---
