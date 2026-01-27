@@ -1,1 +1,2 @@
 require('./inventory');
+require('./dumpster');

@@ -6,6 +6,7 @@ require('./inventory_client.js');
 require('./phone/index.js');
 require('./zones/index.js');
 require('./draw-zone');
+require('./dumpster.js');
 
 mp.events.add('client:setRoute', (blipId, enable, color) => {
     let attempts = 0;

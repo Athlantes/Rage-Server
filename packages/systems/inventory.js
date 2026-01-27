@@ -259,40 +259,63 @@ class InventorySystem {
         if (!itemDef) return false;
         if (!player.inventory) player.inventory = [];
 
+        // 1. Weight Check
         if (parseFloat(this.getWeight(player)) + (itemDef.weight * amount) > 40.0) {
             player.call('showNotification', ['Inventory', 'Pockets are too full!']);
             return false;
         }
 
+        // 2. Fill Existing Stacks First
         if (itemDef.maxStack > 1) {
-            const stackItem = player.inventory.find(i => i.itemId === itemId && i.count < itemDef.maxStack && i.slot >= 0);
-            if (stackItem) {
+            // Find all valid stacks that aren't full
+            const stacks = player.inventory.filter(i => i.itemId === itemId && i.count < itemDef.maxStack && i.slot >= 0);
+            
+            for (const stackItem of stacks) {
+                if (amount <= 0) break; // Stop if we are done
+
                 const space = itemDef.maxStack - stackItem.count;
                 const toAdd = Math.min(amount, space);
+                
                 stackItem.count += toAdd;
                 amount -= toAdd;
-                db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [stackItem.count, stackItem.id]);
-                if (amount <= 0) {
-                    this.syncClient(player);
-                    return true;
-                }
+
+                // Important: Add 'await' to ensure DB syncs before client
+                await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [stackItem.count, stackItem.id]);
             }
         }
 
-        let freeSlot = 0;
-        while (player.inventory.find(item => item.slot === freeSlot)) { freeSlot++; }
+        // 3. Create New Stacks for Remainder
+        // The Fix: We loop here. If we have 3 items and maxStack is 1, we create 3 separate slots.
+        const maxStack = itemDef.maxStack || 1; 
 
-        try {
-            const [result] = await db.query(
-                'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
-                [player.data.dbId, itemId, amount, freeSlot, '{}']
-            );
-            player.inventory.push({
-                id: result.insertId, itemId: itemId, count: amount, slot: freeSlot, data: {}
-            });
-            this.syncClient(player);
-            return true;
-        } catch (err) { console.error(err); return false; }
+        if (amount > 0) {
+            try {
+                while (amount > 0) {
+                    const countToAdd = Math.min(amount, maxStack);
+                    
+                    // Find a free slot for this specific chunk
+                    let freeSlot = 0;
+                    while (player.inventory.find(item => item.slot === freeSlot)) { freeSlot++; }
+
+                    const [result] = await db.query(
+                        'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
+                        [player.data.dbId, itemId, countToAdd, freeSlot, '{}']
+                    );
+                    
+                    player.inventory.push({
+                        id: result.insertId, itemId: itemId, count: countToAdd, slot: freeSlot, data: {}
+                    });
+
+                    amount -= countToAdd;
+                }
+            } catch (err) { 
+                console.error(err); 
+                return false; 
+            }
+        }
+
+        this.syncClient(player);
+        return true;
     }
 
     async moveItem(player, fromSlot, toSlot) {

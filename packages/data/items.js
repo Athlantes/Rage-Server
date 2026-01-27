@@ -17,6 +17,43 @@ module.exports = {
         icon: "water.png"
     },
 
+    // --- DUMPSTER LOOT ---
+    "scrap_metal": {
+        name: "Scrap Metal",
+        type: "misc",
+        weight: 0.5,
+        maxStack: 10,
+        icon: "scrap.png" // Ensure you have this image or use a placeholder
+    },
+    "broken_glass": {
+        name: "Broken Glass",
+        type: "misc",
+        weight: 0.1,
+        maxStack: 20,
+        icon: "glass.png"
+    },
+    "old_sandwich": {
+        name: "Moldy Sandwich",
+        type: "food",
+        weight: 0.2,
+        maxStack: 5,
+        icon: "old_sandwich.png" // Reusing burger icon for now
+    },
+    "plastic_bottle": {
+        name: "Empty Bottle",
+        type: "misc",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "bottle.png" 
+    },
+    "wallet_stolen": {
+        name: "Empty Wallet",
+        type: "misc",
+        weight: 0.2,
+        maxStack: 1,
+        icon: "wallet.png"
+    },
+
     // --- CLOTHING (BLOCKED) ---
     "shirt_white": {
         name: "White T-Shirt",
