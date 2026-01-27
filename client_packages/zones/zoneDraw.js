@@ -1,5 +1,3 @@
-require('./client_zone_manager.js');
-
 (() => {
   const prefix = '[drawZone]:'
 

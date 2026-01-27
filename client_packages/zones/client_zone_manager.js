@@ -3,75 +3,80 @@ const ZoneConfig = [
     {
         name: "GoPostal Yard",
         type: "no_collision",
-        height: 100, // How tall the zone is
-        z: -50,      // The bottom Z level
-        points: [    // The Points you drew with your tool
+        height: 100, 
+        z: -50,      
+        points: [
             [164.2904, 110.4888],
             [163.4998, 109.8766],
             [7.0136, 167.618],
             [-10.1773, 119.2615],
             [146.7692, 63.0557]
         ]
-    },
-    // Add more zones here...
+    }
 ];
 
-// --- 2. CREATE ZONES USING POLYGON API ---
-mp.events.add('playerReady', () => {
+// --- 2. INITIALIZATION FUNCTION ---
+function loadZones() {
+    // Prevent double loading
+    if (global.zonesLoaded) return; 
+    global.zonesLoaded = true;
+
+    mp.console.logInfo(`[Zones] Starting to load ${ZoneConfig.length} zones...`);
+
     ZoneConfig.forEach((zone) => {
-        // Convert 2D points [x,y] to Vector3 [x,y,z] required by the API
+        // Convert points to Vector3
         const vertices = zone.points.map(p => new mp.Vector3(p[0], p[1], zone.z));
         
-        // Create the polygon using the library
-        // mp.polygons.add(vertices, height, options)
+        // Create Polygon
         const poly = mp.polygons.add(vertices, zone.height, {
-            visible: false, // Set to true if you want to see lines for debugging
-            dimension: 0
+            visible: true, // DEBUG: Set to TRUE to see the lines!
+            dimension: 0,
+            lineColorRGBA: [0, 0, 255, 255]
         });
 
-        // Attach our custom data to the polygon object directly
+        // Attach Data
         poly.zoneName = zone.name;
         poly.zoneType = zone.type;
+
+        mp.console.logInfo(`[Zones] Created zone: ${zone.name} (Type: ${zone.type})`);
     });
-});
+}
 
-// --- 3. EVENT HANDLERS (From the API) ---
+// --- 3. INIT TRIGGERS ---
+// Trigger 1: If player joins
+mp.events.add('playerReady', loadZones);
 
-// When entering a polygon
+// Trigger 2: If script reloaded (Hot-Reload Fix)
+if (mp.players.local) {
+    loadZones();
+}
+
+// --- 4. EVENT HANDLERS ---
 mp.events.add('playerEnterPolygon', (polygon) => {
     if (polygon.zoneType) {
-        // 1. Activate Logic
+        mp.console.logInfo(`[Zones] Entered: ${polygon.zoneName}`); // Debug to F11
         applyZoneEffect(polygon.zoneType, true);
-
-        // 2. Show Overlay (The blue/green banner)
         mp.events.call('updateZoneOverlay', true, polygon.zoneType);
-
-        // 3. Notification
-        mp.gui.chat.push(`Entered ${polygon.zoneName}`);
+        mp.gui.chat.push(`Entered Zone: ${polygon.zoneName}`);
     }
 });
 
-// When leaving a polygon
 mp.events.add('playerLeavePolygon', (polygon) => {
     if (polygon.zoneType) {
-        // 1. Deactivate Logic
+        mp.console.logInfo(`[Zones] Left: ${polygon.zoneName}`); // Debug to F11
         applyZoneEffect(polygon.zoneType, false);
-
-        // 2. Hide Overlay
         mp.events.call('updateZoneOverlay', false, polygon.zoneType);
-        
-        mp.gui.chat.push(`Left ${polygon.zoneName}`);
+        mp.gui.chat.push(`Left Zone: ${polygon.zoneName}`);
     }
 });
 
-// --- 4. EFFECT LOGIC (Ghost Mode / Safe Zone) ---
+// --- 5. EFFECT LOGIC ---
 let noCollisionActive = false;
 let safeZoneActive = false;
 
 function applyZoneEffect(type, enable) {
     if (type === 'no_collision') {
         noCollisionActive = enable;
-        // Visual: Make car transparent
         const veh = mp.players.local.vehicle;
         if (veh) veh.setAlpha(enable ? 150 : 255);
     } 
@@ -81,9 +86,8 @@ function applyZoneEffect(type, enable) {
     }
 }
 
-// --- 5. RENDER LOOP (Runs every frame) ---
+// --- 6. RENDER LOOP ---
 mp.events.add('render', () => {
-    // Logic: No Collision
     if (noCollisionActive) {
         const localVeh = mp.players.local.vehicle;
         if (localVeh) {
@@ -96,10 +100,8 @@ mp.events.add('render', () => {
         }
     }
 
-    // Logic: Safe Zone (Disable Weapons)
     if (safeZoneActive) {
-        mp.game.controls.disableControlAction(0, 24, true); // Attack
-        mp.game.controls.disableControlAction(0, 37, true); // Weapon Wheel
-        // ... add other controls if needed
+        mp.game.controls.disableControlAction(0, 24, true); 
+        mp.game.controls.disableControlAction(0, 37, true); 
     }
 });
