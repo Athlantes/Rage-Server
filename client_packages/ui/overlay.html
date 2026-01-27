@@ -93,6 +93,23 @@
         .pop-slot.active { border-color: #ffcc00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); background: rgba(255, 204, 0, 0.1); }
         .pop-img { width: 30px; height: 30px; object-fit: contain; }
         .pop-key { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #888; }
+
+        /* --- ZONE STATUS INDICATOR --- */
+        .zone-status {
+            position: fixed; top: 12%; left: 50%; transform: translateX(-50%);
+            padding: 8px 25px; background: rgba(0, 0, 0, 0.9);
+            border-radius: 50px; display: none; text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            animation: slideDown 0.3s forwards;
+        }
+        /* Colors for different zones */
+        .zone-status.safe { border-bottom: 3px solid #4caf50; }  /* Green */
+        .zone-status.noclip { border-bottom: 3px solid #2196f3; } /* Blue */
+
+        .zone-text { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: white; }
+
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -111,6 +128,10 @@
     </div>
 
     <div id="notif-stack"></div>
+
+    <div id="zone-status" class="zone-status">
+        <div class="zone-text" id="zone-label">ZONE ACTIVE</div>
+    </div>
 
     <div class="interaction-box" id="interaction">
         <div class="key-circle">E</div>
@@ -244,6 +265,30 @@
             bar.style.opacity = '1';
             if(hotbarTimer) clearTimeout(hotbarTimer);
             hotbarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
+        }
+
+        // --- 6. ZONE STATUS ---
+        function updateZoneStatus(visible, type) {
+            const el = document.getElementById('zone-status');
+            const label = document.getElementById('zone-label');
+            
+            if (!visible) {
+                el.style.display = 'none';
+                return;
+            }
+
+            el.style.display = 'block';
+            el.className = 'zone-status'; // Reset classes
+
+            if (type === 'safe_zone') {
+                el.classList.add('safe');
+                label.innerText = "SAFE ZONE ACTIVE";
+                label.style.color = "#e8f5e9";
+            } else if (type === 'no_collision') {
+                el.classList.add('noclip');
+                label.innerText = "NO COLLISION AREA";
+                label.style.color = "#e3f2fd";
+            }
         }
     </script>
 </body>

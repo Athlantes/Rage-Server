@@ -4,6 +4,7 @@ require('./disableDefaults.js');
 require('./interaction.js');
 require('./inventory_client.js');
 require('./cayo.js');
+require('./zones');
 
 require('./phone/index.js');
 

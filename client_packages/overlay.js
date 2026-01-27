@@ -115,3 +115,9 @@ mp.events.add('updateJobUI', (visible, text, current, max) => {
         overlayBrowser.execute(`updateJobUI(${visible}, ${JSON.stringify(text)}, ${current}, ${max});`);
     }
 });
+
+mp.events.add('updateZoneOverlay', (visible, type) => {
+    if (overlayBrowser) {
+        overlayBrowser.execute(`updateZoneStatus(${visible}, '${type}')`);
+    }
+});
