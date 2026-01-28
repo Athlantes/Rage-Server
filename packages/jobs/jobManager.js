@@ -1,4 +1,4 @@
-// jobs/jobManager.js
+// packages/jobs/jobManager.js
 const db = require('../core/database'); 
 
 const availableJobs = new Map();
@@ -9,6 +9,7 @@ const jobManager = {
 
         availableJobs.set(id, { config, logic });
 
+        // NPC
         mp.peds.new(mp.joaat(config.pedModel), new mp.Vector3(config.pos.x, config.pos.y, config.pos.z), {
             heading: config.pos.h || 0,
             dynamic: false,
@@ -17,6 +18,7 @@ const jobManager = {
             lockController: true
         });
 
+        // Global Blip (Job Center locations are public, so server-side blip is fine here)
         mp.blips.new(config.blipSprite, new mp.Vector3(config.pos.x, config.pos.y, config.pos.z), {
             name: config.name,
             color: config.blipColor || 1,
@@ -24,8 +26,7 @@ const jobManager = {
             scale: 1.0
         });
 
-        // FIX: Changed from newSphere(1.5) to newTube(2.5) to make it easier to find
-        // 2.5m Radius, 3.0m Height (triggers even if you are slightly above/below/beside)
+        // Interaction Shape
         const shape = mp.colshapes.newTube(config.pos.x, config.pos.y, config.pos.z - 1.0, 3.0, 2.5);
         shape.setVariable('interaction', {
             title: config.name,
@@ -42,32 +43,24 @@ const jobManager = {
         if (!job) return;
 
         player.setVariable('activeJobId', jobId); 
-        player.activeJobId = jobId; // Keep this for server-side checks if needed
-
+        player.activeJobId = jobId; 
         player.call('showNotification', ['Job Center', `Started: ${job.config.name}`]);
     },
 
+    // Refactored to use Client-Side Visuals
     createObjective: (player, pos, label, radius = 2.0, onEnterCallback, options = {}) => {
         jobManager.clearObjective(player);
 
-        const blipSprite = options.blipSprite || 1;
-        const blipColor = options.blipColor || 5;
-
-        // 1. Send Visuals to Client (Replaces mp.markers.new)
-        player.call('client:setJobObjective', [pos.x, pos.y, pos.z, options.markerColor || [248, 182, 50, 100]]);
-
-        // 2. Server Side Blip (Blips are fine server-side, but you can move if you want)
-        player.jobBlip = mp.blips.new(blipSprite, new mp.Vector3(pos.x, pos.y, pos.z), {
+        // 1. Send Visuals to Client (Private)
+        player.call('client:setJobObjective', ['main_objective', pos, {
+            markerColor: options.markerColor || [248, 182, 50, 100],
+            blipSprite: options.blipSprite || 1,
+            blipColor: options.blipColor || 5,
             name: label,
-            color: blipColor, 
-            scale: 0.8,
-            shortRange: false,
-            dimension: player.dimension
-        });
+            route: true
+        }]);
 
-        player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
-
-        // 3. Server Side Logic
+        // 2. Server Side Logic (Invisible Colshape)
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
         shape.dimension = player.dimension;
         shape.isJobObjective = true;
@@ -78,42 +71,13 @@ const jobManager = {
     },
 
     clearObjective: (player) => {
-        // Clear Client Marker
-        player.call('client:clearJobObjective');
+        // Clear Client Visuals
+        player.call('client:clearAllJobObjectives');
 
-        if (player.jobBlip) {
-            player.call('client:setRoute', [player.jobBlip.id, false]);
-            player.jobBlip.destroy();
-            player.jobBlip = null;
-        }
+        // Clear Server Logic
         if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
         player.jobCallback = null;
         if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
-    },
-
-    createArrivalObjective: (player, pos, label, radius = 15.0, onEnterCallback, options = {}) => {
-        jobManager.clearObjective(player);
-
-        const blipSprite = options.blipSprite || 1;
-        const blipColor = options.blipColor || 5;
-
-        player.jobBlip = mp.blips.new(blipSprite, new mp.Vector3(pos.x, pos.y, pos.z), {
-            name: label,
-            color: blipColor, 
-            scale: 0.8,
-            shortRange: false,
-            dimension: player.dimension
-        });
-
-        player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
-
-        const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
-        shape.dimension = player.dimension;
-        shape.isJobObjective = true;
-        shape.ownerId = player.id;
-        
-        player.jobShape = shape;
-        player.jobCallback = onEnterCallback; 
     },
 
     stopJob: (player, reason = "Job Ended") => {
@@ -140,20 +104,16 @@ mp.events.add('server:job:requestStart', (player) => {
     });
 
     if (!closestId) return;
-
     if (player.activeJobId) return player.outputChatBox("!{FF0000}Stop your current job first (/stopwork).");
 
     const job = availableJobs.get(closestId);
 
     if (job.logic.onInteract) {
         job.logic.onInteract(player);
-        return; 
+    } else {
+        jobManager.startJobSession(player, closestId);
+        if (job.logic.onStart) job.logic.onStart(player);
     }
-    // -------------------------
-
-    // Standard Immediate Start (for simple jobs)
-    jobManager.startJobSession(player, closestId);
-    if (job.logic.onStart) job.logic.onStart(player);
 });
 
 mp.events.addCommand('stopwork', (player) => {
@@ -168,9 +128,7 @@ mp.events.add('playerQuit', (player) => {
 mp.events.add('playerEnterColshape', (player, shape) => {
     if (!shape || !shape.isJobObjective) return;
     if (shape.ownerId !== player.id) return;
-    if (player.jobCallback) {
-        player.jobCallback(player);
-    }
+    if (player.jobCallback) player.jobCallback(player);
 });
 
 module.exports = jobManager;
