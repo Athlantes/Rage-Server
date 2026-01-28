@@ -2,7 +2,7 @@ const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
 
-const MAX_PACKAGES = 8; 
+const JOB_KEY = 'courier';
 
 const DEPOT_CONFIG = {
     spawn: { x: 72.30, y: 119.94, z: 79.18, h: 156.31 },
@@ -17,10 +17,44 @@ const JOB_CONFIG = {
     pos: { x: 78.58, y: 111.71, z: 81.17, h: -114.18 }
 };
 
+// --- CONFIG: REWARD MULTIPLIERS ---
+const REWARD_CONFIG = {
+    basePerStop: 60,       
+    perLevel: 3.5,         
+    bonusPercentage: 0.05, 
+    tipChanceBase: 5,      
+    tipChanceCap: 30       
+};
+
+// --- HELPER: CALCULATE CAPACITY ---
+function getMaxPackages(level) {
+    let limit = 8; // Base Capacity
+    if (level >= 10) limit++; // 9
+    if (level >= 20) limit++; // 10
+    if (level >= 40) limit++; // 11
+    if (level >= 60) limit++; // 12
+    if (level >= 80) limit++; // 13
+    if (level >= 100) limit++; // 14
+    return limit;
+}
+
 // --- HELPER: UPDATE HUD ---
-function updateUI(player, text, packages = 0) {
+function updateUI(player, text, targetPos = null) {
     if(mp.players.exists(player)) {
-        player.call('updateJobUI', [true, text, packages, MAX_PACKAGES]);
+        const current = player.courierData ? player.courierData.packages : 0;
+        const max = player.courierData ? player.courierData.totalPackages : 8;
+        const earned = player.courierData ? player.courierData.totalSessionEarnings : 0;
+        
+        // Prepare Coordinates
+        let x = null, y = null, z = null;
+        if (targetPos) {
+            x = targetPos.x;
+            y = targetPos.y;
+            z = targetPos.z;
+        }
+
+        // Send: visible, text, current, max, earned, X, Y, Z
+        player.call('updateJobUI', [true, text, current, max, earned, x, y, z]);
     }
 }
 
@@ -33,18 +67,34 @@ function hideUI(player) {
 // --- LOGIC ---
 const logic = {
     onStart: (player) => {
-        player.courierData = { 
-        packages: 0, 
-        currentStop: null, 
-        visitedHouses: []
-    };
+        // 1. Get Level
+        const level = jobManager.getJobLevel(player, JOB_KEY);
+        const rankName = jobManager.getRankName(level);
+        
+        // 2. Calculate Max Packages based on Level
+        const maxCapacity = getMaxPackages(level);
 
-        const veh = mp.vehicles.new(mp.joaat('boxville2'), new mp.Vector3(DEPOT_CONFIG.spawn.x, DEPOT_CONFIG.spawn.y, DEPOT_CONFIG.spawn.z), {
+        player.courierData = { 
+            packages: 0, 
+            totalPackages: maxCapacity, // Store session limit
+            currentStop: null, 
+            visitedHouses: [],
+            totalSessionEarnings: 0
+        };
+
+        // Vehicle Progression
+        // Lv 1: Rumpo (Basic) | Lv 20: Speedo (Faster) | Lv 50: Boxville (The Big One)
+        let vehicleModel = 'rumpo3'; 
+        if (level >= 50) vehicleModel = 'boxville2';
+        else if (level >= 20) vehicleModel = 'speedo';
+
+        const veh = mp.vehicles.new(mp.joaat(vehicleModel), new mp.Vector3(DEPOT_CONFIG.spawn.x, DEPOT_CONFIG.spawn.y, DEPOT_CONFIG.spawn.z), {
             heading: DEPOT_CONFIG.spawn.h,
             numberPlate: "POST " + player.id,
             locked: false,
             engine: false
         });
+
         veh.setVariable('engine', false);
         veh.setVariable('fuel', 100.0);
         veh.jobOwner = player.id;
@@ -56,8 +106,9 @@ const logic = {
             }
         }, 250); 
 
-        player.outputChatBox("!{F0C400}[Courier] !{FFFFFF}Vehicle spawned. Drive to the Loading Bay.");
-        updateUI(player, "Drive to Loading Bay", 0);
+        player.outputChatBox(`!{F0C400}[Courier] !{FFFFFF}Signed in as !{F0C400}${rankName} (Lvl ${level})!{FFFFFF}.`);
+        player.outputChatBox(`!{F0C400}[Courier] !{FFFFFF}Capacity: !{00FF00}${maxCapacity} Packages`);
+        updateUI(player, "Drive to Loading Bay", DEPOT_CONFIG.loadingBay);
         startLoadingPhase(player);
     },
 
@@ -89,7 +140,7 @@ function startLoadingPhase(player) {
         veh.engine = false; 
         veh.frozen = true; 
         
-        updateUI(p, "Loading packages...", 0);
+        updateUI(p, "Loading packages...", p.position);
         p.call('showNotification', ['Courier', 'Loading packages... (Engine Off)']);
         jobManager.clearObjective(p); 
 
@@ -97,10 +148,11 @@ function startLoadingPhase(player) {
             if (!mp.players.exists(p)) return;
             if (p.vehicle) p.vehicle.frozen = false; 
 
-            p.courierData.packages = MAX_PACKAGES; 
-            p.courierData.visitedHouses = []; // Reset history for fresh route selection
+            // Set packages to the Calculated Limit
+            p.courierData.packages = p.courierData.totalPackages; 
+            p.courierData.visitedHouses = []; 
             
-            p.outputChatBox("!{00FF00}[Courier] !{FFFFFF}Van Loaded! Route sent to GPS.");
+            p.outputChatBox(`!{00FF00}[Courier] !{FFFFFF}Loaded ${p.courierData.packages} packages! Route sent to GPS.`);
             startDeliveryPhase(p);
         }, 4000);
     }, { 
@@ -110,7 +162,6 @@ function startLoadingPhase(player) {
 }
 
 function startDeliveryPhase(player) {
-    // 1. Get all houses not yet visited in this run
     let availableHouses = HOUSES.filter(h => !player.courierData.visitedHouses.includes(h.id));
 
     if (availableHouses.length === 0) {
@@ -118,15 +169,11 @@ function startDeliveryPhase(player) {
         return startDeliveryPhase(player);
     }
 
-    // 2. RADIUS CHECK LOGIC
-    const MAX_DISTANCE = 600.0; 
+    const MAX_DISTANCE = 1500.0; // Increased range for variety
     const pPos = player.position;
     
     let nearbyHouses = availableHouses.filter(h => {
-        const dist = Math.sqrt(
-            Math.pow(h.street.x - pPos.x, 2) + 
-            Math.pow(h.street.y - pPos.y, 2)
-        );
+        const dist = Math.sqrt(Math.pow(h.street.x - pPos.x, 2) + Math.pow(h.street.y - pPos.y, 2));
         return dist <= MAX_DISTANCE;
     });
 
@@ -137,11 +184,11 @@ function startDeliveryPhase(player) {
     player.courierData.currentStop = stop;
     player.courierData.visitedHouses.push(stop.id);
 
-    updateUI(player, "Drive to Street", player.courierData.packages);
+    updateUI(player, "Drive to Street", stop.street);
 
     jobManager.createObjective(player, stop.street, "Delivery Area", 8.0, (p) => {
-        p.call('showNotification', ['Courier', 'You arrived! Park and exit the van to get the package.']);
-        updateUI(p, "Exit Vehicle", p.courierData.packages);
+        p.call('showNotification', ['Courier', 'You arrived! Park and exit the van.']);
+        updateUI(p, "Exit Vehicle", p.position);
         jobManager.clearObjective(p);
 
         if (p.jobExitCheck) clearInterval(p.jobExitCheck);
@@ -163,8 +210,6 @@ function startTrunkPhase(player) {
     const veh = player.jobVehicle;
     if (!veh || !mp.vehicles.exists(veh)) return player.call('showNotification', ['Courier', 'Where is your van?']);
 
-    updateUI(player, "Grab Package from Trunk", player.courierData.packages);
-
     const dist = -4.0;
     const rot = (veh.rotation.z * Math.PI) / 180;
     const trunkPos = new mp.Vector3(
@@ -173,21 +218,19 @@ function startTrunkPhase(player) {
         veh.position.z
     );
 
+    updateUI(player, "Grab Package from Trunk", trunkPos);
+
     jobManager.createObjective(player, trunkPos, "Grab Package", 1.5, (p) => {
         if (p.vehicle) return p.call('showNotification', ['Courier', 'Get out of the vehicle!']);
 
-        // 1. Play Animation (Looping carry)
         p.playAnimation('anim@heists@box_carry@', 'idle', 1.0, 49);
         p.setVariable('isJobCarrying', true);
 
-        // 2. Create Box
         const box = mp.objects.new(mp.joaat('hei_prop_heist_box'), p.position, { dimension: p.dimension });
         p.courierBox = box; 
         
-        // --- FIXED: Triggering client:attachProp event instead of crashing server method ---
         setTimeout(() => {
             if (mp.players.exists(p) && mp.objects.exists(box)) {
-                // client:attachProp (objId, boneId, x, y, z, rx, ry, rz)
                 p.call('client:attachProp', [box.id, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0]);
             }
         }, 100);
@@ -203,14 +246,13 @@ function startTrunkPhase(player) {
 
 function startDoorPhase(player) {
     const doorPos = player.courierData.currentStop.door;
-    updateUI(player, "Deliver to Door", player.courierData.packages);
+    updateUI(player, "Deliver to Door", doorPos);
 
     jobManager.createObjective(player, doorPos, "Drop Off", 1.2, async (p) => {
-        // --- SECURITY: Server-Side Validations ---
         if (p.isProcessingPayout) return; 
         
         const dist = p.dist(new mp.Vector3(doorPos.x, doorPos.y, doorPos.z));
-        if (dist > 3.0) return console.log(`[Security] ${p.name} triggered payout from too far away.`);
+        if (dist > 3.0) return;
 
         if (p.vehicle || !p.getVariable('isJobCarrying')) return;
 
@@ -219,11 +261,8 @@ function startDoorPhase(player) {
         
         // 1. Clear State
         p.setVariable('isJobCarrying', null);
-        // REMOVED: p.setVariable('attachedObject', null); (Not needed anymore)
-        
         p.stopAnimation();
 
-        // 2. Destroy Box
         if (p.courierBox && mp.objects.exists(p.courierBox)) {
             p.courierBox.destroy();
             p.courierBox = null;
@@ -231,10 +270,27 @@ function startDoorPhase(player) {
 
         p.courierData.packages--;
 
-        // --- ATOMIC PAYOUT ---
-        await playerManager.addMoneyAndSave(p, 50, "Courier Delivery");
-        p.call('showNotification', ['Courier', 'Delivered! +$50']);
+        // === 2. ECONOMY & XP CALCULATION ===
+        const level = jobManager.getJobLevel(p, JOB_KEY);
         
+        let pay = REWARD_CONFIG.basePerStop + (level * REWARD_CONFIG.perLevel);
+        const xp = 5 + Math.floor(level * 0.2);
+
+        // TIP SYSTEM
+        const tipChance = Math.min(REWARD_CONFIG.tipChanceCap, REWARD_CONFIG.tipChanceBase + (level * 2)); 
+        if (Math.random() * 100 < tipChance) {
+            const tip = Math.floor(Math.random() * 50) + 10;
+            pay += tip;
+            p.call('showNotification', ['Courier', `Customer tipped you +$${tip}!`]);
+        }
+
+        // Apply Rewards
+        p.courierData.totalSessionEarnings += pay; // Track for bonus
+        await playerManager.addMoneyAndSave(p, pay, "Courier Delivery");
+        await jobManager.addJobXp(p, JOB_KEY, xp);
+        
+        p.call('client:showJobSubtitle', [`+$${pay} | +${xp} XP`]);
+
         p.isProcessingPayout = false; 
 
         if (p.courierData.packages > 0) {
@@ -244,7 +300,7 @@ function startDoorPhase(player) {
             p.outputChatBox("!{F0C400}[Courier] !{FFFFFF}Run complete! Return to Loading Bay.");
             
             jobManager.createObjective(p, DEPOT_CONFIG.loadingBay, "Loading Bay", 4.0, (pReturn) => {
-                startLoadingPhase(pReturn);
+                finishJobRun(pReturn);
             }, { 
                 blipColor: 26,
                 markerColor: [0, 188, 255, 100] 
@@ -257,7 +313,21 @@ function startDoorPhase(player) {
     });
 }
 
-// Server-side safety
+function finishJobRun(player) {
+    // 15% Bonus of total session
+    const bonus = Math.floor(player.courierData.totalSessionEarnings * REWARD_CONFIG.bonusPercentage);
+    
+    player.call('showNotification', ['Courier', `Shift Complete! Depot Bonus: $${bonus}`]);
+    
+    if (bonus > 0) {
+        playerManager.addMoneyAndSave(player, bonus, "Courier Depot Bonus");
+    }
+
+    updateUI(player, "Return to Depot", DEPOT_CONFIG.loadingBay);
+    // Loop directly back to loading
+    startLoadingPhase(player);
+}
+
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     if (player.getVariable('isJobCarrying')) {
         player.stopAnimation();

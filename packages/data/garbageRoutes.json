@@ -2,7 +2,6 @@
     {
         "id": "strawberry",
         "name": "Strawberry Sweep",
-        "basePay": 1000,
         "difficulty": "Medium",
         "dumpsters": [
             {

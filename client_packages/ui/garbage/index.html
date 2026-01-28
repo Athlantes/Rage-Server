@@ -168,7 +168,10 @@
             document.getElementById('rTitle').innerText = route.name;
             document.getElementById('rDiff').innerText = route.difficulty;
             document.getElementById('rStops').innerText = route.dumpsters.length + " Bins";
-            document.getElementById('rPay').innerText = "$" + route.basePay.toLocaleString();
+            
+            // --- UPDATED THIS LINE TO USE CALCULATED ESTIMATE ---
+            document.getElementById('rPay').innerText = "$" + (route.estimatedPay || 0).toLocaleString();
+            
             document.getElementById('rDist').innerText = dist + " km";
             selectedRouteId = serverId;
         }

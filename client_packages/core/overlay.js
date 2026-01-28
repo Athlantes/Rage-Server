@@ -1,68 +1,70 @@
-// client_packages/overlay.js
 let overlayBrowser = null;
 let isHudVisible = true;
+let currentJobLocation = null; // Store destination here
 
-// --- 1. BROWSER CREATION (ROBUST) ---
+// --- HELPER: Client-Side Distance Calculation ---
+function getDistance(v1, v2) {
+    // Safety Check: If either position is invalid, return 0
+    if (!v1 || !v2 || typeof v1.x !== 'number' || typeof v2.x !== 'number') return 0;
+    
+    // Calculate
+    const dist = mp.game.system.vdist(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+    
+    // Safety: Ensure it's never negative (though vdist shouldn't be)
+    return Math.max(0, dist);
+}
+
+// --- 1. BROWSER CREATION ---
 function createOverlay() {
     if (!overlayBrowser) {
         overlayBrowser = mp.browsers.new("package://ui/overlay.html");
-        // Ensure it is active/visible
         overlayBrowser.active = true;
     }
 }
 
-// Event: Player joins
 mp.events.add('playerReady', createOverlay);
 
-// FIX: If script reloaded and player is already here, create it NOW.
 if (mp.players.local) {
     createOverlay();
 }
 
 // --- 2. SPEEDOMETER & HUD LOOP ---
 mp.events.add('render', () => {
-    // Safety: If browser crashed or isn't created, stop here
     if (!overlayBrowser) return;
-
-    // Optional: If you want to hide HUD entirely when inventory is open
-    // if (global.isInventoryOpen) return; 
 
     const player = mp.players.local;
     const vehicle = player.vehicle;
 
-    // SPEEDOMETER LOGIC
-    // Check if player is in vehicle AND is the driver (seat -1)
     if (vehicle && vehicle.getPedInSeat(-1) === player.handle) {
-        
-        // 1. Get Speed (km/h) - Native Function is faster
         const speed = (vehicle.getSpeed() * 3.6).toFixed(0);
-        
-        // 2. Get Fuel (Synced from Server)
         const fuel = vehicle.getVariable('fuel') || 0;
-        
-        // 3. Get Lock Status (2 or 4 means locked)
         const lockStatus = vehicle.getDoorLockStatus();
         const isLocked = (lockStatus === 2 || lockStatus === 4);
 
-        // 4. Send to UI
         overlayBrowser.execute(`updateSpeedo(${speed}, ${fuel}, ${isLocked});`);
-        
     } else {
-        // Not driving? Ensure Speedo is hidden
         overlayBrowser.execute(`hideSpeedo();`);
     }
 });
 
-// --- 3. CLOCK & MONEY LOOP (Runs every 1s) ---
+// --- 3. CLOCK, MONEY & JOB DISTANCE LOOP (Runs every 1s) ---
 setInterval(() => {
     if(overlayBrowser) {
         const player = mp.players.local;
-        const money = player.getVariable('money') || 0;
         
+        // A. Update Clock & Money
+        const money = player.getVariable('money') || 0;
         const now = new Date();
         const fullDate = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} | ${now.getDate()}/${now.getMonth() + 1}`;
         
         overlayBrowser.execute(`updateInfoHud('${player.name}', ${money}, '${fullDate}');`);
+
+        // B. Update Job Distance Live (FIXED)
+        if (currentJobLocation) {
+            // Use helper function instead of player.dist()
+            const dist = getDistance(player.position, currentJobLocation);
+            overlayBrowser.execute(`updateDistance(${dist});`);
+        }
     }
 }, 1000);
 
@@ -70,13 +72,12 @@ setInterval(() => {
 
 // NOTIFICATIONS
 mp.events.add('showNotification', (title, message) => {
-    // REMOVED: if (global.isInventoryOpen) return;  <-- You wanted to see them!
     if(overlayBrowser) {
         overlayBrowser.execute(`showNotification(${JSON.stringify(title)}, ${JSON.stringify(message)})`);
     }
 });
 
-// INTERACTION PROMPT (E)
+// INTERACTION PROMPT
 mp.events.add('showInteraction', (title, text) => {
     if(overlayBrowser) {
         overlayBrowser.execute(`setInteraction(true, ${JSON.stringify(title)}, ${JSON.stringify(text)})`);
@@ -89,7 +90,7 @@ mp.events.add('hideInteraction', () => {
     }
 });
 
-// TOGGLE HUD (Called by Inventory)
+// TOGGLE HUD
 mp.events.add('client:setHUDVisible', (visible) => {
     isHudVisible = visible;
     if (overlayBrowser) {
@@ -97,7 +98,7 @@ mp.events.add('client:setHUDVisible', (visible) => {
     }
 });
 
-// HOTBAR UPDATES
+// HOTBAR
 mp.events.add('updateOverlayHotbar', (itemsJson) => {
     if(overlayBrowser) {
         overlayBrowser.execute(`updateHotbar('${itemsJson}')`);
@@ -110,9 +111,28 @@ mp.events.add('showOverlayHotbar', (index) => {
     }
 });
 
-mp.events.add('updateJobUI', (visible, text, current, max) => {
+// JOB UI UPDATE (FIXED)
+mp.events.add('updateJobUI', (visible, text, current, max, earned, x, y, z) => {
+    mp.console.logInfo(`[UI DEBUG] Event Received: Visible=${visible}, Text=${text}`);
     if (overlayBrowser) {
-        overlayBrowser.execute(`updateJobUI(${visible}, ${JSON.stringify(text)}, ${current}, ${max});`);
+        // 1. Save Destination (if provided)
+        if (visible && x != null && y != null) {
+            currentJobLocation = new mp.Vector3(x, y, z);
+        } else {
+            currentJobLocation = null;
+        }
+
+        const safeEarned = earned || 0;
+        
+        // 2. Update Dashboard (Pass 0 distance initially, timer will update it)
+        overlayBrowser.execute(`updateJobUI(${visible}, ${JSON.stringify(text)}, ${current}, ${max}, ${safeEarned}, 0);`);
+        
+        // 3. Immediate Distance Update
+        if (currentJobLocation) {
+            const player = mp.players.local;
+            const dist = getDistance(player.position, currentJobLocation);
+            overlayBrowser.execute(`updateDistance(${dist});`);
+        }
     }
 });
 

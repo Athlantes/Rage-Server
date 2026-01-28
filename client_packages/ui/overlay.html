@@ -18,21 +18,18 @@
         /* --- TOP RIGHT HUD --- */
         .hud-container {
             position: fixed; top: 30px; right: 30px; 
-            /* REMOVED BACKGROUND & SHADOW */
             background: transparent; 
             padding: 10px 15px; 
-            border-right: 4px solid var(--accent); /* Kept Yellow Line */
+            border-right: 4px solid var(--accent);
             text-align: right;
             min-width: 200px;
             transition: opacity 0.3s ease;
-            /* Added text shadow for readability */
             text-shadow: var(--text-shadow-strong);
         }
 
         .hud-username { 
             font-size: 14px; color: var(--accent); 
             font-weight: 800; text-transform: uppercase; letter-spacing: 1px; 
-            /* Text shadow helps separate yellow text from world */
             text-shadow: 1px 1px 0 #000;
         }
 
@@ -46,20 +43,16 @@
             display: flex; justify-content: flex-end; gap: 10px; 
             font-size: 12px; font-weight: 600; color: #ddd; 
         }
-        /* Removed background from date pill */
-        .hud-date { padding: 3px 0; }
 
         /* --- SPEEDOMETER --- */
         .speedo-container {
             position: fixed; bottom: 30px; right: 30px; width: 220px;
-            /* REMOVED BACKGROUND & SHADOW */
             background: transparent;
             color: white; 
             padding: 10px 20px; 
-            border-bottom: 4px solid var(--accent); /* Kept Yellow Line */
+            border-bottom: 4px solid var(--accent);
             display: none; transition: opacity 0.3s;
             text-align: right;
-            /* Added text shadow */
             text-shadow: var(--text-shadow-strong);
         }
 
@@ -72,14 +65,73 @@
 
         .speed-info { 
             display: flex; justify-content: space-between; 
-            /* Removed background */
-            background: transparent; 
             padding: 6px 0;
             font-size: 13px; font-weight: 700; color: #eee;
         }
         .locked { color: #ff4444; } .unlocked { color: #44ff44; } .fuel-low { color: #ffaa00; }
 
-        /* --- NOTIFICATIONS (Kept background here for readability) --- */
+        /* --- JOB DASHBOARD --- */
+        .job-hud {
+            position: fixed; top: 35%; right: 30px; width: 280px;
+            background: rgba(15, 15, 15, 0.95);
+            border-right: 4px solid var(--accent);
+            padding: 0;
+            display: none; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            border-radius: 4px 0 0 4px;
+            text-shadow: none;
+        }
+
+        .job-header {
+            background: rgba(255, 204, 0, 0.1);
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .job-label { 
+            font-size: 10px; color: var(--accent); font-weight: 800; 
+            text-transform: uppercase; letter-spacing: 1px; 
+        }
+
+        .job-instruction { 
+            font-size: 16px; font-weight: 700; color: white; 
+            margin-top: 2px; line-height: 1.3; 
+        }
+
+        .job-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .job-stat-box {
+            padding: 10px 15px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .job-stat-box:last-child { border-right: none; }
+
+        .stat-label { font-size: 9px; color: #888; font-weight: 700; text-transform: uppercase; }
+        .stat-value { font-size: 14px; color: #eee; font-weight: 700; margin-top: 2px; }
+        .stat-value.money { color: #4caf50; }
+
+        .job-footer {
+            padding: 10px 15px;
+        }
+
+        .job-progress-bg { 
+            background: rgba(255,255,255,0.1); height: 6px; width: 100%; 
+            border-radius: 3px; overflow: hidden; 
+        }
+        .job-progress-fill { 
+            height: 100%; background: var(--accent); width: 0%; 
+            transition: width 0.4s; box-shadow: 0 0 10px var(--accent); 
+        }
+        .job-counter { 
+            margin-top: 5px; font-size: 12px; color: #aaa; font-weight: 600; 
+            display: flex; justify-content: space-between;
+        }
+
+        /* --- NOTIFICATIONS --- */
         #notif-stack {
             position: fixed; bottom: 250px; left: 30px; width: 320px;
             display: flex; flex-direction: column-reverse; pointer-events: none;
@@ -92,35 +144,11 @@
             animation: notifSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             position: relative; overflow: hidden;
         }
-        .notif-card::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
-            transform: skewX(-20deg); pointer-events: none;
-        }
         .notif-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
         .notif-msg { font-size: 13px; color: #ddd; line-height: 1.4; }
         @keyframes notifSlide { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* --- JOB HUD --- */
-        .job-hud {
-            position: fixed; top: 40%; right: 30px; width: 260px;
-            /* REMOVED BACKGROUND & SHADOW */
-            background: transparent;
-            border-right: 4px solid var(--accent); /* Kept Yellow Line */
-            padding: 10px 15px;
-            display: none; text-align: right;
-            /* Added text shadow */
-            text-shadow: var(--text-shadow-strong);
-        }
-        .job-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-shadow: 1px 1px 0 #000; }
-        .job-instruction { font-size: 18px; font-weight: 700; color: white; margin: 5px 0 15px 0; line-height: 1.2; }
-        
-        /* Made background dark so you can see empty bar, but no box around it */
-        .job-progress-bg { background: rgba(0,0,0,0.6); height: 8px; width: 100%; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
-        .job-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s; box-shadow: 0 0 5px var(--accent); }
-        .job-counter { margin-top: 6px; font-size: 14px; color: #fff; font-weight: 700; }
-
-        /* --- INTERACTION PROMPT (Kept background for button look) --- */
+        /* --- INTERACTION --- */
         .interaction-box {
             position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
             background: rgba(10, 10, 10, 0.9); padding: 12px 25px;
@@ -135,7 +163,7 @@
         }
         .inter-text { font-size: 14px; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* --- HOTBAR --- */
+        /* --- HOTBAR & ZONES --- */
         .pop-hotbar {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px 15px;
@@ -151,7 +179,6 @@
         .pop-img { width: 28px; height: 28px; object-fit: contain; }
         .pop-key { position: absolute; top: -8px; right: -5px; background: var(--accent); color: black; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; }
 
-        /* --- ZONES --- */
         .zone-status {
             position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
             padding: 8px 20px; background: rgba(0,0,0,0.85); border-radius: 50px;
@@ -161,8 +188,8 @@
         .zone-status.safe { border-bottom: 2px solid #4caf50; }
         .zone-status.noclip { border-bottom: 2px solid #2196f3; }
         .zone-text { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: white; }
-
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
     </style>
 </head>
 <body>
@@ -188,27 +215,37 @@
 
     <div id="notif-stack"></div>
 
-    <div id="zone-status" class="zone-status">
-        <div class="zone-text" id="zone-label">ZONE ACTIVE</div>
-    </div>
-
-    <div class="interaction-box" id="interaction">
-        <div class="key-circle">E</div>
-        <div class="inter-text" id="inter-text">INTERACT</div>
-    </div>
-
     <div class="job-hud" id="job-hud">
-        <div class="job-label">CURRENT OBJECTIVE</div>
-        <div class="job-instruction" id="job-text">Wait for instructions...</div>
-        <div class="job-label">PROGRESS</div>
-        <div class="job-progress-bg"><div class="job-progress-fill" id="job-bar"></div></div>
-        <div class="job-counter" id="job-count">0 / 0</div>
+        <div class="job-header">
+            <div class="job-label">Current Objective</div>
+            <div class="job-instruction" id="job-text">Wait for instructions...</div>
+        </div>
+
+        <div class="job-stats-grid">
+            <div class="job-stat-box">
+                <div class="stat-label">Distance</div>
+                <div class="stat-value" id="job-dist">0.0 km</div>
+            </div>
+            <div class="job-stat-box">
+                <div class="stat-label">Earnings</div>
+                <div class="stat-value money" id="job-cash">$0</div>
+            </div>
+        </div>
+
+        <div class="job-footer">
+            <div class="job-progress-bg"><div class="job-progress-fill" id="job-bar"></div></div>
+            <div class="job-counter">
+                <span>Progress</span>
+                <span id="job-count">0 / 0</span>
+            </div>
+        </div>
     </div>
 
+    <div id="zone-status" class="zone-status"><div class="zone-text" id="zone-label">ZONE</div></div>
+    <div class="interaction-box" id="interaction"><div class="key-circle">E</div><div class="inter-text" id="inter-text">INTERACT</div></div>
     <div class="pop-hotbar" id="pop-hotbar"></div>
 
     <script>
-        // --- 1. HUD & SPEEDO ---
         function updateInfoHud(name, money, dateStr) {
             document.getElementById('hud-name').innerText = name;
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
@@ -216,34 +253,23 @@
         }
 
         function updateSpeedo(speed, fuel, isLocked) {
-            const hudEl = document.getElementById('hud-container');
-            if (hudEl && hudEl.style.opacity === '0') return;
-
             document.getElementById('speedo').style.display = 'block';
             document.getElementById('speed').innerText = Math.floor(speed);
-            
             const f = document.getElementById('fuel');
             f.innerText = Math.floor(fuel) + '%';
             f.className = fuel < 20 ? 'fuel-low' : '';
-
             const l = document.getElementById('lock');
             l.innerText = isLocked ? "LOCKED" : "OPEN";
             l.className = isLocked ? "locked" : "unlocked";
         }
+        function hideSpeedo() { document.getElementById('speedo').style.display = 'none'; }
 
-        function hideSpeedo() { 
-            document.getElementById('speedo').style.display = 'none'; 
-        }
-
-        // --- 2. NOTIFICATIONS ---
         function showNotification(title, message) {
             const container = document.getElementById('notif-stack');
             const card = document.createElement('div');
             card.className = 'notif-card';
             card.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${message}</div>`;
             container.appendChild(card);
-            
-            // Auto Remove
             setTimeout(() => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateX(-20px)';
@@ -251,33 +277,63 @@
             }, 5000);
         }
 
-        // --- 3. INTERACTION ---
         function setInteraction(visible, title, text) {
             const box = document.getElementById('interaction');
             if (visible) {
-                const fullText = title ? `${title}: ${text}` : text;
-                document.getElementById('inter-text').innerText = fullText;
+                document.getElementById('inter-text').innerText = title ? `${title}: ${text}` : text;
                 box.style.display = 'flex';
-            } else {
-                box.style.display = 'none';
-            }
+            } else { box.style.display = 'none'; }
         }
 
-        // --- 4. JOB HUD ---
-        function updateJobUI(visible, text, current, max) {
+        // --- UPDATED JOB UI FUNCTION ---
+        function updateJobUI(visible, text, current, max, earned = 0, dist = 0) {
             const hud = document.getElementById('job-hud');
+            if (!hud) return; // Safety check
+
             if (!visible) {
                 hud.style.display = 'none';
                 return;
             }
+            
+            // Force show immediately before doing math
             hud.style.display = 'block';
-            document.getElementById('job-text').innerText = text;
+
+            // Safely handle text
+            document.getElementById('job-text').innerText = text || "Loading...";
+
+            // Safely handle money (prevent undefined crashes)
+            const safeEarned = typeof earned === 'number' ? earned : 0;
+            document.getElementById('job-cash').innerText = '$' + new Intl.NumberFormat().format(safeEarned);
+                    
+            // Distance Formatting
+            let distStr = "0 m";
+            if (dist >= 1000) {
+                distStr = (dist / 1000).toFixed(2) + " km";
+            } else {
+                distStr = Math.floor(dist) + " m";
+            }
+            document.getElementById('job-dist').innerText = distStr;
+
+            // Progress Bar
             const pct = max > 0 ? (current / max) * 100 : 0;
             document.getElementById('job-bar').style.width = pct + '%';
             document.getElementById('job-count').innerText = `${current} / ${max}`;
         }
 
-        // --- 5. VISIBILITY TOGGLE ---
+        // --- DISTANCE ONLY UPDATE ---
+        function updateDistance(dist) {
+            const el = document.getElementById('job-dist');
+            if (el) {
+                let distStr = "0 m";
+                if (dist >= 1000) {
+                    distStr = (dist / 1000).toFixed(2) + " km";
+                } else {
+                    distStr = Math.floor(dist) + " m";
+                }
+                el.innerText = distStr;
+            }
+        }
+
         function setGameHUD(visible) {
             const ids = ['hud-container', 'speedo', 'job-hud', 'interaction'];
             ids.forEach(id => {
@@ -289,7 +345,6 @@
             });
         }
 
-        // --- 6. HOTBAR ---
         let hotbarTimer = null;
         function updateHotbar(itemsJson) {
             const items = JSON.parse(itemsJson); 
@@ -300,7 +355,6 @@
                 const item = items.find(x => x.slot === realSlot);
                 let html = `<span class="pop-key">${i+1}</span>`;
                 if(item) html += `<img src="items/${item.icon || item.itemId + '.png'}" class="pop-img" onerror="this.src='items/default.png'">`;
-                
                 let div = document.createElement('div');
                 div.className = 'pop-slot';
                 div.id = `pop-slot-${i}`;
@@ -323,21 +377,14 @@
             hotbarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
         }
 
-        // --- 7. ZONES ---
         function updateZoneStatus(visible, type) {
             const el = document.getElementById('zone-status');
             const label = document.getElementById('zone-label');
             if (!visible) { el.style.display = 'none'; return; }
-
             el.style.display = 'block';
             el.className = 'zone-status'; 
-            if (type === 'safe_zone') {
-                el.classList.add('safe');
-                label.innerText = "SAFE ZONE";
-            } else if (type === 'no_collision') {
-                el.classList.add('noclip');
-                label.innerText = "NO COLLISION";
-            }
+            if (type === 'safe_zone') { el.classList.add('safe'); label.innerText = "SAFE ZONE"; } 
+            else if (type === 'no_collision') { el.classList.add('noclip'); label.innerText = "NO COLLISION"; }
         }
     </script>
 </body>

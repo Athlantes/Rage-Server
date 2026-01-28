@@ -6,6 +6,9 @@ class InventorySystem {
     constructor() {
         this.groundItems = new Map();
 
+        this.loadGroundItems();
+        setInterval(() => this.cleanupGroundItems(), 60000);
+
         mp.events.add('server:loadAccount', (player) => this.onPlayerJoin(player));
 
         mp.events.addCommand('testinv', async (player) => {
@@ -391,25 +394,79 @@ class InventorySystem {
         player.inventory = player.inventory.filter(i => i !== item);
     }
 
+    async loadGroundItems() {
+        try {
+            const [rows] = await db.query('SELECT * FROM ground_items');
+            rows.forEach(row => {
+                const groundObj = mp.objects.new('v_serv_abox_02', 
+                    new mp.Vector3(row.pos_x, row.pos_y, row.pos_z - 0.95),
+                    { dimension: row.dimension }
+                );
+
+                this.groundItems.set(row.id.toString(), {
+                    id: row.id.toString(), 
+                    itemId: row.item_id, 
+                    count: row.count,
+                    position: new mp.Vector3(row.pos_x, row.pos_y, row.pos_z), 
+                    dimension: row.dimension,
+                    object: groundObj, 
+                    data: row.metadata ? JSON.parse(row.metadata) : {}
+                });
+            });
+            console.log(`[Inventory] Loaded ${rows.length} ground items from database.`);
+        } catch (err) { console.error("[Inventory] Load Error:", err); }
+    }
+
+    // New: Cleanup routine for 10-minute despawn
+    async cleanupGroundItems() {
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        try {
+            const [rows] = await db.query('SELECT id FROM ground_items WHERE created_at < ?', [tenMinutesAgo]);
+            for (const row of rows) {
+                const groundId = row.id.toString();
+                const gItem = this.groundItems.get(groundId);
+                if (gItem) {
+                    if (mp.objects.exists(gItem.object)) gItem.object.destroy();
+                    this.groundItems.delete(groundId);
+                }
+            }
+            if (rows.length > 0) {
+                await db.query('DELETE FROM ground_items WHERE created_at < ?', [tenMinutesAgo]);
+                // Refresh nearby players so the items disappear from their UI
+                mp.players.forEach(p => { if(p.logged) this.syncClient(p); });
+            }
+        } catch (err) { console.error("[Inventory] Cleanup Error:", err); }
+    }
+
     async dropItem(player, fromSlot) {
         const item = player.inventory.find(i => i.slot === fromSlot);
         if (!item) return;
 
-        const groundId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        const groundObj = mp.objects.new('v_serv_abox_02', 
-            new mp.Vector3(player.position.x, player.position.y, player.position.z - 0.95),
-            { dimension: player.dimension }
-        );
+        try {
+            // Save to Database first
+            const [result] = await db.query(
+                'INSERT INTO ground_items (item_id, count, pos_x, pos_y, pos_z, dimension, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [item.itemId, item.count, player.position.x, player.position.y, player.position.z, player.dimension, JSON.stringify(item.data)]
+            );
 
-        this.groundItems.set(groundId, {
-            id: groundId, itemId: item.itemId, count: item.count,
-            position: player.position, dimension: player.dimension,
-            object: groundObj, data: item.data
-        });
+            const groundId = result.insertId.toString();
+            const groundObj = mp.objects.new('v_serv_abox_02', 
+                new mp.Vector3(player.position.x, player.position.y, player.position.z - 0.95),
+                { dimension: player.dimension }
+            );
 
-        await this.removeItem(player, item);
-        if (fromSlot < 0) this.refreshClothes(player);
-        this.syncClient(player);
+            this.groundItems.set(groundId, {
+                id: groundId, itemId: item.itemId, count: item.count,
+                position: player.position, dimension: player.dimension,
+                object: groundObj, data: item.data
+            });
+
+            await this.removeItem(player, item);
+            if (fromSlot < 0) this.refreshClothes(player);
+            
+            // Sync everyone nearby so it appears in their vicinity immediately
+            this.refreshNearby(player.position, player.dimension);
+        } catch (err) { console.error(err); }
     }
     
     async pickupItem(player, groundId, targetSlot) {
@@ -418,23 +475,40 @@ class InventorySystem {
         if (player.dist(groundItem.position) > 5) return player.call('showNotification', ['Vicinity', 'Too far away!']);
 
         const def = ItemRegistry[groundItem.itemId];
-        if (parseFloat(this.getWeight(player)) + (def.weight * groundItem.count) > 40.0) return player.call('showNotification', ['Inventory', 'Too heavy!']);
+        if (parseFloat(this.getWeight(player)) + (def.weight * groundItem.count) > 40.0) {
+            return player.call('showNotification', ['Inventory', 'Too heavy!']);
+        }
 
-        if (player.inventory.find(i => i.slot === targetSlot)) return player.call('showNotification', ['Inventory', 'Slot occupied.']);
+        if (player.inventory.find(i => i.slot === targetSlot)) {
+            // Find first free slot instead of erroring
+            targetSlot = 0;
+            while (player.inventory.find(i => i.slot === targetSlot)) { targetSlot++; }
+        }
 
         try {
             const [result] = await db.query(
                 'INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, ?, ?, ?)',
                 [player.data.dbId, groundItem.itemId, groundItem.count, targetSlot, JSON.stringify(groundItem.data)]
             );
+            
             player.inventory.push({
                 id: result.insertId, itemId: groundItem.itemId, count: groundItem.count, slot: targetSlot, data: groundItem.data
             });
 
+            // Delete from ground database
+            await db.query('DELETE FROM ground_items WHERE id = ?', [parseInt(groundId)]);
+
             if (mp.objects.exists(groundItem.object)) groundItem.object.destroy();
             this.groundItems.delete(groundId);
-            this.syncClient(player);
+            
+            this.refreshNearby(player.position, player.dimension);
         } catch (err) { console.error(err); }
+    }
+
+    refreshNearby(position, dimension) {
+        mp.players.forEachInRange(position, 10, (nearbyPlayer) => {
+            if (nearbyPlayer.logged) this.syncClient(nearbyPlayer);
+        });
     }
     
     refreshClothes(player) {

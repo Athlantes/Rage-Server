@@ -82,6 +82,12 @@ mp.events.add('client:clearAllJobObjectives', () => {
     jobBlips.clear();
 });
 
+mp.events.add('client:showJobSubtitle', (text, time = 5000) => {
+    mp.game.ui.setTextEntry("STRING");
+    mp.game.ui.addTextComponentSubstringPlayerName(text);
+    mp.game.ui.drawSubtitleTimed(time, true);
+});
+
 function cleanObjective(id) {
     if (jobMarkers.has(id)) {
         const m = jobMarkers.get(id);

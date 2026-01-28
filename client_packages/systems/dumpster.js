@@ -11,16 +11,26 @@ const DUMPSTER_HASHES = DUMPSTER_MODELS.map(name => mp.game.joaat(name));
 
 let nearbyDumpster = null;
 let lastInteractionState = false; 
+let isSearching = false; // Prevents UI flickering during search
+let localCooldownEnd = 0; // Fixes time sync issues
 
 // 1. Detection Loop (Runs every 250ms)
 setInterval(() => {
     const player = mp.players.local;
     let found = null;
 
-    // --- NEW: Job Check (Hide if Garbage Collector) ---
-    // If the player is on the garbage job, they shouldn't see loot interactions
-    // Note: Ensure your server sets 'job' variable via player.setVariable('job', 'garbage')
-    const activeJob = player.getVariable('activeJobId');
+    // --- 1. Immediate Search/Animation Check ---
+    if (isSearching) {
+        if (lastInteractionState) {
+            mp.events.call('hideInteraction');
+            lastInteractionState = false;
+        }
+        return;
+    }
+
+    // --- 2. Job Check (Unified) ---
+    // Checks both variable names to match Key Handler logic
+    const activeJob = player.getVariable('job') || player.getVariable('activeJobId');
 
     if (activeJob === 'garbage') {
         nearbyDumpster = null;
@@ -30,11 +40,13 @@ setInterval(() => {
         }
         return; 
     }
-    // --------------------------------------------------
 
-    // --- Cooldown Check ---
-    const cooldownExpiry = player.getVariable('cooldown_dumpster');
-    const isOnCooldown = cooldownExpiry && Date.now() < cooldownExpiry;
+    // --- 3. Cooldown Check (Server & Local Fallback) ---
+    const serverCooldown = player.getVariable('cooldown_dumpster');
+    const now = Date.now();
+    
+    // Check Server Variable OR Local Timer (fixes PC time diff)
+    const isOnCooldown = (serverCooldown && now < serverCooldown) || (localCooldownEnd && now < localCooldownEnd);
 
     if (isOnCooldown) {
         nearbyDumpster = null;
@@ -44,13 +56,12 @@ setInterval(() => {
         }
         return; 
     }
-    // ----------------------
 
-    // Check all hashes
+    // --- 4. Object Detection ---
     for (const hash of DUMPSTER_HASHES) {
         const handle = mp.game.object.getClosestObjectOfType(
             player.position.x, player.position.y, player.position.z,
-            1.5, // Increased slightly to 1.5 to make detection smoother
+            1.5, 
             hash, 
             false, false, false
         );
@@ -79,17 +90,23 @@ setInterval(() => {
 // 2. Key Handler (E)
 mp.keys.bind(0x45, true, () => { 
     if (mp.gui.cursor.visible) return; 
-    
+    if (isSearching) return; // Prevent spam
+
     const player = mp.players.local;
 
     // Double check constraints
-    const cooldownExpiry = player.getVariable('cooldown_dumpster');
-    if (cooldownExpiry && Date.now() < cooldownExpiry) return;
+    const serverCooldown = player.getVariable('cooldown_dumpster');
+    if ((serverCooldown && Date.now() < serverCooldown) || (localCooldownEnd && Date.now() < localCooldownEnd)) return;
 
     const activeJob = player.getVariable('job') || player.getVariable('activeJobId');
     if (activeJob === 'garbage') return;
 
     if (nearbyDumpster) {
+        // Immediately hide UI for better feedback
+        isSearching = true; 
+        mp.events.call('hideInteraction');
+        lastInteractionState = false;
+
         const propPos = mp.game.entity.getCoords(nearbyDumpster, true);
         mp.events.callRemote('server:searchDumpster', JSON.stringify(propPos));
     }
@@ -99,6 +116,9 @@ mp.keys.bind(0x45, true, () => {
 mp.events.add('client:startDumpsterAnim', (duration) => {
     const player = mp.players.local;
     player.freezePosition(true);
+    isSearching = true; // Ensure flag is true
+
+    localCooldownEnd = Date.now() + duration + 60000; 
 
     mp.game.streaming.requestAnimDict('amb@prop_human_bum_bin@idle_b');
     
@@ -115,5 +135,6 @@ mp.events.add('client:startDumpsterAnim', (duration) => {
     setTimeout(() => {
         player.clearTasks();
         player.freezePosition(false);
+        isSearching = false; // Allow loop to check logic again
     }, duration);
 });

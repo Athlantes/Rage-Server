@@ -1,6 +1,8 @@
 global.isInventoryOpen = false; 
 let invBrowser = null;
-let isSearchFocused = false; // <--- NEW STATE
+let isSearchFocused = false;
+let lastToggle = 0;
+let lastCloseTimer = 0; // NEW: Timer to prevent pause menu glitch
 
 let lastInventoryData = [];
 
@@ -9,21 +11,51 @@ mp.events.add('playerReady', () => {
     invBrowser.active = false;
 });
 
-// Sync focus state from HTML
 mp.events.add('client:setSearchFocus', (state) => {
     isSearchFocused = state;
 });
 
-mp.keys.bind(0x49, true, () => {
-    // 1. If typing in chat (cursor visible + inventory closed), ignore
+// --- TOGGLE LOGIC (Open with I) ---
+mp.keys.bind(0x49, true, () => { // "I" Key
+    if (Date.now() - lastToggle < 200) return;
     if (mp.gui.cursor.visible && !isInventoryOpen) return;
-    
-    // 2. NEW: If typing in Search bar inside Inventory, ignore
     if (isSearchFocused) return;
     if (global.isReturoOpen) return;
+    if (mp.game.ui.isPauseMenuActive()) return;
 
     isInventoryOpen = !isInventoryOpen;
     toggleInventory(isInventoryOpen);
+    lastToggle = Date.now();
+});
+
+// --- CLOSE LOGIC (Close with ESC) ---
+mp.keys.bind(0x1B, true, () => { // "ESC" Key
+    if (global.isInventoryOpen) {
+        // 1. Mark the time we closed it
+        lastCloseTimer = Date.now();
+        
+        // 2. Close the inventory
+        isInventoryOpen = false;
+        toggleInventory(false);
+        lastToggle = Date.now();
+    }
+});
+
+mp.events.add('render', () => {
+    // LOGIC: Check if inventory is open OR if we just closed it less than 1 second ago
+    // This "buffer time" prevents the Pause Menu from catching the ESC key press
+    if (global.isInventoryOpen || (Date.now() - lastCloseTimer < 1000)) {
+        
+        // Disable Pause Menu (ESC / P)
+        mp.game.controls.disableControlAction(0, 200, true); 
+        mp.game.controls.disableControlAction(0, 199, true);
+        
+        // Disable Back/Cancel (Right Click / Backspace)
+        mp.game.controls.disableControlAction(0, 202, true); 
+
+        // Force the pause menu specifically to stay closed
+        mp.game.ui.setPauseMenuActive(false);
+    }
 });
 
 function toggleInventory(state) {
@@ -34,7 +66,6 @@ function toggleInventory(state) {
         mp.gui.cursor.show(state, state);
 
         if (state) {
-            // Reset Search on Open
             invBrowser.execute(`
                 if(document.getElementById('search-input')) {
                     document.getElementById('search-input').value = ''; 
@@ -42,7 +73,7 @@ function toggleInventory(state) {
                 }
                 handleSearch('');
             `);
-            isSearchFocused = false; // Reset state
+            isSearchFocused = false; 
         }
     }
 
@@ -55,6 +86,9 @@ function toggleInventory(state) {
         mp.gui.chat.activate(true);
         mp.events.call('client:setHUDVisible', true);
         mp.game.graphics.transitionFromBlurred(200);
+        
+        // Final nuke to ensure pause menu stays dead
+        mp.game.ui.setPauseMenuActive(false);
     }
 }
 
