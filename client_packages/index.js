@@ -6,8 +6,9 @@ require('./inventory_client.js');
 require('./phone/index.js');
 require('./zones/index.js');
 require('./draw-zone');
-require('./dumpster.js');
+require('./dumpster_client.js');
 require('./returo.js');
+require('./garbage_client.js');
 
 // --- 1. ROBUST GPS ROUTE ---
 mp.events.add('client:setRoute', (blipId, enable, color) => {
@@ -34,25 +35,23 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
 });
 
 // --- 2. ROBUST ATTACHMENT (FIXED SHAKING) ---
-mp.events.add('client:attachProp', (remoteId, bone, x, y, z, rx, ry, rz) => {
-    let attempts = 0;
-    const interval = setInterval(() => {
-        // Find object by Server ID
-        const obj = mp.objects.atRemoteId(remoteId);
+mp.events.add('client:attachProp', (objId, boneId, x, y, z, rx, ry, rz) => {
+    // 1. Find the object by its Server ID
+    const object = mp.objects.atRemoteId(objId);
+    
+    if (object && mp.objects.exists(object)) {
+        // 2. THE FIX: Convert Bone ID (57005) to Bone Index
+        const boneIndex = mp.players.local.getBoneIndex(boneId);
         
-        if (obj && obj.handle !== 0) {
-            // CRITICAL FIX: Disable collision so it doesn't shake the player
-            obj.setCollision(false, true); 
-            
-            // Attach to player (Bone, Offsets, Rotations, ..., Collision=False, ...)
-            obj.attachTo(mp.players.local.handle, bone, x, y, z, rx, ry, rz, false, false, false, false, 2, true);
-            
-            clearInterval(interval);
-        }
-
-        attempts++;
-        if (attempts > 40) clearInterval(interval); // Stop after 2 seconds
-    }, 50);
+        // 3. Attach using the calculated index
+        // object.attachTo(entity, boneIndex, x, y, z, xRot, yRot, zRot, p9, useSoftPinning, collision, vertex, fixedRot)
+        object.attachTo(mp.players.local.handle, boneIndex, x, y, z, rx, ry, rz, false, false, false, false, 2, true);
+    } else {
+        // If object hasn't streamed in yet, retry briefly
+        setTimeout(() => {
+            mp.events.call('client:attachProp', objId, boneId, x, y, z, rx, ry, rz);
+        }, 50);
+    }
 });
 
 // --- 3. VEHICLE WARP ---

@@ -17,27 +17,40 @@ setInterval(() => {
     const player = mp.players.local;
     let found = null;
 
-    // --- NEW: Cooldown Check ---
-    // We check the variable synced from auth.js
+    // --- NEW: Job Check (Hide if Garbage Collector) ---
+    // If the player is on the garbage job, they shouldn't see loot interactions
+    // Note: Ensure your server sets 'job' variable via player.setVariable('job', 'garbage')
+    const activeJob = player.getVariable('activeJobId');
+
+    if (activeJob === 'garbage') {
+        nearbyDumpster = null;
+        if (lastInteractionState) {
+            mp.events.call('hideInteraction');
+            lastInteractionState = false;
+        }
+        return; 
+    }
+    // --------------------------------------------------
+
+    // --- Cooldown Check ---
     const cooldownExpiry = player.getVariable('cooldown_dumpster');
     const isOnCooldown = cooldownExpiry && Date.now() < cooldownExpiry;
 
-    // If we are on cooldown, force the UI to hide and skip detection
     if (isOnCooldown) {
         nearbyDumpster = null;
         if (lastInteractionState) {
             mp.events.call('hideInteraction');
             lastInteractionState = false;
         }
-        return; // Stop here, don't even look for objects
+        return; 
     }
-    // ---------------------------
+    // ----------------------
 
-    // We check all hashes
+    // Check all hashes
     for (const hash of DUMPSTER_HASHES) {
         const handle = mp.game.object.getClosestObjectOfType(
             player.position.x, player.position.y, player.position.z,
-            1, 
+            1.5, // Increased slightly to 1.5 to make detection smoother
             hash, 
             false, false, false
         );
@@ -67,10 +80,14 @@ setInterval(() => {
 mp.keys.bind(0x45, true, () => { 
     if (mp.gui.cursor.visible) return; 
     
-    // Double check cooldown here just in case
     const player = mp.players.local;
+
+    // Double check constraints
     const cooldownExpiry = player.getVariable('cooldown_dumpster');
     if (cooldownExpiry && Date.now() < cooldownExpiry) return;
+
+    const activeJob = player.getVariable('job') || player.getVariable('activeJobId');
+    if (activeJob === 'garbage') return;
 
     if (nearbyDumpster) {
         const propPos = mp.game.entity.getCoords(nearbyDumpster, true);

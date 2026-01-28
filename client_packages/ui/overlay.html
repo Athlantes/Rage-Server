@@ -3,12 +3,8 @@
 <head>
     <style>
         :root {
-            --bg-dark: rgba(10, 10, 10, 0.9);
-            --bg-gradient: linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.9) 100%);
             --accent: #ffcc00;
-            --text-main: #ffffff;
-            --text-sub: #888888;
-            --shadow: 0 4px 15px rgba(0,0,0,0.5);
+            --text-shadow-strong: 2px 2px 0px #000000, 0 0 10px rgba(0,0,0,0.8);
         }
 
         body {
@@ -22,59 +18,68 @@
         /* --- TOP RIGHT HUD --- */
         .hud-container {
             position: fixed; top: 30px; right: 30px; 
-            background: var(--bg-gradient);
-            padding: 15px 25px; 
-            border-radius: 6px; 
-            border-right: 4px solid var(--accent); 
-            box-shadow: var(--shadow);
+            /* REMOVED BACKGROUND & SHADOW */
+            background: transparent; 
+            padding: 10px 15px; 
+            border-right: 4px solid var(--accent); /* Kept Yellow Line */
             text-align: right;
             min-width: 200px;
             transition: opacity 0.3s ease;
+            /* Added text shadow for readability */
+            text-shadow: var(--text-shadow-strong);
         }
 
         .hud-username { 
             font-size: 14px; color: var(--accent); 
             font-weight: 800; text-transform: uppercase; letter-spacing: 1px; 
+            /* Text shadow helps separate yellow text from world */
+            text-shadow: 1px 1px 0 #000;
         }
 
         .hud-money { 
             font-size: 28px; font-weight: 700; color: white; 
             margin: 2px 0 8px 0; letter-spacing: -0.5px;
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
         }
         .hud-money span { font-size: 18px; color: #4caf50; vertical-align: top; margin-right: 2px; }
 
         .hud-meta { 
             display: flex; justify-content: flex-end; gap: 10px; 
-            font-size: 12px; font-weight: 600; color: var(--text-sub); 
+            font-size: 12px; font-weight: 600; color: #ddd; 
         }
-        .hud-date { background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; }
+        /* Removed background from date pill */
+        .hud-date { padding: 3px 0; }
 
         /* --- SPEEDOMETER --- */
         .speedo-container {
             position: fixed; bottom: 30px; right: 30px; width: 220px;
-            background: var(--bg-gradient); color: white; 
-            padding: 20px; border-radius: 6px; 
-            border-bottom: 4px solid var(--accent);
-            box-shadow: var(--shadow);
+            /* REMOVED BACKGROUND & SHADOW */
+            background: transparent;
+            color: white; 
+            padding: 10px 20px; 
+            border-bottom: 4px solid var(--accent); /* Kept Yellow Line */
             display: none; transition: opacity 0.3s;
+            text-align: right;
+            /* Added text shadow */
+            text-shadow: var(--text-shadow-strong);
         }
 
         .speed-main { 
             display: flex; align-items: baseline; justify-content: flex-end; 
-            margin-bottom: 5px;
+            margin-bottom: 0px;
         }
-        .speed-val { font-size: 48px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
-        .speed-unit { font-size: 14px; color: var(--accent); font-weight: 800; margin-left: 5px; }
+        .speed-val { font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+        .speed-unit { font-size: 14px; color: var(--accent); font-weight: 800; margin-left: 5px; text-shadow: 1px 1px 0 #000; }
 
         .speed-info { 
             display: flex; justify-content: space-between; 
-            background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 4px;
-            font-size: 12px; font-weight: 700; color: #ccc;
+            /* Removed background */
+            background: transparent; 
+            padding: 6px 0;
+            font-size: 13px; font-weight: 700; color: #eee;
         }
         .locked { color: #ff4444; } .unlocked { color: #44ff44; } .fuel-low { color: #ffaa00; }
 
-        /* --- NOTIFICATIONS --- */
+        /* --- NOTIFICATIONS (Kept background here for readability) --- */
         #notif-stack {
             position: fixed; bottom: 250px; left: 30px; width: 320px;
             display: flex; flex-direction: column-reverse; pointer-events: none;
@@ -87,34 +92,35 @@
             animation: notifSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             position: relative; overflow: hidden;
         }
-        /* Subtle shine effect */
         .notif-card::after {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
             transform: skewX(-20deg); pointer-events: none;
         }
-        
         .notif-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
         .notif-msg { font-size: 13px; color: #ddd; line-height: 1.4; }
-
         @keyframes notifSlide { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
 
         /* --- JOB HUD --- */
         .job-hud {
             position: fixed; top: 40%; right: 30px; width: 260px;
-            background: var(--bg-gradient);
-            border-right: 4px solid var(--accent); 
-            padding: 20px; border-radius: 6px; box-shadow: var(--shadow);
+            /* REMOVED BACKGROUND & SHADOW */
+            background: transparent;
+            border-right: 4px solid var(--accent); /* Kept Yellow Line */
+            padding: 10px 15px;
             display: none; text-align: right;
+            /* Added text shadow */
+            text-shadow: var(--text-shadow-strong);
         }
-        .job-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .job-instruction { font-size: 16px; font-weight: 700; color: white; margin: 5px 0 15px 0; line-height: 1.3; }
+        .job-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-shadow: 1px 1px 0 #000; }
+        .job-instruction { font-size: 18px; font-weight: 700; color: white; margin: 5px 0 15px 0; line-height: 1.2; }
         
-        .job-progress-bg { background: rgba(255,255,255,0.1); height: 6px; width: 100%; border-radius: 3px; overflow: hidden; }
-        .job-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s; box-shadow: 0 0 10px var(--accent); }
-        .job-counter { margin-top: 6px; font-size: 12px; color: #aaa; font-weight: 600; }
+        /* Made background dark so you can see empty bar, but no box around it */
+        .job-progress-bg { background: rgba(0,0,0,0.6); height: 8px; width: 100%; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .job-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s; box-shadow: 0 0 5px var(--accent); }
+        .job-counter { margin-top: 6px; font-size: 14px; color: #fff; font-weight: 700; }
 
-        /* --- INTERACTION PROMPT --- */
+        /* --- INTERACTION PROMPT (Kept background for button look) --- */
         .interaction-box {
             position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
             background: rgba(10, 10, 10, 0.9); padding: 12px 25px;
@@ -249,7 +255,6 @@
         function setInteraction(visible, title, text) {
             const box = document.getElementById('interaction');
             if (visible) {
-                // We combine title and text nicely: "TITLE: Text" or just "Text"
                 const fullText = title ? `${title}: ${text}` : text;
                 document.getElementById('inter-text').innerText = fullText;
                 box.style.display = 'flex';

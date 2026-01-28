@@ -175,14 +175,22 @@ function startTrunkPhase(player) {
     jobManager.createObjective(player, trunkPos, "Grab Package", 1.5, (p) => {
         if (p.vehicle) return p.call('showNotification', ['Courier', 'Get out of the vehicle!']);
 
-        p.playAnimation('anim@heists@box_carry@', 'idle', 1, 49);
-        p.setVariable('isJobCarrying', true); // Added this so other players see the anim/box logic
+        // 1. Play Animation (Looping carry)
+        p.playAnimation('anim@heists@box_carry@', 'idle', 1.0, 49);
+        p.setVariable('isJobCarrying', true);
 
+        // 2. Create Box
         const box = mp.objects.new(mp.joaat('hei_prop_heist_box'), p.position, { dimension: p.dimension });
         p.courierBox = box; 
         
-        // This triggers the dataHandler on all clients
-        p.setVariable('attachedObject', box.id); 
+        // 3. Attach Box (The Fix)
+        setTimeout(() => {
+            if (mp.players.exists(p) && mp.objects.exists(box)) {
+                // Bone 60309 (Left Hand) fits best for this specific box animation
+                // Offsets: x, y, z, rx, ry, rz
+                p.call('client:attachProp', [box.id, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0]);
+            }
+        }, 100);
 
         p.call('showNotification', ['Courier', 'Package retrieved. Deliver to the door.']);
         startDoorPhase(p);
@@ -199,19 +207,23 @@ function startDoorPhase(player) {
 
     jobManager.createObjective(player, doorPos, "Drop Off", 1.2, async (p) => {
         // --- SECURITY: Server-Side Validations ---
-        if (p.isProcessingPayout) return; // Prevent spam
+        if (p.isProcessingPayout) return; 
         
         const dist = p.dist(new mp.Vector3(doorPos.x, doorPos.y, doorPos.z));
         if (dist > 3.0) return console.log(`[Security] ${p.name} triggered payout from too far away.`);
 
         if (p.vehicle || !p.getVariable('isJobCarrying')) return;
 
-        p.isProcessingPayout = true; // Lock the transaction
+        p.isProcessingPayout = true; 
         jobManager.clearObjective(p);
         
+        // 1. Clear State
         p.setVariable('isJobCarrying', null);
-        p.setVariable('attachedObject', null);
+        // REMOVED: p.setVariable('attachedObject', null); (Not needed anymore)
+        
         p.stopAnimation();
+
+        // 2. Destroy Box
         if (p.courierBox && mp.objects.exists(p.courierBox)) {
             p.courierBox.destroy();
             p.courierBox = null;
@@ -228,16 +240,14 @@ function startDoorPhase(player) {
         if (p.courierData.packages > 0) {
             startDeliveryPhase(p);
         } else {
-            // FIX: Show 0/8 on the UI before transitioning
             updateUI(p, "Return to Depot", 0); 
             p.outputChatBox("!{F0C400}[Courier] !{FFFFFF}Run complete! Return to Loading Bay.");
             
-            // Give the player a new objective to actually drive back
             jobManager.createObjective(p, DEPOT_CONFIG.loadingBay, "Loading Bay", 4.0, (pReturn) => {
                 startLoadingPhase(pReturn);
             }, { 
                 blipColor: 26,
-                markerColor: [0, 188, 255, 100] // Added blue color
+                markerColor: [0, 188, 255, 100] 
             });
         }
     }, { 

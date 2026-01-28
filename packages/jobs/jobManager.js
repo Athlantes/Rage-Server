@@ -1,17 +1,14 @@
 // jobs/jobManager.js
 const db = require('../core/database'); 
 
-// Registry
 const availableJobs = new Map();
 
 const jobManager = {
-    // --- 1. REGISTRATION ---
     register: (id, config, logic) => {
         if (availableJobs.has(id)) return console.log(`[Jobs] Error: ID ${id} exists.`);
 
         availableJobs.set(id, { config, logic });
 
-        // Create Static Start NPC
         mp.peds.new(mp.joaat(config.pedModel), new mp.Vector3(config.pos.x, config.pos.y, config.pos.z), {
             heading: config.pos.h || 0,
             dynamic: false,
@@ -20,7 +17,6 @@ const jobManager = {
             lockController: true
         });
 
-        // Create Start Blip
         mp.blips.new(config.blipSprite, new mp.Vector3(config.pos.x, config.pos.y, config.pos.z), {
             name: config.name,
             color: config.blipColor || 1,
@@ -28,8 +24,9 @@ const jobManager = {
             scale: 1.0
         });
 
-        // Create Start Interaction
-        const shape = mp.colshapes.newSphere(config.pos.x, config.pos.y, config.pos.z, 1.5);
+        // FIX: Changed from newSphere(1.5) to newTube(2.5) to make it easier to find
+        // 2.5m Radius, 3.0m Height (triggers even if you are slightly above/below/beside)
+        const shape = mp.colshapes.newTube(config.pos.x, config.pos.y, config.pos.z - 1.0, 3.0, 2.5);
         shape.setVariable('interaction', {
             title: config.name,
             text: "Press E to Start Job",
@@ -40,21 +37,28 @@ const jobManager = {
         console.log(`[Jobs] Registered: ${config.name}`);
     },
 
-    // --- 2. STANDARD OBJECTIVE (Visual Marker + Blip) ---
+    startJobSession: (player, jobId) => {
+        const job = availableJobs.get(jobId);
+        if (!job) return;
+
+        player.setVariable('activeJobId', jobId); 
+        player.activeJobId = jobId; // Keep this for server-side checks if needed
+
+        player.call('showNotification', ['Job Center', `Started: ${job.config.name}`]);
+    },
+
     createObjective: (player, pos, label, radius = 2.0, onEnterCallback, options = {}) => {
         jobManager.clearObjective(player);
 
         const blipSprite = options.blipSprite || 1;
         const blipColor = options.blipColor || 5;
 
-        // A. Visual Marker
         player.jobVisual = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.5, {
             color: options.markerColor || [248, 182, 50, 100], 
             visible: true,
             dimension: player.dimension
         });
 
-        // B. Blip
         player.jobBlip = mp.blips.new(blipSprite, new mp.Vector3(pos.x, pos.y, pos.z), {
             name: label,
             color: blipColor, 
@@ -63,10 +67,8 @@ const jobManager = {
             dimension: player.dimension
         });
 
-        // Explicitly enable the GPS route client-side (server route flag is unreliable)
         player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
 
-        // C. The Trigger
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
         shape.dimension = player.dimension;
         shape.isJobObjective = true;
@@ -76,14 +78,12 @@ const jobManager = {
         player.jobCallback = onEnterCallback; 
     },
 
-    // --- 3. ARRIVAL OBJECTIVE (Blip Only - No Red Marker) ---
     createArrivalObjective: (player, pos, label, radius = 15.0, onEnterCallback, options = {}) => {
         jobManager.clearObjective(player);
 
         const blipSprite = options.blipSprite || 1;
         const blipColor = options.blipColor || 5;
 
-        // A. Blip ONLY
         player.jobBlip = mp.blips.new(blipSprite, new mp.Vector3(pos.x, pos.y, pos.z), {
             name: label,
             color: blipColor, 
@@ -92,10 +92,8 @@ const jobManager = {
             dimension: player.dimension
         });
 
-        // Explicit GPS route
         player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
 
-        // B. Large Trigger Zone
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
         shape.dimension = player.dimension;
         shape.isJobObjective = true;
@@ -108,27 +106,25 @@ const jobManager = {
     clearObjective: (player) => {
         if (player.jobVisual) { player.jobVisual.destroy(); player.jobVisual = null; }
         if (player.jobBlip) {
-            // Turn off the GPS route before removing the blip
             player.call('client:setRoute', [player.jobBlip.id, false]);
             player.jobBlip.destroy();
             player.jobBlip = null;
         }
         if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
         player.jobCallback = null;
-        
-        // Clear any vehicle exit check interval if it exists
         if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
     },
 
     stopJob: (player, reason = "Job Ended") => {
         jobManager.clearObjective(player);
-
         if (player.activeJobId) {
             const job = availableJobs.get(player.activeJobId);
             if (job && job.logic.onStop) job.logic.onStop(player);
         }
 
+        player.setVariable('activeJobId', null);
         player.activeJobId = null;
+
         if(reason) player.call('showNotification', ['Job Center', reason]);
     }
 };
@@ -147,9 +143,16 @@ mp.events.add('server:job:requestStart', (player) => {
     if (player.activeJobId) return player.outputChatBox("!{FF0000}Stop your current job first (/stopwork).");
 
     const job = availableJobs.get(closestId);
-    player.activeJobId = closestId;
+
+    if (job.logic.onInteract) {
+        job.logic.onInteract(player);
+        return; 
+    }
+    // -------------------------
+
+    // Standard Immediate Start (for simple jobs)
+    jobManager.startJobSession(player, closestId);
     if (job.logic.onStart) job.logic.onStart(player);
-    player.call('showNotification', ['Job Center', `Started: ${job.config.name}`]);
 });
 
 mp.events.addCommand('stopwork', (player) => {

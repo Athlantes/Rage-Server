@@ -3,7 +3,7 @@ const Inventory = require('./inventory');
 // Configuration
 const CONFIG = {
     searchTime: 4000, 
-    cooldownMinutes: 1, // Easy to change: 1 minute per search
+    cooldownMinutes: 1, 
     damageChance: 0.15, 
     damageAmount: 10,   
     nothingChance: 0.25 
@@ -39,8 +39,9 @@ class DumpsterSystem {
         if (player.dist(new mp.Vector3(dumpsterPos.x, dumpsterPos.y, dumpsterPos.z)) > 5) {
             return; 
         }
+        // ----------------------------------
 
-        // 2. NEW: Global Cooldown Check (Using auth.js helper)
+        // 2. Global Cooldown Check (Using auth.js helper)
         if (player.hasCooldown('dumpster')) {
             const mins = player.getCooldownTime('dumpster');
             return player.call('showNotification', ['Dumpster', `You are tired. Rest for ${mins} minutes.`]);
@@ -53,8 +54,7 @@ class DumpsterSystem {
         setTimeout(async () => {
             if (!mp.players.exists(player)) return;
             
-            // 5. NEW: Set Global Cooldown
-            // This saves to the DB automatically via auth.js
+            // 5. Set Global Cooldown
             player.setCooldown('dumpster', CONFIG.cooldownMinutes);
 
             const roll = Math.random();
