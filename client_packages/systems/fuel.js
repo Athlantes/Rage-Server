@@ -1,4 +1,3 @@
-// client_packages/fuel_client.js
 let fuelBrowser = null;
 global.isFuelOpen = false;
 
