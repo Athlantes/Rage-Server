@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        :root {
+            --bg-body: rgba(0, 0, 0, 0.85);
+            --bg-card: #141414;
+            --accent: #ff4444; /* Red for Fuel */
+            --accent-hover: #ff6666;
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: var(--bg-body);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            background: var(--bg-card);
+            border-top: 4px solid var(--accent);
+            padding: 30px;
+            width: 380px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            text-align: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { 
+            margin: 0 0 5px 0; 
+            color: var(--accent); 
+            text-transform: uppercase; 
+            font-size: 22px; 
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 11px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .highlight { color: white; font-weight: bold; }
+        .price-tag { color: #85bb65; font-weight: bold; }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+        }
+
+        /* Remove arrows from number input */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .btn-full { 
+            background: rgba(255,255,255,0.1); 
+            color: #aaa; 
+            border: none;
+            padding: 6px 10px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            border-radius: 3px;
+        }
+        .btn-full:hover { background: var(--accent); color: white; }
+
+        .cost-display {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-sub);
+        }
+        #total-cost { color: #85bb65; font-weight: bold; font-size: 16px; }
+
+        .btn-confirm { 
+            width: 100%;
+            background: var(--accent); 
+            color: white; 
+            border: none;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-confirm:hover { background: var(--accent-hover); }
+
+        .btn-close { 
+            background: transparent; 
+            color: var(--text-sub); 
+            border: none;
+            margin-top: 15px; 
+            font-size: 11px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-close:hover { color: white; }
+        
+        .icon { font-size: 32px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">⛽</div>
+        
+        <h2>Gas Station</h2>
+        <div class="subtitle">Refuel your vehicle</div>
+
+        <div class="stats-row">
+            <div>Current: <span id="current-fuel" class="highlight">0</span> L</div>
+            <div>Price: <span class="price-tag">$<span id="price-per-liter">0</span></span> / L</div>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="0" min="1" oninput="updateCost()">
+            <button class="btn-full" onclick="setFull()">FULL</button>
+        </div>
+
+        <div class="cost-display">
+            Total Cost: $<span id="total-cost">0</span>
+        </div>
+
+        <button class="btn-confirm" onclick="submit()">PUMP FUEL</button>
+        <button class="btn-close" onclick="closeUI()">Cancel</button>
+    </div>
+
+    <script>
+        let maxRefuel = 0;
+        let pricePerLiter = 0;
+
+        function updateInfo(current, max, price) {
+            document.getElementById('current-fuel').innerText = current;
+            document.getElementById('price-per-liter').innerText = price;
+            maxRefuel = max;
+            pricePerLiter = price;
+        }
+
+        function setFull() {
+            const input = document.getElementById('amount');
+            input.value = maxRefuel;
+            updateCost();
+            input.focus();
+        }
+
+        function updateCost() {
+            const val = document.getElementById('amount').value;
+            const cost = val * pricePerLiter;
+            document.getElementById('total-cost').innerText = cost;
+        }
+
+        function submit() {
+            const val = document.getElementById('amount').value;
+            if(val > 0) {
+                if('mp' in window) mp.trigger('client:submitRefuel', val);
+            }
+        }
+
+        function closeUI() {
+            if('mp' in window) mp.trigger('client:closeFuelBrowser');
+        }
+
+        setTimeout(() => document.getElementById('amount').focus(), 100);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submit();
+            if (e.key === 'Escape') closeUI();
+        });
+    </script>
+</body>
+</html>

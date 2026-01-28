@@ -6,9 +6,23 @@ mp.events.add("playerEnterColshape", (shape) => {
     const data = shape.getVariable('interaction');
     
     if (data) {
-        // NEW: Check if this interaction requires being on foot
-        if (data.requireOnFoot && mp.players.local.vehicle) {
-            return; // Don't show UI if in a car
+        const localPlayer = mp.players.local;
+        const veh = localPlayer.vehicle;
+
+        // --- DEBUG LOG (Remove later if spammy) ---
+        // mp.gui.chat.push(`[DEBUG] Enter Shape. Veh: ${!!veh}, ReqVeh: ${data.requireVehicle}`);
+
+        // 1. Check: Must be on foot?
+        if (data.requireOnFoot && veh) return;
+
+        // 2. Check: Must be in vehicle?
+        if (data.requireVehicle && !veh) return;
+        
+        // 3. Check: Must be driver? (FIXED)
+        if (data.requireDriver && veh) {
+            // Check if the ped in seat -1 (Driver) is the local player
+            // If the driver seat is empty OR another player is driving, return.
+            if (veh.getPedInSeat(-1) !== localPlayer.handle) return;
         }
 
         mp.events.call('showInteraction', data.title, data.text);
@@ -31,9 +45,16 @@ mp.keys.bind(0x45, true, function() {
     if (mp.gui.cursor.visible) return;
     
     if (activeInteraction) {
-        // NEW: Double check before sending (in case they got in a car while standing there)
-        if (activeInteraction.requireOnFoot && mp.players.local.vehicle) {
-            return;
+        const localPlayer = mp.players.local;
+        const veh = localPlayer.vehicle;
+
+        // Re-verify conditions
+        if (activeInteraction.requireOnFoot && veh) return;
+        if (activeInteraction.requireVehicle && !veh) return;
+        
+        // FIXED DRIVER CHECK
+        if (activeInteraction.requireDriver && veh) {
+            if (veh.getPedInSeat(-1) !== localPlayer.handle) return;
         }
 
         mp.events.callRemote(activeInteraction.event);
