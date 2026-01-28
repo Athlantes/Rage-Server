@@ -2,7 +2,7 @@
 let fuelBrowser = null;
 global.isFuelOpen = false;
 
-const FuelStations = require('./data/fuelLocations').FuelStations;
+const FuelStations = require('../data/fuelLocations').FuelStations;
 
 // 1. Create Blips
 FuelStations.forEach((station) => {
