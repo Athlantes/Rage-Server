@@ -2,7 +2,7 @@ const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
 
-const MAX_PACKAGES = 2; 
+const MAX_PACKAGES = 8; 
 
 const DEPOT_CONFIG = {
     spawn: { x: 72.30, y: 119.94, z: 79.18, h: 156.31 },
@@ -220,15 +220,15 @@ function startDoorPhase(player) {
         p.courierData.packages--;
 
         // --- ATOMIC PAYOUT ---
-        await playerManager.addMoneyAndSave(p, 200, "Courier Delivery");
-        p.call('showNotification', ['Courier', 'Delivered! +$200 (Saved)']);
+        await playerManager.addMoneyAndSave(p, 50, "Courier Delivery");
+        p.call('showNotification', ['Courier', 'Delivered! +$50']);
         
         p.isProcessingPayout = false; 
 
         if (p.courierData.packages > 0) {
             startDeliveryPhase(p);
         } else {
-            // FIX: Show 0/6 on the UI before transitioning
+            // FIX: Show 0/8 on the UI before transitioning
             updateUI(p, "Return to Depot", 0); 
             p.outputChatBox("!{F0C400}[Courier] !{FFFFFF}Run complete! Return to Loading Bay.");
             
