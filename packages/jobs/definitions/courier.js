@@ -184,11 +184,11 @@ function startTrunkPhase(player) {
         const box = mp.objects.new(mp.joaat('hei_prop_heist_box'), p.position, { dimension: p.dimension });
         p.courierBox = box; 
         
-        // 3. Attach Box (SERVER SIDE FIX)
+        // --- FIXED: Triggering client:attachProp event instead of crashing server method ---
         setTimeout(() => {
             if (mp.players.exists(p) && mp.objects.exists(box)) {
-                // attachTo(target, bone, x, y, z, rx, ry, rz, ...)
-                box.attachTo(p, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0, false, false, false, false, 2, true);
+                // client:attachProp (objId, boneId, x, y, z, rx, ry, rz)
+                p.call('client:attachProp', [box.id, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0]);
             }
         }, 100);
 

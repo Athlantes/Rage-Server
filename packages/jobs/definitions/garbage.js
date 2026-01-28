@@ -75,10 +75,8 @@ function startRoute(player, routeIndex) {
         throwCol: null
     };
 
-    // --- VISUALS REFAC: Send list to client for local rendering ---
     const visualData = [];
     route.dumpsters.forEach((pos, idx) => {
-        // Create Server Logic Shape (invisible)
         const col = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 0.4);
         col.dimension = player.dimension;
         col.isGarbageBin = true;
@@ -86,7 +84,6 @@ function startRoute(player, routeIndex) {
         col.ownerId = player.id;
         jobData.cols.push(col);
 
-        // Prepare Client Visual Data
         visualData.push({
             id: `bin_${idx}`,
             x: pos.x, y: pos.y, z: pos.z,
@@ -97,7 +94,6 @@ function startRoute(player, routeIndex) {
         });
     });
 
-    // Send all visual data at once
     player.call('client:setupJobObjectives', [visualData]);
 
     activeJobs.set(player.id, jobData);
@@ -111,11 +107,9 @@ function cleanupJob(player) {
 
     if (job.truck && mp.vehicles.exists(job.truck)) job.truck.destroy();
     
-    // Destroy Logic Shapes
     job.cols.forEach(c => { if(mp.colshapes.exists(c)) c.destroy(); });
     if(job.throwCol && mp.colshapes.exists(job.throwCol)) job.throwCol.destroy();
 
-    // Destroy Prop
     if (player.garbageBag && mp.objects.exists(player.garbageBag)) {
         player.garbageBag.destroy();
         player.garbageBag = null;
@@ -125,7 +119,7 @@ function cleanupJob(player) {
     player.setVariable('isJobCarrying', null);
 
     if (mp.players.exists(player)) {
-        player.call('client:clearAllJobObjectives'); // Clears all client markers
+        player.call('client:clearAllJobObjectives');
         player.call('updateJobUI', [false, "", 0, 0]);
     }
 
@@ -162,35 +156,24 @@ function startPickupSequence(player, index) {
 
     job.isCarrying = true;
 
-    // Remove Visuals for this specific bin
+    // Remove Visuals instantly
     player.call('client:removeJobObjective', [`bin_${index}`]);
     if (job.cols[index] && mp.colshapes.exists(job.cols[index])) job.cols[index].destroy();
 
-    player.call('client:freezePlayer', [true]);
-    player.playAnimation('missfbi4prepp1', '_bag_pickup_garbage_man', 2.0, 0); 
+    // Create bag immediately
+    const bag = mp.objects.new(mp.joaat('prop_cs_rub_binbag_01'), player.position, { dimension: player.dimension });
+    player.garbageBag = bag;
 
+    // Attach bag and start carrying animation instantly (no freeze, flag 49 for walking)
     setTimeout(() => {
-        if (!mp.players.exists(player)) return;
-        const bag = mp.objects.new(mp.joaat('prop_cs_rub_binbag_01'), player.position, { dimension: player.dimension });
-        player.garbageBag = bag;
-
-        setTimeout(() => {
-            if (mp.players.exists(player) && mp.objects.exists(bag)) {
-                // --- ATTACH FIX: Server Side Attachment (Syncs to all) ---
-                // attachTo(entity, bone, x, y, z, rx, ry, rz, p8, p9, p10, p11, p12, p13)
-                bag.attachTo(player, 57005, 0.12, 0.0, -0.05, 0, -70, -60, false, false, false, false, 2, true);
-            }
-        }, 50);
-    }, 500); 
-
-    setTimeout(() => {
-        if(!mp.players.exists(player)) return;
-        player.call('client:freezePlayer', [false]);
-        player.setVariable('isJobCarrying', true);
-        player.playAnimation('missfbi4prepp1', '_idle_garbage_man', 2.0, 49);
-        player.call('showNotification', ["Sanitation", "Put the bag in the truck."]);
-        createTruckRearMarker(player, truck);
-    }, 1500);
+        if (mp.players.exists(player) && mp.objects.exists(bag)) {
+            player.call('client:attachProp', [bag.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
+            player.call('client:playAnim', ['missfbi4prepp1', '_idle_garbage_man', 49]); 
+            player.setVariable('isJobCarrying', true);
+            player.call('showNotification', ["Sanitation", "Put the bag in the truck."]);
+            createTruckRearMarker(player, truck);
+        }
+    }, 50);
 }
 
 function createTruckRearMarker(player, truck) {
@@ -208,7 +191,6 @@ function createTruckRearMarker(player, truck) {
     job.throwCol.isTruckRear = true;
     job.throwCol.ownerId = player.id;
 
-    // Use Client Visual
     player.call('client:setJobObjective', ['throw_marker', { x: rearPos.x, y: rearPos.y, z: rearPos.z + 1.5 }, {
         markerColor: [255, 0, 0, 150]
     }]);
@@ -221,20 +203,17 @@ function finishThrowSequence(player) {
     job.isCarrying = false;
     player.setVariable('isJobCarrying', null);
 
-    // Clear Throw Marker
+    // Clear visuals immediately
     if(job.throwCol && mp.colshapes.exists(job.throwCol)) job.throwCol.destroy();
     job.throwCol = null;
     player.call('client:removeJobObjective', ['throw_marker']);
 
+    // Stop animation and destroy bag instantly
     player.stopAnimation();
-    player.playAnimation('mp_common', 'givetake2_a', 1, 0);
-
     if (player.garbageBag && mp.objects.exists(player.garbageBag)) {
         player.garbageBag.destroy();
         player.garbageBag = null;
     }
-
-    setTimeout(() => { if(mp.players.exists(player)) player.stopAnimation(); }, 1500);
 
     job.collectedCount++;
     player.call('showNotification', ["Sanitation", "Trash collected."]);
@@ -246,7 +225,15 @@ function finishThrowSequence(player) {
 function startDepotReturn(player) {
     const job = activeJobs.get(player.id);
     player.call('showNotification', ["Sanitation", "Route complete! Return to depot."]);
-    jobManager.createObjective(player, DUMP_ZONE, "Return to Depot", 5.0, (p) => { finishJob(p); }, { blipColor: 1, markerColor: [255, 0, 0, 100] });
+    
+    jobManager.createObjective(player, DUMP_ZONE, "Return to Depot", 5.0, (p) => { 
+        finishJob(p); 
+    }, { 
+        blipSprite: 449,
+        blipColor: 1, 
+        markerColor: [255, 0, 0, 150],
+        route: true
+    });
 }
 
 async function finishJob(player) {
@@ -258,8 +245,69 @@ async function finishJob(player) {
     jobManager.stopJob(player, "Shift complete.");
 }
 
-// ... Keep Admin Commands and Events (createroute, vehicleDeath) same as before ...
-// Just ensure you add this Job Config at bottom
+// Admin Commands remain unchanged
+mp.events.addCommand('createroute', (player, fullText, name) => {
+    if (!name) return player.outputChatBox("Usage: /createroute [Route Name]");
+    routeCreators.set(player.id, { name: name, dumpsters: [], tempBlips: [] });
+    player.outputChatBox(`!{00FF00}Started recording route '${name}'. Go to bins and type /addbin`);
+});
+
+mp.events.addCommand('addbin', (player) => {
+    if (!routeCreators.has(player.id)) return;
+    const data = routeCreators.get(player.id);
+    const pos = { x: parseFloat(player.position.x.toFixed(2)), y: parseFloat(player.position.y.toFixed(2)), z: parseFloat(player.position.z.toFixed(2)) };
+    data.dumpsters.push(pos);
+    const tempBlip = mp.blips.new(1, new mp.Vector3(pos.x, pos.y, pos.z), { name: `Bin #${data.dumpsters.length}`, color: 2, scale: 0.7, shortRange: false, dimension: player.dimension });
+    data.tempBlips.push(tempBlip);
+    player.outputChatBox(`!{00FF00}Bin added. Total: ${data.dumpsters.length}`);
+});
+
+mp.events.addCommand('finishroute', (player, fullText, basePay, difficulty) => {
+    if (!routeCreators.has(player.id)) return;
+    const data = routeCreators.get(player.id);
+    if (!basePay) basePay = 1000;
+    const newRoute = { id: data.name.toLowerCase().replace(/\s/g, '_'), name: data.name, basePay: parseInt(basePay), difficulty: difficulty || "Medium", dumpsters: data.dumpsters };
+    AVAILABLE_ROUTES.push(newRoute);
+    saveRoutes();
+    if (data.tempBlips) data.tempBlips.forEach(blip => { if (mp.blips.exists(blip)) blip.destroy(); });
+    routeCreators.delete(player.id);
+    player.outputChatBox(`!{00FF00}Route '${data.name}' saved with ${data.dumpsters.length} bins! Visuals cleared.`);
+});
+
+mp.events.add('playerExitVehicle', (player, vehicle) => {
+    if (!activeJobs.has(player.id)) return;
+    const job = activeJobs.get(player.id);
+    if (job.truck === vehicle) {
+        job.abandonTimer = setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.call('showNotification', ["Job Failed", "You abandoned the company vehicle."]);
+                jobManager.stopJob(player, "Vehicle Abandoned"); 
+            }
+        }, 600000); 
+    }
+});
+
+mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
+    if (!activeJobs.has(player.id)) return;
+    const job = activeJobs.get(player.id);
+    if (job.truck === vehicle && job.abandonTimer) {
+        clearTimeout(job.abandonTimer);
+        job.abandonTimer = null;
+    }
+});
+
+mp.events.add('vehicleDeath', (vehicle) => {
+    activeJobs.forEach((job, playerId) => {
+        if (job.truck === vehicle) {
+            const player = mp.players.at(playerId);
+            if (player) {
+                player.call('showNotification', ["!{FF0000}Job Failed", "You destroyed the company truck!"]);
+                jobManager.stopJob(player, "Vehicle Destroyed");
+            }
+        }
+    });
+});
+
 const JOB_CONFIG = {
     name: "Sanitation Worker",
     pedModel: "s_m_y_garbage", 

@@ -55,3 +55,20 @@ mp.events.add('client:warpIntoVehicle', (vehId, seat) => {
 mp.events.add("client:freezePlayer", (freeze) => {
     mp.players.local.freezePosition(freeze);
 });
+
+// --- 5. PLAY ANIMATION ---
+mp.events.add('client:playAnim', (dict, name, flag) => {
+    // 1. Request the dictionary
+    mp.game.streaming.requestAnimDict(dict);
+    
+    // 2. Wait for it to load
+    let attempts = 0;
+    const interval = setInterval(() => {
+        if (mp.game.streaming.hasAnimDictLoaded(dict)) {
+            mp.players.local.taskPlayAnim(dict, name, 8.0, 1.0, -1, flag, 1.0, false, false, false);
+            clearInterval(interval);
+        }
+        attempts++;
+        if (attempts > 50) clearInterval(interval);
+    }, 50);
+});
