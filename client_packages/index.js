@@ -10,6 +10,7 @@ require('./dumpster_client.js');
 require('./returo.js');
 require('./garbage_client.js');
 require('./fuel_client.js');
+require('./jobs/job_client.js');
 
 // --- 1. ROBUST GPS ROUTE ---
 mp.events.add('client:setRoute', (blipId, enable, color) => {

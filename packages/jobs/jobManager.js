@@ -53,12 +53,10 @@ const jobManager = {
         const blipSprite = options.blipSprite || 1;
         const blipColor = options.blipColor || 5;
 
-        player.jobVisual = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.5, {
-            color: options.markerColor || [248, 182, 50, 100], 
-            visible: true,
-            dimension: player.dimension
-        });
+        // 1. Send Visuals to Client (Replaces mp.markers.new)
+        player.call('client:setJobObjective', [pos.x, pos.y, pos.z, options.markerColor || [248, 182, 50, 100]]);
 
+        // 2. Server Side Blip (Blips are fine server-side, but you can move if you want)
         player.jobBlip = mp.blips.new(blipSprite, new mp.Vector3(pos.x, pos.y, pos.z), {
             name: label,
             color: blipColor, 
@@ -69,6 +67,7 @@ const jobManager = {
 
         player.call('client:setRoute', [player.jobBlip.id, true, options.routeColor ?? blipColor]);
 
+        // 3. Server Side Logic
         const shape = mp.colshapes.newCircle(pos.x, pos.y, radius);
         shape.dimension = player.dimension;
         shape.isJobObjective = true;
@@ -76,6 +75,20 @@ const jobManager = {
         
         player.jobShape = shape;
         player.jobCallback = onEnterCallback; 
+    },
+
+    clearObjective: (player) => {
+        // Clear Client Marker
+        player.call('client:clearJobObjective');
+
+        if (player.jobBlip) {
+            player.call('client:setRoute', [player.jobBlip.id, false]);
+            player.jobBlip.destroy();
+            player.jobBlip = null;
+        }
+        if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
+        player.jobCallback = null;
+        if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
     },
 
     createArrivalObjective: (player, pos, label, radius = 15.0, onEnterCallback, options = {}) => {
@@ -101,18 +114,6 @@ const jobManager = {
         
         player.jobShape = shape;
         player.jobCallback = onEnterCallback; 
-    },
-
-    clearObjective: (player) => {
-        if (player.jobVisual) { player.jobVisual.destroy(); player.jobVisual = null; }
-        if (player.jobBlip) {
-            player.call('client:setRoute', [player.jobBlip.id, false]);
-            player.jobBlip.destroy();
-            player.jobBlip = null;
-        }
-        if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
-        player.jobCallback = null;
-        if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
     },
 
     stopJob: (player, reason = "Job Ended") => {

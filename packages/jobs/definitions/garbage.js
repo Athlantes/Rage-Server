@@ -120,7 +120,7 @@ function startRoute(player, routeIndex) {
 
     // 3. Create Blips & Markers for bins
     route.dumpsters.forEach((pos, idx) => {
-        const blip = mp.blips.new(1, new mp.Vector3(pos.x, pos.y, pos.z), {
+        const blip = mp.blips.new(952, new mp.Vector3(pos.x, pos.y, pos.z), {
             name: "Dumpster",
             color: 2, 
             scale: 0.7,
@@ -474,7 +474,7 @@ const JOB_CONFIG = {
     name: "Sanitation Worker",
     pedModel: "s_m_y_garbage", 
     blipSprite: 318, 
-    blipColor: 2,   
+    blipColor: 26,   
     pos: DEPOT_LOCATION 
 };
 

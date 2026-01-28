@@ -1,3 +1,4 @@
+// packages/systems/returo.js
 const Inventory = require('./inventory');
 const PlayerManager = require('../core/playerManager'); 
 const db = require('../core/database');
@@ -6,39 +7,24 @@ const CONFIG = {
     rewardPerBottle: 5,
     bottleItemId: 'plastic_bottle', 
     locations: [
-        { x: -317.98, y: -1511.58, z: 27.74, h: 7.69 },
-        { x: -319.19, y: -1511.62, z: 27.74, h: 94.05 },
-        { x: -320.23, y: -1511.67, z: 27.74, h: 90.61 },
-        { x: -321.41, y: -1511.68, z: 27.73, h: 93.77 }
+        { x: -317.98, y: -1511.58, z: 27.74 },
+        { x: -319.19, y: -1511.62, z: 27.74 },
+        { x: -320.23, y: -1511.67, z: 27.74 },
+        { x: -321.41, y: -1511.68, z: 27.73 }
     ]
 };
 
-// --- NEW: Create Map Blip ---
-mp.blips.new(467, new mp.Vector3(-319.49, -1512.91, 27.74), {
-    name: 'Recycle',
-    color: 2,          // Green
-    shortRange: true,  // Only visible on minimap when close (remove for global visibility)
-    scale: 1.0,
-    dimension: 0
-});
-
-// Initialize Locations
+// Initialize Locations (Logic Only - No Visuals)
 CONFIG.locations.forEach((loc) => {
-    // 1. Visual Marker
-    mp.markers.new(1, new mp.Vector3(loc.x, loc.y, loc.z - 1.0), 0.5, {
-        color: [0, 255, 0, 100], 
-        visible: true,
-        dimension: 0
-    });
-
-    // 2. Interaction ColShape
+    // 1. Interaction ColShape (Invisible Trigger)
     const shape = mp.colshapes.newSphere(loc.x, loc.y, loc.z, 1.5, 0);
     
+    // Attach data for interaction.js
     shape.setVariable('interaction', {
         title: 'Returo',
         text: 'Press E to Recycle Bottles',
         event: 'server:openReturoUI',
-        requireOnFoot: true // Security Check
+        requireOnFoot: true // Ensures player is not in a vehicle
     });
 });
 
