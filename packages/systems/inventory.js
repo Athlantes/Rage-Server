@@ -390,7 +390,7 @@ class InventorySystem {
                 item.count--;
                 db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
             } else {
-                this.removeItem(player, item);
+                await this.removeItem(player, item);
             }
             this.syncClient(player);
         }
