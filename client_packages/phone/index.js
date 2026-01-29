@@ -12,22 +12,26 @@ mp.events.add('playerReady', () => {
 
 // Keybind: Arrow Up (0x26) to Open/Close
 mp.keys.bind(0x26, true, () => {
-    // 1. Prevent opening if chat is open (Fixed: removed mp.console check)
     if (mp.gui.chat.visible) return;
-
-    // 2. If another menu is open (cursor visible) and phone is CLOSED, don't open phone
     if (mp.gui.cursor.visible && !isPhoneOpen) return;
 
     isPhoneOpen = !isPhoneOpen;
     
     if (isPhoneOpen) {
-        // Fetch fresh data
         mp.events.callRemote('server:phone:open');
         
-        // Show UI & Cursor
         mp.gui.cursor.show(true, true);
+        mp.gui.chat.activate(false); 
+        
         phoneBrowser.execute(`openPhone()`);
     } else {
+        closePhone();
+    }
+});
+
+//Keybind Arrow Down to Close Phone
+mp.keys.bind(0x28, true, () => {
+    if(isPhoneOpen) {
         closePhone();
     }
 });
@@ -35,7 +39,7 @@ mp.keys.bind(0x26, true, () => {
 function closePhone() {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
-    
+    mp.gui.chat.activate(true); 
     if(phoneBrowser) {
         phoneBrowser.execute(`closePhone()`);
     }
