@@ -61,7 +61,6 @@ mp.events.add('client:phone:updateVehicles', (carsJson) => {
     }
 });
 
-// Allow the HTML/JS to close the phone (e.g. via the power button)
 mp.events.add('client:closePhoneWrapper', () => {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
@@ -71,13 +70,39 @@ mp.events.add('client:setWaypoint', (x, y) => {
     mp.game.ui.setNewWaypoint(x, y);
 });
 
-mp.events.add('client:proxyAction', (action, vehId) => {
-    mp.events.callRemote('server:phone:vehicleAction', action, vehId);
+mp.events.add('client:proxyAction', (action, data) => {
+    switch (action) {
+        // --- BANKING ROUTES ---
+        case 'requestBankData':
+            // Just asks server to send back balance/history
+            mp.events.callRemote('server:phone:bank:open');
+            break;
+
+        case 'bankTransfer':
+            // Parse the JSON data we sent from the UI
+            const transferData = JSON.parse(data); // { t: targetName, a: amount }
+            mp.events.callRemote('server:phone:bank:transfer', transferData.t, transferData.a);
+            break;
+
+        // --- DEFAULT ROUTE (Vehicles & Mail) ---
+        default:
+            // Keeps existing logic for 'spawn', 'locate', 'readMail', etc.
+            // The "data" argument here is usually the ID (vehicle ID or mail ID)
+            mp.events.callRemote('server:phone:vehicleAction', action, data);
+            break;
+    }
 });
 
 mp.events.add('client:leaveVehicle', () => {
     const player = mp.players.local;
     if(player.vehicle) {
         player.taskLeaveVehicle(player.vehicle.handle, 0);
+    }
+});
+
+mp.events.add('client:phone:bank:data', (json) => {
+    // Forward to Browser
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.loadBankData(${json})`);
     }
 });

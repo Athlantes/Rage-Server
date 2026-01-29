@@ -5,6 +5,7 @@ require('./vehicles/vehicleSystem');
 require('./commands');   
 require('./phone/phoneManager');
 require('./questManager');
+require('./banking');
 
 const vehicleManager = require('./vehicles/vehicleManager');
 

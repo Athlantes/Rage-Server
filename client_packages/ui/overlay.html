@@ -39,6 +39,15 @@
         }
         .hud-money span { font-size: 18px; color: #4caf50; vertical-align: top; margin-right: 2px; }
 
+        .hud-bank { 
+            font-size: 24px; /* Slightly smaller than cash */
+            font-weight: 700; color: #eee; 
+            margin: 0 0 8px 0; 
+            letter-spacing: -0.5px;
+        }
+        /* Blue color (#3498db) for Bank */
+        .hud-bank span { font-size: 16px; color: #3498db; vertical-align: top; margin-right: 2px; }
+
         .hud-meta { 
             display: flex; justify-content: flex-end; gap: 10px; 
             font-size: 12px; font-weight: 600; color: #ddd; 
@@ -197,6 +206,7 @@
     <div class="hud-container" id="hud-container">
         <div class="hud-username" id="hud-name">PLAYER</div>
         <div class="hud-money"><span>$</span><span id="hud-cash">0</span></div>
+        <div class="hud-bank"><span>$</span><span id="hud-bank-val">0</span></div>
         <div class="hud-meta">
             <div class="hud-date" id="hud-date">00:00 | JAN 01</div>
         </div>
@@ -249,6 +259,7 @@
         function updateInfoHud(name, money, dateStr) {
             document.getElementById('hud-name').innerText = name;
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
+            document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
             document.getElementById('hud-date').innerText = dateStr;
         }
 

@@ -102,7 +102,8 @@ function loadAccount(player, userData) {
     player.data.vehicle_slots = userData.vehicle_slots;
     QuestManager.initPlayer(player);
     console.log(`[Quests] Initialized for ${player.name}`);
-    
+    const Banking = require('./banking');
+    Banking.initAccount(player);
     // --- COOLDOWN SYSTEM UPGRADE ---
     try {
         // Load existing cooldowns or empty object

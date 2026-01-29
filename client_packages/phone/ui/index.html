@@ -58,6 +58,41 @@
                         </div>
                         <span class="app-name">Settings</span>
                     </div>
+
+                    <div class="app-icon" onclick="app.open('bank')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #1abc9c, #16a085);">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <span class="app-name">Bank</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-bank" class="view hidden">
+                <div class="status-bar-placeholder"></div>
+                <div class="app-header" style="background:#16a085;">
+                    <button onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                    <span>Fleeca Mobile</span>
+                    <div style="width:20px;"></div>
+                </div>
+                
+                <div class="app-content" style="background:#ecf0f1; color:#333;">
+                    <div style="background:white; padding:20px; margin:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-size:12px; color:#7f8c8d;">TOTAL BALANCE</div>
+                        <div id="bank-balance" style="font-size:32px; font-weight:bold; color:#2c3e50;">$0</div>
+                    </div>
+
+                    <div style="padding:0 15px;">
+                        <div style="font-weight:bold; margin-bottom:5px;">Quick Transfer</div>
+                        <input id="bank-target" type="text" placeholder="Recipient Name" style="width:100%; padding:10px; margin-bottom:5px; border:1px solid #ddd; border-radius:5px;">
+                        <input id="bank-amount" type="number" placeholder="Amount" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
+                        <button onclick="app.sendTransfer()" style="width:100%; background:#2c3e50; color:white; padding:10px; border:none; border-radius:5px;">SEND MONEY</button>
+                    </div>
+
+                    <div style="margin-top:20px; background:white; border-radius:10px 10px 0 0; min-height:200px; padding:15px;">
+                        <div style="font-weight:bold; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">Recent Activity</div>
+                        <div id="bank-history"></div>
+                    </div>
                 </div>
             </div>
 

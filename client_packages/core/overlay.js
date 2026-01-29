@@ -54,10 +54,11 @@ setInterval(() => {
         
         // A. Update Clock & Money
         const money = player.getVariable('money') || 0;
+        const bank = player.getVariable('bank') || 0;
         const now = new Date();
         const fullDate = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} | ${now.getDate()}/${now.getMonth() + 1}`;
         
-        overlayBrowser.execute(`updateInfoHud('${player.name}', ${money}, '${fullDate}');`);
+        overlayBrowser.execute(`updateInfoHud('${player.name}', ${money}, ${bank}, '${fullDate}');`);
 
         // B. Update Job Distance Live (FIXED)
         if (currentJobLocation) {

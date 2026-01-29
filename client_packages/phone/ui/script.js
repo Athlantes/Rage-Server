@@ -38,6 +38,12 @@ const app = {
     open: (appName) => {
         if(app.isLocked) return; 
 
+        // [NEW] Request fresh data if opening the Bank app
+        if (appName === 'bank') {
+            // We pass 0 as a dummy ID because proxyAction expects a second argument
+            if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
+        }
+
         document.querySelectorAll('.view').forEach(el => {
             el.classList.add('hidden');
         });
@@ -51,7 +57,7 @@ const app = {
             document.getElementById('view-home').classList.remove('hidden');
         }
     },
-
+    
     goHome: () => {
         if(app.isLocked) return;
         document.querySelectorAll('.view').forEach(el => {
@@ -284,6 +290,52 @@ const app = {
         // Optional: Close phone after spawn for immersion
         if (action === 'spawn') closePhone();
     },
+
+    // --- BANKING APP ---
+    loadBankData: (data) => {
+        document.getElementById('bank-balance').innerText = '$' + data.balance.toLocaleString();
+        
+        const list = document.getElementById('bank-history');
+        list.innerHTML = '';
+
+        if (data.history.length === 0) {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No transactions</div>';
+            return;
+        }
+
+        data.history.forEach(tx => {
+            const isPlus = tx.type === 'deposit' || tx.type === 'transfer_in' || tx.type === 'salary';
+            const color = isPlus ? '#2ecc71' : '#e74c3c';
+            const sign = isPlus ? '+' : '-';
+
+            const div = document.createElement('div');
+            div.className = 'bank-item';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:bold;">${tx.type.toUpperCase().replace('_', ' ')}</span>
+                    <span style="color:${color}; font-weight:bold;">${sign}$${tx.amount}</span>
+                </div>
+                <div style="font-size:11px; color:#888;">${tx.description || ''}</div>
+                <div style="font-size:10px; color:#666; text-align:right;">${app.getRelativeTime(tx.created_at)}</div>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    sendTransfer: () => {
+        const target = document.getElementById('bank-target').value;
+        const amount = document.getElementById('bank-amount').value;
+        
+        if (!target || !amount) return;
+        
+        if ('mp' in window) {
+            mp.trigger('client:proxyAction', 'bankTransfer', JSON.stringify({t: target, a: amount}));
+        }
+        
+        // Clear inputs
+        document.getElementById('bank-target').value = '';
+        document.getElementById('bank-amount').value = '';
+    }
 };
 
 function openPhone() {

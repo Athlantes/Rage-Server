@@ -5,3 +5,4 @@ require('./returo.js');
 require('./inventory.js');
 require('./zones.js');
 require('./questTracker.js');
+require('./atm.js');

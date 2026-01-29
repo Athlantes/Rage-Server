@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .atm-container { background: #2c3e50; padding: 30px; border-radius: 10px; width: 400px; text-align: center; border: 4px solid #3498db; }
+        h2 { margin-top: 0; color: #3498db; }
+        .balance-box { background: #34495e; padding: 15px; margin: 10px 0; border-radius: 5px; font-size: 18px; display: flex; justify-content: space-between; }
+        .input-group { margin: 20px 0; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; font-size: 16px; border-radius: 5px; border: none; text-align: center; }
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .btn-deposit { background: #27ae60; color: white; }
+        .btn-withdraw { background: #e74c3c; color: white; }
+        .btn-close { background: #95a5a6; color: white; margin-top: 10px; width: 100%; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="atm-container">
+        <h2>FLEECA BANK</h2>
+        <div class="balance-box">
+            <span>Bank:</span> <span id="bank-val">$0</span>
+        </div>
+        <div class="balance-box">
+            <span>Cash:</span> <span id="cash-val">$0</span>
+        </div>
+        
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="Enter Amount">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-deposit" onclick="doAction('deposit')">DEPOSIT</button>
+            <button class="btn-withdraw" onclick="doAction('withdraw')">WITHDRAW</button>
+        </div>
+        <button class="btn-close" onclick="closeATM()">EJECT CARD</button>
+    </div>
+
+    <script>
+        function updateDisplay(data) {
+            document.getElementById('bank-val').innerText = '$' + data.bank.toLocaleString();
+            document.getElementById('cash-val').innerText = '$' + data.cash.toLocaleString();
+        }
+
+        function doAction(type) {
+            const amt = document.getElementById('amount').value;
+            if(!amt || amt <= 0) return;
+            if('mp' in window) mp.trigger('client:proxyATM', type, amt);
+            document.getElementById('amount').value = '';
+        }
+
+        function closeATM() {
+            if('mp' in window) mp.trigger('client:closeATM');
+        }
+
+        // Handle incoming data
+        // RAGE calls: browser.execute(`loadData('${json}')`);
+        window.loadData = (json) => {
+            updateDisplay(JSON.parse(json));
+        }
+    </script>
+</body>
+</html>
