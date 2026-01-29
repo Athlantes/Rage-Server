@@ -157,10 +157,22 @@ const jobManager = {
     },
 
     clearObjective: (player) => {
+        // This tells the client to wipe all blips/markers/routes
         player.call('client:clearAllJobObjectives');
-        if (player.jobShape) { player.jobShape.destroy(); player.jobShape = null; }
+        
+        // Destroy the server-side collision shape
+        if (player.jobShape) { 
+            player.jobShape.destroy(); 
+            player.jobShape = null; 
+        }
+        
         player.jobCallback = null;
-        if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
+        
+        // Safety check for exit timers
+        if (player.jobExitCheck) { 
+            clearInterval(player.jobExitCheck); 
+            player.jobExitCheck = null; 
+        }
     },
 };
 

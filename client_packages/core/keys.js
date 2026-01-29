@@ -8,7 +8,7 @@ mp.keys.bind(0x32, true, () => { // Key: 2
     // Check if player is in a vehicle and is the driver (seat -1)
     if (vehicle && vehicle.getPedInSeat(-1) === player.handle) {
         // Call server to toggle engine state
-        mp.events.callRemote('server:vehicle:toggleEngine');
+        mp.events.callRemote('vehicle:toggleEngine');
     }
 });
 

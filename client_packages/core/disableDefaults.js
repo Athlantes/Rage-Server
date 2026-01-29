@@ -1,4 +1,13 @@
 mp.events.add('render', () => {
+    // Disable the AFK / Idle Cinematic Camera
+    setInterval(() => {
+        // Resets the idle camera timer (on foot)
+        mp.game.invoke('0xF4F2C0D4EE209E20'); 
+        
+        // Resets the vehicle idle camera timer
+        mp.game.invoke('0x9E4CFFF989258472'); 
+    }, 25000);
+
     // --------------------------------------------------------------------
     // 1. HIDE HUD COMPONENTS (Visuals)
     // --------------------------------------------------------------------
@@ -33,9 +42,7 @@ mp.events.add('render', () => {
     mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     mp.players.local.setConfigFlag(429, true);
     });
-
-    mp.game.player.setDispatchsCops(false);
-    mp.game.player.setWantedLevel(0);
+    
     // --------------------------------------------------------------------
     // 3. JOB RESTRICTIONS (When Carrying Box)
     // --------------------------------------------------------------------

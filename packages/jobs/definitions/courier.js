@@ -113,10 +113,24 @@ const logic = {
     },
 
     onStop: (player) => {
+        // 1. Clear any active physical objectives (Checkpoints/Markers)
+        jobManager.clearObjective(player);
+
+        // 2. Destroy job vehicles and props
         if (player.jobVehicle && mp.vehicles.exists(player.jobVehicle)) player.jobVehicle.destroy();
         if (player.courierBox && mp.objects.exists(player.courierBox)) player.courierBox.destroy();
-        if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
         
+        // 3. Clear timers
+        if (player.abandonTimer) { 
+            clearTimeout(player.abandonTimer); 
+            player.abandonTimer = null; 
+        }
+        if (player.jobExitCheck) { 
+            clearInterval(player.jobExitCheck); 
+            player.jobExitCheck = null; 
+        }
+        
+        // 4. Reset player variables
         player.setVariable('isJobCarrying', null);
         player.stopAnimation();
         
@@ -328,7 +342,34 @@ function finishJobRun(player) {
     startLoadingPhase(player);
 }
 
+mp.events.add('playerExitVehicle', (player, vehicle) => {
+    // Check if the player is currently working as a courier
+    if (!player.courierData || !player.jobVehicle) return;
+
+    // If the vehicle they left is their job van
+    if (player.jobVehicle === vehicle) {
+        // Clear any existing timer to be safe
+        if (player.abandonTimer) clearTimeout(player.abandonTimer);
+
+        // Start 10-minute (600,000ms) abandonment timer
+        player.abandonTimer = setTimeout(() => {
+            if (mp.players.exists(player) && player.courierData) {
+                player.call('showNotification', ["Job Failed", "You abandoned the GoPostal van."]);
+                jobManager.stopJob(player, "Vehicle Abandoned"); 
+            }
+        }, 600000); 
+    }
+});
+
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
+    // Stop the abandonment timer if they get back in their van
+    if (player.jobVehicle && player.jobVehicle === vehicle && player.abandonTimer) {
+        clearTimeout(player.abandonTimer);
+        player.abandonTimer = null;
+        player.call('showNotification', ['Courier', 'Vehicle recovered.']);
+    }
+
+    // Existing check for carrying boxes
     if (player.getVariable('isJobCarrying')) {
         player.stopAnimation();
         player.call('showNotification', ['Courier', 'You cannot drive while holding a box!']);

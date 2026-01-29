@@ -164,16 +164,20 @@ const vehicles = {
     },
 
     // 8. Auto-Despawn Loop
+    // packages/core/vehicles/vehicleManager.js
+
     startAutoDespawnLoop: () => {
         setInterval(() => {
             const now = Date.now();
             const TIMEOUT = 2 * 60 * 1000; 
 
             mp.vehicles.forEach(veh => {
+                // FIX: If it's a job vehicle (has jobOwner but no dbId), skip auto-despawn
+                if (veh.jobOwner && !veh.dbId) return; 
+                
                 if (!veh.dbId) return; 
 
                 const occupants = veh.getOccupants();
-
                 if (occupants.length > 0) {
                     veh.lastActive = now;
                 } else {
@@ -181,7 +185,6 @@ const vehicles = {
                     const diff = now - veh.lastActive;
 
                     if (diff > TIMEOUT) {
-                        console.log(`[Auto-Park] Despawning Vehicle ID ${veh.dbId} due to inactivity.`);
                         vehicles.despawnVehicle(veh);
                     }
                 }

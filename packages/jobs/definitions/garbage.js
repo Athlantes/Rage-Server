@@ -198,6 +198,11 @@ function cleanupJob(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
 
+    if (job.abandonTimer) {
+        clearTimeout(job.abandonTimer);
+        job.abandonTimer = null;
+    }
+
     // Stop the ticker
     if (job.updateInterval) {
         clearInterval(job.updateInterval);
@@ -463,22 +468,29 @@ mp.events.addCommand('finishroute', (player, fullText, difficulty) => {
 mp.events.add('playerExitVehicle', (player, vehicle) => {
     if (!activeJobs.has(player.id)) return;
     const job = activeJobs.get(player.id);
+    
     if (job.truck === vehicle) {
+        // Clear any existing timer first to prevent duplicates
+        if (job.abandonTimer) clearTimeout(job.abandonTimer);
+
         job.abandonTimer = setTimeout(() => {
-            if (mp.players.exists(player)) {
+            if (mp.players.exists(player) && activeJobs.has(player.id)) {
                 player.call('showNotification', ["Job Failed", "You abandoned the company vehicle."]);
                 jobManager.stopJob(player, "Vehicle Abandoned"); 
             }
-        }, 600000); 
+        }, 600000); // 10 Minutes
     }
 });
 
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     if (!activeJobs.has(player.id)) return;
     const job = activeJobs.get(player.id);
+    
+    // CRITICAL: If they enter the truck, STOP the abandonment timer
     if (job.truck === vehicle && job.abandonTimer) {
         clearTimeout(job.abandonTimer);
         job.abandonTimer = null;
+        player.call('showNotification', ["Sanitation", "Vehicle recovered."]);
     }
 });
 
