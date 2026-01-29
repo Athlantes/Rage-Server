@@ -1,5 +1,4 @@
 const Inventory = require('./inventory'); 
-const DailyQuests = require('./dailyQuests');
 
 // Configuration
 const CONFIG = {
@@ -56,7 +55,6 @@ class DumpsterSystem {
             if (!mp.players.exists(player)) return;
             
             // 5. Set Global Cooldown
-            DailyQuests.progress(player, 'dumpster_dive', 1);
             player.setCooldown('dumpster', CONFIG.cooldownMinutes);
 
             const roll = Math.random();
@@ -80,9 +78,6 @@ class DumpsterSystem {
             
             if (success) {
                 player.call('showNotification', ['Dumpster', `Found ${item.count}x ${item.itemId.replace('_', ' ')}.`]);
-                if (item.weight < 10) {
-                    DailyQuests.progress(player, 'lucky_find', 1);
-                }
             } else {
                 player.call('showNotification', ['Inventory', 'No space to take the item.']);
             }

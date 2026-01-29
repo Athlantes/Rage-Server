@@ -1,7 +1,6 @@
 const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
-const DailyQuests = require('../../systems/dailyQuests');
 
 const JOB_KEY = 'courier';
 
@@ -337,8 +336,6 @@ function finishJobRun(player) {
     if (bonus > 0) {
         playerManager.addMoneyAndSave(player, bonus, "Courier Depot Bonus");
     }
-
-    DailyQuests.progress(player, 'courier_runs', 1);
 
     updateUI(player, "Return to Depot", DEPOT_CONFIG.loadingBay);
     // Loop directly back to loading

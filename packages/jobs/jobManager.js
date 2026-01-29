@@ -1,7 +1,6 @@
 // packages/jobs/jobManager.js
 const db = require('../core/database'); 
 const playerManager = require('../core/playerManager');
-const DailyQuests = require('../systems/dailyQuests');
 
 const availableJobs = new Map();
 
@@ -70,8 +69,6 @@ const jobManager = {
         // 3. Modify local copy
         let skill = currentSkills[jobKey];
         skill.xp += amount;
-
-        DailyQuests.progress(player, 'job_xp', amount);
 
         // Formula: Level = Floor(Sqrt(XP / 100)) + 1
         // 5 XP (Base) -> Level 1. 100 XP -> Level 2.

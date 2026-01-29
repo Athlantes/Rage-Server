@@ -35,12 +35,6 @@ mp.events.add('client:pauseMenuAction', (action) => {
             mp.events.call('client:togglePauseMenu'); // Close main menu
             mp.events.call('client:openJobMenu');     // Open Job Menu
             break;
-        case 'quests':
-            // Switch the browser URL to the quests page
-            if (pauseMenuBrowser) {
-                pauseMenuBrowser.url = "package://ui/pauseMenu/quests.html";
-            }
-            break;
         case 'back_to_main':
             // Switch back to main menu
             if (pauseMenuBrowser) {
@@ -58,12 +52,4 @@ mp.events.add('client:pauseMenuAction', (action) => {
 
 mp.events.add('client:requestQuestData', () => {
     mp.events.callRemote('server:getQuestData');
-});
-
-mp.events.add('client:updateQuestMenu', (data) => {
-    if (pauseMenuBrowser && mp.browsers.exists(pauseMenuBrowser)) {
-        if (pauseMenuBrowser.url.includes('quests.html')) {
-            pauseMenuBrowser.execute(`if(typeof updateQuests === 'function') { updateQuests(${JSON.stringify(data)}); }`);
-        }
-    }
 });

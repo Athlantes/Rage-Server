@@ -1,7 +1,6 @@
 // packages/systems/fuel.js
 const PlayerManager = require('../core/playerManager');
 const FuelStations = require('../data/fuelLocations').FuelStations;
-const DailyQuests = require('./dailyQuests');
 
 const CONFIG = {
     pricePerLiter: 2, 
@@ -68,7 +67,6 @@ mp.events.add('server:processRefuel', async (player, litersToFill) => {
         const newFuel = currentFuel + litersToFill;
         veh.setVariable('fuel', newFuel);
         player.call('showNotification', ['Gas Station', `Refueled ${litersToFill}L for $${cost}.`]);
-        DailyQuests.progress(player, 'fuel_up', 1);
         player.call('client:closeFuelBrowser'); 
     } else {
         player.call('showNotification', ['Gas Station', 'Transaction failed.']);

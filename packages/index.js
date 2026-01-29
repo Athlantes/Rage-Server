@@ -1,8 +1,8 @@
-// 1. Core Managers (Database, Auth, Player, Vehicles)
-require('./core');
-
-// 2. Game Systems (Inventory, Dumpster, Fuel)
+// 1. Game Systems (Inventory, Dumpster, Fuel)
 require('./systems');
+
+// 2. Core Managers (Database, Auth, Player, Vehicles)
+require('./core');
 
 // 3. Jobs
 require('./jobs');
