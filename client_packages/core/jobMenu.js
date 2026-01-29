@@ -3,11 +3,9 @@ let jobMenuBrowser = null;
 mp.events.add('client:openJobMenu', () => {
     if (jobMenuBrowser) return;
 
-    // Create browser
     jobMenuBrowser = mp.browsers.new('package://ui/pauseMenu/jobs.html');
     mp.gui.cursor.show(true, true);
     
-    // Request Data from Server
     mp.events.callRemote('server:requestJobMenuData');
 });
 
@@ -16,13 +14,19 @@ mp.events.add('client:closeJobMenu', () => {
         jobMenuBrowser.destroy();
         jobMenuBrowser = null;
     }
-    mp.gui.cursor.show(false, false);
-
-    mp.events.call('client:togglePauseMenu');
+    
+    // [Fix] Added 'true' to force the menu to open regardless of cooldowns
+    mp.events.call('client:togglePauseMenu', true);
 });
 
 mp.events.add('client:receiveJobMenuData', (dataJson) => {
     if (jobMenuBrowser) {
         jobMenuBrowser.execute(`renderJobs('${dataJson}');`);
+    }
+});
+
+mp.keys.bind(0x1B, true, () => {
+    if (jobMenuBrowser) {
+        mp.events.call('client:closeJobMenu');
     }
 });

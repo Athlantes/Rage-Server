@@ -54,13 +54,29 @@ mp.events.add('render', () => {
         mp.game.controls.disableControlAction(0, 23, true); // Enter Vehicle
         mp.game.controls.disableControlAction(0, 75, true); // Exit Vehicle
     }
+
+    const player = mp.players.local;
+    if (player.vehicle && player.vehicle.getIsEngineRunning()) {
+        if (mp.game.invoke('0xE8AF77C4C06ADC93') !== 255) {
+             mp.game.audio.setRadioToStationName("OFF");
+        }
+    }
 });
 
 mp.events.add('playerReady', () => {
     mp.game.vehicle.defaultEngineBehaviour = false;
     mp.players.local.setConfigFlag(429, true);
+    mp.players.local.setConfigFlag(241, true);
 });
 
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     mp.players.local.setConfigFlag(429, true);
+    mp.players.local.setConfigFlag(241, true);
+    mp.game.audio.setRadioToStationName("OFF");
+    mp.game.audio.setUserRadioControlEnabled(false);
+
+});
+
+mp.events.add('playerLeaveVehicle', () => {
+    mp.game.audio.setUserRadioControlEnabled(true);
 });

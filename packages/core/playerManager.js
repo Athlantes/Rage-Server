@@ -77,3 +77,10 @@ const playerManager = {
 };
 
 module.exports = playerManager;
+
+mp.events.add('server:kickPlayer', (player) => {
+    if (!player || !mp.players.exists(player)) return;
+    
+    console.log(`[Disconnect] ${player.name} requested disconnect.`);
+    player.kick('Disconnected by user request.');
+});

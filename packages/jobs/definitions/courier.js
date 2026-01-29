@@ -19,7 +19,12 @@ const JOB_CONFIG = {
 
 // --- CONFIG: REWARD MULTIPLIERS ---
 const REWARD_CONFIG = {
-    basePerStop: 30,       
+    basePayMin: 20,
+    basePayMax: 30,
+
+    baseXpMin: 3,
+    baseXpMax: 5,
+
     perLevel: 2,         
     bonusPercentage: 0.05, 
     tipChanceBase: 5,      
@@ -284,11 +289,16 @@ function startDoorPhase(player) {
 
         p.courierData.packages--;
 
-        // === 2. ECONOMY & XP CALCULATION ===
+        // === 2. ECONOMY & XP CALCULATION (RANDOMIZED) ===
         const level = jobManager.getJobLevel(p, JOB_KEY);
         
-        let pay = REWARD_CONFIG.basePerStop + (level * REWARD_CONFIG.perLevel);
-        const xp = 5 + Math.floor(level * 0.2);
+        // Random Base Pay ($25 - $35)
+        const randomBasePay = Math.floor(Math.random() * (REWARD_CONFIG.basePayMax - REWARD_CONFIG.basePayMin + 1)) + REWARD_CONFIG.basePayMin;
+        let pay = randomBasePay + (level * REWARD_CONFIG.perLevel);
+        
+        // Random Base XP (5 - 10)
+        const randomBaseXp = Math.floor(Math.random() * (REWARD_CONFIG.baseXpMax - REWARD_CONFIG.baseXpMin + 1)) + REWARD_CONFIG.baseXpMin;
+        const xp = randomBaseXp + Math.floor(level * 0.2);
 
         // TIP SYSTEM
         const tipChance = Math.min(REWARD_CONFIG.tipChanceCap, REWARD_CONFIG.tipChanceBase + (level * 2)); 

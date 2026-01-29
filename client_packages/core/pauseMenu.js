@@ -1,9 +1,9 @@
 let pauseMenuBrowser = null;
 let isPauseMenuOpen = false;
-let lastToggleTime = 0; // [Fix] Variable to track last toggle time
+let lastToggleTime = 0;
+let isMapOpen = false; // [Fix] Track if we sent player to map
 
 mp.events.add('client:updateQuestUI', (questJson) => {
-    // If the browser exists, inject data
     if (pauseMenuBrowser) {
         pauseMenuBrowser.execute(`updateQuests('${questJson}')`);
     }
@@ -18,14 +18,16 @@ mp.events.add('client:storeQuestData', (data) => {
     }
 });
 
-mp.events.add('client:togglePauseMenu', () => {
-    // [Fix] Cooldown check: prevent spamming (1 second cooldown)
+// [Fix] added 'force' parameter to bypass checks when switching menus
+mp.events.add('client:togglePauseMenu', (force = false) => {
     const now = Date.now();
-    if ((now - lastToggleTime) < 1000) return;
+    
+    // Only check cooldown/cursor if NOT forced
+    if (!force) {
+        if ((now - lastToggleTime) < 1000) return;
+        if (mp.gui.cursor.visible && !isPauseMenuOpen) return;
+    }
 
-    if (mp.gui.cursor.visible && !isPauseMenuOpen) return; // Don't open if other UI is up
-
-    // [Fix] Update last toggle time only if we actually proceed
     lastToggleTime = now;
     isPauseMenuOpen = !isPauseMenuOpen;
     
@@ -36,7 +38,7 @@ mp.events.add('client:togglePauseMenu', () => {
         pauseMenuBrowser.active = true;
         pauseMenuBrowser.execute(`updateQuests('${cachedQuestData}')`);
         mp.gui.cursor.show(true, true);
-        mp.game.graphics.transitionToBlurred(500); // Beautiful blur effect
+        mp.game.graphics.transitionToBlurred(500);
     } else {
         if (pauseMenuBrowser) {
             pauseMenuBrowser.active = false;
@@ -48,36 +50,41 @@ mp.events.add('client:togglePauseMenu', () => {
     }
 });
 
-// UI Callbacks
 mp.events.add('client:pauseMenuAction', (action) => {
     switch(action) {
         case 'map':
-            mp.events.call('client:togglePauseMenu'); // Close custom menu
-            mp.game.ui.activateFrontendMenu(mp.game.joaat("FE_MENU_VERSION_MP_PAUSE"), false, -1); // Open Real Map
+            mp.events.call('client:togglePauseMenu', true); // Force Close
+            mp.game.ui.activateFrontendMenu(mp.game.joaat("FE_MENU_VERSION_MP_PAUSE"), false, -1);
+            isMapOpen = true; // [Fix] Start watching for map close
             break;
         case 'jobs':
-            mp.events.call('client:togglePauseMenu'); // Close main menu
-            mp.events.call('client:openJobMenu');     // Open Job Menu
+            mp.events.call('client:togglePauseMenu', true); // Force Close
+            mp.events.call('client:openJobMenu');
             break;
         case 'quests':
-            mp.events.call('client:togglePauseMenu'); // Close main menu
-            mp.events.call('client:toggleQuestMenu');     // Open Quest Menu
-            break;
-        case 'back_to_main':
-            // Switch back to main menu
-            if (pauseMenuBrowser) {
-                pauseMenuBrowser.url = "package://ui/pauseMenu/index.html";
-            }
+            mp.events.call('client:togglePauseMenu', true); // Force Close
+            mp.events.call('client:toggleQuestMenu');
             break;
         case 'resume':
-            mp.events.call('client:togglePauseMenu');
+            mp.events.call('client:togglePauseMenu', false); // Normal close
             break;
         case 'quit':
-            mp.events.callRemote('server:kickPlayer'); // Example server call
+            mp.events.callRemote('server:kickPlayer');
             break;
     }
 });
 
 mp.events.add('client:requestQuestData', () => {
     mp.events.callRemote('server:getQuestData');
+});
+
+mp.events.add('render', () => {
+    if (isMapOpen) {
+        // If the native pause menu is NO LONGER active
+        if (!mp.game.ui.isPauseMenuActive()) {
+            isMapOpen = false;
+            // Force reopen our custom menu
+            mp.events.call('client:togglePauseMenu', true);
+        }
+    }
 });

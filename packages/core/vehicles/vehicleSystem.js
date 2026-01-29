@@ -84,6 +84,10 @@ setInterval(() => {
     mp.vehicles.forEach((veh) => {
         // Only consume if engine is actually on
         if (veh.engine) {
+            
+            if (veh.jobOwner) return; 
+            // ----------------------
+
             let fuel = veh.getVariable('fuel') || 0;
             if (fuel > 0) {
                 fuel -= FUEL_CONSUMPTION_RATE;

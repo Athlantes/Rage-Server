@@ -360,7 +360,7 @@ class InventorySystem {
         this.syncClient(player);
     }
 
-    useItem(player, slot) {
+    async useItem(player, slot) {
         const item = player.inventory.find(i => i.slot === slot);
         if (!item) return;
 

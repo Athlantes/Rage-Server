@@ -35,9 +35,14 @@ function saveRoutes() { fs.writeFileSync(ROUTES_FILE, JSON.stringify(AVAILABLE_R
 
 // --- CONFIG: REWARD MULTIPLIERS ---
 const REWARD_CONFIG = {
-    basePerBag: 30,
+    basePayMin: 35,
+    basePayMax: 35,
+    
+    baseXpMin: 2,
+    baseXpMax: 4,    
+    
     perLevel: 3,
-    bonusPercentage: 0.15 // 15% Completion Bonus
+    bonusPercentage: 0.15 
 };
 
 const logic = {
@@ -115,7 +120,7 @@ function startRoute(player, routeIndex) {
 
     const visualData = [];
     route.dumpsters.forEach((pos, idx) => {
-        const col = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 0.4);
+        const col = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 0.5);
         col.dimension = player.dimension;
         col.isGarbageBin = true;
         col.garbageIndex = idx;
@@ -287,16 +292,17 @@ function startPickupSequence(player, index) {
     player.garbageBag = bag;
 
     setTimeout(() => {
-        if (mp.players.exists(player) && mp.objects.exists(bag)) {
-            mp.players.call('client:attachProp', [bag.id, player.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
-            
-            player.call('client:playAnim', ['missfbi4prepp1', '_idle_garbage_man', 49]); 
-            player.setVariable('isJobCarrying', true);
-            player.call('showNotification', ["Sanitation", "Put the bag in the truck."]);
-            updateUI(player, "Throw bag in Truck", truck.position);
-            createTruckRearMarker(player, truck);
-        }
-    }, 50);
+    if (mp.players.exists(player) && mp.objects.exists(bag)) {
+        mp.players.call('client:attachProp', [bag.id, player.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
+        
+        player.playAnimation('missfbi4prepp1', '_idle_garbage_man', 1.0, 49); 
+
+        player.setVariable('isJobCarrying', true);
+        player.call('showNotification', ["Sanitation", "Put the bag in the truck."]);
+        updateUI(player, "Throw bag in Truck", truck.position);
+        createTruckRearMarker(player, truck);
+    }
+}, 50);
 }
 
 function createTruckRearMarker(player, truck) {
@@ -339,7 +345,7 @@ async function finishThrowSequence(player) {
         player.garbageBag = null;
     }
 
-    // 4. Increment Count & Rewards
+    // 4. Increment Count
     job.collectedCount++;
 
     QuestEvents.emit(player, 'garbage_collect', { 
@@ -347,13 +353,20 @@ async function finishThrowSequence(player) {
         route: job.route.name 
     });
 
+    // === 5. CALCULATE REWARDS (RANDOMIZED) ===
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    let pay = REWARD_CONFIG.basePerBag + Math.floor(level * REWARD_CONFIG.perLevel);
-    const xp = 5 + Math.floor(level * 0.2);
+
+    // Random Base Pay ($25 - $35)
+    const randomBasePay = Math.floor(Math.random() * (REWARD_CONFIG.basePayMax - REWARD_CONFIG.basePayMin + 1)) + REWARD_CONFIG.basePayMin;
+    let pay = randomBasePay + Math.floor(level * REWARD_CONFIG.perLevel);
+
+    // Random Base XP (5 - 10)
+    const randomBaseXp = Math.floor(Math.random() * (REWARD_CONFIG.baseXpMax - REWARD_CONFIG.baseXpMin + 1)) + REWARD_CONFIG.baseXpMin;
+    const xp = randomBaseXp + Math.floor(level * 0.2);
 
     job.totalSessionEarnings = (job.totalSessionEarnings || 0) + pay;
 
-    // Drops
+    // Drops System
     const dropChance = (level * 0.1);
     if (Math.random() * 100 < dropChance) {
         const loot = ['plastic_bottle', 'broken_glass', 'scrap_metal', 'gold_ring'];
@@ -366,11 +379,11 @@ async function finishThrowSequence(player) {
     
     player.call('client:showJobSubtitle', [`+$${pay} | +${xp} XP`]);
 
-    // 5. NEXT STEP LOGIC
+    // 6. NEXT STEP LOGIC
     if (job.collectedCount >= job.total) {
         startDepotReturn(player);
     } else {
-        // FIX: Find closest bin using static route data (prevents 0m bug)
+        // Find closest bin using static route data (prevents 0m bug)
         let closestBinPos = null;
         let minDist = 99999;
 
