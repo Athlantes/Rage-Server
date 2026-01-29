@@ -19,6 +19,13 @@ mp.keys.bind(0x4C, true, function() {
     mp.events.callRemote('vehicle:toggleLock');
 });
 
+mp.keys.bind(0x50, true, () => {
+    if (mp.gui.cursor.visible) return; 
+    if (mp.gui.chat.visible) return; 
+
+    mp.game.ui.activateFrontendMenu(mp.game.joaat("FE_MENU_VERSION_MP_PAUSE"), false, -1);
+});
+
 mp.events.add('render', () => {
     const player = mp.players.local;
     if (player.vehicle && player.vehicle.getVariable('fuel') !== undefined) {
