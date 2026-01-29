@@ -270,7 +270,7 @@ function startPickupSequence(player, index) {
 
     const truck = job.truck;
     if (!truck || !mp.vehicles.exists(truck)) return player.call('showNotification', ["Error", "Your truck is missing!"]);
-    if (player.dist(truck.position) > 30) return player.call('showNotification', ["Error", "Bring the truck closer first!"]);
+    if (player.dist(truck.position) > 60) return player.call('showNotification', ["Error", "Bring the truck closer first!"]);
 
     job.isCarrying = true;
 
@@ -282,7 +282,8 @@ function startPickupSequence(player, index) {
 
     setTimeout(() => {
         if (mp.players.exists(player) && mp.objects.exists(bag)) {
-            player.call('client:attachProp', [bag.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
+            mp.players.call('client:attachProp', [bag.id, player.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
+            
             player.call('client:playAnim', ['missfbi4prepp1', '_idle_garbage_man', 49]); 
             player.setVariable('isJobCarrying', true);
             player.call('showNotification', ["Sanitation", "Put the bag in the truck."]);

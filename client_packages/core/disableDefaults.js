@@ -28,7 +28,14 @@ mp.events.add('render', () => {
     mp.game.controls.disableControlAction(0, 81, true); // Next Station
     mp.game.controls.disableControlAction(0, 82, true); // Prev Station
 
+    mp.game.vehicle.defaultEngineBehaviour = false;
 
+    mp.events.add('playerEnterVehicle', (vehicle, seat) => {
+    mp.players.local.setConfigFlag(429, true);
+    });
+
+    mp.game.player.setDispatchsCops(false);
+    mp.game.player.setWantedLevel(0);
     // --------------------------------------------------------------------
     // 3. JOB RESTRICTIONS (When Carrying Box)
     // --------------------------------------------------------------------

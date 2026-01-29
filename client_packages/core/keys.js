@@ -1,8 +1,15 @@
 // Key: '2' (Engine)
-mp.keys.bind(0x32, true, function() {
-    if (mp.gui.cursor.visible) return; // Don't trigger if typing in chat
-    if (global.isReturoOpen) return;
-    mp.events.callRemote('vehicle:toggleEngine');
+mp.keys.bind(0x32, true, () => { // Key: 2
+    if (mp.gui.cursor.visible) return; // Ignore if UI is open
+    
+    const player = mp.players.local;
+    const vehicle = player.vehicle;
+
+    // Check if player is in a vehicle and is the driver (seat -1)
+    if (vehicle && vehicle.getPedInSeat(-1) === player.handle) {
+        // Call server to toggle engine state
+        mp.events.callRemote('server:vehicle:toggleEngine');
+    }
 });
 
 // Key: 'L' (Lock)

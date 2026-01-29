@@ -25,15 +25,17 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
 });
 
 // --- 2. ROBUST ATTACHMENT (FIXED SHAKING) ---
-mp.events.add('client:attachProp', (objId, boneId, x, y, z, rx, ry, rz) => {
+mp.events.add('client:attachProp', (objId, ownerId, boneId, x, y, z, rx, ry, rz) => {
     const object = mp.objects.atRemoteId(objId);
-    
-    if (object && mp.objects.exists(object)) {
-        const boneIndex = mp.players.local.getBoneIndex(boneId);
-        object.attachTo(mp.players.local.handle, boneIndex, x, y, z, rx, ry, rz, false, false, false, false, 2, true);
+    const owner = mp.players.atRemoteId(ownerId); //
+
+    if (object && mp.objects.exists(object) && owner && mp.players.exists(owner)) {
+        const boneIndex = owner.getBoneIndex(boneId); // Get bone index of the target player
+        object.attachTo(owner.handle, boneIndex, x, y, z, rx, ry, rz, false, false, false, false, 2, true);
     } else {
+        // Retry if object or player not streamed in yet
         setTimeout(() => {
-            mp.events.call('client:attachProp', objId, boneId, x, y, z, rx, ry, rz);
+            mp.events.call('client:attachProp', objId, ownerId, boneId, x, y, z, rx, ry, rz);
         }, 50);
     }
 });

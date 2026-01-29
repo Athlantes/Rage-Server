@@ -231,7 +231,7 @@ function startTrunkPhase(player) {
         
         setTimeout(() => {
             if (mp.players.exists(p) && mp.objects.exists(box)) {
-                p.call('client:attachProp', [box.id, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0]);
+                mp.players.call('client:attachProp', [box.id, p.id, 60309, 0.025, 0.08, 0.255, -145.0, 290.0, 0.0]);
             }
         }, 100);
 
