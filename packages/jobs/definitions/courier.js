@@ -19,8 +19,8 @@ const JOB_CONFIG = {
 
 // --- CONFIG: REWARD MULTIPLIERS ---
 const REWARD_CONFIG = {
-    basePerStop: 60,       
-    perLevel: 3.5,         
+    basePerStop: 30,       
+    perLevel: 2,         
     bonusPercentage: 0.05, 
     tipChanceBase: 5,      
     tipChanceCap: 30       
@@ -183,7 +183,7 @@ function startDeliveryPhase(player) {
         return startDeliveryPhase(player);
     }
 
-    const MAX_DISTANCE = 1500.0; // Increased range for variety
+    const MAX_DISTANCE = 750.0;
     const pPos = player.position;
     
     let nearbyHouses = availableHouses.filter(h => {

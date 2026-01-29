@@ -1,5 +1,6 @@
 const ItemRegistry = require('../data/items');
 const db = require('../core/database');
+const QuestEvents = require('../core/questEvents');
 
 class InventorySystem {
     
@@ -379,6 +380,12 @@ class InventorySystem {
         } 
         else if (def.type === 'food' || def.type === 'drink') {
             player.call('showNotification', ['Consumable', `Used ${def.name}`]);
+
+            QuestEvents.emit(player, 'consume_item', { 
+                itemId: item.itemId, 
+                type: def.type 
+            });
+
             if (item.count > 1) {
                 item.count--;
                 db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            overflow: hidden; 
+            color: white; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: rgba(0,0,0,0.4); /* Dim background */
+        }
+
+        .quest-panel {
+            width: 500px;
+            background: rgba(20, 20, 20, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            border-top: 5px solid #00a2ff;
+            padding: 30px;
+            position: relative;
+        }
+
+        h2 { margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #444; padding-bottom: 10px;}
+
+        .quest-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #555;
+            transition: all 0.2s;
+        }
+
+        .quest-card.completed { border-left-color: #2ecc71; opacity: 0.6; }
+
+        .quest-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+        .quest-reward { color: #2ecc71; }
+        .quest-desc { font-size: 0.85rem; color: #aaa; margin-bottom: 10px; }
+        
+        .progress-bg { background: rgba(0,0,0,0.5); height: 8px; border-radius: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #00a2ff; width: 0%; transition: width 0.5s; }
+        .quest-card.completed .progress-bar { background: #2ecc71; }
+
+        .close-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .close-btn:hover { background: #cc3333; }
+    </style>
+</head>
+<body>
+    <div class="quest-panel">
+        <h2>Daily Assignments</h2>
+        <div id="quest-list">
+            </div>
+        <button class="close-btn" onclick="closeMenu()">Close</button>
+    </div>
+
+    <script>
+        function closeMenu() {
+            mp.trigger('client:toggleQuestMenu');
+            mp.trigger('client:togglePauseMenu');
+        }
+
+        function updateQuests(questJson) {
+            const quests = JSON.parse(questJson);
+            const list = document.getElementById('quest-list');
+            list.innerHTML = '';
+
+            if (quests.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#777; padding:20px;">No active quests. Check back tomorrow!</div>';
+                return;
+            }
+
+            quests.forEach(q => {
+                const percent = Math.min(100, (q.progress / q.targetAmount) * 100);
+                const isDone = q.completed ? 'completed' : '';
+                
+                const html = `
+                    <div class="quest-card ${isDone}">
+                        <div class="quest-header">
+                            <span>${q.title}</span>
+                            <span class="quest-reward">$${q.reward}</span>
+                        </div>
+                        <div class="quest-desc">${q.description}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px; color:#bbb;">
+                            <span>Progress</span>
+                            <span>${q.progress} / ${q.targetAmount}</span>
+                        </div>
+                        <div class="progress-bg">
+                            <div class="progress-bar" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+    </script>
+</body>
+</html>

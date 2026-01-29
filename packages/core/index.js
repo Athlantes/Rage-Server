@@ -4,6 +4,7 @@ require('./auth');
 require('./vehicles/vehicleSystem'); 
 require('./commands');   
 require('./phone/phoneManager');
+require('./questManager');
 
 const vehicleManager = require('./vehicles/vehicleManager');
 

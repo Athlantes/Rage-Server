@@ -3,6 +3,7 @@ const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const fs = require('fs');
 const path = require('path');
+const QuestEvents = require('../../core/questEvents');
 
 const JOB_KEY = 'garbage'; // Defined Job Key
 const ROUTES_FILE = path.join(__dirname, '../../data/garbageRoutes.json');
@@ -340,6 +341,11 @@ async function finishThrowSequence(player) {
 
     // 4. Increment Count & Rewards
     job.collectedCount++;
+
+    QuestEvents.emit(player, 'garbage_collect', { 
+        count: 1,
+        route: job.route.name 
+    });
 
     const level = jobManager.getJobLevel(player, JOB_KEY);
     let pay = REWARD_CONFIG.basePerBag + Math.floor(level * REWARD_CONFIG.perLevel);

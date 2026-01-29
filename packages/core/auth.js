@@ -1,6 +1,7 @@
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const playerManager = require('./playerManager');
+const QuestManager = require('./questManager');
 
 // 1. Handle Join
 mp.events.add('playerJoin', (player) => {
@@ -99,6 +100,8 @@ function loadAccount(player, userData) {
     player.setVariable('money', userData.money);
     player.data.level = userData.level;
     player.data.vehicle_slots = userData.vehicle_slots;
+    QuestManager.initPlayer(player);
+    console.log(`[Quests] Initialized for ${player.name}`);
     
     // --- COOLDOWN SYSTEM UPGRADE ---
     try {

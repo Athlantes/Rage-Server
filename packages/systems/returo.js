@@ -2,6 +2,7 @@
 const Inventory = require('./inventory');
 const PlayerManager = require('../core/playerManager'); 
 const db = require('../core/database');
+const QuestEvents = require('../core/questEvents');
 
 const CONFIG = {
     rewardPerBottle: 5,
@@ -94,6 +95,8 @@ mp.events.add('server:processRecycling', async (player, amountToRecycle) => {
         // 4. Give Money & Save
         const totalReward = amountToRecycle * CONFIG.rewardPerBottle;
         await PlayerManager.addMoneyAndSave(player, totalReward, 'Returo Recycle');
+
+        QuestEvents.emit(player, 'recycle_item', { count: amountToRecycle });
 
         player.call('showNotification', ['Returo', `Recycled ${amountToRecycle} bottles for $${totalReward}.`]);
         player.call('client:closeReturoBrowser');

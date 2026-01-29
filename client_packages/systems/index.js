@@ -4,3 +4,4 @@ require('./dumpster.js');
 require('./returo.js');
 require('./inventory.js');
 require('./zones.js');
+require('./questTracker.js');

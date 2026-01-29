@@ -2,6 +2,22 @@ let pauseMenuBrowser = null;
 let isPauseMenuOpen = false;
 let lastToggleTime = 0; // [Fix] Variable to track last toggle time
 
+mp.events.add('client:updateQuestUI', (questJson) => {
+    // If the browser exists, inject data
+    if (pauseMenuBrowser) {
+        pauseMenuBrowser.execute(`updateQuests('${questJson}')`);
+    }
+    mp.events.call('client:storeQuestData', questJson);
+});
+
+let cachedQuestData = "[]";
+mp.events.add('client:storeQuestData', (data) => {
+    cachedQuestData = data;
+    if (pauseMenuBrowser && isPauseMenuOpen) {
+        pauseMenuBrowser.execute(`updateQuests('${cachedQuestData}')`);
+    }
+});
+
 mp.events.add('client:togglePauseMenu', () => {
     // [Fix] Cooldown check: prevent spamming (1 second cooldown)
     const now = Date.now();
@@ -18,6 +34,7 @@ mp.events.add('client:togglePauseMenu', () => {
             pauseMenuBrowser = mp.browsers.new("package://ui/pauseMenu/index.html");
         }
         pauseMenuBrowser.active = true;
+        pauseMenuBrowser.execute(`updateQuests('${cachedQuestData}')`);
         mp.gui.cursor.show(true, true);
         mp.game.graphics.transitionToBlurred(500); // Beautiful blur effect
     } else {
@@ -41,6 +58,10 @@ mp.events.add('client:pauseMenuAction', (action) => {
         case 'jobs':
             mp.events.call('client:togglePauseMenu'); // Close main menu
             mp.events.call('client:openJobMenu');     // Open Job Menu
+            break;
+        case 'quests':
+            mp.events.call('client:togglePauseMenu'); // Close main menu
+            mp.events.call('client:toggleQuestMenu');     // Open Quest Menu
             break;
         case 'back_to_main':
             // Switch back to main menu
