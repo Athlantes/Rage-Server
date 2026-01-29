@@ -1,0 +1,40 @@
+
+    // TatavianMountainsGasStationBlip
+    { x: 2581.21, y: 361.24, z: 108.47, h: 33.69 },
+    
+    // TatavianMountainsPump1
+    { x: 2571.64, y: 359.21, z: 108.46, h: -6.08 },
+    
+    // TatavianMountainsPump2
+    { x: 2571.88, y: 365.17, z: 108.46, h: 170.59 },
+    
+    // TatavianMountainsPump3
+    { x: 2575.73, y: 364.91, z: 108.47, h: -178.41 },
+    
+    // TatavianMountainsPump4
+    { x: 2575.51, y: 359.04, z: 108.46, h: 176.71 },
+    
+    // TatavianMountainsPump5
+    { x: 2579.10, y: 358.84, z: 108.46, h: 3.12 },
+    
+    // TatavianMountainsPump6
+    { x: 2579.30, y: 364.46, z: 108.46, h: -2.41 },
+    
+    // TatavianMountainsPump7
+    { x: 2583.11, y: 364.46, z: 108.46, h: 173.73 },
+    
+    // TatavianMountainsPump8
+    { x: 2582.85, y: 358.81, z: 108.46, h: 175.45 },
+    
+    // TatavianMountainsPump9
+    { x: 2586.50, y: 358.47, z: 108.47, h: -4.87 },
+    
+    // TatavianMountainsPump10
+    { x: 2586.77, y: 364.19, z: 108.46, h: -7.13 },
+    
+    // TatavianMountainsPump11
+    { x: 2590.49, y: 363.99, z: 108.46, h: 178.76 },
+    
+    // TatavianMountainsPump12
+    { x: 2590.25, y: 358.40, z: 108.46, h: 175.86 },
+    

@@ -3,7 +3,7 @@ require('./playerManager');
 require('./auth');
 require('./vehicles/vehicleSystem'); 
 require('./commands');   
-require('./phone/phoneManager');
+require('./phone/index');
 require('./questManager');
 require('./banking');
 
