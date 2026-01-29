@@ -1,9 +1,12 @@
 // 1. Core Utilities & Managers
+require('./core/pauseMenu.js');
+require('./core/jobMenu.js');
 require('./core/disableDefaults.js');
 require('./core/interaction.js');
 require('./core/keys.js');
 require('./core/overlay.js');
 require('./core/events.js');
+
 
 // 2. Complex Subsystems (Phone)
 require('./phone/index.js');
