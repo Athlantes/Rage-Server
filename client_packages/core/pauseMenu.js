@@ -61,8 +61,9 @@ mp.events.add('client:requestQuestData', () => {
 });
 
 mp.events.add('client:updateQuestMenu', (data) => {
-    if (pauseMenuBrowser && pauseMenuBrowser.active) {
-        // Pass data to the HTML page
-        pauseMenuBrowser.execute(`updateQuests(${JSON.stringify(data)})`);
+    if (pauseMenuBrowser && mp.browsers.exists(pauseMenuBrowser)) {
+        if (pauseMenuBrowser.url.includes('quests.html')) {
+            pauseMenuBrowser.execute(`if(typeof updateQuests === 'function') { updateQuests(${JSON.stringify(data)}); }`);
+        }
     }
 });

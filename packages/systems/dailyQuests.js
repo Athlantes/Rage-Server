@@ -2,38 +2,41 @@
 const db = require('../core/database');
 const PlayerManager = require('../core/playerManager');
 
-// --- CONFIGURATION ---
+// --- 1. CONFIGURATION ---
+const RESET_HOUR = 7; // 7:00 AM Server Time
+
+// A modular pool of quests. 
+// "type": matches the logic hook (e.g., 'job', 'crafting', 'action')
 const QUEST_POOL = [
-    { key: 'job_xp', description: 'Earn 100 Job XP', target: 100, reward: 500 },
-    { key: 'dumpster_dive', description: 'Search 5 Dumpsters', target: 5, reward: 300 },
-    { key: 'recycle_bottles', description: 'Recycle 10 Bottles', target: 10, reward: 250 },
-    { key: 'lucky_find', description: 'Find 1 Rare Item (Dumpster)', target: 1, reward: 1000 },
-    { key: 'courier_runs', description: 'Complete 3 Courier Jobs', target: 3, reward: 400 }
+    { key: 'job_xp', type: 'job_xp', description: 'Earn 500 Job XP', target: 500, reward: 800 },
+    { key: 'dumpster_dive', type: 'action', description: 'Search 5 Dumpsters', target: 5, reward: 300 },
+    { key: 'recycle_bottles', type: 'action', description: 'Recycle 10 Bottles', target: 10, reward: 250 },
+    { key: 'lucky_find', type: 'action', description: 'Find 1 Rare Item', target: 1, reward: 1000 },
+    { key: 'courier_runs', type: 'job_complete', description: 'Complete 3 Deliveries', target: 3, reward: 400 },
+    { key: 'fuel_up', type: 'action', description: 'Refuel a Vehicle', target: 1, reward: 150 },
 ];
 
-const RESET_HOUR = 7; // 7:00 AM
-
-// Helper: Get "Business" Date (YYYY-MM-DD)
+// --- 2. HELPER: STRICT DATE STRING ---
+// Returns "YYYY-MM-DD" strictly based on server local time
 function getBusinessDate() {
     const now = new Date();
     if (now.getHours() < RESET_HOUR) {
         now.setDate(now.getDate() - 1);
     }
-    // FIX: Use 'sv-SE' locale (Sweden uses YYYY-MM-DD) or manual construction to ensure local time format
-    // Avoiding toISOString() because it converts to UTC, causing issues near reset time.
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 const DailyQuests = {
     
-    // 1. Initialize on Login
+    // --- INIT ---
     init: async (player) => {
         if (!player.data.dbId) return;
         const today = getBusinessDate();
 
+        // 1. Fetch from DB
         const [rows] = await db.query(
             'SELECT * FROM character_daily_quests WHERE character_id = ? AND date_generated = ?', 
             [player.data.dbId, today]
@@ -42,17 +45,14 @@ const DailyQuests = {
         if (rows.length === 0) {
             await DailyQuests.generateQuests(player, today);
         } else {
-            // FIX: Normalize the date from DB (Date Object) to String
-            // This ensures strict equality checks later work
-            player.data.dailyQuests = rows.map(row => ({
-                ...row,
-                date_generated: today // Force consistent string format
-            }));
+            // LOAD existing. IMPORTANT: Convert DB date to String for consistency
+            player.data.dailyQuests = rows.map(r => ({ ...r, date_generated: today }));
         }
     },
 
-    // 2. Generate Random Quests
+    // --- GENERATOR ---
     generateQuests: async (player, dateString) => {
+        // Shuffle and pick 3
         const shuffled = [...QUEST_POOL].sort(() => 0.5 - Math.random());
         const selected = shuffled.slice(0, 3);
         
@@ -60,8 +60,7 @@ const DailyQuests = {
         const memoryQuests = [];
 
         for (const q of selected) {
-            // [char_id, key, desc, progress, target, reward, completed, date]
-            values.push([player.data.dbId, q.key, q.description, 0, q.target, q.reward, false, dateString]);
+            values.push([player.data.dbId, q.key, q.description, 0, q.target, q.reward, 0, dateString]);
             
             memoryQuests.push({
                 character_id: player.data.dbId,
@@ -83,63 +82,52 @@ const DailyQuests = {
             player.data.dailyQuests = memoryQuests;
             player.outputChatBox("!{00FF00}[Daily Quests] !{FFFFFF}New tasks available (Reset at 7AM).");
         } catch (err) {
-            console.error("[DailyQuests] Generation Error:", err);
+            console.error("[DailyQuests] Critical Generation Error:", err);
         }
     },
 
-    // 3. The Core Update Function
+    // --- CORE PROGRESS LOGIC ---
+    // We use "generic" progress to handle ALL types
     progress: async (player, questKey, amount = 1) => {
-        // Safety checks
         if (!player.data.dailyQuests) return;
 
-        // Find the specific quest in memory
+        // Find quest by KEY (e.g., 'dumpster_dive')
         const quest = player.data.dailyQuests.find(q => q.quest_key === questKey && !q.is_completed);
         
         if (quest) {
             quest.progress += amount;
+            let justFinished = false;
 
-            // Check Completion
             if (quest.progress >= quest.target) {
                 quest.progress = quest.target;
                 quest.is_completed = 1; 
+                justFinished = true;
 
-                // Reward
+                // REWARD
                 await PlayerManager.addMoneyAndSave(player, quest.reward_money, `Quest: ${questKey}`);
                 player.call('showNotification', ['Quest Complete', `Completed: ${quest.description}`]);
                 player.call('playSound', ['HUD_AWARDS', 'CHALLENGE_UNLOCKED']);
-            } else {
-                // Optional: Notify progress
-                // player.call('showNotification', ['Quest Update', `${quest.description}: ${quest.progress}/${quest.target}`]);
             }
 
-            //
-            // FIX: Added error handling (.catch) to see if DB updates fail
-            // We use date_generated string to match the row
+            // SAVE TO DB (Fire and forget, but log errors)
             db.query(
                 'UPDATE character_daily_quests SET progress = ?, is_completed = ? WHERE character_id = ? AND quest_key = ? AND date_generated = ?',
                 [quest.progress, quest.is_completed, player.data.dbId, questKey, quest.date_generated]
             ).catch(err => {
-                console.error(`[DailyQuests] Save Error for ${player.name} (${questKey}):`, err);
+                console.error(`[DailyQuests] Save Failed for ${player.name} [${questKey}]:`, err.message);
             });
 
-            // Force UI Update so user sees it immediately
+            // --- REAL TIME UI UPDATE ---
+            // We blindly send this event. The client ignores it if the menu isn't open.
             player.call('client:updateQuestMenu', [player.data.dailyQuests]);
         }
-    },
-
-    // 4. Get Data for UI
-    getUiData: (player) => {
-        return player.data.dailyQuests || [];
     }
 };
 
-mp.events.add('server:loadAccount', (player) => {
-    DailyQuests.init(player);
-});
-
+// Events
+mp.events.add('server:loadAccount', (player) => DailyQuests.init(player));
 mp.events.add('server:getQuestData', (player) => {
-    const data = DailyQuests.getUiData(player);
-    player.call('client:updateQuestMenu', [data]);
+    if(player.data.dailyQuests) player.call('client:updateQuestMenu', [player.data.dailyQuests]);
 });
 
 module.exports = DailyQuests;
