@@ -35,11 +35,34 @@ mp.events.add('client:pauseMenuAction', (action) => {
             mp.events.call('client:togglePauseMenu'); // Close main menu
             mp.events.call('client:openJobMenu');     // Open Job Menu
             break;
+        case 'quests':
+            // Switch the browser URL to the quests page
+            if (pauseMenuBrowser) {
+                pauseMenuBrowser.url = "package://ui/pauseMenu/quests.html";
+            }
+            break;
+        case 'back_to_main':
+            // Switch back to main menu
+            if (pauseMenuBrowser) {
+                pauseMenuBrowser.url = "package://ui/pauseMenu/index.html";
+            }
+            break;
         case 'resume':
             mp.events.call('client:togglePauseMenu');
             break;
         case 'quit':
             mp.events.callRemote('server:kickPlayer'); // Example server call
             break;
+    }
+});
+
+mp.events.add('client:requestQuestData', () => {
+    mp.events.callRemote('server:getQuestData');
+});
+
+mp.events.add('client:updateQuestMenu', (data) => {
+    if (pauseMenuBrowser && pauseMenuBrowser.active) {
+        // Pass data to the HTML page
+        pauseMenuBrowser.execute(`updateQuests(${JSON.stringify(data)})`);
     }
 });
