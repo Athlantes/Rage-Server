@@ -217,35 +217,4 @@ mp.events.add('playerEnterColshape', (player, shape) => {
     if (player.jobCallback) player.jobCallback(player);
 });
 
-// JOB LEVEL COMMAND (Debug Command)
-mp.events.addCommand('joblvl', (player, _, jobKey) => {
-    if (!player.data.jobSkills || Object.keys(player.data.jobSkills).length === 0) {
-        return player.outputChatBox("!{FF0000}You have no job experience yet.");
-    }
-    
-    // If no specific job key provided, list ALL jobs
-    if (!jobKey) {
-        player.outputChatBox("!{F0C400}--- Your Job Stats ---");
-        for (const [key, skill] of Object.entries(player.data.jobSkills)) {
-            const rank = jobManager.getRankName(skill.level);
-            // Reverse Formula: XP needed for next level = (CurrentLevel)^2 * 100
-            const nextLvlXp = Math.pow(skill.level, 2) * 100;
-            
-            player.outputChatBox(`!{FFFFFF}${key.toUpperCase()}: !{F0C400}Lvl ${skill.level} (${rank}) !{FFFFFF}| XP: ${skill.xp}/${nextLvlXp}`);
-        }
-        return;
-    }
-
-    const skill = player.data.jobSkills[jobKey.toLowerCase()];
-    if (!skill) return player.outputChatBox(`!{FF0000}No data found for job: ${jobKey}`);
-
-    const rank = jobManager.getRankName(skill.level);
-    const nextLvlXp = Math.pow(skill.level, 2) * 100; 
-
-    player.outputChatBox(`!{F0C400}[JOB INFO] ${jobKey.toUpperCase()}`);
-    player.outputChatBox(`!{FFFFFF}Rank: !{F0C400}${rank}`);
-    player.outputChatBox(`!{FFFFFF}Level: !{F0C400}${skill.level}`);
-    player.outputChatBox(`!{FFFFFF}XP: !{F0C400}${skill.xp} / ${nextLvlXp}`);
-});
-
 module.exports = jobManager;

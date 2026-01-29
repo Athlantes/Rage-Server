@@ -14,7 +14,10 @@ mp.events.add('render', () => {
 
     // Manually check for ESC press to open OUR menu
     if (mp.game.controls.isDisabledControlJustPressed(0, 200)) {
-        mp.events.call('client:togglePauseMenu');
+        // [Fix] Only toggle if the Native Pause Menu (Map) is NOT active
+        if (!mp.game.ui.isPauseMenuActive()) {
+            mp.events.call('client:togglePauseMenu');
+        }
     }
 
     // --------------------------------------------------------------------

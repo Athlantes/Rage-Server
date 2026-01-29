@@ -1,9 +1,16 @@
 let pauseMenuBrowser = null;
 let isPauseMenuOpen = false;
+let lastToggleTime = 0; // [Fix] Variable to track last toggle time
 
 mp.events.add('client:togglePauseMenu', () => {
+    // [Fix] Cooldown check: prevent spamming (1 second cooldown)
+    const now = Date.now();
+    if ((now - lastToggleTime) < 1000) return;
+
     if (mp.gui.cursor.visible && !isPauseMenuOpen) return; // Don't open if other UI is up
 
+    // [Fix] Update last toggle time only if we actually proceed
+    lastToggleTime = now;
     isPauseMenuOpen = !isPauseMenuOpen;
     
     if (isPauseMenuOpen) {
