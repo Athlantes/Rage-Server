@@ -256,10 +256,12 @@
     <div class="pop-hotbar" id="pop-hotbar"></div>
 
     <script>
-        function updateInfoHud(name, money, dateStr) {
+        function updateInfoHud(name, money, bank, dateStr) {
             document.getElementById('hud-name').innerText = name;
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
+
             document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
+            
             document.getElementById('hud-date').innerText = dateStr;
         }
 

@@ -8,7 +8,7 @@ FuelStations.forEach((station) => {
     mp.blips.new(361, new mp.Vector3(station.blip.x, station.blip.y, station.blip.z), {
         name: station.name,
         color: 35,
-        shortRange: true,
+        shortRange: false,
         scale: 0.8,
         dimension: 0
     });
@@ -22,7 +22,7 @@ mp.events.add('render', () => {
     
     // Iterate through all stations
     FuelStations.forEach(station => {
-        // Optimization: First check if player is near the general station (e.g., 50m)
+        // Optimization: First check if player is near the general station (e.g., 60m)
         if (mp.game.system.vdist(localPos.x, localPos.y, localPos.z, station.blip.x, station.blip.y, station.blip.z) < 60) {
             
             // If near station, loop through that station's pumps

@@ -96,12 +96,19 @@ function loadAccount(player, userData) {
     player.data.dbId = userData.id;
     player.data.username = userData.username;
 
+    // --- FIX 1: LOAD BANK MONEY CORRECTLY ---
     player.data.money = userData.money;
+    player.data.bank_money = userData.bank_money || 0; // <--- ADD THIS LINE
+    
     player.setVariable('money', userData.money);
+    player.setVariable('bank_money', player.data.bank_money);
     player.data.level = userData.level;
     player.data.vehicle_slots = userData.vehicle_slots;
+
+    // Initialize Systems
     QuestManager.initPlayer(player);
     console.log(`[Quests] Initialized for ${player.name}`);
+    
     const Banking = require('./banking');
     Banking.initAccount(player);
     // --- COOLDOWN SYSTEM UPGRADE ---

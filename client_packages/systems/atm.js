@@ -1,9 +1,9 @@
 // client_packages/systems/atm.js
 
 // 1. Configuration
-const ATM_BLIP_ID = 500;       // Dollar Sign
-const ATM_BLIP_COLOR = 18;      // Light Blue
-const ATM_BLIP_SCALE = 0.7;
+const ATM_BLIP_ID = 500;       
+const ATM_BLIP_COLOR = 62;      
+const ATM_BLIP_SCALE = 0.55;
 const ATM_BLIP_NAME = "ATM";
 
 // 2. ATM Coordinates (Extracted from your map files)

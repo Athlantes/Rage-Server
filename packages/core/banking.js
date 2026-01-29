@@ -45,18 +45,17 @@ class BankingService {
     }
 
     async transfer(sender, targetNameOrId, amount, note = "Transfer") {
-        amount = parseInt(amount); // FIX: Force Integer
+        amount = parseInt(amount);
         if (isNaN(amount) || amount <= 0) return { success: false, message: "Invalid amount." };
         if (sender.data.bank < amount) return { success: false, message: "Insufficient funds." };
 
         let targetDbId = null;
-        // FIX: Improve finding logic (loose equality for ID)
+        // Loose equality check for ID (string vs int)
         let targetPlayer = mp.players.toArray().find(p => p.name === targetNameOrId || p.data.dbId == targetNameOrId);
 
         if (targetPlayer) {
             targetDbId = targetPlayer.data.dbId;
         } else {
-            // Check DB if offline
             const [rows] = await db.query("SELECT id FROM users WHERE username = ?", [targetNameOrId]);
             if (rows.length === 0) return { success: false, message: "Person not found." };
             targetDbId = rows[0].id;
@@ -74,15 +73,17 @@ class BankingService {
         if (targetPlayer) {
             targetPlayer.data.bank += amount;
             targetPlayer.setVariable('bank', targetPlayer.data.bank);
+            
+            // Notification
             targetPlayer.call('showNotification', ['Bank', `Received $${amount} from ${sender.name}`]);
             
-            // FIX: Refresh Target's Phone UI if open
-            targetPlayer.call('client:proxyAction', ['requestBankData', 0]); 
+            mp.events.call('server:phone:bank:open', targetPlayer);
             
             await this.saveBankAction(targetPlayer, amount, 'transfer_in', sender.data.dbId, `From: ${sender.name} (${note})`);
         } else {
+            // Target Offline handling
             await db.query("UPDATE users SET bank_money = bank_money + ? WHERE id = ?", [amount, targetDbId]);
-            await db.query("INSERT INTO bank_transactions (sender_id, target_id, amount, type, description) VALUES (?, ?, ?, 'transfer_in', ?)", 
+            await db.query("INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (?, ?, ?, 'transfer_in', ?, NOW())", 
                 [targetDbId, sender.data.dbId, amount, `From: ${sender.name} (${note})`]);
         }
 
