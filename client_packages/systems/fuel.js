@@ -8,7 +8,7 @@ FuelStations.forEach((station) => {
     mp.blips.new(361, new mp.Vector3(station.blip.x, station.blip.y, station.blip.z), {
         name: station.name,
         color: 35,
-        shortRange: false,
+        shortRange: true,
         scale: 0.8,
         dimension: 0
     });
