@@ -5,7 +5,7 @@ const HOUSES = require('../../data/houses');
 const JOB_KEY = 'courier';
 
 const DEPOT_CONFIG = {
-    spawn: { x: 72.30, y: 119.94, z: 79.18, h: 156.31 },
+    spawn: { x: 62.63, y: 124.34, z: 79.39, h: 162.76 },
     loadingBay: { x: 115.13, y: 99.98, z: 80.87, h: 170.20 }
 };
 
@@ -14,7 +14,7 @@ const JOB_CONFIG = {
     pedModel: "s_m_m_postal_01", 
     blipSprite: 616, 
     blipColor: 26,
-    pos: { x: 78.58, y: 111.71, z: 81.17, h: -114.18 }
+    pos: { x: 83.51, y: 133.92, z: 80.53, h: 69.79 }
 };
 
 // --- CONFIG: REWARD MULTIPLIERS ---
@@ -89,9 +89,9 @@ const logic = {
 
         // Vehicle Progression
         // Lv 1: Rumpo (Basic) | Lv 20: Speedo (Faster) | Lv 50: Boxville (The Big One)
-        let vehicleModel = 'rumpo3'; 
+        let vehicleModel = 'boxville2'; 
         if (level >= 50) vehicleModel = 'boxville2';
-        else if (level >= 20) vehicleModel = 'speedo';
+        else if (level >= 20) vehicleModel = 'boxville2';
 
         const veh = mp.vehicles.new(mp.joaat(vehicleModel), new mp.Vector3(DEPOT_CONFIG.spawn.x, DEPOT_CONFIG.spawn.y, DEPOT_CONFIG.spawn.z), {
             heading: DEPOT_CONFIG.spawn.h,

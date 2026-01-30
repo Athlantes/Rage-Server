@@ -107,8 +107,6 @@ mp.events.add('showOverlayHotbar', (index) => {
 });
 
 mp.events.add('updateJobUI', (visible, text, current, max, earned, x, y, z) => {
-    // FIX: Changed mp.console.logInfo (Server only) to mp.console.log (Client)
-    mp.console.log(`[UI DEBUG] Event Received: Visible=${visible}, Text=${text}`);
     
     if (overlayBrowser) {
         if (visible && x != null && y != null) {

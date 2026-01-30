@@ -38,3 +38,9 @@
     // TatavianMountainsPump12
     { x: 2590.25, y: 358.40, z: 108.46, h: 175.86 },
     
+    // GoPostalJobNPC
+    { x: 83.51, y: 133.92, z: 80.53, h: 69.79 },
+    
+    // GoPostalJobCarSpawn
+    { x: 62.63, y: 124.34, z: 79.39, h: 162.76 },
+    
