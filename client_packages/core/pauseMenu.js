@@ -2,6 +2,7 @@ let pauseMenuBrowser = null;
 let isPauseMenuOpen = false;
 let lastToggleTime = 0;
 let isMapOpen = false; // [Fix] Track if we sent player to map
+let mapBrowser = null;
 
 mp.events.add('client:updateQuestUI', (questJson) => {
     if (pauseMenuBrowser) {
@@ -51,22 +52,41 @@ mp.events.add('client:togglePauseMenu', (force = false) => {
 });
 
 mp.events.add('client:pauseMenuAction', (action) => {
+    if (action === 'map') {
+        mp.events.call('client:togglePauseMenu', true); // Close pause menu
+        
+        if (!mapBrowser) {
+            mapBrowser = mp.browsers.new("package://ui/WebMap/index.html");
+            mp.gui.cursor.show(true, true);
+            
+            // Sync current game data to web map
+            const blips = [];
+            mp.blips.forEach(b => {
+                blips.push({ x: b.position.x, y: b.position.y, name: b.getName() || "Marker" });
+            });
+            
+            const player = {
+                x: mp.players.local.position.x,
+                y: mp.players.local.position.y,
+                angle: mp.players.local.getHeading()
+            };
+
+            setTimeout(() => {
+                if(mapBrowser) mapBrowser.execute(`initializeMapData('${JSON.stringify(blips)}', '${JSON.stringify(player)}')`);
+            }, 250);
+        }
+    } else
     switch(action) {
-        case 'map':
-            mp.events.call('client:togglePauseMenu', true); // Force Close
-            mp.game.ui.activateFrontendMenu(mp.game.joaat("FE_MENU_VERSION_MP_PAUSE"), false, -1);
-            isMapOpen = true; // [Fix] Start watching for map close
-            break;
         case 'jobs':
-            mp.events.call('client:togglePauseMenu', true); // Force Close
+            mp.events.call('client:togglePauseMenu', true);
             mp.events.call('client:openJobMenu');
             break;
         case 'quests':
-            mp.events.call('client:togglePauseMenu', true); // Force Close
+            mp.events.call('client:togglePauseMenu', true);
             mp.events.call('client:toggleQuestMenu');
             break;
         case 'resume':
-            mp.events.call('client:togglePauseMenu', false); // Normal close
+            mp.events.call('client:togglePauseMenu', false);
             break;
         case 'quit':
             mp.events.callRemote('server:kickPlayer');
@@ -77,6 +97,48 @@ mp.events.add('client:pauseMenuAction', (action) => {
 mp.events.add('client:requestQuestData', () => {
     mp.events.callRemote('server:getQuestData');
 });
+
+// --- NEW MAP FUNCTIONS ---
+
+// Function to close the map (called from Web JS)
+mp.events.add('client:closeMap', () => {
+    if (mapBrowser) {
+        mapBrowser.destroy();
+        mapBrowser = null;
+        mp.gui.cursor.show(false, false);
+        // Optional: Re-open pause menu if you want "Back" to go to menu
+        // mp.events.call('client:togglePauseMenu', false); 
+    }
+});
+
+// Function to set Waypoint (called from Web JS)
+mp.events.add('client:setMapWaypoint', (x, y) => {
+    mp.game.ui.setNewWaypoint(parseFloat(x), parseFloat(y));
+});
+
+// Helper to gather Blips and send to Web
+function loadGameBlipsToWeb() {
+    if (!mapBrowser) return;
+
+    let blipList = [];
+    mp.blips.forEach(blip => {
+        // We only send necessary data to keep it fast
+        blipList.push({
+            x: blip.position.x,
+            y: blip.position.y,
+            name: blip.getName() || "Unknown",
+            sprite: blip.getSprite(), // The icon ID
+            color: blip.getColour()
+        });
+    });
+
+    // Send player position too for "You are here"
+    const playerPos = mp.players.local.position;
+    const playerData = { x: playerPos.x, y: playerPos.y, angle: mp.players.local.getHeading() };
+
+    // Execute JS on the web page
+    mapBrowser.execute(`initializeMapData('${JSON.stringify(blipList)}', '${JSON.stringify(playerData)}')`);
+}
 
 mp.events.add('render', () => {
     if (isMapOpen) {
