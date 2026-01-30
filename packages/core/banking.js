@@ -50,7 +50,6 @@ class BankingService {
         if (sender.data.bank < amount) return { success: false, message: "Insufficient funds." };
 
         let targetDbId = null;
-        // Loose equality check for ID (string vs int)
         let targetPlayer = mp.players.toArray().find(p => p.name === targetNameOrId || p.data.dbId == targetNameOrId);
 
         if (targetPlayer) {
@@ -63,29 +62,35 @@ class BankingService {
 
         if (targetDbId === sender.data.dbId) return { success: false, message: "Cannot transfer to yourself." };
 
-        // Process Sender
+        // 1. Process Sender
         sender.data.bank -= amount;
         sender.setVariable('bank', sender.data.bank);
-
         await this.saveBankAction(sender, amount, 'transfer_out', targetDbId, `To: ${targetNameOrId} (${note})`);
         
-        // Process Target
+        // 2. Process Target (Money)
         if (targetPlayer) {
             targetPlayer.data.bank += amount;
             targetPlayer.setVariable('bank', targetPlayer.data.bank);
-            
-            // Notification
-            targetPlayer.call('showNotification', ['Bank', `Received $${amount} from ${sender.name}`]);
-            
-            mp.events.call('server:phone:bank:open', targetPlayer);
-            
-            await this.saveBankAction(targetPlayer, amount, 'transfer_in', sender.data.dbId, `From: ${sender.name} (${note})`);
+            mp.events.call('server:phone:bank:open', targetPlayer); // Refresh UI if open
         } else {
-            // Target Offline handling
             await db.query("UPDATE users SET bank_money = bank_money + ? WHERE id = ?", [amount, targetDbId]);
-            await db.query("INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (?, ?, ?, 'transfer_in', ?, NOW())", 
-                [targetDbId, sender.data.dbId, amount, `From: ${sender.name} (${note})`]);
         }
+
+        // 3. Process Target (History Log)
+        // Insert manually for target to ensure history consistency whether online or offline
+        await db.query("INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (?, ?, ?, 'transfer_in', ?, NOW())", 
+            [targetDbId, sender.data.dbId, amount, `From: ${sender.name} (${note})`]);
+
+        // 4. NOTIFICATION (Offline & Online)
+        // We use the Mail system to send a persistent notification.
+        // If online: Phone Manager sends 'client:phone:receiveMail' (Popup)
+        // If offline: It stays in DB and shows up as unread mail when they login.
+        mp.events.call('server:phone:sendMail', 
+            targetDbId, 
+            'Fleeca Bank', 
+            'Transfer Received', 
+            `You received $${amount} from ${sender.name}.\nRef: ${note}`
+        );
 
         return { success: true, message: "Transfer successful." };
     }

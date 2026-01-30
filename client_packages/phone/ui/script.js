@@ -253,53 +253,97 @@ const app = {
 
     // --- BANKING APP (FIXED) ---
     loadBankData: (data) => {
-        // Safety: Ensure data exists, otherwise default to 0
         const safeBalance = (data && data.balance) ? data.balance : 0;
-        document.getElementById('bank-balance').innerText = '$' + safeBalance.toLocaleString();
+        document.getElementById('bank-balance').innerText = safeBalance.toLocaleString();
         
         const list = document.getElementById('bank-history');
         if(!list) return;
         list.innerHTML = '';
 
-        // Safety: Check if history is an array
         const history = (data && Array.isArray(data.history)) ? data.history : [];
+        
+        // FILTER: Last 48 Hours only
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-        if (history.length === 0) {
-            list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No transactions</div>';
+        const recentHistory = history.filter(tx => {
+            const txDate = new Date(tx.created_at);
+            return txDate >= twoDaysAgo;
+        });
+
+        if (recentHistory.length === 0) {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No recent activity</div>';
             return;
         }
 
-        history.forEach(tx => {
+        recentHistory.forEach(tx => {
             const isPlus = tx.type === 'deposit' || tx.type === 'transfer_in' || tx.type === 'salary';
-            const color = isPlus ? '#2ecc71' : '#e74c3c';
+            const color = isPlus ? '#34c759' : '#ff3b30'; // iOS Green/Red
             const sign = isPlus ? '+' : '-';
             const safeAmount = tx.amount || 0;
-            const safeDesc = tx.description || '';
+            const safeDesc = tx.description || 'Transaction';
 
             const div = document.createElement('div');
             div.className = 'bank-item';
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="font-weight:bold;">${tx.type ? tx.type.toUpperCase().replace('_', ' ') : 'TX'}</span>
-                    <span style="color:${color}; font-weight:bold;">${sign}$${safeAmount.toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600; font-size:14px;">${safeDesc}</span>
+                    <span style="color:${color}; font-weight:bold; font-size:14px;">${sign}$${safeAmount.toLocaleString()}</span>
                 </div>
-                <div style="font-size:11px; color:#888;">${safeDesc}</div>
-                <div style="font-size:10px; color:#666; text-align:right;">${app.getRelativeTime(tx.created_at)}</div>
+                <div style="font-size:11px; color:#8e8e93; text-align:right;">${app.getRelativeTime(tx.created_at)}</div>
             `;
             list.appendChild(div);
         });
     },
 
-    sendTransfer: () => {
+    openTransferModal: () => {
+        document.getElementById('transfer-modal').classList.remove('hidden');
+        app.resetTransferModal();
+    },
+
+    closeTransferModal: () => {
+        document.getElementById('transfer-modal').classList.add('hidden');
+    },
+
+    resetTransferModal: () => {
+        document.getElementById('transfer-step-1').classList.remove('hidden');
+        document.getElementById('transfer-step-2').classList.add('hidden');
+        document.getElementById('modal-title').innerText = "Send Money";
+        // Nu resetam inputurile ca poate userul a gresit doar un pas
+    },
+
+    verifyTransfer: () => {
+        const target = document.getElementById('bank-target').value;
+        const amount = parseFloat(document.getElementById('bank-amount').value);
+
+        if (!target || !amount || amount <= 0) {
+            app.showToast('Fleeca', 'Error', 'Invalid details entered.');
+            return;
+        }
+
+        // Switch to Step 2 (Confirmation)
+        document.getElementById('transfer-step-1').classList.add('hidden');
+        document.getElementById('transfer-step-2').classList.remove('hidden');
+        document.getElementById('modal-title').innerText = "Confirm Transfer";
+        
+        document.getElementById('confirm-amount').innerText = '$' + amount.toLocaleString();
+        document.getElementById('confirm-target').innerText = target;
+    },
+
+    submitTransfer: () => {
         const target = document.getElementById('bank-target').value;
         const amount = document.getElementById('bank-amount').value;
-        if (!target || !amount) return;
-        
+
         if ('mp' in window) {
             mp.trigger('client:proxyAction', 'bankTransfer', JSON.stringify({t: target, a: amount}));
         }
+        
+        app.closeTransferModal();
         document.getElementById('bank-target').value = '';
         document.getElementById('bank-amount').value = '';
+        
+        // Optimistic UI update or wait for server response
+        app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     }
 };
 

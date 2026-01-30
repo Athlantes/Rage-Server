@@ -69,29 +69,93 @@
             </div>
 
             <div id="view-bank" class="view hidden">
-                <div class="status-bar-placeholder"></div>
-                <div class="app-header" style="background:#16a085;">
-                    <button onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
-                    <span>Fleeca Mobile</span>
+                <div class="app-header bank-header" style="background: transparent; color: #333; border: none; flex-shrink: 0;">
+                    <button class="back-btn" onclick="app.goHome()" style="color: #333;"><i class="fas fa-chevron-left"></i></button>
+                    <span style="font-weight: 800; font-size: 18px;">Fleeca</span>
                     <div style="width:20px;"></div>
                 </div>
-                
-                <div class="app-content" style="background:#ecf0f1; color:#333;">
-                    <div style="background:white; padding:20px; margin:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-                        <div style="font-size:12px; color:#7f8c8d;">TOTAL BALANCE</div>
-                        <div id="bank-balance" style="font-size:32px; font-weight:bold; color:#2c3e50;">$0</div>
+
+                <div class="app-content bank-content">
+                    
+                    <div class="bank-fixed-top">
+                        <div class="bank-card">
+                            <div class="card-top">
+                                <div class="card-chip"></div>
+                                <i class="fas fa-wifi card-contactless"></i>
+                            </div>
+                            <div class="card-balance-group">
+                                <span class="currency">$</span>
+                                <span id="bank-balance">0</span>
+                            </div>
+                            <div class="card-details">
+                                <div class="card-holder">PERSONAL ACCOUNT</div>
+                                <div class="card-logo">FLEECA</div>
+                            </div>
+                        </div>
+
+                        <div class="bank-actions-grid">
+                            <div class="bank-action-btn" onclick="app.openTransferModal()">
+                                <div class="action-icon-box" style="background: #007aff;">
+                                    <i class="fas fa-paper-plane"></i>
+                                </div>
+                                <span>Transfer</span>
+                            </div>
+                            <div class="bank-action-btn">
+                                <div class="action-icon-box" style="background: #ff9500;">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                                <span>Bills</span>
+                            </div>
+                            <div class="bank-action-btn">
+                                <div class="action-icon-box" style="background: #34c759;">
+                                    <i class="fas fa-arrow-down"></i>
+                                </div>
+                                <span>Request</span>
+                            </div>
+                            <div class="bank-action-btn">
+                                <div class="action-icon-box" style="background: #8e8e93;">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </div>
+                                <span>More</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div style="padding:0 15px;">
-                        <div style="font-weight:bold; margin-bottom:5px;">Quick Transfer</div>
-                        <input id="bank-target" type="text" placeholder="Recipient Name" style="width:100%; padding:10px; margin-bottom:5px; border:1px solid #ddd; border-radius:5px;">
-                        <input id="bank-amount" type="number" placeholder="Amount" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
-                        <button onclick="app.sendTransfer()" style="width:100%; background:#2c3e50; color:white; padding:10px; border:none; border-radius:5px;">SEND MONEY</button>
+                    <div class="bank-section-title">
+                        <span style="font-weight: bold; font-size: 16px;">Recent Activity</span>
+                        <span style="font-size: 12px; color: #888;">Last 48h</span>
                     </div>
 
-                    <div style="margin-top:20px; background:white; border-radius:10px 10px 0 0; min-height:200px; padding:15px;">
-                        <div style="font-weight:bold; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">Recent Activity</div>
-                        <div id="bank-history"></div>
+                    <div id="bank-history" class="bank-history-list">
+                        </div>
+                </div>
+
+                <div id="transfer-modal" class="modal-overlay hidden">
+                    <div class="modal-box">
+                        <h3 id="modal-title">Send Money</h3>
+                        
+                        <div id="transfer-step-1">
+                            <div class="input-group">
+                                <label>Recipient Name or ID</label>
+                                <input id="bank-target" type="text" placeholder="John Doe">
+                            </div>
+                            <div class="input-group">
+                                <label>Amount</label>
+                                <input id="bank-amount" type="number" placeholder="0">
+                            </div>
+                            <div class="modal-buttons">
+                                <button class="btn-cancel" onclick="app.closeTransferModal()">Cancel</button>
+                                <button class="btn-confirm" onclick="app.verifyTransfer()">Next</button>
+                            </div>
+                        </div>
+
+                        <div id="transfer-step-2" class="hidden">
+                            <p style="color: #666; margin-bottom: 20px;">Are you sure you want to send <strong id="confirm-amount">$0</strong> to <strong id="confirm-target">Target</strong>?</p>
+                            <div class="modal-buttons">
+                                <button class="btn-cancel" onclick="app.resetTransferModal()">Back</button>
+                                <button class="btn-confirm" onclick="app.submitTransfer()">Confirm</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

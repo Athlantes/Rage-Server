@@ -180,6 +180,12 @@ mp.keys.bind(0x45, true, () => {
     mp.events.callRemote('server:atm:open');
 });
 
+mp.keys.bind(0x1B, false, () => {
+    if (atmBrowser) {
+        mp.events.call('client:closeATM');
+    }
+});
+
 // 8. UI Events
 mp.events.add('client:atm:openUI', (dataJson) => {
     if (atmBrowser) return;
