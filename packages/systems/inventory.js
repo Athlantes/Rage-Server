@@ -24,14 +24,64 @@ class InventorySystem {
         });
         
         mp.events.add('server:moveItem', (player, fromSlot, toSlot) => {
+            // 1. DROP ITEM
             if (toSlot === 'GROUND') {
                 this.dropItem(player, fromSlot);
-            } else if (typeof fromSlot === 'string' && fromSlot.startsWith('ground_')) {
+                return;
+            } 
+            
+            // 2. PICKUP ITEM
+            if (typeof fromSlot === 'string' && fromSlot.startsWith('ground_')) {
                 const groundId = fromSlot.replace('ground_', '');
                 this.pickupItem(player, groundId, toSlot);
-            } else {
-                this.moveItem(player, fromSlot, toSlot);
+                return;
+            } 
+
+            // 3. MOVE / EQUIP ITEM
+            if (!player.inventory) return;
+
+            // Find the item being moved
+            const item = player.inventory.find(i => i.slot === fromSlot);
+            if (!item) return;
+
+            // Check if target is Special Slot
+            const isHotbar = (toSlot <= -51 && toSlot >= -55);
+            const isClothing = (toSlot < 0 && !isHotbar);
+
+            const def = ItemRegistry[item.itemId];
+            if (!def) return;
+
+            // --- A. HOTBAR CHECK ---
+            // Prevent clothing or non-equippables from going into Hotbar (Slots -51 to -55)
+            if (isHotbar) {
+                if (def.isEquippable === false) {
+                    return player.call('showNotification', ['Inventory', 'You cannot equip this item in the hotbar!']);
+                }
             }
+
+            // --- B. CLOTHING CHECK ---
+            // Validate clothing slots (Slots -1 to -15 usually)
+            if (isClothing) {
+                if (def.type !== 'clothing') {
+                    return player.call('showNotification', ['Item Error', 'This is not clothing!']);
+                }
+
+                // Gender Validation: Prevent Males from wearing Female clothes & vice versa
+                // (Assumes player.data.gender is 0 for Male, 1 for Female)
+                if (def.sex !== undefined && player.data.gender !== undefined) {
+                    if (def.sex !== player.data.gender) {
+                        return player.call('showNotification', ['Item Error', 'This item does not fit your gender!']);
+                    }
+                }
+
+                // Slot Validation: Ensure T-Shirt goes to Torso slot, etc.
+                if (def.data.componentId !== Math.abs(toSlot)) {
+                    return player.call('showNotification', ['Item Error', 'Wrong clothing slot!']);
+                }
+            }
+
+            // If all checks pass, perform the move
+            this.moveItem(player, fromSlot, toSlot);
         });
 
         mp.events.add('server:useItem', (player, slotIndex) => {
@@ -519,17 +569,23 @@ class InventorySystem {
     }
     
     refreshClothes(player) {
+        // 1. Get Equipped Items
         const equipment = player.inventory.filter(i => i.slot < 0 && i.slot > -50); 
+        
+        // 2. Determine Gender for Defaults
+        // Assuming player.data.gender is set (0=Male, 1=Female)
+        const isMale = (player.data.gender === 0);
         
         const defaults = {
             mask: { id: 1, drawable: 0, texture: 0 },
             torso: { id: 3, drawable: 15, texture: 0 },
-            legs: { id: 4, drawable: 21, texture: 0 },
-            shoes: { id: 6, drawable: 34, texture: 0 },
+            legs: { id: 4, drawable: isMale ? 14 : 15, texture: 0 }, // Underwear
+            shoes: { id: 6, drawable: isMale ? 34 : 35, texture: 0 }, // Basic feet
             top: { id: 11, drawable: 15, texture: 0 },
             undershirt: { id: 8, drawable: 15, texture: 0 }
         };
 
+        // Reset to Naked/Underwear
         player.setClothes(defaults.mask.id, defaults.mask.drawable, defaults.mask.texture, 0);
         player.setClothes(defaults.torso.id, defaults.torso.drawable, defaults.torso.texture, 0);
         player.setClothes(defaults.legs.id, defaults.legs.drawable, defaults.legs.texture, 0);
@@ -537,12 +593,17 @@ class InventorySystem {
         player.setClothes(defaults.top.id, defaults.top.drawable, defaults.top.texture, 0);
         player.setClothes(defaults.undershirt.id, defaults.undershirt.drawable, defaults.undershirt.texture, 0);
 
+        // 3. Apply Items based on items.js Definition
         equipment.forEach(equip => {
             const def = ItemRegistry[equip.itemId];
+            
             if (def && def.data) {
+                // Apply the static look defined in items.js
                 player.setClothes(def.data.componentId, def.data.drawable, def.data.texture, 0);
-                if (def.data.componentId === 11) {
-                    player.setClothes(3, def.data.torso || 15, 0, 0);
+
+                // Handle Torso logic (essential for tops)
+                if (def.data.componentId === 11 && def.data.torso !== undefined) {
+                    player.setClothes(3, def.data.torso, 0, 0);
                 }
             }
         });

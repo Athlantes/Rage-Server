@@ -26,3 +26,5 @@ require('./systems/atm.js');
 // 4. Jobs
 require('./jobs/manager.js');
 require('./jobs/garbage.js');
+
+require('./creator/index.js');

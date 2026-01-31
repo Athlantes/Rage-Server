@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const playerManager = require('./playerManager');
 const QuestManager = require('./questManager');
 const Banking = require('./banking');
+const CharCreator = require('../systems/charCreator');
 
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
@@ -180,12 +181,30 @@ function isDeviceOrSocialActive(currentPlayer) {
     });
 }
 
-function finalizeLogin(player, userData) {
+async function finalizeLogin(player, userData) {
+    // 1. Check if Character Exists (Look for appearance data)
+    if (!userData.appearance) {
+        player.data.dbId = userData.id;
+        player.data.username = userData.username;
+        player.logged = true; 
+        
+        console.log(`[Auth] ${player.name} sent to Character Creator.`);
+        player.call('client:creator:start'); // Start Creator
+        return;
+    }
+
+    startSession(player, userData);
+}
+
+// NEW FUNCTION: Actually spawn the player
+function startSession(player, userData) {
     player.logged = true;
     player.name = userData.username;
     player.data.dbId = userData.id;
     player.data.username = userData.username;
-    
+    player.data.appearance = userData.appearance; // Cache appearance
+    player.data.gender = userData.gender; // Cache gender
+
     // Load Economy
     player.data.money = userData.money;
     player.data.bank_money = userData.bank_money || 0;
@@ -230,10 +249,21 @@ function finalizeLogin(player, userData) {
         player.position = new mp.Vector3(-1037, -2738, 13);
     }
 
+    // Apply Appearance
+    CharCreator.applyAppearance(player, userData.appearance);
+
     player.call('client:auth:success');
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
     mp.events.call('server:loadAccount', player);
 }
+
+// Event called by Creator when done
+mp.events.add('server:auth:finalized', async (player) => {
+    const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [player.data.dbId]);
+    if (rows.length > 0) {
+        startSession(player, rows[0]);
+    }
+});
 
 mp.events.add('playerQuit', (player) => {
     if (player.logged) playerManager.saveAccount(player);
