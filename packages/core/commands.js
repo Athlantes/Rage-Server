@@ -3,25 +3,19 @@ const ZoneManager = require('../zones/index.js'); // Import ZoneManager
 const fs = require('fs');
 const path = require('path');
 
-// --- NEW COMMAND: CHECK ZONES ---
 mp.events.addCommand('currentzone', (player) => {
-    // 1. Check if the set exists and has items
-    if (!player.activeZones || player.activeZones.size === 0) {
-        return player.outputChatBox("!{FFFF00}[Zones] !{FFFFFF}You are not in any zone.");
-    }
-
-    // 2. Get Broad Phase (The ID list)
-    const broadZones = Array.from(player.activeZones);
+    // 1. Get Broad Phase (The ColShapes the player is physically touching)
+    const broadZones = ZoneManager.getBroadPhaseZones(player);
     
-    // 3. Check Precise Phase (The Polygon math)
+    // 2. Check Precise Phase (The Polygon math)
     const preciseZones = broadZones.filter(id => ZoneManager.isPlayerInZone(player, id));
 
-    player.outputChatBox(`!{FFFF00}[Zones] !{FFFFFF}Broad Area: ${broadZones.join(', ')}`);
+    player.outputChatBox(`!{55AA55}[Debug] !{FFFFFF}Broad Zones (Box): ${broadZones.length > 0 ? broadZones.join(', ') : 'None'}`);
     
     if (preciseZones.length > 0) {
-        player.outputChatBox(`!{00FF00}[Zones] !{FFFFFF}Precise Polygon: ${preciseZones.join(', ')}`);
+        player.outputChatBox(`!{00FF00}[Zone] !{FFFFFF}You are currently in: !{FFFF00}${preciseZones.join(', ')}`);
     } else {
-        player.outputChatBox(`!{FF0000}[Zones] !{FFFFFF}Precise Polygon: None (You are in the box, but outside the shape)`);
+        player.outputChatBox(`!{FF0000}[Zone] !{FFFFFF}Not currently inside any specific zone polygon.`);
     }
 });
 

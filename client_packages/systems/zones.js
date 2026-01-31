@@ -1,151 +1,140 @@
-let currentZone = null; 
-let activePolygon = null; // Stores vertices if we are inside a polygon bounding box
-let renderInterval = null; // Timer for checking polygon math
+// client_packages/systems/zones.js
 
-const ATTACH_BONE = 60309;
-const ATTACH_OFFSET = [-0.05, 0.35, 0.20, -180.0, 180.0, 0.0];
+// ===========================================================================
+//                              ZONING SYSTEM
+// ===========================================================================
 
-// --- MATH HELPER: Ray Casting Algorithm ---
-// Returns true if 'point' {x,y} is inside 'vs' (array of {x,y})
+let activeBroadZones = new Map();   
+let activePreciseZones = new Set(); 
+let renderInterval = null;          
+let debugMode = false;              // Toggle for showing lines
+
+const localPlayer = mp.players.local;
+
+// --- MATH HELPER ---
 function isPointInPolygon(point, vs) {
     let x = point.x, y = point.y;
     let inside = false;
     for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
         let xi = vs[i].x, yi = vs[i].y;
         let xj = vs[j].x, yj = vs[j].y;
-        
-        let intersect = ((yi > y) !== (yj > y))
-            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
     }
     return inside;
 }
 
 // --- EFFECT APPLICATOR ---
-function setZoneEffects(enable, zoneType) {
-    const localPlayer = mp.players.local;
-    
+function applyZoneEffects(zoneId, typeDef, enable) {
     if (enable) {
-        currentZone = zoneType;
-        
-        if (zoneType === 'safe_zone') {
-            localPlayer.setInvincible(true);
-            if (localPlayer.vehicle) localPlayer.vehicle.setAlpha(255);
-        } else if (zoneType === 'no_collision') {
-            if (localPlayer.vehicle) localPlayer.vehicle.setAlpha(255);
-        }
-        mp.events.call('updateZoneOverlay', true, zoneType);
+        if (typeDef.visualEffects) mp.events.call('updateZoneOverlay', true, typeDef.id);
+        if (typeDef.invincible) localPlayer.setInvincible(true);
+        if (typeDef.ghost && localPlayer.vehicle) localPlayer.vehicle.setAlpha(150); 
     } else {
-        currentZone = null;
-        localPlayer.setInvincible(false);
-        if (localPlayer.vehicle) localPlayer.vehicle.setAlpha(255);
-        mp.events.call('updateZoneOverlay', false, zoneType);
+        if (typeDef.visualEffects) mp.events.call('updateZoneOverlay', false, typeDef.id);
+        if (typeDef.invincible) localPlayer.setInvincible(false);
+        if (typeDef.ghost && localPlayer.vehicle) localPlayer.vehicle.setAlpha(255);
     }
 }
 
-// --- EVENTS ---
-
-// 1. Standard Entry (Cuboid/Sphere)
-mp.events.add("client:applyZoneEffect", (zoneType) => {
-    setZoneEffects(true, zoneType);
+// --- SERVER EVENTS ---
+mp.events.add('client:zone:enterBroad', (zoneId, zoneData, typeDef) => {
+    activeBroadZones.set(zoneId, { data: zoneData, config: typeDef });
+    startRenderLoopIfNeeded();
 });
 
-mp.events.add("client:removeZoneEffect", (zoneType) => {
-    setZoneEffects(false, zoneType);
-});
-
-// 2. Polygon Entry (Entered the "Broad Phase" box)
-mp.events.add("client:enterZoneBounds", (zoneType, vertices) => {
-    activePolygon = { type: zoneType, vertices: vertices };
-    
-    // Start a fast check loop (every 200ms is usually enough for "Enter/Exit" logic)
-    // If you need pixel perfect instant collision updates, use mp.events.add('render', ...)
-    if (renderInterval) clearInterval(renderInterval);
-    
-    let wasInside = false;
-
-    renderInterval = setInterval(() => {
-        const pos = mp.players.local.position;
-        const isInside = isPointInPolygon({x: pos.x, y: pos.y}, activePolygon.vertices);
-
-        if (isInside && !wasInside) {
-            // Player actually walked inside the polygon shape
-            setZoneEffects(true, activePolygon.type);
-            wasInside = true;
-        } 
-        else if (!isInside && wasInside) {
-            // Player stepped out of the polygon (but is still in the bounding box)
-            setZoneEffects(false, activePolygon.type);
-            wasInside = false;
-        }
-    }, 200);
-});
-
-mp.events.add("client:exitZoneBounds", () => {
-    // Player left the broad area entirely
-    if (renderInterval) {
-        clearInterval(renderInterval);
-        renderInterval = null;
+mp.events.add('client:zone:exitBroad', (zoneId) => {
+    if (activePreciseZones.has(zoneId)) {
+        const zone = activeBroadZones.get(zoneId);
+        if (zone) applyZoneEffects(zoneId, zone.config, false);
+        activePreciseZones.delete(zoneId);
     }
-    if (activePolygon) {
-        setZoneEffects(false, activePolygon.type); // Ensure effects are off
-        activePolygon = null;
+    activeBroadZones.delete(zoneId);
+});
+
+// --- DEBUG COMMAND ---
+mp.events.add('console:showzones', () => {
+    debugMode = !debugMode;
+    mp.gui.chat.push(debugMode ? "!{00FF00}[Zones] Debug lines ENABLED" : "!{FF0000}[Zones] Debug lines DISABLED");
+});
+// To use this, type /showzones in chat. You need to register the command on server side to call this event, 
+// OR simpler: just type `mp.events.call('console:showzones')` in F11 console.
+// BETTER: Add this temporary command below to client-side for easy testing:
+mp.events.add("playerCommand", (command) => {
+    if (command === "showzones") {
+        debugMode = !debugMode;
+        mp.gui.chat.push(debugMode ? "Debug lines ON" : "Debug lines OFF");
+        return true;
     }
 });
 
 
-// --- RENDER LOOP (Collision Logic) ---
-// This runs every frame ONLY if effects are active
+// --- RENDER LOOP (Physics & Visuals) ---
 mp.events.add("render", () => {
-    if (!currentZone) return;
+    // 1. Ghost Mode Logic
+    let inGhostZone = false;
+    activePreciseZones.forEach(id => {
+        const z = activeBroadZones.get(id);
+        if (z && z.config.ghost) inGhostZone = true;
+    });
 
-    const localPlayer = mp.players.local;
-    const localVehicle = localPlayer.vehicle;
-
-    if (localVehicle) {
+    if (inGhostZone && localPlayer.vehicle) {
         mp.vehicles.forEachInStreamRange((veh) => {
-            if (veh.handle !== localVehicle.handle) {
-                mp.game.entity.setNoCollisionEntity(localVehicle.handle, veh.handle, false);
-                mp.game.entity.setNoCollisionEntity(veh.handle, localVehicle.handle, false);
+            if (veh.handle !== localPlayer.vehicle.handle) {
+                mp.game.entity.setNoCollisionEntity(localPlayer.vehicle.handle, veh.handle, false);
+                mp.game.entity.setNoCollisionEntity(veh.handle, localPlayer.vehicle.handle, false);
             }
         });
+    }
 
-        mp.players.forEachInStreamRange((p) => {
-            if (p.handle !== localPlayer.handle) {
-                mp.game.entity.setNoCollisionEntity(localVehicle.handle, p.handle, false);
+    // 2. DEBUG DRAWING (This solves your "I don't see it" issue)
+    if (debugMode) {
+        activeBroadZones.forEach((zone) => {
+            if (zone.data.shape === 'polygon') {
+                const vs = zone.data.vertices;
+                const zHeight = localPlayer.position.z; // Draw at player height
+                
+                for (let i = 0; i < vs.length; i++) {
+                    const p1 = vs[i];
+                    const p2 = vs[(i + 1) % vs.length]; // Connect back to start
+                    
+                    // Draw Line (White)
+                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight - 10, p2.x, p2.y, zHeight - 10, 255, 255, 255, 255);
+                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight + 10, p2.x, p2.y, zHeight + 10, 255, 255, 255, 255);
+                    
+                    // Draw Vertical Pillars at corners (Red)
+                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight - 20, p1.x, p1.y, zHeight + 20, 255, 0, 0, 255);
+                }
             }
         });
     }
 });
 
-function attachBox(player, objRemoteId) {
-    let attempts = 0;
-    const interval = setInterval(() => {
-        const obj = mp.objects.atRemoteId(objRemoteId);
-        if (obj && obj.handle !== 0) {
-            obj.attachTo(player.handle, ATTACH_BONE, ...ATTACH_OFFSET, false, false, false, false, 2, true);
-            clearInterval(interval);
+// --- CHECKER LOOP ---
+function startRenderLoopIfNeeded() {
+    if (renderInterval) return;
+    renderInterval = setInterval(() => {
+        if (activeBroadZones.size === 0) {
+            clearInterval(renderInterval);
+            renderInterval = null;
+            return;
         }
-        attempts++;
-        if (attempts > 50) clearInterval(interval); // Stop after 5 seconds if not found
-    }, 100);
+        const pos = localPlayer.position;
+        const pObj = { x: pos.x, y: pos.y };
+
+        activeBroadZones.forEach((zone, id) => {
+            let isInside = false;
+            if (zone.data.shape === 'polygon') isInside = isPointInPolygon(pObj, zone.data.vertices);
+            else isInside = true; 
+
+            const wasInside = activePreciseZones.has(id);
+            if (isInside && !wasInside) {
+                activePreciseZones.add(id);
+                applyZoneEffects(id, zone.config, true);
+            } else if (!isInside && wasInside) {
+                activePreciseZones.delete(id);
+                applyZoneEffects(id, zone.config, false);
+            }
+        });
+    }, 200); 
 }
-
-// Handle players already nearby or just driving into range
-mp.events.add('entityStreamIn', (entity) => {
-    if (entity.type === 'player') {
-        const objId = entity.getVariable('attachedObject');
-        if (objId !== undefined && objId !== null) {
-            attachBox(entity, objId);
-        }
-    }
-});
-
-// Handle when the box is first picked up
-mp.events.addDataHandler('attachedObject', (entity, value) => {
-    if (entity.type === 'player') {
-        if (value !== null && value !== undefined) {
-            attachBox(entity, value);
-        }
-    }
-});
