@@ -465,6 +465,16 @@ mp.events.addCommand('addbin', (player) => {
     player.outputChatBox(`!{00FF00}Bin added. Total: ${data.dumpsters.length}`);
 });
 
+mp.events.addCommand('removebin', (player) => {
+    if (!routeCreators.has(player.id)) return;
+    const data = routeCreators.get(player.id);
+    if (data.dumpsters.length === 0) return player.outputChatBox("!{FF0000}No bins to remove.");
+    data.dumpsters.pop();
+    const blip = data.tempBlips.pop();
+    if (mp.blips.exists(blip)) blip.destroy();
+    player.outputChatBox(`!{FFFF00}Last bin removed. Total: ${data.dumpsters.length}`);
+});
+
 mp.events.addCommand('finishroute', (player, fullText, difficulty) => {
     if (!routeCreators.has(player.id)) return;
     const data = routeCreators.get(player.id);

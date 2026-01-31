@@ -1,3 +1,5 @@
+require('./auth/index.js');
+
 // 1. Core Utilities & Managers
 require('./core/pauseMenu.js');
 require('./core/jobMenu.js');

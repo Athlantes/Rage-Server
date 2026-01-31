@@ -2,18 +2,12 @@
 const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
+const RESTAURANTS = require('../../data/restaurants');
 
-// --- NEW IMPORT ---
-// Adjust the path ('../../zones') if your folder structure is different
 const ZoneManager = require('../../zones'); 
 
 const JOB_KEY = 'quickeats';
 const REQUIRED_ZONE = 'ls_zone'; // The ID we added to config.js
-
-const RESTAURANTS = [
-    { name: "Taco Bomb", x: 12.39, y: -1606.09, z: 29.40 },
-    { name: "Lucky Plucker", x: 132.83, y: -1462.37, z: 29.36 }
-];
 
 const REWARDS = {
     basePay: 40,
@@ -115,7 +109,7 @@ function handlePickup(player) {
     const distanceBonus = Math.floor((dist / 1000) * REWARDS.perKm);
     order.pay = REWARDS.basePay + distanceBonus;
 
-    jobManager.createObjective(player, dest, "Customer Drop-off", 1.5, (p) => {
+    jobManager.createObjective(player, dest, "Customer Drop-off", 0.5, (p) => {
         handleFinish(p);
     }, {
         blipSprite: 280, 

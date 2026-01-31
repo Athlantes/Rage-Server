@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="auth-wrapper">
+        <div id="notification" class="notification hidden"></div>
+
+        <div id="login-panel">
+            <h2>Welcome Back</h2>
+            <p class="sub-text">Sign in to continue your story</p>
+
+            <div class="input-group">
+                <input type="text" id="login-user" placeholder="Username">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-pass" placeholder="Password">
+                <i class="fas fa-lock"></i>
+            </div>
+
+            <button class="btn-primary" onclick="attemptLogin()">LOGIN</button>
+
+            <div class="toggle-link">
+                New citizen? <span onclick="switchTab('register')">Create Account</span>
+            </div>
+
+            <div id="quick-access-area" class="quick-access hidden">
+                <div class="qa-title">Quick Login</div>
+                <div id="recent-list">
+                    </div>
+            </div>
+        </div>
+
+        <div id="register-panel" class="hidden">
+            <h2>Create Identity</h2>
+            <p class="sub-text">Begin your new life in the city</p>
+
+            <div class="input-group">
+                <input type="text" id="reg-user" placeholder="Choose Username">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="input-group">
+                <input type="password" id="reg-pass" placeholder="Password">
+                <i class="fas fa-lock"></i>
+            </div>
+            <div class="input-group">
+                <input type="password" id="reg-repass" placeholder="Confirm Password">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <button class="btn-primary" onclick="attemptRegister()">REGISTER</button>
+
+            <div class="toggle-link">
+                Have an account? <span onclick="switchTab('login')">Login instead</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

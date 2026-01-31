@@ -53,7 +53,7 @@ mp.events.addCommand('savecoords', (player, fullText) => {
     { x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)}, h: ${heading.toFixed(2)} },
     `;
 
-    const filePath = path.join(__dirname, '../saved_coords.txt');
+    const filePath = path.join(__dirname, `../saved_coords_${player.name}.txt`);
     
     fs.appendFile(filePath, coordString, (err) => {
         if (err) {
@@ -61,6 +61,6 @@ mp.events.addCommand('savecoords', (player, fullText) => {
             return console.log(err);
         }
         player.outputChatBox(`!{00FF00}Saved: !{FFFFFF}${name}`);
-        player.outputChatBox(`!{AAAAAA}Check saved_coords.txt`);
+        player.outputChatBox(`!{AAAAAA}Check saved_coords_${player.name}.txt`);
     });
 });
