@@ -2,4 +2,5 @@
 /BugTrap-x64.dll
 /dotnet
 /packages/node_modules
-/client_packages/game_resources/dlcpacks/dnxchilliadmap
+/client_packages/game_resources
+/client_packages/ui/WebMap/images
