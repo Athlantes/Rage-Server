@@ -1,46 +1,45 @@
 
-    // TatavianMountainsGasStationBlip
-    { x: 2581.21, y: 361.24, z: 108.47, h: 33.69 },
+    // MaxXY
+    { x: 216.50, y: 5460.98, z: 604.57, h: 63.31 },
     
-    // TatavianMountainsPump1
-    { x: 2571.64, y: 359.21, z: 108.46, h: -6.08 },
+    // MinXY
+    { x: 58.89, y: 5392.54, z: 604.40, h: 161.42 },
     
-    // TatavianMountainsPump2
-    { x: 2571.88, y: 365.17, z: 108.46, h: 170.59 },
+    // MinX
+    { x: 60.07, y: 5386.98, z: 604.26, h: -79.20 },
     
-    // TatavianMountainsPump3
-    { x: 2575.73, y: 364.91, z: 108.47, h: -178.41 },
+    // MaxX
+    { x: 170.24, y: 5342.11, z: 605.69, h: 155.13 },
     
-    // TatavianMountainsPump4
-    { x: 2575.51, y: 359.04, z: 108.46, h: 176.71 },
+    // MaxY
+    { x: 211.65, y: 5452.40, z: 604.25, h: -48.32 },
     
-    // TatavianMountainsPump5
-    { x: 2579.10, y: 358.84, z: 108.46, h: 3.12 },
+    // MinY
+    { x: 105.26, y: 5500.14, z: 603.94, h: -121.15 },
     
-    // TatavianMountainsPump6
-    { x: 2579.30, y: 364.46, z: 108.46, h: -2.41 },
+    // MinY
+    { x: 57.10, y: 5392.47, z: 604.07, h: 26.88 },
     
-    // TatavianMountainsPump7
-    { x: 2583.11, y: 364.46, z: 108.46, h: 173.73 },
+    // MinY Final
+    { x: 48.91, y: 5385.23, z: 603.78, h: -0.93 },
     
-    // TatavianMountainsPump8
-    { x: 2582.85, y: 358.81, z: 108.46, h: 175.45 },
+    // MaxY Final
+    { x: 199.54, y: 5342.89, z: 606.24, h: 2.37 },
     
-    // TatavianMountainsPump9
-    { x: 2586.50, y: 358.47, z: 108.47, h: -4.87 },
+    // MaxX Final
+    { x: 200.85, y: 5478.28, z: 605.62, h: 6.01 },
     
-    // TatavianMountainsPump10
-    { x: 2586.77, y: 364.19, z: 108.46, h: -7.13 },
+    // MinX Final
+    { x: 96.10, y: 5492.81, z: 603.88, h: 89.59 },
     
-    // TatavianMountainsPump11
-    { x: 2590.49, y: 363.99, z: 108.46, h: 178.76 },
+    MinX MaxX
+    MinY MaxY
+    // test
+    { x: 189.44, y: 5457.42, z: 605.58, h: -166.76 },
     
-    // TatavianMountainsPump12
-    { x: 2590.25, y: 358.40, z: 108.46, h: 175.86 },
+    // ?
+    { x: 119.42, y: 5355.23, z: 605.01, h: -111.73 },
     
-    // GoPostalJobNPC
-    { x: 83.51, y: 133.92, z: 80.53, h: 69.79 },
-    
-    // GoPostalJobCarSpawn
-    { x: 62.63, y: 124.34, z: 79.39, h: 162.76 },
+    // ??
+    { x: 98.46, y: 5481.23, z: 603.92, h: -11.35 },
     

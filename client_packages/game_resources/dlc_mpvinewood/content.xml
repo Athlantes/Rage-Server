@@ -1,0 +1,1173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDataFileMgr__ContentsOfDataFileXml>
+  <disabledFiles />
+  <includedXmlFiles />
+  <includedDataFiles />
+  <dataFiles>
+	<Item>
+      <filename>dlc_mpVinewood:/common/data/anim/clip_sets/clip_sets.xml</filename>
+      <fileType>CLIP_SETS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+      <Item>
+        <filename>dlc_mpVinewood:/common/data/interiorProxies.meta</filename>
+        <fileType>INTERIOR_PROXY_ORDER_FILE</fileType>
+        <overlay value="false"/>
+        <disabled value="true"/>
+        <persistent value="false"/>
+    </Item>
+	<Item>
+        <filename>dlc_mpVinewood:/common/data/overlayinfo.xml</filename>
+        <fileType>OVERLAY_INFO_FILE</fileType>
+        <overlay value="false" />
+        <disabled value="true" />
+        <persistent value="false" />
+    </Item>
+     <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/shop_tattoo.meta</filename>
+      <fileType>TATTOO_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+     <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/shop_vehicle.meta</filename>
+      <fileType>VEHICLE_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/vehicles/mpVinewood.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts_rrocket.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts_s80.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/ai/vehicleweapons_paragon2.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/levels/gta5/vehicles.meta</filename>
+      <fileType>VEHICLE_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/carcols.meta</filename>
+      <fileType>CARCOLS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/carvariations.meta</filename>
+      <fileType>VEHICLE_VARIATION_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/dlctext.meta</filename>
+      <fileType>TEXTFILE_METAFILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/contentunlocks.meta</filename>
+      <fileType>CONTENT_UNLOCKING_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/handling.meta</filename>
+      <fileType>HANDLING_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/common/data/mpStatsSetup.xml</filename>
+      <fileType>MP_STATS_DISPLAY_LIST_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Cabinets.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Cabinets.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/prop_vw_casino.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_prop_vw_casino.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_CasinoChips.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_CasinoChips.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Collectibles.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Collectibles.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Accs.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Accs.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Accs_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Accs_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/prop_vw_animated_walls.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_prop_vw_animated_walls.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Cards.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Cards.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Disposal.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Disposal.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Door_Break.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Door_Break.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Machinery.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Machinery.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Screens.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Screens.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Storage.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Storage.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Tables.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Tables.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Turntable.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Turntable.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_02.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_02.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_03.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_03.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_04.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_04.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_05.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_05.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/int_placement_vw.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+      <contents>CONTENTS_DLC_MAP_DATA</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_02.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_03.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_05.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim@.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim_casino_a@.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim_casino_b@.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/weapons.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/navmeshes.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="true" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/gta5/lodlights.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+      <contents>CONTENTS_DLC_MAP_DATA</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/expressions.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/paragon_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/emerus_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/peyote2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/gauntlet4_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/locust_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/novak_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>	
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/nebula_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/zion3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/zorrusso_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/drafter_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/gauntlet3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/hellion_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/issi7_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/thrax_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/Dynasty_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/caracara2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/s80_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/krieger_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/neo_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/rrocket_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/jugular_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_game.dat</filename>
+      <fileType>AUDIO_GAMEDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_sounds.dat</filename>
+      <fileType>AUDIO_SOUNDDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_mix.dat</filename>
+      <fileType>AUDIO_DYNAMIXDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_amp.dat</filename>
+      <fileType>AUDIO_SYNTHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+	  <filename>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_speech.dat</filename>
+      <fileType>AUDIO_SPEECHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/sfx/dlc_Vinewood</filename>
+      <fileType>AUDIO_WAVEPACK</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/audio/occlusion.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/creaturemetadata.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/pedalternatevariations.meta</filename>
+      <fileType>ALTERNATE_VARIATIONS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/effects/peds/first_person_alternates.meta</filename>
+      <fileType>PED_FIRST_PERSON_ALTERNATE_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/effects/peds/first_person.meta</filename>
+      <fileType>PED_FIRST_PERSON_ASSET_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>	
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/peds.meta</filename>
+      <fileType>PED_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_streamed.rpf</filename>
+      <fileType>PEDSTREAM_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_streamed_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_cutspeds.rpf</filename>
+      <fileType>PEDSTREAM_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_cutspeds_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_male.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_male_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/mp_m_freemode_01_mpvinewood_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_female.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_female_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewoodCRC:/common/data/mp_f_freemode_01_mpvinewood_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+	  <filename>dlc_mpVinewoodCRC:/common/data/effects/peds/mpVinewood_overlays.xml</filename>
+	  <fileType>PED_OVERLAY_FILE</fileType>
+	  <overlay value="false" />
+	  <disabled value="true" />
+	  <persistent value="false" />
+	</Item>
+	<Item>
+	  <filename>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpVinewood_ped_mp_overlay_txds.rpf</filename>
+	  <fileType>RPF_FILE</fileType>
+	  <overlay value="false" />
+	  <disabled value="true" />
+	  <persistent value="true" />
+	</Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas1.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas2.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas3.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas4.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas5.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas6.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpsui.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/data/effects/ptfx.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/effects/scriptfx.dat</filename>
+      <fileType>SCRIPTFX_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpVinewood:/common/data/srllist.meta</filename>
+      <fileType>STREAMING_REQUEST_LISTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpVinewood:/%PLATFORM%/data/cdimages/moviesubs.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+  </dataFiles>
+  <contentChangeSets>
+    <Item>
+      <changeSetName>mpVinewood_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+		<Item>dlc_mpVinewood:/common/data/srllist.meta</Item>
+      	<Item>dlc_mpVinewood:/common/data/interiorProxies.meta</Item>
+      	<Item>dlc_mpVinewood:/common/data/overlayinfo.xml</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Cabinets.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Cabinets.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/prop_vw_casino.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_prop_vw_casino.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_CasinoChips.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_CasinoChips.ityp</Item>
+	    <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Collectibles.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Collectibles.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Turntable.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Turntable.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Accs.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Accs.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Accs_01.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Accs_01.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/prop_vw_animated_walls.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_prop_vw_animated_walls.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Cards.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Cards.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Disposal.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Disposal.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Door_Break.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Door_Break.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Machinery.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Machinery.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Screens.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Screens.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Storage.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Storage.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Tables.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Tables.ityp</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_01.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_01.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_02.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_02.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_03.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_03.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_04.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_04.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/Prop_VW_Casino_Art_05.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/props/vw_Prop_VW_Casino_Art_05.ityp</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim@.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim_casino_a@.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/ingame/clip_anim_casino_b@.rpf</Item>
+        <Item>dlc_mpVinewood:/common/data/anim/clip_sets/clip_sets.xml</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/weapons.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/anim/expressions.rpf</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/shop_tattoo.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/shop_vehicle.meta</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/vehicles/mpVinewood.rpf</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts_rrocket.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/ai/vehiclelayouts_s80.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/ai/vehicleweapons_paragon2.meta</Item>
+        <Item>dlc_mpVinewoodCRC:/common/data/levels/gta5/vehicles.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/handling.meta</Item>
+        <Item>dlc_mpVinewood:/common/data/carcols.meta</Item>
+        <Item>dlc_mpVinewood:/common/data/carvariations.meta</Item>
+        <Item>dlc_mpVinewood:/common/data/mpStatsSetup.xml</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/paragon_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/emerus_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/peyote2_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/gauntlet4_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/nebula_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/zion3_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/zorrusso_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/drafter_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/gauntlet3_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/hellion_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/locust_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/issi7_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/novak_mods.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/thrax_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/Dynasty_mods.rpf</Item>	
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/caracara2_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/s80_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/krieger_mods.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/neo_mods.rpf</Item>	
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/rrocket_mods.rpf</Item>		
+		<Item>dlc_mpVinewood:/%PLATFORM%/levels/mpVinewood/vehiclemods/jugular_mods.rpf</Item>	
+        <Item>dlc_mpVinewood:/common/data/dlctext.meta</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_game.dat</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_sounds.dat</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_mix.dat</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_amp.dat</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/audio/dlcVinewood_speech.dat</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/audio/sfx/dlc_Vinewood</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/audio/occlusion.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/creaturemetadata.rpf</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/pedalternatevariations.meta</Item>
+		<Item>dlc_mpVinewood:/common/data/effects/peds/first_person_alternates.meta</Item>
+		<Item>dlc_mpVinewood:/common/data/effects/peds/first_person.meta</Item>
+        <Item>dlc_mpVinewood:/common/data/peds.meta</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpVinewood.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpVinewood_p.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpVinewood_streamed.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpVinewood_streamed_p.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_cutspeds.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/peds/mpvinewood_cutspeds_p.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_male.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_male_p.rpf</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/mp_m_freemode_01_mpvinewood_shop.meta</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_female.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpvinewood_female_p.rpf</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/mp_f_freemode_01_mpvinewood_shop.meta</Item>
+		<Item>dlc_mpVinewoodCRC:/common/data/effects/peds/mpVinewood_overlays.xml</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/models/cdimages/mpVinewood_ped_mp_overlay_txds.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas1.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas2.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas3.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas4.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas5.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpcas6.rpf</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/anim/cutscene/cuts_mpsui.rpf</Item>
+        <Item>dlc_mpVinewood:/%PLATFORM%/data/effects/ptfx.rpf</Item>
+        <Item>dlc_mpVinewood:/common/data/effects/scriptfx.dat</Item>
+		<Item>dlc_mpVinewood:/%PLATFORM%/data/cdimages/moviesubs.rpf</Item>
+      </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>
+    <Item>
+      <changeSetName>mpVinewood_UNLOCKS_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+        <Item>dlc_mpVinewoodCRC:/common/data/contentunlocks.meta</Item>
+      </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>
+    <Item>
+      <changeSetName>mpVinewood_INTERIOR_ADDITIONS</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToEnable>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_01.rpf</Item>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_02.rpf</Item>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_03.rpf</Item>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/vwdlc_int_05.rpf</Item>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/interiors/int_placement_vw.rpf</Item>
+          </filesToEnable>
+        </Item>
+      </mapChangeSetData>
+      <requiresLoadingScreen value="true"/>
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true"/>
+    </Item>
+	    <Item>
+      <changeSetName>mpVinewood_MAP_UPDATE</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToDisable />
+          <filesToEnable>
+          </filesToEnable>
+          <txdToLoad />
+          <txdToUnload />
+          <residentResources />
+          <unregisterResources />
+        </Item>
+      </mapChangeSetData>
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable />
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="true" />
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true" />
+    </Item>
+    <Item>
+      <changeSetName>MPVINEWOOD_GTA5_LODLIGHTS</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate>
+            <Item>platform:/levels/gta5/lodlights.rpf</Item>
+          </filesToInvalidate>
+          <filesToDisable />
+          <filesToEnable>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/lodlights.rpf</Item>
+          </filesToEnable>
+        </Item>
+      </mapChangeSetData>
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable />
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="true" />
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true" />
+    </Item>
+	<Item>
+      <changeSetName>MPVINEWOOD_MAP_UPDATE_NAVMESH_ONLY</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToDisable />
+          <filesToEnable>
+            <Item>dlc_mpVinewood:/%PLATFORM%/levels/gta5/navmeshes.rpf</Item>
+          </filesToEnable>
+          <txdToLoad />
+          <txdToUnload />
+          <residentResources />
+          <unregisterResources />
+        </Item>
+      </mapChangeSetData>
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable />
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="true" />
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true" />
+    </Item>
+  </contentChangeSets>
+  <patchFiles />
+</CDataFileMgr__ContentsOfDataFileXml>

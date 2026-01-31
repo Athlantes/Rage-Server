@@ -1,0 +1,829 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDataFileMgr__ContentsOfDataFileXml>
+  <disabledFiles />
+  <includedXmlFiles />
+  <includedDataFiles />
+  <dataFiles>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehiclelayouts.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_bombs.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_bombushka.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_dogfight.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_havok.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_hunter.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_microlight.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_mogul.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_rogue.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_seabreeze.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_tula.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_vigilante.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/anim/clip_sets/clip_sets.xml</filename>
+      <fileType>CLIP_SETS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/anim/cutscene/cuts_hang.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/effects/explosionfx.dat</filename>
+      <fileType>EXPLOSIONFX_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/levels/gta5/vehicles.meta</filename>
+      <fileType>VEHICLE_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/carcols.meta</filename>
+      <fileType>CARCOLS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>    
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/carvariations.meta</filename>
+      <fileType>VEHICLE_VARIATION_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/contentunlocks.meta</filename>
+      <fileType>CONTENT_UNLOCKING_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/dlctext.meta</filename>
+      <fileType>TEXTFILE_METAFILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/explosion.meta</filename>
+      <fileType>EXPLOSION_INFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/handling.meta</filename>
+      <fileType>HANDLING_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/common/data/interiorProxies.meta</filename>
+      <fileType>INTERIOR_PROXY_ORDER_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/common/data/mpStatsSetup.xml</filename>
+      <fileType>MP_STATS_DISPLAY_LIST_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/overlayinfo.xml</filename>
+      <fileType>OVERLAY_INFO_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/shop_tattoo.meta</filename>
+      <fileType>TATTOO_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/shop_vehicle.meta</filename>
+      <fileType>VEHICLE_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/weaponarchetypes.meta</filename>
+      <fileType>WEAPON_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/anim/ingame/clip_anim@.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/audio/sfx/dlc_Smuggler</filename>
+      <fileType>AUDIO_WAVEPACK</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_amp.dat</filename>
+      <fileType>AUDIO_SYNTHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_game.dat</filename>
+      <fileType>AUDIO_GAMEDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_mix.dat</filename>
+      <fileType>AUDIO_DYNAMIXDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_sounds.dat</filename>
+      <fileType>AUDIO_SOUNDDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	 <Item>
+    <filename>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_speech.dat</filename>
+      <fileType>AUDIO_SPEECHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/SmugDLC_Interior_props.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_SmugDLC_Interior_props.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Shadows.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_smug_Shadows.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+		<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Crates.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Crates.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Crates_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Crates_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Cranes.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Cranes.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Heli.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Heli.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Crates_Des.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Crates_Des.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_HgrDoors.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_HgrDoors.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Accs.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Accs.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Cont.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Cont.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Lights.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Lights.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/vehicles/mpsmugglervehicles.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/vigilante_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/nokota_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/molotok_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/retinue_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/rapidgt3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/havok_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/microlight_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/alphaz1_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/rogue_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/starling_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/bombushka_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/tula_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>   
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/seabreeze_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>   
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/hunter_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>     
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/mogul_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>    
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/pyro_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>    
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/howard_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>    
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/cyclone_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>    
+	<Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/visione_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/pedalternatevariations.meta</filename>
+      <fileType>ALTERNATE_VARIATIONS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/anim/creaturemetadata.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/mp_f_freemode_01_smuggler_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_female.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_female_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmugglerCRC:/common/data/mp_m_freemode_01_smuggler_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_male.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_male_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/effects/peds/first_person_alternates.meta</filename>
+      <fileType>PED_FIRST_PERSON_ALTERNATE_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/effects/peds/first_person.meta</filename>
+      <fileType>PED_FIRST_PERSON_ASSET_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/peds.meta</filename>
+      <fileType>PED_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/peds/mpsmuggler.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/peds/mpsmuggler_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/weapons.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/%PLATFORM%/data/effects/ptfx.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/effects/scriptfx.dat</filename>
+      <fileType>SCRIPTFX_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSmuggler:/common/data/effects/ptfxassetinfo.meta</filename>
+      <fileType>PTFXASSETINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+		<filename>dlc_mpSmugglerCRC:/common/data/effects/peds/mpSmuggler_overlays.xml</filename>
+		<fileType>PED_OVERLAY_FILE</fileType>
+		<overlay value="false" />
+		<disabled value="true" />
+		<persistent value="false" />
+	</Item>
+	<Item>
+		<filename>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpSmuggler_ped_mp_overlay_txds.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="false" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+  </dataFiles>
+  <contentChangeSets>
+    <Item>
+      <changeSetName>MPSMUGGLER_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+	  <filesToEnable>
+		<Item>dlc_mpSmugglerCRC:/common/data/handling.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehiclelayouts.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_bombs.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_bombushka.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_dogfight.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_havok.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_hunter.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_microlight.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_mogul.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_rogue.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_seabreeze.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_tula.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/ai/vehicleweapons_vigilante.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/anim/clip_sets/clip_sets.xml</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/effects/explosionfx.dat</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/levels/gta5/vehicles.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/carcols.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/carvariations.meta</Item>
+	    <Item>dlc_mpSmuggler:/common/data/dlctext.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/explosion.meta</Item>
+		<Item>dlc_mpSmuggler:/common/data/interiorProxies.meta</Item>
+	    <Item>dlc_mpSmuggler:/common/data/mpStatsSetup.xml</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/mp_f_freemode_01_smuggler_shop.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/mp_m_freemode_01_smuggler_shop.meta</Item>
+	    <Item>dlc_mpSmuggler:/common/data/overlayinfo.xml</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/shop_tattoo.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/shop_vehicle.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/weaponarchetypes.meta</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/anim/ingame/clip_anim@.rpf</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/anim/cutscene/cuts_hang.rpf</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/pedalternatevariations.meta</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/anim/creaturemetadata.rpf</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/audio/sfx/dlc_Smuggler</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_amp.dat</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_game.dat</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_mix.dat</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_sounds.dat</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/audio/dlcSmuggler_speech.dat</Item>
+        <Item>dlc_mpSmuggler:/%PLATFORM%/data/effects/ptfx.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/SmugDLC_Interior_props.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_SmugDLC_Interior_props.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/prop_smug_Shadows.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_prop_smug_Shadows.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/prop_smug_crates.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_prop_smug_crates.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/prop_smug_crates_01.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_prop_smug_crates_01.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/prop_smug_cranes.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_prop_smug_cranes.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Heli.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Heli.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Crates_Des.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Crates_Des.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_HgrDoors.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_HgrDoors.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Accs.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Accs.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Cont.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Cont.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/Prop_Smug_Lights.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/props/sm_Prop_Smug_Lights.ityp</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/gta5/vehicles/mpsmugglervehicles.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/nokota_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/molotok_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/rapidgt3_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/retinue_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/havok_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/microlight_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/alphaz1_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/rogue_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/starling_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/bombushka_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/tula_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/hunter_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/seabreeze_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/mogul_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/pyro_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/howard_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/cyclone_mods.rpf</Item>		
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/visione_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/levels/mpsmuggler/vehiclemods/vigilante_mods.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_female.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_female_p.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_male.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpsmuggler_male_p.rpf</Item>
+        <Item>dlc_mpSmuggler:/common/data/peds.meta</Item>
+        <Item>dlc_mpSmuggler:/common/data/effects/peds/first_person.meta</Item>
+        <Item>dlc_mpSmuggler:/common/data/effects/peds/first_person_alternates.meta</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/peds/mpsmuggler.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/peds/mpsmuggler_p.rpf</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/weapons.rpf</Item>
+        <Item>dlc_mpSmuggler:/common/data/effects/scriptfx.dat</Item>
+        <Item>dlc_mpSmuggler:/common/data/effects/ptfxassetinfo.meta</Item>
+		<Item>dlc_mpSmugglerCRC:/common/data/effects/peds/mpSmuggler_overlays.xml</Item>
+		<Item>dlc_mpSmuggler:/%PLATFORM%/models/cdimages/mpSmuggler_ped_mp_overlay_txds.rpf</Item>
+	  </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>	
+    <Item>
+      <changeSetName>MPSMUGGLER_UNLOCKS_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+		<Item>dlc_mpSmugglerCRC:/common/data/contentunlocks.meta</Item>
+      </filesToEnable>
+	  <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>
+	<Item>
+      <changeSetName>MPSMUGGLER_INTERIOR_ADDITIONS</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToEnable/>
+        </Item>
+      </mapChangeSetData>
+      <requiresLoadingScreen value="true"/>
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true"/>
+    </Item> 
+  </contentChangeSets>
+  <patchFiles />
+</CDataFileMgr__ContentsOfDataFileXml>

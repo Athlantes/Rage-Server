@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CDataFileMgr__ContentsOfDataFileXml>
+	<disabledFiles />
+	<includedXmlFiles />
+	<dataFiles>
+		<Item>
+			<filename>dlc_patchDay1NG:/common/data/textpatch.meta</filename>
+			<fileType>TEXTFILE_METAFILE</fileType>
+			<disabled value="true" />
+		</Item> 
+		<Item>
+			<filename>dlc_patchDay1NG:/common/data/ExtraFolderMount.xml</filename>
+			<fileType>EXTRA_FOLDER_MOUNT_DATA</fileType>
+			<persistent value="true" />
+			<disabled value="true" />
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/cutscene/cuts_ah_1.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/cutscene/cuts_drf.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+       <Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_amb@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_cellphone@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_cover@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_creatures@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_facials@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_get_up@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_ladders.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_melee@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_mini@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_miss.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_move_.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_mp_.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_oddjobs@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_random@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_safe@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_save.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_skydive@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_swimming@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_veh@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_weapons@.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+        <Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/vehicles.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/weapons.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/textures/script_txds.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+			<filename>dlc_patchDay1NG:/%PLATFORM%/anim/networkdefs.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/anim/expressions.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/v_ng_proppatch_01.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/v_ng_proppatch_01.ityp</filename>
+		  <fileType>DLC_ITYP_REQUEST</fileType>
+		  <overlay value="false" />
+		  <disabled value="true" />
+		  <persistent value="true" />
+		  <contents>CONTENTS_PROPS</contents>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/building/v_rooftop.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/industrial/v_airport.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/lev_des/v_minigame.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/lev_des/v_set_pieces.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/recreational/v_coin_op.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/recreational/v_sports.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_fences.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_construction.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_rubbish.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/vegetation/v_bush.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/vegetation/v_cacti.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/akuma_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/alpha_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>	
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/banshee_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/bifta_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>	
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/blista_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>		
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/bodhi2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>		
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/buccaneer_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/buffalo_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/buffalo2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/buffalo3_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/cavalcade_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/comet2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/coquette2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/dubsta_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/dubsta2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/dubsta3_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/elegy2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/felon_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/feltzer2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/futo_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>		
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/glendale_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>		
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/gresley_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/huntley_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>		
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/intruder_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/issi2_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/jackal_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/jester_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/massacro_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/panto_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/phoenix_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/sabregt_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/tailgater_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/turismor_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/vigero_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/warrener_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/levels/patchday1ng/vehiclemods/youga_mods.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/ped_mp_overlay_txds.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/streamedpeds_strm.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+		<Item>
+		  <filename>dlc_patchDay1NG:/%PLATFORM%/txd_patches.rpf</filename>
+		  <fileType>RPF_FILE</fileType>
+		  <locked value="true"/>
+		  <disabled value="true"/>
+		  <persistent value="true"/>
+		  <overlay value="true"/>
+		</Item>
+	</dataFiles>
+	<contentChangeSets>
+		<Item>
+			<changeSetName>CCS_PATCHDAY1_NG_INIT</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay1NG:/common/data/ExtraFolderMount.xml</Item>		
+			</filesToEnable>
+		</Item>
+
+		<Item>
+			<changeSetName>CCS_PATCHDAY1_NG_STREAMING</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/cutscene/cuts_ah_1.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/cutscene/cuts_drf.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_amb@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_cellphone@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_cover@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_creatures@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_facials@.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_get_up@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_ladders.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_melee@.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_mini@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_miss.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_move_.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_mp_.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_oddjobs@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_random@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_safe@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_save.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_skydive@.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_swimming@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_veh@.rpf</Item>
+		        <Item>dlc_patchDay1NG:/%PLATFORM%/anim/ingame/clip_weapons@.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/anim/networkdefs.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/vehicles.rpf</Item>			
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/akuma_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/alpha_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/banshee_mods.rpf</Item>		
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/bifta_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/blista_mods.rpf</Item>				
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/bodhi2_mods.rpf</Item>				
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/buccaneer_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/buffalo_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/buffalo2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/buffalo3_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/cavalcade_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/comet2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/coquette2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/dubsta_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/dubsta2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/dubsta3_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/elegy2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/felon_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/feltzer2_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/futo_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/glendale_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/gresley_mods.rpf</Item>		
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/huntley_mods.rpf</Item>					
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/intruder_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/issi2_mods.rpf</Item>				
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/jackal_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/jester_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/massacro_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/panto_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/phoenix_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/sabregt_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/tailgater_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/turismor_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/vigero_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/warrener_mods.rpf</Item>	
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/patchDay1NG/vehiclemods/youga_mods.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/ped_mp_overlay_txds.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/streamedpeds_strm.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/txd_patches.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/models/cdimages/weapons.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/textures/script_txds.rpf</Item>
+			</filesToEnable>
+		</Item>
+		<Item>
+			<changeSetName>CCS_PATCHDAY1_NG_STREAMING_MAP</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/v_ng_proppatch_01.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/v_ng_proppatch_01.ityp</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/building/v_rooftop.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/industrial/v_airport.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/lev_des/v_minigame.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/lev_des/v_set_pieces.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/recreational/v_coin_op.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/recreational/v_sports.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_construction.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_fences.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/roadside/v_rubbish.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/vegetation/v_bush.rpf</Item>
+				<Item>dlc_patchDay1NG:/%PLATFORM%/levels/gta5/props/vegetation/v_cacti.rpf</Item>
+			</filesToEnable>
+			<executionConditions>
+				<activeChangesetConditions>
+				</activeChangesetConditions>
+				<genericConditions>$level=MO_JIM_L11</genericConditions>
+			</executionConditions>
+		</Item>
+		<Item>
+			<changeSetName>CCS_PATCHDAY1_NG_TEXT</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay1NG:/common/data/textpatch.meta</Item>
+			</filesToEnable>
+		</Item>
+		
+	</contentChangeSets>
+	
+	<patchFiles>
+	</patchFiles>
+
+</CDataFileMgr__ContentsOfDataFileXml>

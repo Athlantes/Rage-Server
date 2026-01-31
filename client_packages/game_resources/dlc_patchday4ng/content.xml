@@ -1,0 +1,261 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CDataFileMgr__ContentsOfDataFileXml>
+	<disabledFiles />
+	<includedXmlFiles />
+	<dataFiles>
+	<Item>
+			<filename>dlc_patchDay4NG:/%PLATFORM%/anim/filters.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<locked value="true"/>
+			<disabled value="true"/>
+			<persistent value="true"/>
+			<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_55.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway2.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway3.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway4.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway5.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway6.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+		<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/v_int_31a.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/cutscene/cuts_franklin_1.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>		
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/generic/procobj.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/props/vegetation/v_bush.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_cutspeds.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_f_outfits.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_female.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_male.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_p.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+		<Item>		
+			<filename>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/weapons.rpf</filename>
+			<fileType>RPF_FILE</fileType>
+			<overlay value="true" />
+			<disabled value="true" />
+			<persistent value="true" />
+		</Item>
+	<Item>		
+		<filename>dlc_patchDay4NG:/%PLATFORM%/models/ped_mp_overlay_txds.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<overlay value="true" />
+		<disabled value="true" />
+		<persistent value="true" />
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_amb@.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_anim@.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_cover@.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_miss.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_move_.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_veh@.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/vehicles.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	<Item>
+		<filename>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_weapons@.rpf</filename>
+		<fileType>RPF_FILE</fileType>
+		<locked value="true"/>
+		<disabled value="true"/>
+		<persistent value="true"/>
+		<overlay value="true"/>
+	</Item>
+	</dataFiles>
+	<contentChangeSets>
+		<Item>
+			<changeSetName>CCS_PATCHDAY4_NG_INIT</changeSetName>
+			<filesToEnable>
+			</filesToEnable>
+		</Item>
+		<Item>
+			<changeSetName>CCS_PATCHDAY4_NG_TEXT</changeSetName>
+			<filesToEnable>
+			</filesToEnable>
+		</Item>
+		<Item>
+			<changeSetName>CCS_PATCHDAY4_NG_STREAMING</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/filters.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/vehicles.rpf</Item>	
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_cutspeds.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_f_outfits.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_female.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_male.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/patchday4ng_p.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/cdimages/weapons.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/models/ped_mp_overlay_txds.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/cutscene/cuts_franklin_1.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_amb@.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_anim@.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_cover@.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_miss.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_move_.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_veh@.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/anim/ingame/clip_weapons@.rpf</Item>	
+			</filesToEnable>
+		</Item>
+		<Item>
+			<changeSetName>CCS_PATCHDAY4_NG_STREAMING_MAP</changeSetName>
+			<filesToEnable>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/v_int_55.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway2.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway3.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway4.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway5.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/V_Int_Metro_Subway6.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/interiors/v_int_31a.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/generic/procobj.rpf</Item>
+				<Item>dlc_patchDay4NG:/%PLATFORM%/levels/gta5/props/vegetation/v_bush.rpf</Item>
+				
+			</filesToEnable>
+			<executionConditions>
+				<activeChangesetConditions>
+				</activeChangesetConditions>
+				<genericConditions>$level=MO_JIM_L11</genericConditions>
+			</executionConditions>
+		</Item>
+	</contentChangeSets>
+	<patchFiles />
+</CDataFileMgr__ContentsOfDataFileXml>

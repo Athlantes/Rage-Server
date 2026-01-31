@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDataFileMgr__ContentsOfDataFileXml>
+  <disabledFiles />
+  <includedXmlFiles />
+  <includedDataFiles />
+  <dataFiles>
+	<Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/effects/peds/mpExecutive_overlays.xml</filename>
+      <fileType>PED_OVERLAY_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpExecutive_ped_mp_overlay_txds.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/ai/vehiclelayouts.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/anim/clip_sets/clip_sets.xml</filename>
+      <fileType>CLIP_SETS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/common/data/effects/scriptfx.dat</filename>
+      <fileType>SCRIPTFX_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/levels/gta5/vehicles.meta</filename>
+      <fileType>VEHICLE_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/carcols.meta</filename>
+      <fileType>CARCOLS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/carvariations.meta</filename>
+      <fileType>VEHICLE_VARIATION_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/contentunlocks.meta</filename>
+      <fileType>CONTENT_UNLOCKING_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/common/data/dlctext.meta</filename>
+      <fileType>TEXTFILE_METAFILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/handling.meta</filename>
+      <fileType>HANDLING_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/common/data/interiorProxies.meta</filename>
+      <fileType>INTERIOR_PROXY_ORDER_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/mp_f_freemode_01_executive_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/mp_m_freemode_01_executive_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/shop_tattoo.meta</filename>
+      <fileType>TATTOO_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/common/data/overlayinfo.xml</filename>
+      <fileType>OVERLAY_INFO_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/common/data/peds.meta</filename>
+      <fileType>PED_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/shop_vehicle.meta</filename>
+      <fileType>VEHICLE_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/weaponArchetypes.meta</filename>
+      <fileType>WEAPON_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/exec_warehouse_placement.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+      <contents>CONTENTS_DLC_MAP_DATA</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01b_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01c_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02b_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02c_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03b_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03c_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_large_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_medium_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_small_dlc.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_doors_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_doors_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_accessories_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_accessories_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_adv_case.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_adv_case.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_doors.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_doors.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_chairs.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_chairs.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+		<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_concrate.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_concrate.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_crashedp.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_crashedp.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_tv_settop_remote.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_tv_settop_remote.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_dining_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_dining_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_lighting_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_lighting_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_seating_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_seating_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_tables_ex.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	 <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_tables_ex.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/gta5/vehicles/mpExecutivevehicles.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/bestiagts_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/pfister811_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/prototipo_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/seven70_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/fmj_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/reaper_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>      
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/sfx/dlc_exec1</filename>
+      <fileType>AUDIO_WAVEPACK</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/dlcexec1_game.dat</filename>
+      <fileType>AUDIO_GAMEDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/dlcexec1_sounds.dat</filename>
+      <fileType>AUDIO_SOUNDDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/dlcexec1_speech.dat</filename>
+      <fileType>AUDIO_SPEECHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/dlcexec1_mix.dat</filename>
+      <fileType>AUDIO_DYNAMIXDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/dlcexec1_amp.dat</filename>
+      <fileType>AUDIO_SYNTHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>	
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/data/effects/ptfx.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/anim/ingame/clip_anim@.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_female.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_female_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_male.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_male_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_component.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_component_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_streamed.rpf</filename>
+      <fileType>PEDSTREAM_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_streamed_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/models/cdimages/weapons.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/anim/creaturemetadata.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutive:/common/data/effects/peds/first_person_alternates.meta</filename>
+      <fileType>PED_FIRST_PERSON_ALTERNATE_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpExecutiveCRC:/common/data/pedalternatevariations.meta</filename>
+      <fileType>ALTERNATE_VARIATIONS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpExecutive:/%PLATFORM%/audio/occlusion.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+  </dataFiles>
+  <contentChangeSets>
+    <Item>
+      <changeSetName>mpExecutive_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+	  <filesToEnable>
+		<Item>dlc_mpExecutiveCRC:/common/data/effects/peds/mpExecutive_overlays.xml</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpExecutive_ped_mp_overlay_txds.rpf</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/handling.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/ai/vehiclelayouts.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/anim/clip_sets/clip_sets.xml</Item>
+        <Item>dlc_mpExecutive:/common/data/effects/scriptfx.dat</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/levels/gta5/vehicles.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/carcols.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/carvariations.meta</Item>
+        <Item>dlc_mpExecutive:/common/data/dlctext.meta</Item>
+		<Item>dlc_mpExecutive:/common/data/interiorProxies.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/mp_f_freemode_01_executive_shop.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/mp_m_freemode_01_executive_shop.meta</Item>
+		<Item>dlc_mpExecutiveCRC:/common/data/shop_tattoo.meta</Item>
+		<Item>dlc_mpExecutive:/common/data/overlayinfo.xml</Item>
+        <Item>dlc_mpExecutive:/common/data/peds.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/shop_vehicle.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/weaponArchetypes.meta</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/audio/dlcExec1_GAME.DAT</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/audio/dlcExec1_SOUNDS.DAT</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/audio/dlcExec1_speech.DAT</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/audio/dlcExec1_MIX.DAT</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/audio/dlcExec1_AMP.DAT</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/audio/sfx/dlc_exec1</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/data/effects/ptfx.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/anim/ingame/clip_anim@.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_doors_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_doors_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_accessories_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_accessories_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_adv_case.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_adv_case.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_doors.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_doors.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_chairs.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_chairs.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_concrate.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_concrate.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_exec_crashedp.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_exec_crashedp.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/prop_tv_settop_remote.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_prop_tv_settop_remote.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_dining_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_dining_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_lighting_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_lighting_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_seating_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_seating_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/int_mp_h_tables_ex.rpf</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/props/ex_int_mp_h_tables_ex.ityp</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/vehicles/mpExecutivevehicles.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/bestiagts_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/pfister811_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/prototipo_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/seven70_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/fmj_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/levels/mpexecutive/vehiclemods/reaper_mods.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_female.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_female_p.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_male.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/mpexecutive_male_p.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_component.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_component_p.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_streamed.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/peds/mpexecutive_streamed_p.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/models/cdimages/weapons.rpf</Item>
+        <Item>dlc_mpExecutive:/%PLATFORM%/anim/creaturemetadata.rpf</Item>
+        <Item>dlc_mpExecutive:/common/data/effects/peds/first_person_alternates.meta</Item>
+        <Item>dlc_mpExecutiveCRC:/common/data/pedalternatevariations.meta</Item>
+		<Item>dlc_mpExecutive:/%PLATFORM%/audio/occlusion.rpf</Item>
+	  </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>	
+    <Item>
+      <changeSetName>mpExecutive_UNLOCKS_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+        <Item>dlc_mpExecutiveCRC:/common/data/contentunlocks.meta</Item>
+      </filesToEnable>
+	  <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>		
+	
+	<Item>
+      <changeSetName>MPEXECUTIVE_INTERIOR_ADDITIONS</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToEnable>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/exec_warehouse_placement.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01b_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_01c_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02b_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_02c_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03b_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_office_03c_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_large_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_medium_dlc.rpf</Item>
+			<Item>dlc_mpExecutive:/%PLATFORM%/levels/gta5/interiors/int_warehouse_small_dlc.rpf</Item>
+          </filesToEnable>
+        </Item>
+      </mapChangeSetData>
+      <requiresLoadingScreen value="true"/>
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true"/>
+    </Item> 
+  </contentChangeSets>
+  <patchFiles />
+</CDataFileMgr__ContentsOfDataFileXml>

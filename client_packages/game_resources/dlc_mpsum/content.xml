@@ -1,0 +1,836 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDataFileMgr__ContentsOfDataFileXml>
+  <disabledFiles />
+  <includedXmlFiles />
+  <includedDataFiles />
+  <dataFiles>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/navmeshes.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="true" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+	<filename>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim_heist@.rpf</filename>
+	<fileType>RPF_FILE</fileType>
+	<overlay value="false" />
+	<disabled value="true" />
+	<persistent value="true" />
+	</Item>
+	<Item>
+	<filename>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim_freemode@.rpf</filename>
+	<fileType>RPF_FILE</fileType>
+	<overlay value="false" />
+	<disabled value="true" />
+	<persistent value="true" />
+	</Item>
+	<Item>
+	<filename>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim@.rpf</filename>
+	<fileType>RPF_FILE</fileType>
+	<overlay value="false" />
+	<disabled value="true" />
+	<persistent value="true" />
+	</Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/vehicles/mpSum.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/smod4wheels_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/penumbra2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/club_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>	
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/coquette4_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>	
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/dukes3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/yosemite3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/tigon_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/manana2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/landstalker2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>	
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/openwheel1_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>		
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/gauntlet5_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/openwheel2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/peyote3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/seminole2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/glendale2_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/youga3_mods.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/anim/clip_sets/clip_sets.xml</filename>
+      <fileType>CLIP_SETS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" /> 
+    </Item>	
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/levels/gta5/vehicles.meta</filename>
+      <fileType>VEHICLE_METADATA_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/ai/vehiclelayouts.meta</filename>
+      <fileType>VEHICLE_LAYOUTS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/ai/vehicleweapon_waterbomb.meta</filename>
+      <fileType>WEAPONINFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSumCRC:/common/data/handling.meta</filename>
+      <fileType>HANDLING_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/effects/explosionfx.dat</filename>
+      <fileType>EXPLOSIONFX_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/carcols.meta</filename>
+      <fileType>CARCOLS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/carvariations.meta</filename>
+      <fileType>VEHICLE_VARIATION_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>	
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/contentunlocks.meta</filename>
+      <fileType>CONTENT_UNLOCKING_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/overlayinfo.xml</filename>
+      <fileType>OVERLAY_INFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/explosion.meta</filename>
+      <fileType>EXPLOSION_INFO_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/common/data/mpStatsSetup.xml</filename>
+      <fileType>MP_STATS_DISPLAY_LIST_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="false"/>
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/shop_vehicle.meta</filename>
+      <fileType>VEHICLE_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/shop_tattoo.meta</filename>
+      <fileType>TATTOO_SHOP_DLC_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_game.dat</filename>
+      <fileType>AUDIO_GAMEDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_sounds.dat</filename>
+      <fileType>AUDIO_SOUNDDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_mix.dat</filename>
+      <fileType>AUDIO_DYNAMIXDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_amp.dat</filename>
+      <fileType>AUDIO_SYNTHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+	  <filename>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_speech.dat</filename>
+      <fileType>AUDIO_SPEECHDATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/audio/sfx/dlc_SUM20</filename>
+      <fileType>AUDIO_WAVEPACK</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/dlctext.meta</filename>
+      <fileType>TEXTFILE_METAFILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Accs_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Accs_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Barge_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Barge_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Collectibles.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Collectibles.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_UFO.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_UFO.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Qub3d.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Qub3d.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Strength.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Strength.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Trophies.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Trophies.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Garage.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Garage.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Hoardings.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Hoardings.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Hoardings_01.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Hoardings_01.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Yacht_Accs.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Yacht_Accs.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+		<Item>
+	  <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/mp_apa_yacht.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/sum_mp_apa_yacht.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/mp_apa_yacht_jacuzzi.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/sum_mp_apa_yacht_jacuzzi.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	 <Item>
+        <filename>dlc_mpSum:/common/data/interiorProxies.meta</filename>
+        <fileType>INTERIOR_PROXY_ORDER_FILE</fileType>
+        <overlay value="false"/>
+        <disabled value="true"/>
+        <persistent value="false"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/interiors/int_mp_yacht.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	 <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/int_mp_doors.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/sum_int_mp_doors.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/int_mp_h_props.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false"/>
+      <disabled value="true"/>
+      <persistent value="true"/>
+    </Item>
+	<Item>
+      <filename>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/sum_int_mp_h_props.ityp</filename>
+      <fileType>DLC_ITYP_REQUEST</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+      <contents>CONTENTS_PROPS</contents>
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/data/effects/ptfx.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_male.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_male_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/mp_m_freemode_01_mpSum_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_female.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_female_p.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/mp_f_freemode_01_mpSum_shop.meta</filename>
+      <fileType>SHOP_PED_APPAREL_META_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/effects/peds/first_person_alternates.meta</filename>
+      <fileType>PED_FIRST_PERSON_ALTERNATE_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/common/data/effects/peds/first_person.meta</filename>
+      <fileType>PED_FIRST_PERSON_ASSET_DATA</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>	
+    <Item>
+      <filename>dlc_mpSumCRC:/common/data/pedalternatevariations.meta</filename>
+      <fileType>ALTERNATE_VARIATIONS_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="false" />
+    </Item>
+    <Item>
+      <filename>dlc_mpSum:/%PLATFORM%/anim/creaturemetadata.rpf</filename>
+      <fileType>RPF_FILE</fileType>
+      <overlay value="false" />
+      <disabled value="true" />
+      <persistent value="true" />
+    </Item>
+	<Item>
+	  <filename>dlc_mpSumCRC:/common/data/effects/peds/mpSum_overlays.xml</filename>
+	  <fileType>PED_OVERLAY_FILE</fileType>
+	  <overlay value="false" />
+	  <disabled value="true" />
+	  <persistent value="false" />
+	</Item>
+	<Item>
+	  <filename>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_ped_mp_overlay_txds.rpf</filename>
+	  <fileType>RPF_FILE</fileType>
+	  <overlay value="false" />
+	  <disabled value="true" />
+	  <persistent value="true" />
+	</Item>
+ </dataFiles>
+  <contentChangeSets>
+    <Item>
+      <changeSetName>MPSUM_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+        <Item>dlc_mpSum:/common/data/overlayinfo.xml</Item>
+		<Item>dlc_mpSum:/common/data/interiorProxies.meta</Item>
+        <Item>dlc_mpSum:/common/data/dlctext.meta</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim@.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim_freemode@.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_anim_heist@.rpf</Item>
+		<!--<Item>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_freemode@.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/anim/ingame/clip_heist@.rpf</Item>-->
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/vehicles/mpSum.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/smod4wheels_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/penumbra2_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/club_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/coquette4_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/dukes3_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/yosemite3_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/tigon_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/manana2_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/landstalker2_mods.rpf</Item>		
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/gauntlet5_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/peyote3_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/seminole2_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/glendale2_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/openwheel1_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/openwheel2_mods.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/mpSum/vehiclemods/youga3_mods.rpf</Item>
+		<Item>dlc_mpSumCRC:/common/data/anim/clip_sets/clip_sets.xml</Item>	
+		<Item>dlc_mpSumCRC:/common/data/levels/gta5/vehicles.meta</Item>
+		<Item>dlc_mpSumCRC:/common/data/ai/vehiclelayouts.meta</Item>
+		<Item>dlc_mpSumCRC:/common/data/ai/vehicleweapon_waterbomb.meta</Item>
+		<Item>dlc_mpSumCRC:/common/data/handling.meta</Item>
+		<Item>dlc_mpSum:/common/data/carcols.meta</Item>
+		<Item>dlc_mpSum:/common/data/carvariations.meta</Item>	
+		<Item>dlc_mpSumCRC:/common/data/explosion.meta</Item>
+		<Item>dlc_mpSum:/common/data/mpStatsSetup.xml</Item>
+		<Item>dlc_mpSumCRC:/common/data/effects/explosionfx.dat</Item>
+		<Item>dlc_mpSumCRC:/common/data/shop_vehicle.meta</Item>
+		<Item>dlc_mpSumCRC:/common/data/shop_tattoo.meta</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_male.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_male_p.rpf</Item>
+		<Item>dlc_mpSumCRC:/common/data/mp_m_freemode_01_mpSum_shop.meta</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_female.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_female_p.rpf</Item>
+		<Item>dlc_mpSumCRC:/common/data/mp_f_freemode_01_mpSum_shop.meta</Item>
+		<Item>dlc_mpSum:/common/data/effects/peds/first_person_alternates.meta</Item>
+		<Item>dlc_mpSum:/common/data/effects/peds/first_person.meta</Item>
+		<Item>dlc_mpSumCRC:/common/data/pedalternatevariations.meta</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/mp_apa_yacht.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/sum_mp_apa_yacht.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/mp_apa_yacht_jacuzzi.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/yacht/sum_mp_apa_yacht_jacuzzi.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/int_mp_doors.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/sum_int_mp_doors.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/int_mp_h_props.rpf</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/high/sum_int_mp_h_props.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/anim/creaturemetadata.rpf</Item>
+		<Item>dlc_mpSumCRC:/common/data/effects/peds/mpSum_overlays.xml</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/models/cdimages/mpSum_ped_mp_overlay_txds.rpf</Item>
+      </filesToEnable>  
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+	</Item>
+    <Item>
+      <changeSetName>MPSUM_UNLOCKS_AUTOGEN</changeSetName>
+      <mapChangeSetData />
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable>
+		<Item>dlc_mpSumCRC:/common/data/contentunlocks.meta</Item>
+     	<Item>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_game.dat</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_sounds.dat</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_mix.dat</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_amp.dat</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/audio/dlcSUM20_speech.dat</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/audio/sfx/dlc_SUM20</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Accs_01.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Accs_01.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Barge_01.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Barge_01.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Collectibles.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Collectibles.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_UFO.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_UFO.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Qub3d.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Qub3d.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Strength.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Strength.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Arcade_Trophies.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Arcade_Trophies.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_01.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_01.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Garage.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Garage.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Hoardings.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Hoardings.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Track_Hoardings_01.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Track_Hoardings_01.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/Prop_SUM_Yacht_Accs.rpf</Item>
+        <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/props/sum_Prop_SUM_Yacht_Accs.ityp</Item>
+		<Item>dlc_mpSum:/%PLATFORM%/data/effects/ptfx.rpf</Item>
+ </filesToEnable>
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="false" />
+    </Item>
+	<Item>
+      <changeSetName>MPSUM_MAP_UPDATE</changeSetName>
+      <mapChangeSetData>
+        <Item>
+          <associatedMap>MO_JIM_L11</associatedMap>
+          <filesToInvalidate />
+          <filesToDisable />
+          <filesToEnable>
+			<Item>dlc_mpSum:/%PLATFORM%/levels/gta5/interiors/int_mp_yacht.rpf</Item>
+          </filesToEnable>
+          <txdToLoad />
+          <txdToUnload />
+          <residentResources />
+          <unregisterResources />
+        </Item>
+      </mapChangeSetData>
+      <filesToInvalidate />
+      <filesToDisable />
+      <filesToEnable />
+      <txdToLoad />
+      <txdToUnload />
+      <residentResources />
+      <unregisterResources />
+      <requiresLoadingScreen value="true" />
+      <loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+      <useCacheLoader value="true" />
+    </Item>
+  	<Item>
+	<changeSetName>MPSUM_MAP_UPDATE_NAVMESH_ONLY</changeSetName>
+	<mapChangeSetData>
+	  <Item>
+		<associatedMap>MO_JIM_L11</associatedMap>
+		<filesToInvalidate />
+		<filesToDisable />
+		<filesToEnable>
+		  <Item>dlc_mpSum:/%PLATFORM%/levels/gta5/navmeshes.rpf</Item>
+		</filesToEnable>
+		<txdToLoad />
+		<txdToUnload />
+		<residentResources />
+		<unregisterResources />
+	  </Item>
+	</mapChangeSetData>
+	<filesToInvalidate />
+	<filesToDisable />
+	<filesToEnable />
+	<txdToLoad />
+	<txdToUnload />
+	<residentResources />
+	<unregisterResources />
+	<requiresLoadingScreen value="true" />
+	<loadingScreenContext>LOADINGSCREEN_CONTEXT_LAST_FRAME</loadingScreenContext>
+	<useCacheLoader value="true" />
+  </Item>
+  </contentChangeSets>
+  <patchFiles />
+</CDataFileMgr__ContentsOfDataFileXml>
