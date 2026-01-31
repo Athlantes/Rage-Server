@@ -251,6 +251,63 @@ const app = {
         if (action === 'spawn') closePhone();
     },
 
+    // --- QUICK EATS LOGIC ---
+    quickEatsActive: false,
+
+    toggleQuickEats: () => {
+        if ('mp' in window) {
+            mp.trigger('client:proxyAction', 'toggleQuickEats', null);
+        }
+        
+        // Optimistic UI update (optional, server serves truth)
+        const btn = document.getElementById('btn-qe-toggle');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+    },
+
+    updateQuickEatsUI: (isActive, statusText, locationName) => {
+        app.quickEatsActive = isActive;
+
+        const circle = document.getElementById('qe-status-circle');
+        const icon = document.getElementById('qe-icon');
+        const txtStatus = document.getElementById('qe-status-text');
+        const txtSub = document.getElementById('qe-subtext');
+        const btn = document.getElementById('btn-qe-toggle');
+        const card = document.getElementById('qe-order-card');
+
+        btn.disabled = false; // Re-enable button
+
+        if (isActive) {
+            // Online State
+            circle.className = 'status-circle online';
+            icon.className = 'fas fa-hamburger';
+            btn.innerText = "GO OFFLINE";
+            btn.className = "btn-qe-action active";
+            
+            txtStatus.innerText = statusText || "Searching...";
+            txtSub.innerText = "Driving to destination...";
+            
+            if (locationName) {
+                card.classList.remove('hidden');
+                document.getElementById('qe-task-name').innerText = statusText;
+                document.getElementById('qe-location').innerText = locationName;
+            } else {
+                card.classList.add('hidden');
+                txtSub.innerText = "Waiting for new orders...";
+            }
+        } else {
+            // Offline State
+            circle.className = 'status-circle offline';
+            icon.className = 'fas fa-power-off';
+            btn.innerText = "GO ONLINE";
+            btn.className = "btn-qe-action";
+            
+            txtStatus.innerText = "Offline";
+            txtSub.innerText = "Go online to start receiving delivery orders.";
+            card.classList.add('hidden');
+        }
+    },
+
     // --- BANKING APP (FIXED) ---
     loadBankData: (data) => {
         const safeBalance = (data && data.balance) ? data.balance : 0;

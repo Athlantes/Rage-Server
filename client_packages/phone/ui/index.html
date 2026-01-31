@@ -65,6 +65,44 @@
                         </div>
                         <span class="app-name">Bank</span>
                     </div>
+
+                    <div class="app-icon" onclick="app.open('quickeats')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #00b09b, #96c93d);">
+                            <i class="fas fa-hamburger"></i>
+                        </div>
+                        <span class="app-name">QuickEats</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-quickeats" class="view hidden">
+                <div class="app-header" style="background: #00b09b; color: white; border: none;">
+                    <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
+                    <span>QuickEats Driver</span>
+                </div>
+                
+                <div class="app-content" style="padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100%; background: #f0fff4;">
+                    
+                    <div id="qe-status-circle" class="status-circle offline">
+                        <i id="qe-icon" class="fas fa-power-off"></i>
+                    </div>
+                    
+                    <h2 id="qe-status-text" style="margin: 20px 0 5px 0; color: #333;">Offline</h2>
+                    <p id="qe-subtext" style="color: #666; font-size: 13px; text-align: center;">Go online to start receiving delivery orders.</p>
+
+                    <div id="qe-order-card" class="hidden" style="width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 20px;">
+                        <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">Current Task</div>
+                        <div id="qe-task-name" style="font-size: 16px; font-weight: bold; color: #00b09b; margin-bottom: 5px;">Pickup</div>
+                        <div style="height: 1px; background: #eee; margin: 10px 0;"></div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-map-marker-alt" style="color: #00b09b;"></i>
+                            <span id="qe-location" style="font-size: 14px; color: #333;">Burger Shot</span>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1;"></div>
+
+                    <button id="btn-qe-toggle" onclick="app.toggleQuickEats()" class="btn-qe-action">GO ONLINE</button>
                 </div>
             </div>
 

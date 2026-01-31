@@ -250,6 +250,58 @@ body {
     background: #fafafa;
 }
 
+/* QuickEats App Styles */
+.status-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.status-circle.offline {
+    background: white;
+    color: #ccc;
+    border: 4px solid #eee;
+}
+
+.status-circle.online {
+    background: #00b09b;
+    color: white;
+    border: 4px solid #96c93d;
+    animation: pulse-green 2s infinite;
+}
+
+.btn-qe-action {
+    width: 100%;
+    padding: 18px;
+    border-radius: 15px;
+    border: none;
+    font-weight: 800;
+    font-size: 16px;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: #333;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transition: background 0.2s;
+    margin-bottom: 20px;
+}
+
+.btn-qe-action.active {
+    background: #ff3b30; /* Red for 'Stop' */
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(150, 201, 61, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(150, 201, 61, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(150, 201, 61, 0); }
+}
+
 /* Banking App */
 
 .bank-content {

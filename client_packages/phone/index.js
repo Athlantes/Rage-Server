@@ -74,12 +74,22 @@ mp.events.add('client:setWaypoint', (x, y) => {
     mp.game.ui.setNewWaypoint(x, y);
 });
 
+mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
+    if(phoneBrowser) {
+        phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
+    }
+});
+
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
         // --- BANKING ROUTES ---
         case 'requestBankData':
             // Just asks server to send back balance/history
             mp.events.callRemote('server:phone:bank:open');
+            break;
+
+        case 'toggleQuickEats':
+            mp.events.callRemote('server:phone:quickEats:toggle');
             break;
 
         case 'bankTransfer':
