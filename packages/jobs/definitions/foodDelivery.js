@@ -1,16 +1,18 @@
+// packages/jobs/definitions/foodDelivery.js
 const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
-const ZoneManager = require('../../zones/index.js');
+
+// --- NEW IMPORT ---
+// Adjust the path ('../../zones') if your folder structure is different
+const ZoneManager = require('../../zones'); 
 
 const JOB_KEY = 'quickeats';
-const REQUIRED_ZONE = 'los_santos_city';
+const REQUIRED_ZONE = 'ls_zone'; // The ID we added to config.js
 
 const RESTAURANTS = [
-    { name: "Burger Shot", x: -1192.93, y: -892.44, z: 13.99 },
-    { name: "Up-n-Atom", x: 86.63, y: 279.79, z: 110.20 },
-    { name: "Taco Bomb", x: 13.98, y: -1601.78, z: 29.37 },
-    { name: "Lucky Plucker", x: -902.94, y: -155.19, z: 41.87 }
+    { name: "Taco Bomb", x: 12.39, y: -1606.09, z: 29.40 },
+    { name: "Lucky Plucker", x: 132.83, y: -1462.37, z: 29.36 }
 ];
 
 const REWARDS = {
@@ -37,13 +39,12 @@ jobManager.register(JOB_KEY, {
 // --- CHECKS ---
 
 function canReceiveOrder(player) {
-    const inZone = ZoneManager.isPlayerInZone(player, REQUIRED_ZONE);
-    
-    if (!inZone) {
-        console.log(`[QuickEats] ${player.name} failed zone check. ActiveZones:`, player.activeZones ? Array.from(player.activeZones) : "None");
+    // REFACTORED: Check if player is inside 'ls_zone'
+    if (!ZoneManager.isPlayerInZone(player, REQUIRED_ZONE)) {
+        console.log(`[QuickEats] ${player.name} is outside the service zone.`);
         
-        player.call('showNotification', ['QuickEats', 'No service area here. Go to Los Santos.']);
-        player.call('client:phone:quickEats:update', [false, "Area Unavailable", "Move to City"]);
+        player.call('showNotification', ['QuickEats', 'You left the service area. Return to the city.']);
+        player.call('client:phone:quickEats:update', [false, "Area Unavailable", "Return to City"]);
         return false;
     }
 
@@ -68,7 +69,6 @@ function canReceiveOrder(player) {
 function assignOrder(player) {
     if (!player.activeJobId || player.activeJobId !== JOB_KEY) return;
 
-    // --- NEW VALIDATION CHECK ---
     if (!canReceiveOrder(player)) {
         // If checks fail, try again in 5 seconds (Pooling)
         setTimeout(() => {
@@ -158,14 +158,10 @@ mp.events.add('server:phone:quickEats:toggle', (player) => {
     if (player.activeJobId === JOB_KEY) {
         jobManager.stopJob(player, "QuickEats: You went offline.");
     } else {
-        // Initial Check for Toggle
-        if (!player.activeZones || !player.activeZones.has(REQUIRED_ZONE)) {
+        // Initial Check for Toggle using the Zone Manager
+        if (!ZoneManager.isPlayerInZone(player, REQUIRED_ZONE)) {
             player.call('showNotification', ['QuickEats', 'Service not available in this area.']);
-            
-            // --- FIX START ---
-            // Force the UI back to "Offline" state so the button unlocks
             return player.call('client:phone:quickEats:update', [false, "Offline", null]);
-            // --- FIX END ---
         }
 
         jobManager.startJobSession(player, JOB_KEY);

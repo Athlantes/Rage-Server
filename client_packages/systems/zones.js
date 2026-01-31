@@ -7,8 +7,6 @@
 let activeBroadZones = new Map();   
 let activePreciseZones = new Set(); 
 let renderInterval = null;          
-let debugMode = false;              // Toggle for showing lines
-
 const localPlayer = mp.players.local;
 
 // --- MATH HELPER ---
@@ -52,24 +50,7 @@ mp.events.add('client:zone:exitBroad', (zoneId) => {
     activeBroadZones.delete(zoneId);
 });
 
-// --- DEBUG COMMAND ---
-mp.events.add('console:showzones', () => {
-    debugMode = !debugMode;
-    mp.gui.chat.push(debugMode ? "!{00FF00}[Zones] Debug lines ENABLED" : "!{FF0000}[Zones] Debug lines DISABLED");
-});
-// To use this, type /showzones in chat. You need to register the command on server side to call this event, 
-// OR simpler: just type `mp.events.call('console:showzones')` in F11 console.
-// BETTER: Add this temporary command below to client-side for easy testing:
-mp.events.add("playerCommand", (command) => {
-    if (command === "showzones") {
-        debugMode = !debugMode;
-        mp.gui.chat.push(debugMode ? "Debug lines ON" : "Debug lines OFF");
-        return true;
-    }
-});
-
-
-// --- RENDER LOOP (Physics & Visuals) ---
+// --- RENDER LOOP (Physics Only) ---
 mp.events.add("render", () => {
     // 1. Ghost Mode Logic
     let inGhostZone = false;
@@ -83,28 +64,6 @@ mp.events.add("render", () => {
             if (veh.handle !== localPlayer.vehicle.handle) {
                 mp.game.entity.setNoCollisionEntity(localPlayer.vehicle.handle, veh.handle, false);
                 mp.game.entity.setNoCollisionEntity(veh.handle, localPlayer.vehicle.handle, false);
-            }
-        });
-    }
-
-    // 2. DEBUG DRAWING (This solves your "I don't see it" issue)
-    if (debugMode) {
-        activeBroadZones.forEach((zone) => {
-            if (zone.data.shape === 'polygon') {
-                const vs = zone.data.vertices;
-                const zHeight = localPlayer.position.z; // Draw at player height
-                
-                for (let i = 0; i < vs.length; i++) {
-                    const p1 = vs[i];
-                    const p2 = vs[(i + 1) % vs.length]; // Connect back to start
-                    
-                    // Draw Line (White)
-                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight - 10, p2.x, p2.y, zHeight - 10, 255, 255, 255, 255);
-                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight + 10, p2.x, p2.y, zHeight + 10, 255, 255, 255, 255);
-                    
-                    // Draw Vertical Pillars at corners (Red)
-                    mp.game.graphics.drawLine(p1.x, p1.y, zHeight - 20, p1.x, p1.y, zHeight + 20, 255, 0, 0, 255);
-                }
             }
         });
     }

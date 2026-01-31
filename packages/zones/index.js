@@ -47,28 +47,6 @@ function createZone(zoneData) {
     colshape.typeDef = typeDef;
     
     Zones.set(zoneData.id, colshape);
-
-    if (zoneData.blip) {
-        // Calculate a center point for the blip
-        let centerX = 0, centerY = 0;
-        
-        if (zoneData.shape === 'polygon') {
-            // Average the vertices to find center
-            zoneData.vertices.forEach(v => { centerX += v.x; centerY += v.y; });
-            centerX /= zoneData.vertices.length;
-            centerY /= zoneData.vertices.length;
-        } else {
-            centerX = zoneData.position.x;
-            centerY = zoneData.position.y;
-        }
-
-        mp.blips.new(zoneData.blip.sprite, new mp.Vector3(centerX, centerY, 0), {
-            name: zoneData.blip.name,
-            color: zoneData.blip.color,
-            shortRange: zoneData.blip.shortRange,
-            scale: 0.8
-        });
-    }
 }
 
 
@@ -113,17 +91,23 @@ mp.players.forEach(player => {
 module.exports = {
     // Check if player is strictly inside the polygon
     isPlayerInZone: (player, zoneId) => {
-        // 1. Broad Phase Check (Bounding Box)
-        if (!player.broadZones || !player.broadZones.has(zoneId)) return false;
-
-        // 2. Precise Phase Check (Polygon)
         const shape = Zones.get(zoneId);
         if (!shape) return false;
 
         if (shape.zoneData.shape === 'polygon') {
+            // Check vertical height first (optimization)
+            if (player.position.z < shape.zoneData.minZ || player.position.z > shape.zoneData.maxZ) {
+                return false;
+            }
+            // Perform precise polygon math
             return isPointInPolygon(player.position, shape.zoneData.vertices);
+        } else {
+            // Manual sphere check fallback
+            const target = shape.zoneData.position;
+            const range = shape.zoneData.range || 10;
+            const dist = player.dist(new mp.Vector3(target.x, target.y, target.z));
+            return dist <= range;
         }
-        return true; // Spheres are handled by the colshape check sufficiently
     },
     
     getBroadPhaseZones: (player) => {
