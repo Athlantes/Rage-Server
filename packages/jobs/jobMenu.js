@@ -2,12 +2,14 @@ const jobManager = require('./jobManager');
 
 const JOB_DESCRIPTIONS = {
     'garbage': "Help keep Los Santos clean. Drive a trashmaster and collect bins from designated routes. Bonus for perfect runs.",
-    'courier': "Deliver packages for GoPostal. The faster you deliver, the better. Tips available for good service."
+    'courier': "Deliver packages for GoPostal. The faster you deliver, the better. Tips available for good service.",
+    'quickeats': "Deliver food from local restaurants to hungry citizens. Speed is key to earning good tips!" // ADDED
 };
 
 const JOB_NAMES = {
     'garbage': "Sanitation Dept.",
-    'courier': "GoPostal Logistics"
+    'courier': "GoPostal Logistics",
+    'quickeats': "QuickEats Delivery" // ADDED
 };
 
 mp.events.add('server:requestJobMenuData', (player) => {
@@ -15,7 +17,8 @@ mp.events.add('server:requestJobMenuData', (player) => {
     if (!player.data.jobSkills) player.data.jobSkills = {};
 
     const menuData = [];
-    const jobs = ['garbage', 'courier']; // List of jobs to display
+    // ADDED 'quickeats' to this array
+    const jobs = ['garbage', 'courier', 'quickeats']; 
 
     jobs.forEach(key => {
         const skill = player.data.jobSkills[key] || { level: 1, xp: 0 };

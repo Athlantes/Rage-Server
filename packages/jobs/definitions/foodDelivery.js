@@ -30,17 +30,18 @@ const logic = {
 };
 
 jobManager.register(JOB_KEY, {
-    name: "QuickEats Driver",
-    pedModel: "", blipSprite: 0, blipColor: 0, pos: { x: 0, y: 0, z: 0 } 
+    name: "QuickEats Driver"
 }, logic);
+
 
 // --- CHECKS ---
 
 function canReceiveOrder(player) {
-    // 1. Precise Zone Check
     const inZone = ZoneManager.isPlayerInZone(player, REQUIRED_ZONE);
     
     if (!inZone) {
+        console.log(`[QuickEats] ${player.name} failed zone check. ActiveZones:`, player.activeZones ? Array.from(player.activeZones) : "None");
+        
         player.call('showNotification', ['QuickEats', 'No service area here. Go to Los Santos.']);
         player.call('client:phone:quickEats:update', [false, "Area Unavailable", "Move to City"]);
         return false;

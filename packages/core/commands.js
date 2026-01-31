@@ -1,6 +1,29 @@
 const vehicleManager = require('./vehicles/vehicleManager');
+const ZoneManager = require('../zones/index.js'); // Import ZoneManager
 const fs = require('fs');
 const path = require('path');
+
+// --- NEW COMMAND: CHECK ZONES ---
+mp.events.addCommand('currentzone', (player) => {
+    // 1. Check if the set exists and has items
+    if (!player.activeZones || player.activeZones.size === 0) {
+        return player.outputChatBox("!{FFFF00}[Zones] !{FFFFFF}You are not in any zone.");
+    }
+
+    // 2. Get Broad Phase (The ID list)
+    const broadZones = Array.from(player.activeZones);
+    
+    // 3. Check Precise Phase (The Polygon math)
+    const preciseZones = broadZones.filter(id => ZoneManager.isPlayerInZone(player, id));
+
+    player.outputChatBox(`!{FFFF00}[Zones] !{FFFFFF}Broad Area: ${broadZones.join(', ')}`);
+    
+    if (preciseZones.length > 0) {
+        player.outputChatBox(`!{00FF00}[Zones] !{FFFFFF}Precise Polygon: ${preciseZones.join(', ')}`);
+    } else {
+        player.outputChatBox(`!{FF0000}[Zones] !{FFFFFF}Precise Polygon: None (You are in the box, but outside the shape)`);
+    }
+});
 
 mp.events.addCommand('parkcar', (player) => {
     const veh = player.vehicle;
@@ -8,11 +31,9 @@ mp.events.addCommand('parkcar', (player) => {
     
     if (veh.ownerId !== player.data.dbId) return player.call('showNotification', ['Garage', 'You do not own this vehicle.']);
     
-    // 1. Save the Position
     vehicleManager.savePosition(veh);
 
     player.call('client:leaveVehicle');
-
     player.call('showNotification', ['Garage', 'Parking location updated! Car remains here.']);
 });
 
@@ -21,27 +42,23 @@ mp.events.addCommand('testphonenotif', (player) => {
 
     mp.events.call(
         'server:phone:sendMail', 
-        player.data.dbId,           // Target ID
-        'System',                   // Sender
-        'Test Notification',        // Title
-        'This is a test to see if the toast works!' // Message
+        player.data.dbId,           
+        'System',                   
+        'Test Notification',        
+        'This is a test to see if the toast works!' 
     );
 });
 
 mp.events.addCommand('savecoords', (player, fullText) => {
-    // Get position and heading based on whether player is in a car or not
     const pos = player.vehicle ? player.vehicle.position : player.position;
     const heading = player.vehicle ? player.vehicle.heading : player.heading;
-    
     const name = fullText || "Unnamed Location";
     
-    // Format the string so it's ready for copy-pasting into your script
     const coordString = `
     // ${name}
     { x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)}, h: ${heading.toFixed(2)} },
     `;
 
-    // Save to a file named 'saved_coords.txt' in your main server folder
     const filePath = path.join(__dirname, '../saved_coords.txt');
     
     fs.appendFile(filePath, coordString, (err) => {
