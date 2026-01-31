@@ -107,7 +107,11 @@ function updateEyes() {
 
 function updateClothing(part, direction) {
     // Requires clothingConfig.js to be loaded
-    if (typeof CreatorClothes === 'undefined') return;
+    if (typeof CreatorClothes === 'undefined') {
+        console.error("CreatorClothes is undefined! Check clothingConfig.js path and syntax.");
+        $('#label-' + part).text("Config Error"); // Visual feedback
+        return;
+    }
 
     const genderKey = currentGender === 0 ? 'male' : 'female';
     const list = CreatorClothes[genderKey][part]; 

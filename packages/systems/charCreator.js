@@ -5,8 +5,6 @@ function applyAppearance(player, app) {
     if (!app) return;
     if (typeof app === 'string') app = JSON.parse(app);
 
-    // 1. Gender Model is handled by spawn, but we ensure features here
-    // 2. Parents
     if(app.parents) {
         player.setHeadBlend(
             app.parents.mother, app.parents.father, 0,
@@ -28,11 +26,12 @@ function applyAppearance(player, app) {
     // 5. Hair
     if(app.hair) {
         player.setClothes(2, app.hair.style, 0, 0);
-        player.setHairColor(app.hair.color, app.hair.highlight);
+        player.hairColor = app.hair.color;
+        player.hairHighlightColor = app.hair.highlight;
     }
 
     // 6. Eyes
-    if(app.eyes !== undefined) player.setEyeColor(app.eyes);
+    if(app.eyes !== undefined) player.eyeColor = app.eyes;
 }
 
 mp.events.add('server:creator:save', async (player, dataJson) => {
@@ -42,19 +41,29 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
     const gender = data.gender;
     const appearance = JSON.stringify(data.appearance);
 
+    // --- FIX: Update Player Memory Immediatey ---
+    player.data.appearance = data.appearance; // Save to memory so playerSpawn can read it
+    player.data.gender = gender;
+    
+    // Set the model now to ensure they are the correct gender before clothes apply
+    player.model = (gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
+    
+    // Apply the appearance immediately so they look right before the spawn animation starts
+    applyAppearance(player, data.appearance);
+    // --------------------------------------------
+
     try {
         // 1. Save Appearance & Gender
         await db.query("UPDATE users SET appearance = ?, gender = ? WHERE id = ?", 
             [appearance, gender, player.data.dbId]);
 
-        // 2. Give Selected Clothing Items directly to equipped slots
-        // -11: Top, -4: Legs, -6: Shoes
+        // 2. Give Selected Clothing Items
         const clothes = data.clothes; 
 
         const addEquippedItem = async (itemId, slot) => {
             if (!itemId) return;
-            // Insert item into DB at the specific equipment slot. 
-            // We use empty metadata because the look is defined in items.js
+            // Note: We use the itemId string (e.g. 'm_top_white_tee')
+            // The inventory system will look up the texture/drawable from items.js
             await db.query(
                 "INSERT INTO character_inventory (character_id, item_id, count, slot, metadata) VALUES (?, ?, 1, ?, '{}')",
                 [player.data.dbId, itemId, slot]
@@ -67,6 +76,10 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
 
         // 3. Finalize
         player.outputChatBox("!{00FF00}Character created successfully!");
+        
+        // Ensure logged status is true if not already
+        player.logged = true; 
+        
         mp.events.call('server:auth:finalized', player);
 
     } catch (err) {

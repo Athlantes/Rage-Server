@@ -1,9 +1,9 @@
 const CreatorClothes = {
     male: {
         tops: [
-            { itemId: 'm_top_white_tee', label: 'White T-Shirt', drawable: 15, texture: 0, torso: 15 },
-            { itemId: 'm_top_black_tee', label: 'Black T-Shirt', drawable: 15, texture: 1, torso: 15 },
-            { itemId: 'm_top_jacket', label: 'Denim Jacket', drawable: 14, texture: 0, torso: 12 }
+            { itemId: 'mp_m_freemode_01', label: 'White T-Shirt', drawable: 11, texture: 1, torso: 15 },
+            { itemId: 'mp_m_freemode_01', label: 'Black T-Shirt', drawable: 11, texture: 0, torso: 15 },
+            { itemId: 'mp_m_freemode_01', label: 'Denim Jacket', drawable: 14, texture: 0, torso: 12 }
         ],
         legs: [
             { itemId: 'm_legs_blue_jeans', label: 'Blue Jeans', drawable: 1, texture: 0 },
@@ -29,4 +29,6 @@ const CreatorClothes = {
     }
 };
 
-exports = CreatorClothes;
+if (typeof module !== 'undefined') {
+    module.exports = CreatorClothes;
+}
