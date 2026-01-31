@@ -102,10 +102,6 @@ function updateHair() {
 function updateEyes() {
     const color = parseInt($('#eyeColor').val());
     characterData.appearance.eyes = color;
-    // We need to add this event in client side index.js if not exists, 
-    // but for now let's assume updateFaceFeature handles it or we add a new one.
-    // Actually, let's trigger a generic update or specific one.
-    // NOTE: You need to add 'client:creator:updateEyeColor' in your client/creator/index.js
     mp.trigger('client:creator:updateEyeColor', color);
 }
 
