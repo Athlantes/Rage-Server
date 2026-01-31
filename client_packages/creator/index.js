@@ -34,8 +34,8 @@ mp.events.add('client:creator:updateGender', (gender) => {
     mp.players.local.setDefaultComponentVariation();
 });
 
-mp.events.add('client:creator:updateHeadBlend', (mom, dad, mix) => {
-    mp.players.local.setHeadBlendData(mom, dad, 0, mom, dad, 0, mix, mix, 0.0, false);
+mp.events.add('client:creator:updateHeadBlend', (mom, dad, shapeMix, skinMix) => {
+    mp.players.local.setHeadBlendData(mom, dad, 0, mom, dad, 0, shapeMix, skinMix, 0.0, false);
 });
 
 mp.events.add('client:creator:updateFaceFeature', (index, value) => {
@@ -49,6 +49,16 @@ mp.events.add('client:creator:updateHair', (style, color) => {
 
 mp.events.add('client:creator:updateClothes', (component, drawable, texture) => {
     mp.players.local.setComponentVariation(parseInt(component), parseInt(drawable), parseInt(texture), 0);
+});
+
+mp.events.add('client:creator:rotate', (amount) => {
+    let currentHeading = mp.players.local.getHeading();
+    mp.players.local.setHeading(currentHeading + amount);
+});
+
+// NEW: Handle Eye Color
+mp.events.add('client:creator:updateEyeColor', (color) => {
+    mp.players.local.setEyeColor(parseInt(color));
 });
 
 mp.events.add('client:creator:finish', (json) => {

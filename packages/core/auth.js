@@ -182,14 +182,17 @@ function isDeviceOrSocialActive(currentPlayer) {
 }
 
 async function finalizeLogin(player, userData) {
-    // 1. Check if Character Exists (Look for appearance data)
+    // 1. Check if Character Exists
     if (!userData.appearance) {
         player.data.dbId = userData.id;
         player.data.username = userData.username;
         player.logged = true; 
         
         console.log(`[Auth] ${player.name} sent to Character Creator.`);
-        player.call('client:creator:start'); // Start Creator
+        
+        player.call('client:auth:destroy');
+        
+        player.call('client:creator:start'); 
         return;
     }
 

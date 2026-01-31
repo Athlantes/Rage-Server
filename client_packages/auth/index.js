@@ -56,6 +56,18 @@ mp.events.add('client:auth:error', (msg) => {
     if(authBrowser) authBrowser.execute(`showError('${msg}')`);
 });
 
+mp.events.add('client:auth:destroy', () => {
+    isAuthOpen = false; // Stop the control disable loop
+    if (authBrowser) {
+        authBrowser.destroy();
+        authBrowser = null;
+    }
+    if (authCam) {
+        authCam.destroy();
+        authCam = null;
+    }
+});
+
 mp.events.add('client:auth:success', () => {
     isAuthOpen = false; // Stop the control disable loop
 

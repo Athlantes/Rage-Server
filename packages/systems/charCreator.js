@@ -11,7 +11,7 @@ function applyAppearance(player, app) {
         player.setHeadBlend(
             app.parents.mother, app.parents.father, 0,
             app.parents.mother, app.parents.father, 0,
-            app.mix, app.mix, 0
+            app.shapeMix || 0.5, app.skinMix || 0.5, 0
         );
     }
 

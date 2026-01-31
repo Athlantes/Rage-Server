@@ -1,109 +1,379 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <style>
-        body { margin: 0; font-family: 'Arial', sans-serif; user-select: none; }
-        .creator-container {
-            position: absolute; top: 50px; right: 50px;
-            width: 350px; background: rgba(0, 0, 0, 0.85);
-            color: white; padding: 20px; border-radius: 10px;
-        }
-        .header { text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: bold; }
-        .tabs { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .tabs button {
-            background: none; border: none; color: #888; font-weight: bold; cursor: pointer;
-        }
-        .tabs button.active { color: #fff; border-bottom: 2px solid #0f0; }
-        .panel { display: none; }
-        .control-group { margin-bottom: 15px; }
-        .control-group label { display: block; margin-bottom: 5px; font-size: 14px; }
-        input[type=range] { width: 100%; }
-        .clothing-selector { display: flex; align-items: center; justify-content: space-between; }
-        .clothing-selector button { background: #333; color: white; border: none; width: 30px; height: 30px; cursor: pointer; }
-        .save-btn {
-            width: 100%; padding: 15px; background: #00aa00; color: white; 
-            border: none; font-size: 18px; margin-top: 20px; cursor: pointer;
-        }
-        .gender-btn { width: 48%; padding: 10px; background: #333; color: white; border: none; cursor: pointer; }
-        .gender-btn.active { background: #00aa00; }
-    </style>
+    <meta charset="UTF-8">
+    <title>Character Creator</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="../../creator/clothingConfig.js"></script> </head>
-<body>
-    <div class="creator-container">
-        <div class="header">CITIZEN ID</div>
+    <script src="../../creator/clothingConfig.js"></script> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            user-select: none;
+            /* Radial gradient vignette for that Sims look */
+            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+        }
+
+        /* --- LEFT SIDEBAR (Categories) --- */
+        .sidebar-left {
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .category-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .category-btn:hover {
+            transform: scale(1.1);
+            background: #fff;
+            color: #00aa00;
+        }
+
+        .category-btn.active {
+            background: #00aa00;
+            color: white;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+        }
+
+        .category-btn::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 100px;
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
         
-        <div class="tabs">
-            <button onclick="setTab('gender')" class="active" id="tab-gender">Info</button>
-            <button onclick="setTab('heritage')" id="tab-heritage">Face</button>
-            <button onclick="setTab('style')" id="tab-style">Style</button>
-            <button onclick="setTab('clothes')" id="tab-clothes">Clothes</button>
+        .category-btn:hover::after {
+            opacity: 1;
+        }
+
+        /* --- RIGHT SIDEBAR (Options) --- */
+        .sidebar-right {
+            position: absolute;
+            right: 50px;
+            top: 100px;
+            bottom: 100px;
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .panel-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #00aa00;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Input Controls */
+        .control-group { margin-bottom: 25px; }
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00aa00;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .selector button {
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: #333;
+            transition: background 0.2s;
+        }
+        .selector button:hover { background: #00aa00; color: white; }
+        
+        .selector span {
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Gender Switch */
+        .gender-switch {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .gender-option {
+            flex: 1;
+            padding: 15px;
+            background: #eee;
+            border: 2px solid transparent;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .gender-option.active {
+            background: #e6ffe6;
+            border-color: #00aa00;
+            color: #00aa00;
+        }
+
+        /* Bottom Action Bar */
+        .bottom-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+
+        .finish-btn {
+            background: #00aa00;
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 20px;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0, 170, 0, 0.4);
+            transition: transform 0.2s;
+        }
+        .finish-btn:hover { transform: scale(1.05); }
+
+        .rotate-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Sections visibility */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-left">
+        <div class="category-btn active" onclick="setTab('identity')" data-tooltip="Identity">
+            <i class="fas fa-venus-mars"></i>
+        </div>
+        <div class="category-btn" onclick="setTab('genes')" data-tooltip="Heritage">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="category-btn" onclick="setTab('face')" data-tooltip="Features">
+            <i class="fas fa-user-edit"></i>
+        </div>
+        <div class="category-btn" onclick="setTab('appearance')" data-tooltip="Hair & Eyes">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="category-btn" onclick="setTab('clothes')" data-tooltip="Clothing">
+            <i class="fas fa-tshirt"></i>
+        </div>
+    </div>
+
+    <div class="sidebar-right">
+        
+        <div id="panel-identity" class="panel active">
+            <div class="panel-title">Who are you?</div>
+            
+            <div class="control-group">
+                <label>Select Gender</label>
+                <div class="gender-switch">
+                    <div class="gender-option active" id="btn-male" onclick="selectGender(0)">
+                        <i class="fas fa-male"></i> Male
+                    </div>
+                    <div class="gender-option" id="btn-female" onclick="selectGender(1)">
+                        <i class="fas fa-female"></i> Female
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align:center; color:#777; margin-top:50px;">
+                <i class="fas fa-info-circle"></i><br><br>
+                Changing gender will reset your clothing selections.
+            </div>
         </div>
 
-        <div id="gender-panel" class="panel" style="display:block;">
+        <div id="panel-genes" class="panel">
+            <div class="panel-title">Heritage</div>
+            
             <div class="control-group">
-                <label>Gender</label>
-                <div style="display:flex; justify-content:space-between;">
-                    <button class="gender-btn active" onclick="selectGender(0)" id="btn-male">Male</button>
-                    <button class="gender-btn" onclick="selectGender(1)" id="btn-female">Female</button>
+                <label>Mother Face</label>
+                <input type="range" min="21" max="45" value="21" id="mom" oninput="updateHeritage()">
+            </div>
+            <div class="control-group">
+                <label>Father Face</label>
+                <input type="range" min="0" max="20" value="0" id="dad" oninput="updateHeritage()">
+            </div>
+            <div class="control-group">
+                <label>Shape Mix (Bone Structure)</label>
+                <input type="range" min="0.0" max="1.0" step="0.1" value="0.5" id="shapeMix" oninput="updateHeritage()">
+                <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px; color:#888;">
+                    <span>Mom's Structure</span><span>Dad's Structure</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Skin Mix (Complexion)</label>
+                <input type="range" min="0.0" max="1.0" step="0.1" value="0.5" id="skinMix" oninput="updateHeritage()">
+                <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px; color:#888;">
+                    <span>Mom's Skin</span><span>Dad's Skin</span>
                 </div>
             </div>
         </div>
 
-        <div id="heritage-panel" class="panel">
-            <div class="control-group">
-                <label>Mother</label>
-                <input type="range" min="21" max="45" value="21" oninput="updateHeritage()" id="mom">
-            </div>
-            <div class="control-group">
-                <label>Father</label>
-                <input type="range" min="0" max="20" value="0" oninput="updateHeritage()" id="dad">
-            </div>
-            <div class="control-group">
-                <label>Resemblance</label>
-                <input type="range" min="0.0" max="1.0" step="0.1" value="0.5" oninput="updateHeritage()" id="mix">
-            </div>
+        <div id="panel-face" class="panel">
+            <div class="panel-title">Face Features</div>
+            <div id="features-container">
+                </div>
         </div>
 
-        <div id="style-panel" class="panel">
+        <div id="panel-appearance" class="panel">
+            <div class="panel-title">Appearance</div>
+
             <div class="control-group">
                 <label>Hair Style</label>
-                <input type="range" min="0" max="75" value="0" oninput="updateHair()" id="hairStyle">
+                <input type="range" min="0" max="75" value="0" id="hairStyle" oninput="updateHair()">
             </div>
+
             <div class="control-group">
                 <label>Hair Color</label>
-                <input type="range" min="0" max="63" value="0" oninput="updateHair()" id="hairColor">
+                <input type="range" min="0" max="63" value="0" id="hairColor" oninput="updateHair()">
+                <div style="height:10px; width:100%; background:linear-gradient(to right, #222, #533, #a63, #ee9, #eee); margin-top:5px; border-radius:3px;"></div>
+            </div>
+
+            <div class="control-group">
+                <label>Eye Color</label>
+                <input type="range" min="0" max="31" value="0" id="eyeColor" oninput="updateEyes()">
             </div>
         </div>
 
-        <div id="clothes-panel" class="panel">
+        <div id="panel-clothes" class="panel">
+            <div class="panel-title">Wardrobe</div>
+
             <div class="control-group">
                 <label>Top</label>
-                <div class="clothing-selector">
-                    <button onclick="updateClothing('tops', -1)">&lt;</button>
+                <div class="selector">
+                    <button onclick="updateClothing('tops', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-tops">Loading...</span>
-                    <button onclick="updateClothing('tops', 1)">&gt;</button>
+                    <button onclick="updateClothing('tops', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
+
             <div class="control-group">
                 <label>Pants</label>
-                <div class="clothing-selector">
-                    <button onclick="updateClothing('legs', -1)">&lt;</button>
+                <div class="selector">
+                    <button onclick="updateClothing('legs', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-legs">Loading...</span>
-                    <button onclick="updateClothing('legs', 1)">&gt;</button>
+                    <button onclick="updateClothing('legs', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
+
             <div class="control-group">
                 <label>Shoes</label>
-                <div class="clothing-selector">
-                    <button onclick="updateClothing('shoes', -1)">&lt;</button>
+                <div class="selector">
+                    <button onclick="updateClothing('shoes', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-shoes">Loading...</span>
-                    <button onclick="updateClothing('shoes', 1)">&gt;</button>
+                    <button onclick="updateClothing('shoes', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
         </div>
 
-        <button class="save-btn" onclick="saveCharacter()">FINISH</button>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="rotate-btn" onclick="mp.trigger('client:creator:rotate', -10)"><i class="fas fa-undo"></i></button>
+        <button class="finish-btn" onclick="saveCharacter()">CREATE</button>
+        <button class="rotate-btn" onclick="mp.trigger('client:creator:rotate', 10)"><i class="fas fa-redo"></i></button>
     </div>
 
     <script src="script.js"></script>
