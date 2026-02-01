@@ -356,7 +356,121 @@ const app = {
         document.getElementById('bank-amount').value = '';
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     },
+
+    scooter: {
+        state: 'idle', // idle, scanning, found, active
+        timerInterval: null,
+        startTime: null,
+        unlockCost: 5,
+        costPerMin: 1,
+        simulatedBattery: 0,
+
+        scan: () => {
+            if (app.scooter.state === 'found') {
+                // If already found, this button acts as "Unlock"
+                app.scooter.unlock();
+                return;
+            }
+            
+            // UI Animation
+            const circle = document.querySelector('.radar-circle');
+            const msg = document.getElementById('escootr-status-msg');
+            const btn = document.getElementById('btn-escootr-main');
+            
+            app.scooter.state = 'scanning';
+            circle.classList.add('pulsing');
+            msg.innerText = "Scanning nearby streets...";
+            btn.disabled = true;
+            btn.innerText = "SEARCHING...";
+
+            // Send request to server
+            if ('mp' in window) {
+                // We assume client:proxyAction forwards 'scooterAction' to the server
+                mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'scan' }));
+            } else {
+                // Debug mode for browser testing
+                setTimeout(() => app.scooter.onScanResult({ status: 'found', battery: 88 }), 2000);
+            }
+        },
+
+        onScanResult: (data) => {
+            const circle = document.querySelector('.radar-circle');
+            const msg = document.getElementById('escootr-status-msg');
+            const btn = document.getElementById('btn-escootr-main');
+            const info = document.getElementById('escootr-found-info');
+
+            circle.classList.remove('pulsing');
+            btn.disabled = false;
+
+            if (data.status === 'found') {
+                app.scooter.state = 'found';
+                app.scooter.simulatedBattery = data.battery;
+                msg.innerText = "Scooter located!";
+                info.classList.remove('hidden');
+                document.getElementById('escootr-found-batt').innerText = data.battery;
+                btn.innerText = `UNLOCK ($${app.scooter.unlockCost})`;
+                btn.style.background = "white"; // Highlight action
+            } else {
+                app.scooter.state = 'idle';
+                msg.innerText = "No scooters found nearby. Try closer to a road.";
+                btn.innerText = "SCAN AGAIN";
+            }
+        },
+
+        unlock: () => {
+             if ('mp' in window) {
+                mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'rent' }));
+            } else {
+                app.scooter.startRide();
+            }
+        },
+
+        startRide: () => {
+            app.scooter.state = 'active';
+            document.getElementById('escootr-scan-ui').classList.add('hidden');
+            document.getElementById('escootr-active-ui').classList.remove('hidden');
+            
+            app.scooter.startTime = Date.now();
+            app.scooter.timerInterval = setInterval(app.scooter.updateRideUI, 1000);
+            
+            // Close phone automatically to ride
+            closePhone();
+        },
+
+        updateRideUI: () => {
+            if (!app.scooter.startTime) return;
+            const diffSeconds = Math.floor((Date.now() - app.scooter.startTime) / 1000);
+            const mins = Math.floor(diffSeconds / 60);
+            const secs = diffSeconds % 60;
+            
+            document.getElementById('escootr-timer').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            const currentCost = app.scooter.unlockCost + (mins * app.scooter.costPerMin) + (secs > 0 ? 0 : 0); // Simple logic
+            document.getElementById('escootr-cost').innerText = '$' + currentCost.toFixed(2);
+            document.getElementById('escootr-batt-live').innerText = app.scooter.simulatedBattery + "%";
+        },
+
+        endRide: () => {
+            if ('mp' in window) {
+                mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'end' }));
+            }
+            // Reset UI
+            clearInterval(app.scooter.timerInterval);
+            app.scooter.state = 'idle';
+            document.getElementById('escootr-scan-ui').classList.remove('hidden');
+            document.getElementById('escootr-active-ui').classList.add('hidden');
+            document.getElementById('escootr-found-info').classList.add('hidden');
+            
+            const btn = document.getElementById('btn-escootr-main');
+            btn.innerText = "SCAN AREA";
+            btn.style.background = "#32cd32";
+            document.getElementById('escootr-status-msg').innerText = "Ride ended. Receipt sent to bank.";
+        }
+    },
 };
+
+
 
 // --- GLOBAL APP FUNCTIONS ---
 function openPhone() {

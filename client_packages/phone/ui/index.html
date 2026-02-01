@@ -72,6 +72,66 @@
                         </div>
                         <span class="app-name">QuickEats</span>
                     </div>
+
+                    <div class="app-icon" onclick="app.open('escootr')">
+                        <div class="icon-box" style="background: #111; border: 2px solid #32cd32; box-shadow: 0 0 10px rgba(50,205,50,0.3);">
+                            <i class="fas fa-bolt" style="color: #32cd32;"></i>
+                        </div>
+                        <span class="app-name">eScootr</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-escootr" class="view hidden">
+                <div class="app-header" style="background: #111; color: white; border-bottom: 1px solid #333;">
+                    <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
+                    <span style="color: #32cd32; letter-spacing: 1px;">eScootr</span>
+                </div>
+                
+                <div class="app-content" style="background: #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 20px; height: 100%;">
+                    
+                    <div id="escootr-scan-ui" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
+                        <div class="radar-circle">
+                            <i class="fas fa-search-location"></i>
+                            <div class="radar-pulse"></div>
+                        </div>
+                        
+                        <div id="escootr-status-msg" style="color: #888; margin-top: 30px; font-size: 14px;">Tap below to find a ride</div>
+                        
+                        <div id="escootr-found-info" class="hidden" style="background: #222; padding: 15px; border-radius: 10px; width: 100%; margin-top: 20px; border-left: 3px solid #32cd32;">
+                            <div style="color: white; font-weight: bold; margin-bottom: 5px;">Scooter Nearby</div>
+                            <div style="color: #888; font-size: 12px; display: flex; justify-content: space-between;">
+                                <span><i class="fas fa-walking"></i> 2 min</span>
+                                <span style="color: #32cd32;"><i class="fas fa-battery-three-quarters"></i> <span id="escootr-found-batt">--</span>%</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-escootr-main" class="btn-green-glow" onclick="app.scooter.scan()" style="margin-top: 40px;">
+                            SCAN AREA
+                        </button>
+                        <div style="margin-top: 15px; font-size: 11px; color: #555;">$5.00 Unlock • $1.00/min</div>
+                    </div>
+
+                    <div id="escootr-active-ui" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                        <div style="font-size: 60px; font-weight: 200; color: white;" id="escootr-timer">00:00</div>
+                        <div style="color: #32cd32; font-size: 18px; margin-bottom: 30px;">ACTIVE RIDE</div>
+
+                        <div class="stat-box" style="background: #222; color: white; width: 100%;">
+                            <div class="stat-row">
+                                <span>Cost</span>
+                                <span id="escootr-cost" style="color: white;">$5.00</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Battery</span>
+                                <span id="escootr-batt-live" style="color: #32cd32;">--%</span>
+                            </div>
+                        </div>
+
+                        <button class="btn-red-glow" onclick="app.scooter.endRide()" style="margin-top: auto; margin-bottom: 30px;">
+                            END RIDE & LOCK
+                        </button>
+                    </div>
+
                 </div>
             </div>
 

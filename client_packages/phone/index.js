@@ -97,6 +97,10 @@ mp.events.add('client:proxyAction', (action, data) => {
             mp.events.callRemote('server:phone:readAllMails');
             break;
             
+        case 'scooterAction':
+            mp.events.callRemote('server:phone:scooterAction', data);
+            break;
+            
         default:
             mp.events.callRemote('server:phone:vehicleAction', action, data);
             break;
