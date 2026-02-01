@@ -49,11 +49,12 @@ mp.events.add('chat:client:close', () => {
 });
 
 mp.events.add('chat:client:send', (text) => {
+    // Determine if it is a command or a normal message
     if (text.startsWith('/')) {
-        // It's a command, let RAGE handle it directly
-        mp.invoke('command', text.substring(1)); 
+        // Send to server as a command event (remove the slash)
+        mp.events.callRemote('command', text.substring(1)); 
     } else {
-        // It's chat, send to server custom event
+        // Send as a chat message
         mp.events.callRemote('chat:say', text);
     }
 });

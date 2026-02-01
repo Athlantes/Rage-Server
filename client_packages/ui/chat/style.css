@@ -15,6 +15,12 @@ body {
     height: 350px;
     display: flex;
     flex-direction: column;
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1;
+}
+
+#chat-wrapper.faded {
+    opacity: 0.1; 
 }
 
 /* --- Messages Area --- */
@@ -76,16 +82,16 @@ body {
 /* --- Autocomplete --- */
 #autocomplete-list {
     position: absolute;
-    bottom: 100%; /* Above input */
+    top: 100%; /* Moves it below the input */
     left: 0;
     width: 100%;
-    background: rgba(15, 15, 15, 0.95);
-    border: 1px solid #333;
-    border-bottom: none;
-    border-radius: 6px 6px 0 0;
+    background: rgba(15, 15, 15, 0);
+    border-top: none; /* Remove top border to blend with input */
+    border-radius: 0 0 6px 6px; /* Round only the bottom corners */
     display: none;
     max-height: 200px;
     overflow-y: auto;
+    z-index: 100; /* Ensure it appears above other elements */
 }
 
 .suggestion {
@@ -93,11 +99,27 @@ body {
     color: #aaa;
     cursor: pointer;
     font-size: 13px;
-    border-bottom: 1px solid #222;
+    /* 1. Add black text shadow */
+    text-shadow: 2px 2px 2px #000; 
 }
 
-.suggestion span { color: #fff; font-weight: 600; } /* The command part */
-.suggestion.selected { background: #007bff; color: white; }
+.suggestion span { 
+    color: #fff; 
+    font-weight: 600; 
+} 
+
+.suggestion.selected { 
+    /* 2. Remove blue background */
+    background: transparent; 
+    
+    /* 3. Change text color to blue */
+    color: #00ccff; 
+}
+
+/* Ensure the bold command part also turns blue when selected */
+.suggestion.selected span {
+    color: #00ccff;
+}
 
 @keyframes slideIn {
     from { transform: translateX(-10px); opacity: 0; }

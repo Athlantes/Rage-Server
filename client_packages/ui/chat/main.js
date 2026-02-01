@@ -4,6 +4,7 @@ const msgBox = document.getElementById('messages-box');
 const inputWrapper = document.getElementById('input-wrapper');
 const input = document.getElementById('chat-input');
 const autoList = document.getElementById('autocomplete-list');
+const chatWrapper = document.getElementById('chat-wrapper');
 
 // State
 let commands = [];
@@ -11,6 +12,19 @@ let msgHistory = [];
 let historyIndex = -1;
 let suggestions = [];
 let selectIndex = 0;
+let fadeTimer = null;
+
+function resetFadeTimer() {
+    chatWrapper.classList.remove('faded');
+    if (fadeTimer) clearTimeout(fadeTimer);
+
+    // Only fade if input is NOT open
+    if (inputWrapper.classList.contains('hidden')) {
+        fadeTimer = setTimeout(() => {
+            chatWrapper.classList.add('faded');
+        }, 10000); // 10 seconds
+    }
+}
 
 // --- API Called by Client Script ---
 window.chatAPI = {
@@ -34,17 +48,32 @@ window.chatAPI = {
         if (msgBox.children.length > 100) {
             msgBox.removeChild(msgBox.firstChild);
         }
+
+        resetFadeTimer();
     },
 
     showInput: (show) => {
         if (show) {
+            // OPENING CHAT
             inputWrapper.classList.remove('hidden');
+            input.disabled = false;
             input.focus();
-            setTimeout(() => input.focus(), 10); // Force focus
+            setTimeout(() => input.focus(), 10);
+
+            // ⚠️ FIX: REMOVE FADED CLASS & CLEAR TIMER
+            chatWrapper.classList.remove('faded'); // Makes opacity 1.0 immediately
+            if (fadeTimer) clearTimeout(fadeTimer); // Stop it from fading while typing
+
         } else {
+            // CLOSING CHAT
             inputWrapper.classList.add('hidden');
             input.value = '';
+            input.blur();
+            input.disabled = true;
             closeSuggestions();
+            
+            // Start the 10s timer again
+            resetFadeTimer(); 
         }
     },
 
@@ -52,6 +81,8 @@ window.chatAPI = {
         commands = list.sort();
     }
 };
+
+resetFadeTimer();
 
 // --- Input Event Listeners ---
 
@@ -126,7 +157,7 @@ input.addEventListener('input', () => {
         const query = val.substring(1).toLowerCase();
         
         // Filter commands
-        suggestions = commands.filter(cmd => cmd.toLowerCase().startsWith(query)).slice(0, 5);
+        suggestions = commands.filter(cmd => cmd.toLowerCase().startsWith(query)).slice(0, 3);
         
         if (suggestions.length > 0) {
             selectIndex = 0;
