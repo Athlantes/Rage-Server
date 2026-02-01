@@ -25,15 +25,22 @@ const app = new Vue({
             // Filter messages where msg.type matches the current tab (case-insensitive)
             return this.messages.filter(m => m.type.toLowerCase() === this.currentTab.toLowerCase());
         },
+        
         suggestions() {
+            // 1. Only show if input starts with '/'
             if (!this.currentInput.startsWith('/')) return [];
-            const search = this.currentInput.substring(1).toLowerCase();
-            if (search.length === 0) return [];
             
-            // Return top 7 matches
+            const search = this.currentInput.substring(1).toLowerCase();
+            
+            // 2. IF JUST '/': Show the first 5 commands available
+            if (search.length === 0) {
+                return this.commands.slice(0, 5);
+            }
+
+            // 3. OTHERWISE: Filter based on what you typed
             return this.commands
                 .filter(cmd => cmd.toLowerCase().startsWith(search))
-                .slice(0, 7);
+                .slice(0, 5); 
         }
     },
     methods: {
