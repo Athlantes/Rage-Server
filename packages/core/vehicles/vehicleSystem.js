@@ -14,14 +14,11 @@ mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     if (seat !== -1) return;
 
     // --- SYNC FIX ---
-    // We force the vehicle's engine state to whatever the server thinks it is.
     vehicle.engine = vehicle.engine; 
 });
 
-// --- NEW: KEEP ENGINE ON FIX ---
+// --- KEEP ENGINE ON FIX ---
 mp.events.add('playerExitVehicle', (player, vehicle) => {
-    // If the engine is currently flagged as ON server-side, 
-    // force it ON again to override GTA's auto-turn-off animation.
     if (vehicle && vehicle.engine) {
         vehicle.engine = true;
     }
@@ -82,11 +79,8 @@ function hasKeys(player, veh) {
 // ---------------------------------------------------------
 setInterval(() => {
     mp.vehicles.forEach((veh) => {
-        // Only consume if engine is actually on
         if (veh.engine) {
-            
             if (veh.jobOwner) return; 
-            // ----------------------
 
             let fuel = veh.getVariable('fuel') || 0;
             if (fuel > 0) {
@@ -94,33 +88,9 @@ setInterval(() => {
                 if (fuel < 0) fuel = 0;
                 veh.setVariable('fuel', fuel);
             } else {
-                // Out of fuel -> kill engine
                 veh.engine = false;
                 veh.setVariable('engine', false); 
             }
         }
     });
 }, FUEL_TICK_RATE);
-
-// ---------------------------------------------------------
-// 3. REFUEL COMMAND
-// ---------------------------------------------------------
-mp.events.addCommand('refuel', (player) => {
-    const veh = player.vehicle;
-    if (!veh) return player.call('showNotification', ['Vehicle System', 'Must be in a vehicle.']);
-    
-    if (veh.engine) return player.call('showNotification', ['Vehicle System', 'Turn off engine first!']);
-    
-    player.call('showNotification', ['Vehicle System', 'Refueling...']);
-    
-    setTimeout(() => {
-        if(mp.vehicles.exists(veh)) {
-            if (playerManager.removeMoney(player, 50, "Gas Station")) {
-                veh.setVariable('fuel', 100.0);
-                player.call('showNotification', ['Vehicle System', 'Tank Full ($50).']);
-            } else {
-                player.call('showNotification', ['Vehicle System', 'You cannot afford fuel ($50)!']);
-            }
-        }
-    }, 3000);
-});

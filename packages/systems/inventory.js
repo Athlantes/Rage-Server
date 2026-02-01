@@ -12,17 +12,6 @@ class InventorySystem {
 
         mp.events.add('server:loadAccount', (player) => this.onPlayerJoin(player));
 
-        mp.events.addCommand('testinv', async (player) => {
-            if (player.logged === false) return player.call('showNotification', ['Error', 'Please login first!']);
-
-            await this.addItem(player, 'burger', 2);
-            await this.addItem(player, 'water', 5);
-            await this.addItem(player, 'pistol', 1); 
-            await this.addItem(player, 'pistol_ammo', 50);
-            
-            player.call('showNotification', ['Admin', 'Test items added.']);
-        });
-        
         mp.events.add('server:moveItem', (player, fromSlot, toSlot) => {
             // 1. DROP ITEM
             if (toSlot === 'GROUND') {
@@ -52,7 +41,6 @@ class InventorySystem {
             if (!def) return;
 
             // --- A. HOTBAR CHECK ---
-            // Prevent clothing or non-equippables from going into Hotbar (Slots -51 to -55)
             if (isHotbar) {
                 if (def.isEquippable === false) {
                     return player.call('showNotification', ['Inventory', 'You cannot equip this item in the hotbar!']);
@@ -60,21 +48,15 @@ class InventorySystem {
             }
 
             // --- B. CLOTHING CHECK ---
-            // Validate clothing slots (Slots -1 to -15 usually)
             if (isClothing) {
                 if (def.type !== 'clothing') {
                     return player.call('showNotification', ['Item Error', 'This is not clothing!']);
                 }
-
-                // Gender Validation: Prevent Males from wearing Female clothes & vice versa
-                // (Assumes player.data.gender is 0 for Male, 1 for Female)
                 if (def.sex !== undefined && player.data.gender !== undefined) {
                     if (def.sex !== player.data.gender) {
                         return player.call('showNotification', ['Item Error', 'This item does not fit your gender!']);
                     }
                 }
-
-                // Slot Validation: Ensure T-Shirt goes to Torso slot, etc.
                 if (def.data.componentId !== Math.abs(toSlot)) {
                     return player.call('showNotification', ['Item Error', 'Wrong clothing slot!']);
                 }

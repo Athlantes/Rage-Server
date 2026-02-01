@@ -1,3 +1,4 @@
+// client_packages/chat/index.js
 let chatBrowser = null;
 let isChatOpen = false;
 
@@ -7,9 +8,18 @@ mp.events.add('playerReady', () => {
     mp.gui.chat.activate(false);
 });
 
-// FIX: Wait for the UI to tell us "I am ready!"
+// 1. When Browser is ready, ask Server for commands
 mp.events.add('chat:browserReady', () => {
     mp.events.callRemote('chat:fetchCommands');
+});
+
+// 2. Receive commands from Server and pass to Vue
+mp.events.add('chat:updateCommands', (commands) => {
+    if (chatBrowser) {
+        mp.gui.chat.push(`Debug: Received ${commands.length} commands.`); // Debug line in chat
+        // Pass array to Vue
+        chatBrowser.execute(`app.setCommands(${JSON.stringify(commands)})`);
+    }
 });
 
 mp.events.add('chat:toggleVisibility', (visible) => {
@@ -39,12 +49,5 @@ mp.events.add('chat:push', (username, message, type) => {
         const cleanName = username ? username.replace(/'/g, "\\'") : null;
         const cleanMsg = message.replace(/'/g, "\\'");
         chatBrowser.execute(`app.addMessage('${cleanName}', '${cleanMsg}', '${type}')`);
-    }
-});
-
-mp.events.add('chat:updateCommands', (commands) => {
-    if (chatBrowser) {
-        // Pass the commands to the Vue app
-        chatBrowser.execute(`app.setCommands(${JSON.stringify(commands)})`);
     }
 });
