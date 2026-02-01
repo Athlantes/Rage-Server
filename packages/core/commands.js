@@ -155,14 +155,11 @@ mp.events.addCommand('aduty', (player) => {
         player.armour = 100;
         player.call('client:setGodmode', [true]); // Assuming you have a client event for this
         mp.players.broadcast(`${COLORS.ADMIN}[ADMIN] ${player.name} is now on duty.`);
-        player.setClothes(11, 287, 1, 0); // Example Admin Shirt
     } else {
         // Disable
         player.setVariable('isAdminDuty', false);
         player.call('client:setGodmode', [false]);
         mp.players.broadcast(`${COLORS.INFO}[ADMIN] ${player.name} is now off duty.`);
-        // Note: You should save/load player clothes to restore them properly here
-        // For now, we just remove the duty status
     }
 });
 
@@ -435,12 +432,19 @@ mp.events.addCommand('dv', (player) => {
 
 mp.events.addCommand('fix', (player) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
+    
     if (player.vehicle) {
+        // 1. Repair Body & Engine
         player.vehicle.repair();
-        player.outputChatBox(`${COLORS.SUCCESS}Vehicle repaired.`);
+        
+        // 2. Set Fuel to 100%
+        player.vehicle.setVariable('fuel', 100.0);
+        
+        player.outputChatBox(`${COLORS.SUCCESS}Vehicle repaired and refueled.`);
+    } else {
+        player.outputChatBox(`${COLORS.ERROR}You must be in a vehicle.`);
     }
 });
-
 // --- ECONOMY & INVENTORY INTEGRATION ---
 
 mp.events.addCommand('setmoney', async (player, fullText) => {

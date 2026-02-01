@@ -82,16 +82,23 @@ const vehicles = {
 
     // 4. Despawn / Tow 
     despawnVehicle: async (veh) => {
-        if (!veh || !veh.dbId) return;
+        if (!veh) return;
 
-        let fuel = veh.getVariable('fuel');
+        // If it has a DB ID, save its data before deleting
+        if (veh.dbId) {
+            let fuel = veh.getVariable('fuel');
+            
+            // Save state but NOT position (keeps the /parkcar spot)
+            await db.query("UPDATE server_vehicles SET parked=1, fuel=?, engine_health=?, dirt_level=? WHERE id=?", 
+                [fuel, veh.engineHealth, veh.dirtLevel, veh.dbId]);
+                
+            console.log(`[Vehicles] Vehicle ID ${veh.dbId} despawned (Saved & Towed).`);
+        } else {
+            console.log(`[Vehicles] Temporary/Admin vehicle deleted.`);
+        }
         
-        // Save state but NOT position (keeps the /parkcar spot)
-        await db.query("UPDATE server_vehicles SET parked=1, fuel=?, engine_health=?, dirt_level=? WHERE id=?", 
-            [fuel, veh.engineHealth, veh.dirtLevel, veh.dbId]);
-        
+        // Destroy the actual entity (Works for both DB cars and Admin cars now)
         if (mp.vehicles.exists(veh)) veh.destroy();
-        console.log(`[Vehicles] Vehicle ID ${veh.dbId} despawned (Towed).`);
     },
 
     // 5. Create (Buy)
