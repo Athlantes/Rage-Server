@@ -3,64 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
-    <title>RAGE Chat</title>
 </head>
 <body>
-    <div id="app" class="chat-container">
-        <div class="chat-messages" 
-            :class="{ active: inputActive }" 
-            :style="{ height: settings.height + 'px' }">
-            
-            <div v-for="(msg, idx) in filteredMessages" :key="idx" :class="['message', msg.type]">
-                <span v-if="msg.username" class="username" :style="{ color: settings.nameColor }">
-                    {{ msg.username }}:
-                </span>
-                <span class="text" v-html="msg.formattedText"></span>
-            </div>
-        </div>
+    <div id="chat-container">
+        <div id="messages"></div>
 
-        <div class="chat-input-wrapper" v-show="inputActive">
-            <div class="settings-btn" @click="showSettings = !showSettings">⚙️</div>
-            
-            <input type="text" 
-                id="chatInput" 
-                v-model="currentInput" 
-                @keydown.tab.prevent="handleTab" 
-                @keydown.enter.prevent="sendMessage" 
-                @keydown.esc.prevent="closeChat"
-                @keydown.up.prevent="handleUp"
-                @keydown.down.prevent="handleDown"
-                placeholder="Type a command or message..."
-                autocomplete="off">
-
-            <div class="suggestions" v-if="suggestions.length > 0">
-                <div v-for="(cmd, index) in suggestions" 
-                    class="suggestion-item" 
-                    :class="{ selected: index === suggestionIndex }"
-                    @click="selectSuggestion(cmd)">
-                    /{{ cmd }}
-                </div>
-            </div>
-
-            <div class="channel-tabs">
-                <span v-for="tab in tabs" 
-                      :class="{ active: currentTab === tab }" 
-                      @click="currentTab = tab">
-                    {{ tab }}
-                </span>
-            </div>
-        </div>
-
-        <div class="settings-modal" v-if="showSettings">
-            <h3>Chat Settings</h3>
-            <label>Height: <input type="range" v-model="settings.height" min="150" max="600"></label>
-            <label>Name Color: <input type="color" v-model="settings.nameColor"></label>
-            <label><input type="checkbox" v-model="settings.timestamp"> Show Timestamps</label>
-            <button @click="saveSettings">Save & Close</button>
+        <div id="input-area" class="hidden">
+            <div id="suggestions"></div>
+            <input type="text" id="chat-input" maxlength="100" autocomplete="off" placeholder="Type a command...">
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <script src="app.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

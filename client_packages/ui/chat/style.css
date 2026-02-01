@@ -1,101 +1,83 @@
 body {
-    background: transparent;
+    margin: 0;
     overflow: hidden;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0; padding: 0;
+    font-family: 'Arial', sans-serif;
+    color: white;
+    font-size: 14px;
+    text-shadow: 1px 1px 0 #000;
 }
 
-.chat-container {
+#chat-container {
     position: absolute;
-    top: 20px; left: 20px;
-    width: 600px;
+    top: 20px;
+    left: 20px;
+    width: 35vw;
+    height: 35vh;
 }
 
-/* Chat History */
-.chat-messages {
-    overflow-y: hidden;
+#messages {
+    height: 100%;
+    overflow-y: hidden; /* Hide scrollbar but keep functionality if needed */
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    text-shadow: 1px 1px 2px #000;
-    transition: background 0.3s;
-    padding: 10px;
-    border-radius: 5px;
 }
-.chat-messages.active {
+
+.message {
+    padding: 2px 5px;
+    margin-bottom: 2px;
     background: rgba(0, 0, 0, 0.4);
-}
-
-/* Message Types */
-.message { font-size: 15px; margin-bottom: 3px; line-height: 1.4; }
-.message.local { color: #fff; }
-.message.me { color: #C2A2DA; }
-.message.do { color: #9c80b5; }
-.message.info { color: #87CEEB; }
-.message.admin { color: #ff6b6b; font-weight: bold; }
-.message.faction { color: #4cd137; }
-.message.clan { color: #fbc531; }
-
-.username { font-weight: 700; margin-right: 6px; }
-
-/* Input Area */
-.chat-input-wrapper {
-    position: relative;
-    background: rgba(15, 15, 15, 0.95);
-    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 4px;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    padding: 5px 10px;
+    animation: fadeIn 0.2s;
 }
 
-input {
-    flex-grow: 1;
-    background: transparent;
-    border: none;
+/* Types */
+.server { color: #aaffaa; }
+.local { color: white; }
+.admin { color: #ff5555; }
+.whisper { color: #dcbdfc; font-style: italic; }
+
+#input-area {
+    margin-top: 10px;
+    position: relative;
+}
+
+.hidden {
+    display: none;
+}
+
+#chat-input {
+    width: 100%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
     color: white;
-    font-size: 15px;
-    padding: 8px;
+    border-radius: 5px;
     outline: none;
 }
 
-.settings-btn { color: #777; cursor: pointer; transition: 0.2s; font-size: 18px; margin-right: 5px; }
-.settings-btn:hover { color: #fff; }
-
-/* Tabs */
-.channel-tabs { display: flex; gap: 12px; margin-left: 15px; }
-.channel-tabs span {
-    color: #666; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 0.5px; transition: 0.2s;
-}
-.channel-tabs span:hover { color: #aaa; }
-.channel-tabs span.active { color: #00a8ff; border-bottom: 2px solid #00a8ff; }
-
-/* Suggestions */
-.suggestions {
+#suggestions {
     position: absolute;
-    bottom: 110%;
+    bottom: 100%; /* Above input */
     left: 0;
     width: 100%;
-    background: rgba(20, 20, 20, 0.98);
+    background: rgba(0, 0, 0, 0.9);
     border: 1px solid #333;
-    border-radius: 4px;
-    overflow: hidden;
+    display: none; /* Hidden unless typing */
 }
-.suggestion-item {
-    padding: 8px 12px;
-    color: #ccc;
-    font-size: 14px;
-    border-bottom: 1px solid #2a2a2a;
-    cursor: pointer;
-}
-.suggestion-item.selected { background: #00a8ff; color: white; }
 
-/* Settings Modal */
-.settings-modal {
-    position: absolute; top: 110%; left: 0;
-    background: #1a1a1a; padding: 15px; border-radius: 4px;
-    color: white; width: 220px; border: 1px solid #444; z-index: 100;
+.suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
 }
-.settings-modal label { display: block; margin-bottom: 8px; font-size: 13px; }
-.settings-modal button { width: 100%; padding: 5px; margin-top: 5px; cursor: pointer; }
+
+.suggestion-item.selected {
+    background: #007bff;
+    color: white;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

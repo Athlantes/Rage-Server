@@ -2,7 +2,6 @@ const vehicleManager = require('./vehicles/vehicleManager');
 const playerManager = require('./playerManager');
 const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
-const Chat = require('../chat/index.js');
 const fs = require('fs');
 const path = require('path');
 
