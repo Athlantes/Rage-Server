@@ -18,14 +18,24 @@
 
         <div class="chat-input-wrapper" v-show="inputActive">
             <div class="settings-btn" @click="toggleSettings">⚙️</div>
+            
             <input type="text" 
-                   id="chatInput" 
-                   v-model="currentInput" 
-                   @keydown.tab.prevent="handleTab" 
-                   @keydown.enter="sendMessage" 
-                   @keydown.esc="closeChat"
-                   placeholder="Type a message..."
-                   autocomplete="off">
+                id="chatInput" 
+                v-model="currentInput" 
+                @keydown.tab.prevent="applySuggestion" 
+                @keydown.enter="sendMessage" 
+                @keydown.esc="closeChat"
+                placeholder="Type a message..."
+                autocomplete="off">
+
+            <div class="suggestions" v-if="suggestions.length > 0">
+                <div v-for="(cmd, index) in suggestions" 
+                    class="suggestion-item" 
+                    :class="{ selected: index === 0 }"
+                    @click="selectSuggestion(cmd)">
+                    /{{ cmd }}
+                </div>
+            </div>
             <div class="channel-tabs">
                 <span v-for="tab in tabs" :class="{ active: currentTab === tab }" @click="currentTab = tab">{{ tab }}</span>
             </div>

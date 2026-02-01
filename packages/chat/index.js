@@ -1,27 +1,57 @@
+// packages/chat/index.js
 const CHAT_RANGE = 20.0; 
 
-// --- Command Interceptor (For Autocomplete) ---
-const commandList = [];
+// 1. Create a manual storage for commands
+const commandsMap = new Map();
+const commandNames = [];
+
+// 2. Save the original RAGE function just in case
 const originalAddCommand = mp.events.addCommand;
 
+// 3. OVERRIDE 'addCommand' to capture all commands (like /buycar, /parkcar)
 mp.events.addCommand = (command, handler) => {
-    commandList.push(command);
-    originalAddCommand(command, handler);
+    // Store for execution
+    commandsMap.set(command.toLowerCase(), handler);
+    // Store for Autocomplete (Client)
+    if (!commandNames.includes(command)) {
+        commandNames.push(command);
+    }
+    // Register normally as backup
+    if (originalAddCommand) originalAddCommand(command, handler);
 };
 
-// --- Events ---
 mp.events.add('playerReady', (player) => {
-    // Send the command list to the client for Autocomplete
-    player.call('chat:updateCommands', [commandList]);
+    // Redirect standard outputChatBox to your custom chat
+    player.outputChatBox = (message) => {
+        player.call('chat:push', ['Server', message, 'info']);
+    };
 });
 
+// Event: Client asks for command list (Fixes Autocomplete)
+mp.events.add('chat:fetchCommands', (player) => {
+    player.call('chat:updateCommands', [commandNames]);
+});
+
+// Event: Player sent a message
 mp.events.add('chat:say', (player, message) => {
-    // 1. Handle Commands
+    if (!message) return;
+
+    // 1. Handle Commands (Starts with /)
     if (message.startsWith('/')) {
-        const args = message.slice(1).trim().split(' ');
-        const command = args.shift();
+        const fullText = message.slice(1);
+        const args = fullText.split(' ');
+        const cmdName = args.shift().toLowerCase(); // get 'buycar'
+        const cmdArgs = args.join(' '); // get 'Adder'
+
+        const handler = commandsMap.get(cmdName);
         
-        mp.events.call('playerCommand', player, message.slice(1)); 
+        if (handler) {
+            // Execute the stored function manually
+            // We pass (player, "Adder") matching standard RAGE behavior
+            handler(player, cmdArgs);
+        } else {
+            player.outputChatBox("!{FF0000}Unknown command.");
+        }
         return;
     }
 
@@ -31,7 +61,6 @@ mp.events.add('chat:say', (player, message) => {
     });
 });
 
-// --- API for other scripts ---
 module.exports = {
     broadcast: (player, message, type = 'info') => {
         if (player) player.call('chat:push', [null, message, type]);

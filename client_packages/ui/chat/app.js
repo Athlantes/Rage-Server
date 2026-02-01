@@ -4,20 +4,35 @@ const app = new Vue({
         inputActive: false,
         currentInput: '',
         messages: [],
-        commands: [], // Loaded from server
+        commands: [], 
         currentTab: 'All',
         tabs: ['All', 'Local', 'Admin', 'Clan'],
         showSettings: false,
         settings: {
             height: 300,
-            nameColor: '#aaaaaa', // Default Gray
-            textColor: '#ffffff'  // Default White
+            nameColor: '#aaaaaa',
+            textColor: '#ffffff'
         }
     },
     computed: {
         filteredMessages() {
             if (this.currentTab === 'All') return this.messages;
             return this.messages.filter(m => m.type.toLowerCase() === this.currentTab.toLowerCase());
+        },
+        // NEW: Filter commands based on input
+        suggestions() {
+            // Only show if typing a command (starts with /)
+            if (!this.currentInput.startsWith('/')) return [];
+            
+            const search = this.currentInput.substring(1).toLowerCase();
+            
+            // If just '/', show nothing (or show top 5 if you prefer)
+            if (search.length === 0) return []; 
+
+            // Find matches and limit to 5
+            return this.commands
+                .filter(cmd => cmd.toLowerCase().startsWith(search))
+                .slice(0, 5); 
         }
     },
     methods: {
@@ -25,19 +40,23 @@ const app = new Vue({
             this.messages.push({ username, text, type });
             if (this.messages.length > 50) this.messages.shift();
             
-            // Auto scroll down
             this.$nextTick(() => {
                 const container = this.$el.querySelector('.chat-messages');
-                container.scrollTop = container.scrollHeight;
+                if (container) container.scrollTop = container.scrollHeight;
             });
         },
         openInput() {
             this.inputActive = true;
-            this.$nextTick(() => document.getElementById('chatInput').focus());
+            this.$nextTick(() => {
+                const input = document.getElementById('chatInput');
+                if(input) input.focus();
+            });
         },
         closeChat() {
             this.inputActive = false;
             this.showSettings = false;
+            // Clear suggestions when closing
+            this.currentInput = ''; 
             mp.trigger('chat:close');
         },
         sendMessage() {
@@ -47,15 +66,18 @@ const app = new Vue({
             this.currentInput = '';
             this.closeChat();
         },
-        handleTab() {
-            if (!this.currentInput.startsWith('/')) return;
-            
-            const search = this.currentInput.substring(1);
-            const match = this.commands.find(cmd => cmd.startsWith(search));
-            
-            if (match) {
-                this.currentInput = '/' + match + ' ';
+        // NEW: Apply the first suggestion when TAB is pressed
+        applySuggestion() {
+            if (this.suggestions.length > 0) {
+                this.currentInput = '/' + this.suggestions[0] + ' ';
+                // Keep focus on input
+                document.getElementById('chatInput').focus();
             }
+        },
+        // NEW: Click a suggestion from the list
+        selectSuggestion(cmd) {
+            this.currentInput = '/' + cmd + ' ';
+            document.getElementById('chatInput').focus();
         },
         toggleSettings() {
             this.showSettings = !this.showSettings;
@@ -71,5 +93,9 @@ const app = new Vue({
     mounted() {
         const saved = localStorage.getItem('chatSettings');
         if (saved) this.settings = JSON.parse(saved);
+
+        if (typeof mp !== 'undefined') {
+            mp.trigger('chat:browserReady');
+        }
     }
 });
