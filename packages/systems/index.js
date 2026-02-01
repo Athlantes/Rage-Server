@@ -4,4 +4,3 @@ require('./returo');
 require('./fuel');
 require('./atm');
 require('./charCreator');
-require('./escootr');
