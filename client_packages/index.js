@@ -1,4 +1,5 @@
 require('./auth/index.js');
+require('./chat/index.js');
 
 // 1. Core Utilities & Managers
 require('./core/pauseMenu.js');

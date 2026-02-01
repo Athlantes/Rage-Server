@@ -1,3 +1,4 @@
+require('./chat');
 // 1. Game Systems (Inventory, Dumpster, Fuel)
 require('./systems');
 
@@ -9,5 +10,7 @@ require('./jobs');
 
 // 4. Zones
 require('./zones');
+
+
 
 console.log("[Server] Packages loaded successfully.");

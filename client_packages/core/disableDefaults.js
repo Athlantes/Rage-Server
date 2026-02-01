@@ -66,6 +66,7 @@ mp.events.add('playerReady', () => {
 });
 
 mp.events.add('render', () => {
+    mp.gui.chat.show(false);
     // 1. Pause Menu & HUD Management
     mp.game.controls.disableControlAction(0, 199, true); 
     mp.game.controls.disableControlAction(0, 200, true); 
