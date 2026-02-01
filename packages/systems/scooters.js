@@ -25,7 +25,7 @@ const createScooterEntity = (point, index) => {
     const veh = mp.vehicles.new(mp.joaat(SCOOTER_MODEL), new mp.Vector3(point.x, point.y, point.z), {
         heading: point.h,
         dimension: 0,
-        locked: true,
+        locked: false,
         engine: false
     });
 

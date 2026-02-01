@@ -3,7 +3,7 @@ const app = {
     isLocked: true, 
     toastTimeout: null,
     currentVehicleId: null,
-    scooters: [],
+    
 
     // --- TIME HELPER ---
     getRelativeTime: (dateString) => {
@@ -47,7 +47,7 @@ const app = {
         }
 
         if (appName === 'escootr') {
-             app.checkScooterState();
+             if('mp' in window) mp.trigger('client:proxyAction', 'checkScooterStatus', null);
         }
 
         document.querySelectorAll('.view').forEach(el => {
@@ -408,6 +408,7 @@ const app = {
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     },
 
+    scooters: [],
     loadScooterList: (data) => {
         app.scooters = data;
         const list = document.getElementById('escootr-list');
