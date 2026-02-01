@@ -3,13 +3,11 @@ let isChatOpen = false;
 
 mp.events.add('playerReady', () => {
     chatBrowser = mp.browsers.new('package://ui/chat/index.html');
-    
-    // Disable default RAGE chat
     mp.gui.chat.show(false); 
     mp.gui.chat.activate(false);
 });
 
-// FIX: When UI is ready, ask server for commands
+// FIX: Wait for the UI to tell us "I am ready!"
 mp.events.add('chat:browserReady', () => {
     mp.events.callRemote('chat:fetchCommands');
 });
@@ -18,10 +16,8 @@ mp.events.add('chat:toggleVisibility', (visible) => {
     if (chatBrowser) chatBrowser.active = visible;
 });
 
-// Key T
 mp.keys.bind(0x54, true, () => {
     if (isChatOpen || mp.gui.cursor.visible) return;
-    
     isChatOpen = true;
     mp.gui.cursor.visible = true;
     chatBrowser.execute('app.openInput()');
@@ -35,9 +31,7 @@ mp.events.add('chat:close', () => {
 });
 
 mp.events.add('chat:submit', (text) => {
-    if (text.length > 0) {
-        mp.events.callRemote('chat:say', text);
-    }
+    mp.events.callRemote('chat:say', text);
 });
 
 mp.events.add('chat:push', (username, message, type) => {
@@ -50,6 +44,7 @@ mp.events.add('chat:push', (username, message, type) => {
 
 mp.events.add('chat:updateCommands', (commands) => {
     if (chatBrowser) {
+        // Pass the commands to the Vue app
         chatBrowser.execute(`app.setCommands(${JSON.stringify(commands)})`);
     }
 });
