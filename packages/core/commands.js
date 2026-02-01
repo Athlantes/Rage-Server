@@ -5,6 +5,7 @@ const ZoneManager = require('../zones/index.js');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
+const scooterSystem = require('../systems/scooters');
 
 // --- CONFIGURATION ---
 const RANKS = {
@@ -137,8 +138,8 @@ mp.events.addCommand('ahelp', (player) => {
     if (!checkRank(player, RANKS.HELPER)) return;
     player.outputChatBox(`${COLORS.ADMIN}--- Admin Commands ---`);
     player.outputChatBox(`!{FFFFFF}Helper: /a, /aduty, /goto, /gethere, /kick, /spectate`);
-    if (player.data.adminLevel >= RANKS.MODERATOR) player.outputChatBox(`!{FFFFFF}Mod: /ban, /unban, /freeze, /unfreeze, /tpcoords`);
-    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth`);
+    if (player.data.adminLevel >= RANKS.MODERATOR) player.outputChatBox(`!{FFFFFF}Mod: /ban, /unban, /freeze, /unfreeze, /tpcoords,`);
+    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth, /addscooter, /delscooter`);
     if (player.data.adminLevel >= RANKS.OWNER) player.outputChatBox(`!{FFFFFF}Owner: /makeadmin, /giveveh, /savecoords`);
 });
 
@@ -161,6 +162,19 @@ mp.events.addCommand('aduty', (player) => {
         player.call('client:setGodmode', [false]);
         mp.players.broadcast(`${COLORS.INFO}[ADMIN] ${player.name} is now off duty.`);
     }
+});
+
+// --- SCOOTER SPAWN MANAGEMENT ---
+
+mp.events.addCommand('addscooter', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    scooterSystem.addScooterSpawn(player);
+});
+
+mp.events.addCommand('delscooter', (player, fullText, id) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    if (!id) return player.outputChatBox("Usage: /delscooter [id]");
+    scooterSystem.removeScooterSpawn(player, id);
 });
 
 // --- ADMIN CHAT ---

@@ -4,7 +4,6 @@ const app = {
     toastTimeout: null,
     currentVehicleId: null,
 
-    // ... [KEEP PREVIOUS TIME HELPER CODE] ...
     getRelativeTime: (dateString) => {
         if (!dateString) return 'now';
         const now = new Date();
@@ -66,7 +65,7 @@ const app = {
         document.getElementById('view-home').classList.remove('hidden');
     },
 
-    // ... [KEEP MAIL & TOAST FUNCTIONS] ...
+    // --- MAIL SYSTEM ---
     loadMails: (mails) => {
         const container = document.getElementById('mail-list');
         const lockContainer = document.getElementById('lock-notification-list');
@@ -134,6 +133,7 @@ const app = {
         }
     },
 
+    // --- NOTIFICATIONS ---
     showToast: (sender, title, message) => {
         const shell = document.getElementById('toast-shell');
         const txtSender = document.getElementById('toast-sender');
@@ -179,6 +179,7 @@ const app = {
         app.showToast(sender, title, message);
     },
 
+    // --- PLAYER VEHICLES ---
     loadVehicles: (cars) => {
         const container = document.getElementById('vehicle-list');
         container.innerHTML = '';
@@ -236,7 +237,7 @@ const app = {
         if (action === 'spawn') closePhone();
     },
 
-    // ... [KEEP QUICK EATS & BANKING CODE] ...
+    // --- QUICK EATS ---
     quickEatsActive: false,
     toggleQuickEats: () => {
         if ('mp' in window) {
@@ -282,6 +283,7 @@ const app = {
         }
     },
 
+    // --- BANKING ---
     loadBankData: (data) => {
         const safeBalance = (data && data.balance) ? data.balance : 0;
         document.getElementById('bank-balance').innerText = safeBalance.toLocaleString();
@@ -359,15 +361,17 @@ const app = {
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     },
 
-    // --- SCOOTER LOGIC UPDATED ---
+    // --- ESCOOTR 2.0 LOGIC ---
     scooters: [],
+    
+    // Updates the list of scooters visible on the "Find" screen
     loadScooterList: (data) => {
         app.scooters = data;
         const list = document.getElementById('escootr-list');
         if (!list) return;
         list.innerHTML = '';
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             list.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">No scooters nearby.</div>';
             return;
         }
@@ -379,8 +383,6 @@ const app = {
             
             const sId = parseInt(scoot.id);
 
-            // CHANGED: We removed the float coordinates from the onclick
-            // We now just pass the ID and let the server decide the position
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <div class="veh-icon" style="background:#FF5E62;"><i class="fas fa-bolt"></i></div>
@@ -397,8 +399,8 @@ const app = {
         });
     },
 
+    // Sends the request to Server to track this specific ID
     pinScooter: (id) => {
-        // CHANGED: Instead of sending coordinates, we just request tracking for this ID
         if ('mp' in window) {
             mp.trigger('client:proxyAction', 'locateScooter', id);
         } else {
@@ -410,6 +412,7 @@ const app = {
         if ('mp' in window) mp.trigger('client:proxyAction', 'checkScooterStatus', null);
     },
 
+    // Updates the screen depending on if user is riding or searching
     updateScooterUI: (isOnScooter, fuel, rentalTimeLeft) => {
         const listView = document.getElementById('escootr-list-view');
         const rentView = document.getElementById('escootr-rent-view');
@@ -418,20 +421,25 @@ const app = {
         const fuelTxt = document.getElementById('scoot-fuel');
 
         if (isOnScooter) {
+            // User is ON a scooter -> Show Rent/Timer screen
             listView.classList.add('hidden');
             rentView.classList.remove('hidden');
             fuelTxt.innerText = Math.floor(fuel) + '%';
+            
             if (rentalTimeLeft > 0) {
+                // Currently Renting
                 controls.classList.add('hidden');
                 activeControls.classList.remove('hidden');
                 document.getElementById('scooter-status-title').innerText = "Renting";
                 document.getElementById('rent-timer').innerText = Math.ceil(rentalTimeLeft / 60) + " min left";
             } else {
+                // Not Renting (Waiting to pay)
                 controls.classList.remove('hidden');
                 activeControls.classList.add('hidden');
                 document.getElementById('scooter-status-title').innerText = "Ready to Ride";
             }
         } else {
+            // User is walking -> Show List
             listView.classList.remove('hidden');
             rentView.classList.add('hidden');
             if ('mp' in window) mp.trigger('client:proxyAction', 'requestScooters', null);
@@ -443,7 +451,7 @@ const app = {
     },
 };
 
-// ... [KEEP HELPER FUNCTIONS: openPhone, closePhone, etc] ...
+// --- GLOBAL APP FUNCTIONS ---
 function openPhone() {
     document.getElementById('phone-shell').classList.remove('hidden');
     const toastShell = document.getElementById('toast-shell');
