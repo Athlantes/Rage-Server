@@ -361,7 +361,6 @@ const app = {
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     },
 
-    // --- ESCOOTR 2.0 LOGIC ---
     scooters: [],
     
     // Updates the list of scooters visible on the "Find" screen
@@ -372,28 +371,46 @@ const app = {
         list.innerHTML = '';
 
         if (!data || data.length === 0) {
-            list.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">No scooters nearby.</div>';
+            list.innerHTML = `
+                <div style="text-align:center; margin-top:50px;">
+                    <div style="background:#f5f5f5; width:60px; height:60px; border-radius:50%; margin:0 auto 15px auto; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:24px;">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 style="margin:0; color:#333;">No Scooters Nearby</h3>
+                    <p style="color:#999; font-size:13px; padding:0 30px;">Try moving to a different area to find available rides.</p>
+                </div>`;
             return;
         }
 
         data.forEach(scoot => {
-            const div = document.createElement('div');
-            div.className = 'vehicle-item';
-            div.style.justifyContent = 'space-between';
-            
             const sId = parseInt(scoot.id);
+            const fuel = Math.floor(scoot.fuel);
+            
+            // Color code battery
+            let battColor = '#2ecc71'; // Green
+            if(fuel < 50) battColor = '#f1c40f'; // Yellow
+            if(fuel < 20) battColor = '#e74c3c'; // Red
 
+            const div = document.createElement('div');
+            div.className = 'scoot-card';
             div.innerHTML = `
-                <div style="display:flex; align-items:center;">
-                    <div class="veh-icon" style="background:#FF5E62;"><i class="fas fa-bolt"></i></div>
-                    <div class="veh-info">
-                        <div class="veh-model">Scooter #${sId}</div>
-                        <div class="veh-plate">${Math.floor(scoot.dist)}m away • ${Math.floor(scoot.fuel)}%</div>
+                <div class="scoot-header">
+                    <span class="scoot-id">#${sId.toString().padStart(4, '0')}</span>
+                    <div class="scoot-dist">
+                        <i class="fas fa-location-arrow"></i> ${Math.floor(scoot.dist)}m
                     </div>
                 </div>
-                <button onclick="app.pinScooter(${sId})" style="border:none; background: #eee; width: 35px; height: 35px; border-radius: 50%; color: #333; cursor: pointer;">
-                    <i class="fas fa-map-marker-alt"></i>
-                </button>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="scoot-info">
+                        <div class="battery-pill">
+                            <div class="battery-fill" style="width: ${fuel}%; background: ${battColor};"></div>
+                        </div>
+                        <span style="font-size:13px; font-weight:600; color:#333;">${fuel}%</span>
+                    </div>
+                    <button onclick="app.pinScooter(${sId})" style="background:#FF5E62; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">
+                        LOCATE
+                    </button>
+                </div>
             `;
             list.appendChild(div);
         });
@@ -401,6 +418,9 @@ const app = {
 
     // Sends the request to Server to track this specific ID
     pinScooter: (id) => {
+        // Immediate visual feedback
+        app.showToast('eScootr', 'Searching...', 'Acquiring satellite signal...');
+        
         if ('mp' in window) {
             mp.trigger('client:proxyAction', 'locateScooter', id);
         } else {
@@ -418,30 +438,48 @@ const app = {
         const rentView = document.getElementById('escootr-rent-view');
         const controls = document.getElementById('rent-controls');
         const activeControls = document.getElementById('active-rent-controls');
+        
+        const statusTitle = document.getElementById('scooter-status-title');
+        const statusSub = document.getElementById('scooter-status-sub');
+        const batteryBadge = document.getElementById('scoot-battery-badge');
         const fuelTxt = document.getElementById('scoot-fuel');
 
         if (isOnScooter) {
-            // User is ON a scooter -> Show Rent/Timer screen
+            // User is ON a scooter -> Show Dashboard
             listView.classList.add('hidden');
             rentView.classList.remove('hidden');
-            fuelTxt.innerText = Math.floor(fuel) + '%';
             
+            const fuelVal = Math.floor(fuel);
+            fuelTxt.innerText = fuelVal + '%';
+            
+            // Color logic for dashboard badge
+            if(fuelVal < 20) batteryBadge.style.background = '#e74c3c';
+            else if(fuelVal < 50) batteryBadge.style.background = '#f1c40f';
+            else batteryBadge.style.background = '#2ecc71';
+
             if (rentalTimeLeft > 0) {
-                // Currently Renting
+                // Currently Renting (Active)
                 controls.classList.add('hidden');
                 activeControls.classList.remove('hidden');
-                document.getElementById('scooter-status-title').innerText = "Renting";
-                document.getElementById('rent-timer').innerText = Math.ceil(rentalTimeLeft / 60) + " min left";
+                
+                statusTitle.innerText = "Ride in Progress";
+                statusSub.innerText = "Drive safely and follow traffic laws.";
+                
+                const minsLeft = Math.ceil(rentalTimeLeft / 60);
+                document.getElementById('rent-timer').innerText = minsLeft + " min";
             } else {
                 // Not Renting (Waiting to pay)
                 controls.classList.remove('hidden');
                 activeControls.classList.add('hidden');
-                document.getElementById('scooter-status-title').innerText = "Ready to Ride";
+                
+                statusTitle.innerText = "Scooter Locked";
+                statusSub.innerText = "Select a plan to unlock the engine.";
             }
         } else {
             // User is walking -> Show List
             listView.classList.remove('hidden');
             rentView.classList.add('hidden');
+            // Refresh list if we just switched back
             if ('mp' in window) mp.trigger('client:proxyAction', 'requestScooters', null);
         }
     },
@@ -449,7 +487,7 @@ const app = {
     rentScooter: (minutes) => {
         if ('mp' in window) mp.trigger('client:proxyAction', 'rentScooter', minutes);
     },
-};
+}
 
 // --- GLOBAL APP FUNCTIONS ---
 function openPhone() {

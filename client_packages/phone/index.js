@@ -1,4 +1,5 @@
 // client_packages/phone/index.js
+
 let phoneBrowser = null;
 let isPhoneOpen = false;
 
@@ -17,7 +18,6 @@ mp.events.add('playerReady', () => {
 });
 
 // --- KEYBINDS ---
-
 mp.keys.bind(0x26, true, () => { // Up Arrow
     if (mp.gui.chat.visible) return;
     if (mp.gui.cursor.visible && !isPhoneOpen) return;
@@ -33,22 +33,17 @@ mp.keys.bind(0x26, true, () => { // Up Arrow
 });
 
 mp.keys.bind(0x28, true, () => { // Down Arrow
-    if(isPhoneOpen) {
-        closePhone();
-    }
+    if(isPhoneOpen) closePhone();
 });
 
 function closePhone() {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
     mp.gui.chat.activate(true); 
-    if(phoneBrowser) {
-        phoneBrowser.execute(`closePhone()`);
-    }
+    if(phoneBrowser) phoneBrowser.execute(`closePhone()`);
 }
 
 // --- SCOOTER TRACE HELPERS ---
-
 function clearScooterTrace() {
     if (activeScooterTrace.blip && mp.blips.exists(activeScooterTrace.blip)) {
         activeScooterTrace.blip.destroy();
@@ -59,14 +54,13 @@ function clearScooterTrace() {
         activeScooterTrace.checkpoint = null;
     }
     if (activeScooterTrace.routeSet) {
-        mp.game.ui.clearGpsPlayerWaypoint(); // Clears purple route
+        mp.game.ui.clearGpsPlayerWaypoint();
         activeScooterTrace.routeSet = false;
     }
 }
 
 // --- EVENTS FROM SERVER ---
 
-// 1. Core Phone Events
 mp.events.add('client:phone:initialize', (mailsJson) => {
     if(phoneBrowser) phoneBrowser.execute(`app.loadMails(${mailsJson})`);
 });
@@ -84,26 +78,21 @@ mp.events.add('client:closePhoneWrapper', () => {
     mp.gui.cursor.show(false, false);
 });
 
-// 2. Banking Events
 mp.events.add('client:phone:bank:data', (json) => {
     if (phoneBrowser) phoneBrowser.execute(`app.loadBankData(${json})`);
 });
 
-// 3. Quick Eats Events
 mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
     if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
 });
 
-// --- ESCOOTR EVENTS (NEW) ---
+// --- ESCOOTR EVENTS ---
 
-// Receive list of nearby scooters from server
 mp.events.add('client:phone:receiveScooters', (scooters) => {
     if (!phoneBrowser) return;
-    
-    // Send list to UI
     phoneBrowser.execute(`app.loadScooterList(${JSON.stringify(scooters)})`);
     
-    // Check if player is currently sitting on a scooter to update UI state
+    // Check local player vehicle state for UI
     const veh = mp.players.local.vehicle;
     const isOnScooter = (veh && veh.getVariable('isScooter'));
     let timeLeft = 0;
@@ -113,34 +102,31 @@ mp.events.add('client:phone:receiveScooters', (scooters) => {
         fuel = veh.getVariable('fuel') || 100;
         const endTime = veh.getVariable('rentEndTime') || 0;
         const now = Date.now();
-        if (endTime > now) {
-            timeLeft = Math.ceil((endTime - now) / 1000);
-        }
+        if (endTime > now) timeLeft = Math.ceil((endTime - now) / 1000);
     }
     phoneBrowser.execute(`app.updateScooterUI(${isOnScooter}, ${fuel}, ${timeLeft})`);
 });
 
-// Receive authoritative coordinates to track
 mp.events.add('client:scooter:setLocate', (x, y, z) => {
-    clearScooterTrace(); // Clean up old markers
+    clearScooterTrace();
 
-    // 1. Set GPS Route (Purple line on minimap)
+    // 1. Set GPS
     mp.game.ui.setNewWaypoint(x, y);
     activeScooterTrace.routeSet = true;
 
-    // 2. Create Map Blip (Icon 522 or 665 = Scooter)
+    // 2. Create Blip (ID 522 = Scooter)
     activeScooterTrace.blip = mp.blips.new(522, new mp.Vector3(x, y, z), {
         name: 'Requested eScootr',
         scale: 1.0,
         color: 83, // Purple
         shortRange: false,
     });
-    activeScooterTrace.blip.setRoute(true); // Highlights path
+    activeScooterTrace.blip.setRoute(true);
 
-    // 3. Create 3D World Checkpoint (Visual Column)
+    // 3. Create Checkpoint
     activeScooterTrace.checkpoint = mp.checkpoints.new(1, new mp.Vector3(x, y, z - 1.0), 2.0, {
         direction: new mp.Vector3(0, 0, 75),
-        color: [200, 50, 200, 150], // Purple transparent
+        color: [200, 50, 200, 150],
         visible: true,
         dimension: 0
     });
@@ -149,17 +135,16 @@ mp.events.add('client:scooter:setLocate', (x, y, z) => {
 });
 
 mp.events.add('client:scooter:lostTrack', () => {
-    clearScooterTrace(); // Remove marker if someone else took it
+    clearScooterTrace();
     mp.game.graphics.notify("~r~[eScootr]~w~ Signal lost (Vehicle Rented).");
 });
 
 mp.events.add('client:phone:rentSuccess', (endTime) => {
-    clearScooterTrace(); // Remove marker if we successfully rented it
-    if (phoneBrowser) phoneBrowser.execute(`app.updateScooterUI(true, 100, 600)`); 
+    clearScooterTrace();
+    if (phoneBrowser) phoneBrowser.execute(`app.updateScooterUI(true, 100, 600)`);
     mp.game.graphics.notify("~g~[eScootr]~w~ Rental started. Engine unlocked.");
 });
 
-// Auto-remove checkpoint if we get close to it or enter a vehicle
 mp.events.add('render', () => {
     if (activeScooterTrace.checkpoint) {
         const dist = mp.players.local.dist(activeScooterTrace.checkpoint.position);
@@ -170,9 +155,12 @@ mp.events.add('render', () => {
     }
 });
 
-// --- PROXY HANDLER (UI -> SERVER) ---
+// --- PROXY HANDLER ---
 
 mp.events.add('client:proxyAction', (action, data) => {
+    // Debug output to help verify buttons work
+    // mp.gui.chat.push(`[Phone Debug] Action: ${action} Data: ${data}`);
+
     switch (action) {
         case 'requestBankData':
             mp.events.callRemote('server:phone:bank:open');
@@ -187,12 +175,15 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'requestScooters':
             mp.events.callRemote('server:phone:requestScooters');
             break;
-        
-        // NEW: "Find" logic now sends ID, not coords
         case 'locateScooter': 
-            mp.events.callRemote('server:scooter:locate', data); 
+            // FIX: Ensure data is an Integer before sending to server
+            const scootId = parseInt(data);
+            if (!isNaN(scootId)) {
+                mp.events.callRemote('server:scooter:locate', scootId);
+            } else {
+                mp.gui.chat.push("~r~[Error] Invalid Scooter ID");
+            }
             break;
-
         case 'checkScooterStatus':
             mp.events.callRemote('server:phone:requestScooters');
             break;
