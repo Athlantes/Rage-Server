@@ -407,7 +407,7 @@ const app = {
                         </div>
                         <span style="font-size:13px; font-weight:600; color:#333;">${fuel}%</span>
                     </div>
-                    <button onclick="app.pinScooter(${sId})" style="background:#FF5E62; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">
+                    <button onclick="event.stopPropagation(); app.pinScooter(${sId})" style="background:#FF5E62; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">
                         LOCATE
                     </button>
                 </div>

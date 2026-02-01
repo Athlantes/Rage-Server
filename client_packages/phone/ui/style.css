@@ -326,11 +326,6 @@ body {
     border: 1px solid transparent;
 }
 
-.scoot-card:active {
-    transform: scale(0.98);
-    border-color: #FF5E62;
-}
-
 .scoot-header {
     display: flex;
     justify-content: space-between;
