@@ -114,20 +114,53 @@ mp.events.add('server:auth:register', async (player, username, password) => {
 
 // --- 5. SECURITY LOGIC (The Core Request) ---
 async function performLoginChecks(player, user, passwordInput) {
+    // 1. Check for Active Bans (New System)
+    try {
+        // Check for active bans that are either Permanent (NULL) or Not Yet Expired
+        const [bans] = await db.query(
+            `SELECT * FROM user_bans 
+             WHERE user_id = ? AND active = 1 
+             AND (expire_time IS NULL OR expire_time > NOW()) 
+             ORDER BY id DESC LIMIT 1`, 
+            [user.id]
+        );
 
-    // 1. Password Check (Skipped if Auto-Login)
+        if (bans.length > 0) {
+            const ban = bans[0];
+            const reason = ban.reason;
+            const admin = ban.admin_name;
+            
+            // Logic to display "Permanent" if expire_time is null
+            const expireDisplay = ban.expire_time ? new Date(ban.expire_time).toLocaleString() : "Permanent";
+            
+            player.outputChatBox("!{FF0000}========================================");
+            player.outputChatBox("!{FF0000}       YOU ARE BANNED FROM THIS SERVER");
+            player.outputChatBox("!{FF0000}========================================");
+            player.outputChatBox(`!{FFFFFF}Reason: ${reason}`);
+            player.outputChatBox(`!{FFFFFF}Banned By: ${admin}`);
+            player.outputChatBox(`!{FFFFFF}Expires: ${expireDisplay}`);
+            
+            // Stop login and show error on client
+            return player.call('client:auth:error', [`Banned: ${reason} (Expires: ${expireDisplay})`]);
+        }
+    } catch (err) {
+        console.error("[Auth] Ban Check Error:", err);
+        return player.call('client:auth:error', ["Server Error (Ban System)."]);
+    }
+
+    // 2. Password Check (Skipped if Auto-Login)
     if (passwordInput !== null) {
         const match = await bcrypt.compare(passwordInput, user.password);
         if (!match) return player.call('client:auth:error', ["Incorrect Password."]);
     }
 
-    // 2. SCID OWNERSHIP CHECK (Scenario: Same HWID, Diff SCID -> Block)
+    // 3. SCID OWNERSHIP CHECK (Scenario: Same HWID, Diff SCID -> Block)
     if (user.social_id && user.social_id !== player.rgscId) {
         console.log(`[Security] Blocked ${player.name}. Account SCID: ${user.social_id} vs Player SCID: ${player.rgscId}`);
         return player.call('client:auth:error', ["This account belongs to another Social Club ID."]);
     }
 
-    // 3. ACCOUNT ALREADY ONLINE CHECK (Scenario: Diff HWID, Same SCID -> Kick Old)
+    // 4. ACCOUNT ALREADY ONLINE CHECK (Scenario: Diff HWID, Same SCID -> Kick Old)
     const existingSession = mp.players.toArray().find(p => p.logged && p.data.dbId === user.id);
     if (existingSession) {
         // We notify the new player
@@ -141,20 +174,20 @@ async function performLoginChecks(player, user, passwordInput) {
         return; 
     }
 
-    // 4. DEVICE ALREADY PLAYING CHECK (Scenario: Same HWID/SCID already online -> Block)
+    // 5. DEVICE ALREADY PLAYING CHECK (Scenario: Same HWID/SCID already online -> Block)
     // This prevents opening 2 game instances on the same PC to farm money
     if (isDeviceOrSocialActive(player)) {
         return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time from the same device."]);
     }
 
-    // 5. IP SAFETY CHECK (New)
+    // 6. IP SAFETY CHECK (New)
     // If IP changed significantly, we just log it (don't block, to allow dynamic IPs)
     if (user.ip && user.ip !== player.ip) {
         console.log(`[Auth] ${player.name} new IP detected: ${player.ip} (Old: ${user.ip})`);
         player.outputChatBox("!{FFFF00}[Security] New login location detected.");
     }
 
-    // 6. UPDATE TRACKING & LOGIN
+    // 7. UPDATE TRACKING & LOGIN
     // First time link?
     if (!user.social_id) await db.query("UPDATE users SET social_id = ? WHERE id = ?", [player.rgscId, user.id]);
 
@@ -207,6 +240,8 @@ function startSession(player, userData) {
     player.data.username = userData.username;
     player.data.appearance = userData.appearance; // Cache appearance
     player.data.gender = userData.gender; // Cache gender
+    player.data.adminLevel = userData.admin_level || 0; 
+    player.setVariable('adminLevel', player.data.adminLevel);
 
     // Load Economy
     player.data.money = userData.money;
