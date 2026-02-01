@@ -104,7 +104,12 @@ mp.events.add('client:proxyAction', (action, data) => {
 
         case 'setWaypoint':
             const pos = JSON.parse(data);
+            
             mp.game.ui.setNewWaypoint(pos.x, pos.y);
+            
+            if (pos.id !== undefined) {
+                mp.events.callRemote('server:scooter:enableTracking', pos.id);
+            }
             break;
 
         case 'checkScooterStatus':
@@ -143,20 +148,40 @@ mp.events.add('client:phone:bank:data', (json) => {
 });
 
 mp.events.add('client:phone:receiveScooters', (scooters) => {
-    // Pass the data from Server to UI
-    mp.gui.execute(`app.loadScooterList(${JSON.stringify(scooters)})`);
+    if (!phoneBrowser) return;
+
+    phoneBrowser.execute(`app.loadScooterList(${JSON.stringify(scooters)})`);
     
-    // Also update UI state (in case we are riding one)
     const veh = mp.players.local.vehicle;
     const isOnScooter = (veh && veh.getVariable('isScooter'));
     
-    // If on scooter, show rent screen. If not, show list.
-    // (0, 0) are dummy values for fuel/time, real sync requires more vars
-    const fuel = isOnScooter ? (veh.getVariable('fuel') || 100) : 0;
-    mp.gui.execute(`app.updateScooterUI(${isOnScooter}, ${fuel}, 0)`);
+    let timeLeft = 0;
+    let fuel = 0;
+
+    if (isOnScooter) {
+        fuel = veh.getVariable('fuel') || 100;
+        
+        const endTime = veh.getVariable('rentEndTime') || 0;
+        const now = Date.now();
+        
+        if (endTime > now) {
+            timeLeft = Math.ceil((endTime - now) / 1000);
+        }
+    }
+    
+    phoneBrowser.execute(`app.updateScooterUI(${isOnScooter}, ${fuel}, ${timeLeft})`);
 });
 
 mp.events.add('client:phone:rentSuccess', (endTime) => {
-    // Force UI to rented state
-    mp.gui.execute(`app.updateScooterUI(true, 100, 600)`); // 600 is dummy seconds for visual
+    if (!phoneBrowser) return;
+    // FIX: Use phoneBrowser.execute
+    phoneBrowser.execute(`app.updateScooterUI(true, 100, 600)`); 
+});
+
+mp.events.add('client:scooter:lostTrack', () => {
+    // Clear the purple user waypoint
+    mp.game.invoke('0x6CDD5893CF43E1F9', 4); 
+    
+    // Visual feedback
+    mp.game.graphics.notify("~r~Target scooter rented by another player!");
 });

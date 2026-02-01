@@ -422,18 +422,23 @@ const app = {
 
         data.forEach(scoot => {
             const div = document.createElement('div');
-            div.className = 'vehicle-item'; // Reuse vehicle item styling
+            div.className = 'vehicle-item';
             div.style.justifyContent = 'space-between';
             
+            // FIX: Round the numbers so HTML doesn't break
+            const safeX = parseFloat(scoot.pos.x).toFixed(2);
+            const safeY = parseFloat(scoot.pos.y).toFixed(2);
+            const sId = parseInt(scoot.id);
+
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <div class="veh-icon" style="background:#FF5E62;"><i class="fas fa-bolt"></i></div>
                     <div class="veh-info">
-                        <div class="veh-model">Scooter #${scoot.id}</div>
+                        <div class="veh-model">Scooter #${sId}</div>
                         <div class="veh-plate">${Math.floor(scoot.dist)}m away • ${Math.floor(scoot.fuel)}%</div>
                     </div>
                 </div>
-                <button onclick="app.pinScooter(${scoot.pos.x}, ${scoot.pos.y})" style="border:none; background: #eee; width: 35px; height: 35px; border-radius: 50%; color: #333; cursor: pointer;">
+                <button onclick="app.pinScooter(${sId}, ${safeX}, ${safeY})" style="border:none; background: #eee; width: 35px; height: 35px; border-radius: 50%; color: #333; cursor: pointer;">
                     <i class="fas fa-map-marker-alt"></i>
                 </button>
             `;
@@ -441,9 +446,14 @@ const app = {
         });
     },
 
-    pinScooter: (x, y) => {
-        if ('mp' in window) mp.trigger('client:proxyAction', 'setWaypoint', JSON.stringify({x, y}));
-        app.showToast('eScootr', 'GPS', 'Location marked on map.');
+    pinScooter: (id, x, y) => {
+        // Send ID and Coords to client bridge
+        if ('mp' in window) {
+            mp.trigger('client:proxyAction', 'setWaypoint', JSON.stringify({id: id, x: x, y: y}));
+            app.showToast('eScootr', 'GPS Set', 'Route calculated to scooter.');
+        } else {
+            console.log(`[Dev] Pinning Scooter ${id} at ${x}, ${y}`);
+        }
     },
 
     checkScooterState: () => {

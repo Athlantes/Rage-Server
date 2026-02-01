@@ -38,6 +38,7 @@ const createScooterEntity = (point, index) => {
     veh.lastInteraction = Date.now(); // For idle reset
     
     // Default stats
+    veh.setVariable('rentEndTime', 0);
     veh.setVariable('fuel', 100);
     
     scooters[index] = veh;
@@ -73,32 +74,35 @@ mp.events.add('server:phone:rentScooter', (player, scooterId, minutes) => {
     
     const cost = minutes * RENT_COST_PER_MINUTE;
     
-    // Check Distance
     if (player.dist(veh.position) > 5) return player.call('showNotification', ['eScootr', 'You are too far away!']);
+    if (player.data.money < cost) return player.call('showNotification', ['eScootr', `You need $${cost} to rent this.`]);
 
-    // Check Money (Assuming player.data.money or adjust to your economy)
-    if (player.data.money < cost) {
-        return player.call('showNotification', ['eScootr', `You need $${cost} to rent this.`]);
-    }
-
-    // Process Payment
-    player.data.money -= cost; // Adjust this line to your specific economy handler
+    player.data.money -= cost;
     player.call('showNotification', ['eScootr', `Rented for ${minutes} min ($${cost}).`]);
 
-    // Handle Logic
     const isSameRenter = (veh.lastRenter === player.data.dbId);
     
     veh.lastRenter = player.data.dbId;
     veh.rentEndTime = Date.now() + (minutes * 60000);
+    veh.setVariable('rentEndTime', veh.rentEndTime); // Sync time to client
     veh.locked = false;
-    veh.lastInteraction = Date.now(); // Reset idle timer
+    veh.lastInteraction = Date.now();
 
-    // Fuel Logic: Reset if new renter, keep if same
     if (!isSameRenter) {
         veh.setVariable('fuel', 100);
     }
 
-    // Refresh UI if player is looking at it
+    // --- NEW LOGIC: Check if anyone was tracking this scooter ---
+    mp.players.forEach(p => {
+        // If someone else (p) was tracking this scooter ID
+        if (p.trackingScooter === scooterId && p.id !== player.id) {
+            p.call('client:scooter:lostTrack'); // Remove their waypoint
+            p.call('client:phone:receiveMail', 'eScootr', 'Scooter Unavailable', 'The scooter you were tracking has been rented by someone else.');
+            p.trackingScooter = null;
+        }
+    });
+    // -----------------------------------------------------------
+
     player.call('client:phone:rentSuccess', [veh.rentEndTime]);
 });
 
@@ -117,6 +121,11 @@ mp.events.add('vehicle:toggleEngine', (player) => {
         veh.engine = false;
         player.call('showNotification', ['eScootr', 'Rental expired. Use the app to rent.']);
     }
+});
+
+mp.events.add('server:scooter:enableTracking', (player, scooterId) => {
+    // We store which scooter the player is trying to find
+    player.trackingScooter = scooterId;
 });
 
 // --- COMMANDS ---
@@ -160,6 +169,7 @@ setInterval(() => {
                 // Optionally notify driver if they are on it
             }
             veh.rentEndTime = 0; // Mark as available
+            veh.setVariable('rentEndTime', 0);
             veh.locked = true;
         }
 
