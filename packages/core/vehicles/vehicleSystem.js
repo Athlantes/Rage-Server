@@ -27,6 +27,10 @@ mp.events.add('playerExitVehicle', (player, vehicle) => {
 mp.events.add('vehicle:toggleEngine', (player) => {
     const veh = player.vehicle;
     if (!veh) return;
+
+    if (player.vehicle && player.vehicle.getVariable('isScooter')) {
+        return; 
+    }
     
     // Check if driver
     if (player.seat !== -1 && player.seat !== 0) return;

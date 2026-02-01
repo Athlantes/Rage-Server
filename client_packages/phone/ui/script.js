@@ -3,6 +3,7 @@ const app = {
     isLocked: true, 
     toastTimeout: null,
     currentVehicleId: null,
+    scooters: [],
 
     // --- TIME HELPER ---
     getRelativeTime: (dateString) => {
@@ -43,6 +44,10 @@ const app = {
         // [FIX] Always request fresh bank data when opening the app
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
+        }
+
+        if (appName === 'escootr') {
+             app.checkScooterState();
         }
 
         document.querySelectorAll('.view').forEach(el => {
@@ -401,7 +406,88 @@ const app = {
         
         // Optimistic UI update or wait for server response
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
-    }
+    },
+
+    loadScooterList: (data) => {
+        app.scooters = data;
+        const list = document.getElementById('escootr-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        if (data.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">No scooters nearby.</div>';
+            return;
+        }
+
+        data.forEach(scoot => {
+            const div = document.createElement('div');
+            div.className = 'vehicle-item'; // Reuse vehicle item styling
+            div.style.justifyContent = 'space-between';
+            
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <div class="veh-icon" style="background:#FF5E62;"><i class="fas fa-bolt"></i></div>
+                    <div class="veh-info">
+                        <div class="veh-model">Scooter #${scoot.id}</div>
+                        <div class="veh-plate">${Math.floor(scoot.dist)}m away • ${Math.floor(scoot.fuel)}%</div>
+                    </div>
+                </div>
+                <button onclick="app.pinScooter(${scoot.pos.x}, ${scoot.pos.y})" style="border:none; background: #eee; width: 35px; height: 35px; border-radius: 50%; color: #333; cursor: pointer;">
+                    <i class="fas fa-map-marker-alt"></i>
+                </button>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    pinScooter: (x, y) => {
+        if ('mp' in window) mp.trigger('client:proxyAction', 'setWaypoint', JSON.stringify({x, y}));
+        app.showToast('eScootr', 'GPS', 'Location marked on map.');
+    },
+
+    checkScooterState: () => {
+        // Triggered when opening the app.
+        // We need to ask client script if we are sitting on a scooter.
+        if ('mp' in window) mp.trigger('client:proxyAction', 'checkScooterStatus', null);
+    },
+
+    updateScooterUI: (isOnScooter, fuel, rentalTimeLeft) => {
+        const listView = document.getElementById('escootr-list-view');
+        const rentView = document.getElementById('escootr-rent-view');
+        const controls = document.getElementById('rent-controls');
+        const activeControls = document.getElementById('active-rent-controls');
+        const fuelTxt = document.getElementById('scoot-fuel');
+
+        if (isOnScooter) {
+            listView.classList.add('hidden');
+            rentView.classList.remove('hidden');
+            fuelTxt.innerText = Math.floor(fuel) + '%';
+
+            if (rentalTimeLeft > 0) {
+                // Active Rental
+                controls.classList.add('hidden');
+                activeControls.classList.remove('hidden');
+                document.getElementById('scooter-status-title').innerText = "Renting";
+                // Simple countdown visual (not real-time accurate without interval)
+                document.getElementById('rent-timer').innerText = Math.ceil(rentalTimeLeft / 60) + " min left";
+            } else {
+                // Not Rented
+                controls.classList.remove('hidden');
+                activeControls.classList.add('hidden');
+                document.getElementById('scooter-status-title').innerText = "Ready to Ride";
+            }
+        } else {
+            // Not on scooter, show list
+            listView.classList.remove('hidden');
+            rentView.classList.add('hidden');
+            // Request list refresh
+            if ('mp' in window) mp.trigger('client:proxyAction', 'requestScooters', null);
+        }
+    },
+
+    rentScooter: (minutes) => {
+        if ('mp' in window) mp.trigger('client:proxyAction', 'rentScooter', minutes);
+    },
 };
 
 function openPhone() {
