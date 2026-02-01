@@ -384,15 +384,16 @@ const app = {
 
         data.forEach(scoot => {
             const sId = parseInt(scoot.id);
-            const fuel = Math.floor(scoot.fuel);
+            const fuel = Math.floor(scoot.fuel); // This is actually battery now
             
             // Color code battery
-            let battColor = '#2ecc71'; // Green
-            if(fuel < 50) battColor = '#f1c40f'; // Yellow
-            if(fuel < 20) battColor = '#e74c3c'; // Red
+            let battColor = '#2ecc71'; 
+            if(fuel < 50) battColor = '#f1c40f'; 
+            if(fuel < 20) battColor = '#e74c3c'; 
 
             const div = document.createElement('div');
             div.className = 'scoot-card';
+            div.onclick = () => app.pinScooter(sId); // Clicking card also locates
             div.innerHTML = `
                 <div class="scoot-header">
                     <span class="scoot-id">#${sId.toString().padStart(4, '0')}</span>
@@ -407,7 +408,7 @@ const app = {
                         </div>
                         <span style="font-size:13px; font-weight:600; color:#333;">${fuel}%</span>
                     </div>
-                    <button onclick="event.stopPropagation(); app.pinScooter(${sId})" style="background:#FF5E62; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">
+                    <button class="btn-locate-scoot" onclick="event.stopPropagation(); app.pinScooter(${sId})">
                         LOCATE
                     </button>
                 </div>
@@ -418,13 +419,12 @@ const app = {
 
     // Sends the request to Server to track this specific ID
     pinScooter: (id) => {
-        // Immediate visual feedback
-        app.showToast('eScootr', 'Searching...', 'Acquiring satellite signal...');
+        const safeId = parseInt(id);
+        if(isNaN(safeId)) return;
         
+        app.showToast('eScootr', 'GPS', 'Updating destination...');
         if ('mp' in window) {
-            mp.trigger('client:proxyAction', 'locateScooter', id);
-        } else {
-            console.log(`[Dev] Requesting Locate Scooter ${id}`);
+            mp.trigger('client:proxyAction', 'locateScooter', safeId);
         }
     },
 

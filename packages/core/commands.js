@@ -166,16 +166,8 @@ mp.events.addCommand('aduty', (player) => {
 
 // --- SCOOTER SPAWN MANAGEMENT ---
 
-mp.events.addCommand('addscooter', (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    scooterSystem.addScooterSpawn(player);
-});
-
-mp.events.addCommand('delscooter', (player, fullText, id) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    if (!id) return player.outputChatBox("Usage: /delscooter [id]");
-    scooterSystem.removeScooterSpawn(player, id);
-});
+mp.events.addCommand('addscooter', (player) => scooterSystem.createSpawnPoint(player));
+mp.events.addCommand('removescooter', (player, _, id) => scooterSystem.deleteSpawnPoint(player, id));
 
 // --- ADMIN CHAT ---
 mp.events.addCommand('a', (player, fullText) => {
