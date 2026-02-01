@@ -4,13 +4,11 @@ const path = require('path');
 
 const SAVE_FILE = path.join(__dirname, '../data/scooter_locations.json');
 const SCOOTER_MODEL = 'serv_electricscooter';
-const RENT_COST_PER_MINUTE = 2; // $2 per minute
+const RENT_COST_PER_MINUTE = 2; 
 
-// In-memory storage
 let scooters = [];
 let spawnPoints = [];
 
-// Load Spawn Points
 const loadScooters = () => {
     if (fs.existsSync(SAVE_FILE)) {
         spawnPoints = JSON.parse(fs.readFileSync(SAVE_FILE));
@@ -33,11 +31,10 @@ const createScooterEntity = (point, index) => {
     veh.setVariable('scooterId', index);
     veh.scooterIndex = index;
     veh.spawnPoint = point;
-    veh.lastRenter = null; // Store ID of last person
+    veh.lastRenter = null; 
     veh.rentEndTime = 0;
-    veh.lastInteraction = Date.now(); // For idle reset
+    veh.lastInteraction = Date.now(); 
     
-    // Default stats
     veh.setVariable('rentEndTime', 0);
     veh.setVariable('fuel', 100);
     
@@ -47,9 +44,7 @@ const createScooterEntity = (point, index) => {
 // --- EVENTS ---
 
 mp.events.add('server:phone:requestScooters', (player) => {
-    // Get closest 10 scooters
     const pPos = player.position;
-    
     const nearby = scooters
         .filter(v => mp.vehicles.exists(v))
         .map(v => {
@@ -68,6 +63,25 @@ mp.events.add('server:phone:requestScooters', (player) => {
     player.call('client:phone:receiveScooters', [nearby]);
 });
 
+// NEW: Server-side validation for "Find"
+mp.events.add('server:scooter:locate', (player, id) => {
+    const veh = scooters[id];
+    
+    if (!veh || !mp.vehicles.exists(veh)) {
+        return player.call('client:phone:receiveMail', ['eScootr', 'Error', 'This scooter signal is lost.']);
+    }
+
+    if (veh.rentEndTime > Date.now()) {
+        return player.call('client:phone:receiveMail', ['eScootr', 'Unavailable', 'This scooter is currently rented.']);
+    }
+
+    // Register tracking for "Lost Track" feature
+    player.trackingScooter = id;
+
+    // Send exact Coords to client
+    player.call('client:scooter:setLocate', [veh.position.x, veh.position.y, veh.position.z]);
+});
+
 mp.events.add('server:phone:rentScooter', (player, scooterId, minutes) => {
     const veh = scooters[scooterId];
     if (!veh || !mp.vehicles.exists(veh)) return player.call('showNotification', ['eScootr', 'Error: Scooter not found.']);
@@ -84,7 +98,7 @@ mp.events.add('server:phone:rentScooter', (player, scooterId, minutes) => {
     
     veh.lastRenter = player.data.dbId;
     veh.rentEndTime = Date.now() + (minutes * 60000);
-    veh.setVariable('rentEndTime', veh.rentEndTime); // Sync time to client
+    veh.setVariable('rentEndTime', veh.rentEndTime);
     veh.locked = false;
     veh.lastInteraction = Date.now();
 
@@ -92,112 +106,79 @@ mp.events.add('server:phone:rentScooter', (player, scooterId, minutes) => {
         veh.setVariable('fuel', 100);
     }
 
-    // --- NEW LOGIC: Check if anyone was tracking this scooter ---
     mp.players.forEach(p => {
-        // If someone else (p) was tracking this scooter ID
         if (p.trackingScooter === scooterId && p.id !== player.id) {
-            p.call('client:scooter:lostTrack'); // Remove their waypoint
-            p.call('client:phone:receiveMail', 'eScootr', 'Scooter Unavailable', 'The scooter you were tracking has been rented by someone else.');
+            p.call('client:scooter:lostTrack'); 
+            p.call('client:phone:receiveMail', ['eScootr', 'Scooter Unavailable', 'The scooter you were tracking has been rented by someone else.']);
             p.trackingScooter = null;
         }
     });
-    // -----------------------------------------------------------
 
     player.call('client:phone:rentSuccess', [veh.rentEndTime]);
 });
 
-// Engine Toggle Interceptor
 mp.events.add('vehicle:toggleEngine', (player) => {
     const veh = player.vehicle;
-    if (!veh || !veh.getVariable('isScooter')) return; // Continue to normal handler if not scooter
+    if (!veh || !veh.getVariable('isScooter')) return; 
 
-    // It is a scooter, check rental
     if (veh.rentEndTime && veh.rentEndTime > Date.now()) {
-        // Active Rental - Toggle Engine
         veh.engine = !veh.engine;
         player.call('showNotification', ['eScootr', veh.engine ? 'Engine Started' : 'Engine Stopped']);
     } else {
-        // Not Rented or Expired
         veh.engine = false;
         player.call('showNotification', ['eScootr', 'Rental expired. Use the app to rent.']);
     }
 });
 
 mp.events.add('server:scooter:enableTracking', (player, scooterId) => {
-    // We store which scooter the player is trying to find
     player.trackingScooter = scooterId;
 });
 
-// --- COMMANDS ---
-
 mp.events.addCommand('addscooter', (player) => {
     if (!player.vehicle) return player.outputChatBox("Get in a vehicle/scooter to position it.");
-    
     const pos = player.vehicle.position;
     const rot = player.vehicle.rotation;
-    
     const newPoint = { x: pos.x, y: pos.y, z: pos.z, h: rot.z };
     spawnPoints.push(newPoint);
-    
     createScooterEntity(newPoint, spawnPoints.length - 1);
     saveConfig();
-    
     player.outputChatBox(`[eScootr] Added scooter #${spawnPoints.length - 1}`);
 });
 
 function saveConfig() {
-    // Ensure dir exists
     const dir = path.dirname(SAVE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    
     fs.writeFileSync(SAVE_FILE, JSON.stringify(spawnPoints, null, 2));
 }
 
-// --- TIMERS ---
-
-// 1. Check Rentals & Idle Reset (Every 10 seconds)
 setInterval(() => {
     const now = Date.now();
-
     scooters.forEach((veh, index) => {
         if (!mp.vehicles.exists(veh)) return;
-
-        // A. Rental Expiration
         if (veh.rentEndTime > 0 && now > veh.rentEndTime) {
-            if (veh.engine) {
-                veh.engine = false; // Kill engine
-                // Optionally notify driver if they are on it
-            }
-            veh.rentEndTime = 0; // Mark as available
+            if (veh.engine) veh.engine = false; 
+            veh.rentEndTime = 0; 
             veh.setVariable('rentEndTime', 0);
             veh.locked = true;
         }
-
-        // B. Idle Reset (5 mins = 300,000ms)
-        // If not rented AND nobody is on it AND (now - lastInteraction > 5min)
         const isOccupied = (veh.getOccupants().length > 0);
-        
         if (veh.rentEndTime === 0 && !isOccupied) {
             if (now - veh.lastInteraction > 300000) {
-                // Check if far from spawn
                 const spawn = veh.spawnPoint;
                 const dist = veh.dist(new mp.Vector3(spawn.x, spawn.y, spawn.z));
-                
                 if (dist > 2.0) {
                     console.log(`[eScootr] Resetting scooter ${index} to spawn.`);
                     veh.repair();
                     veh.position = new mp.Vector3(spawn.x, spawn.y, spawn.z);
                     veh.rotation = new mp.Vector3(0, 0, spawn.h);
                     veh.setVariable('fuel', 100);
-                    veh.lastInteraction = now; // Reset timer
+                    veh.lastInteraction = now; 
                 }
             }
         } else {
-            // Update interaction time if rented or occupied
             veh.lastInteraction = now;
         }
     });
 }, 10000);
 
-// Initialize
 loadScooters();
