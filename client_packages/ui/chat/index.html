@@ -5,12 +5,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="chat-container">
-        <div id="messages"></div>
+    <div id="chat-wrapper">
+        <div id="messages-box">
+            </div>
 
-        <div id="input-area" class="hidden">
-            <div id="suggestions"></div>
-            <input type="text" id="chat-input" maxlength="100" autocomplete="off" placeholder="Type a command...">
+        <div id="input-wrapper" class="hidden">
+            <div id="autocomplete-list"></div>
+            <input type="text" id="chat-input" maxlength="128" autocomplete="off" placeholder="Say something...">
         </div>
     </div>
     <script src="main.js"></script>

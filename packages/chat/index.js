@@ -1,35 +1,37 @@
 // packages/chat/index.js
+require('./command-collector'); // Load the collector FIRST
+
 const CHAT_RANGE = 20.0;
 
-// 1. Automatic Command Collection
-const serverCommands = [];
-const originalAddCommand = mp.events.addCommand;
-
-// Overwrite the RAGE function to "steal" command names
-mp.events.addCommand = (command, handler) => {
-    if (!serverCommands.includes(command)) {
-        serverCommands.push(command);
-    }
-    if (originalAddCommand) originalAddCommand(command, handler);
-};
-
-// 2. Send Commands when player joins
 mp.events.add('playerReady', (player) => {
-    // Send the list to the client
-    player.call('client:chat:init', [serverCommands]);
-    
-    // Override outputChatBox to use our custom system
+    // ⚠️ THE MAGIC: Redirect standard RAGE output to our Custom UI
     player.outputChatBox = (message) => {
-        player.call('chat:push', ['Server', message, 'server']);
+        player.call('chat:push', ['', message, 'server']);
     };
+    
+    player.notify = (message) => {
+         player.call('chat:push', ['Quests', message, 'admin']);
+    };
+
+    console.log(`[Chat] Hooked outputChatBox for ${player.name}`);
 });
 
-// 3. Chat Routing
+// Handle players typing in chat (Prox Chat)
 mp.events.add('chat:say', (player, message) => {
-    if (!message) return;
+    if (!message || message.length === 0) return;
 
-    // Default Proximity Chat
+    // Security: Prevent HTML injection
+    message = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Send to everyone nearby
     mp.players.forEachInRange(player.position, CHAT_RANGE, (target) => {
+        const distance = target.dist(player.position);
+        let color = 'white';
+        
+        // Darken color slightly with distance (optional visual effect)
+        if (distance > 10) color = '#cccccc';
+        if (distance > 15) color = '#999999';
+
         target.call('chat:push', [player.name, message, 'local']);
     });
 });

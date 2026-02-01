@@ -1,83 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
 body {
     margin: 0;
     overflow: hidden;
-    font-family: 'Arial', sans-serif;
-    color: white;
-    font-size: 14px;
-    text-shadow: 1px 1px 0 #000;
+    font-family: 'Inter', sans-serif;
+    user-select: none;
 }
 
-#chat-container {
+#chat-wrapper {
     position: absolute;
     top: 20px;
     left: 20px;
-    width: 35vw;
-    height: 35vh;
+    width: 600px;
+    height: 350px;
+    display: flex;
+    flex-direction: column;
 }
 
-#messages {
-    height: 100%;
-    overflow-y: hidden; /* Hide scrollbar but keep functionality if needed */
+/* --- Messages Area --- */
+#messages-box {
+    flex: 1;
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    /* Gradient fade at top */
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
 }
 
 .message {
-    padding: 2px 5px;
-    margin-bottom: 2px;
-    background: rgba(0, 0, 0, 0.4);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.3); /* Slight background for readability */
     border-radius: 4px;
-    animation: fadeIn 0.2s;
+    animation: slideIn 0.2s ease-out;
+    line-height: 1.4;
 }
 
-/* Types */
-.server { color: #aaffaa; }
-.local { color: white; }
-.admin { color: #ff5555; }
+/* Message Types */
+.message strong { font-weight: 700; margin-right: 5px; }
+.local { border-left: 3px solid transparent; }
+.server { color: #a3d1ff; border-left: 3px solid #007bff; }
+.admin { color: #ff6b6b; border-left: 3px solid #ff0000; font-weight: bold; }
 .whisper { color: #dcbdfc; font-style: italic; }
 
-#input-area {
-    margin-top: 10px;
+/* --- Input Area --- */
+#input-wrapper {
     position: relative;
+    margin-top: 10px;
+    transition: opacity 0.1s;
 }
 
-.hidden {
-    display: none;
+#input-wrapper.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 #chat-input {
     width: 100%;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid #444;
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px;
     color: white;
-    border-radius: 5px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
     outline: none;
+    box-sizing: border-box; /* Fix padding issues */
 }
 
-#suggestions {
+/* --- Autocomplete --- */
+#autocomplete-list {
     position: absolute;
     bottom: 100%; /* Above input */
     left: 0;
     width: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(15, 15, 15, 0.95);
     border: 1px solid #333;
-    display: none; /* Hidden unless typing */
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
-.suggestion-item {
-    padding: 8px;
+.suggestion {
+    padding: 8px 12px;
+    color: #aaa;
     cursor: pointer;
+    font-size: 13px;
     border-bottom: 1px solid #222;
 }
 
-.suggestion-item.selected {
-    background: #007bff;
-    color: white;
-}
+.suggestion span { color: #fff; font-weight: 600; } /* The command part */
+.suggestion.selected { background: #007bff; color: white; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes slideIn {
+    from { transform: translateX(-10px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }

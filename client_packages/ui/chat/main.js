@@ -1,69 +1,137 @@
+// client_packages/ui/chat/main.js
+
+const msgBox = document.getElementById('messages-box');
+const inputWrapper = document.getElementById('input-wrapper');
 const input = document.getElementById('chat-input');
-const messagesDiv = document.getElementById('messages');
-const inputArea = document.getElementById('input-area');
-const suggestionsDiv = document.getElementById('suggestions');
+const autoList = document.getElementById('autocomplete-list');
 
-let allCommands = [];
-let activeSuggestions = [];
-let selectedIndex = -1;
-let history = [];
+// State
+let commands = [];
+let msgHistory = [];
 let historyIndex = -1;
+let suggestions = [];
+let selectIndex = 0;
 
-// --- API exposed to Client Script ---
+// --- API Called by Client Script ---
 window.chatAPI = {
-    push: (name, text, type) => {
-        const msg = document.createElement('div');
-        msg.className = `message ${type}`;
+    push: (name, text, type = 'local') => {
+        const el = document.createElement('div');
+        el.className = `message ${type}`;
         
-        // Format Colors (simple regex for !{hex})
-        let formatted = text.replace(/!\{([0-9a-fA-F]{6})\}/g, '<span style="color:#$1">');
-        
+        // Handle RAGE colors !{HEX}
+        let formattedText = text.replace(/!\{([0-9a-fA-F]{6})\}/g, '<span style="color:#$1">');
+
         if (name) {
-            msg.innerHTML = `<b>${name}:</b> ${formatted}`;
+            el.innerHTML = `<strong>${name}:</strong> ${formattedText}`;
         } else {
-            msg.innerHTML = formatted;
+            el.innerHTML = formattedText;
         }
 
-        messagesDiv.appendChild(msg);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        
-        // Auto-remove old messages
-        if (messagesDiv.children.length > 50) {
-            messagesDiv.removeChild(messagesDiv.firstChild);
+        msgBox.appendChild(el);
+        msgBox.scrollTop = msgBox.scrollHeight;
+
+        // Cleanup old messages
+        if (msgBox.children.length > 100) {
+            msgBox.removeChild(msgBox.firstChild);
         }
     },
 
-    showInput: (state) => {
-        if (state) {
-            inputArea.classList.remove('hidden');
+    showInput: (show) => {
+        if (show) {
+            inputWrapper.classList.remove('hidden');
             input.focus();
-            setTimeout(() => input.focus(), 10); // Ensure focus
+            setTimeout(() => input.focus(), 10); // Force focus
         } else {
-            inputArea.classList.add('hidden');
+            inputWrapper.classList.add('hidden');
             input.value = '';
             closeSuggestions();
         }
     },
 
-    setCommands: (cmds) => {
-        allCommands = cmds;
-        console.log(`[Chat] Loaded ${cmds.length} commands.`);
+    setCommands: (list) => {
+        commands = list.sort();
     }
 };
 
-// --- Input Logic ---
+// --- Input Event Listeners ---
 
+input.addEventListener('keydown', (e) => {
+    // ENTER: Send
+    if (e.key === 'Enter') {
+        const text = input.value.trim();
+        if (text.length > 0) {
+            // Save to history
+            msgHistory.unshift(text);
+            if (msgHistory.length > 20) msgHistory.pop();
+            historyIndex = -1;
+
+            // Send to client script
+            // Use mp.trigger for RAGE compatibility
+            mp.trigger('chat:client:send', text);
+        }
+        mp.trigger('chat:client:close');
+        return;
+    }
+
+    // ESC: Close
+    if (e.key === 'Escape') {
+        mp.trigger('chat:client:close');
+        return;
+    }
+
+    // UP ARROW: History or Suggestion Nav
+    if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            selectIndex = (selectIndex > 0) ? selectIndex - 1 : suggestions.length - 1;
+            renderSuggestions();
+        } else if (msgHistory.length > 0) {
+            if (historyIndex < msgHistory.length - 1) {
+                historyIndex++;
+                input.value = msgHistory[historyIndex];
+            }
+        }
+        return;
+    }
+
+    // DOWN ARROW: History or Suggestion Nav
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            selectIndex = (selectIndex < suggestions.length - 1) ? selectIndex + 1 : 0;
+            renderSuggestions();
+        } else if (historyIndex > -1) {
+            historyIndex--;
+            input.value = (historyIndex >= 0) ? msgHistory[historyIndex] : '';
+        }
+        return;
+    }
+
+    // TAB: Autocomplete
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            input.value = '/' + suggestions[selectIndex] + ' ';
+            closeSuggestions();
+        }
+    }
+});
+
+// Autocomplete Logic
 input.addEventListener('input', () => {
     const val = input.value;
     
-    // Autocomplete Logic
-    if (val.startsWith('/')) {
+    // Only autocomplete if starts with / and has no spaces yet
+    if (val.startsWith('/') && !val.includes(' ')) {
         const query = val.substring(1).toLowerCase();
-        activeSuggestions = allCommands.filter(c => c.toLowerCase().startsWith(query)).slice(0, 5);
         
-        if (activeSuggestions.length > 0) {
+        // Filter commands
+        suggestions = commands.filter(cmd => cmd.toLowerCase().startsWith(query)).slice(0, 5);
+        
+        if (suggestions.length > 0) {
+            selectIndex = 0;
             renderSuggestions();
-            suggestionsDiv.style.display = 'block';
+            autoList.style.display = 'block';
         } else {
             closeSuggestions();
         }
@@ -72,80 +140,18 @@ input.addEventListener('input', () => {
     }
 });
 
-input.addEventListener('keydown', (e) => {
-    // ENTER: Send
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const text = input.value.trim();
-        if (text.length > 0) {
-            history.unshift(text); // Add to history
-            historyIndex = -1;
-            mp.trigger('chat:client:send', text);
-        }
-        mp.trigger('chat:client:close');
-        return;
-    }
-    
-    // ESC: Close
-    if (e.key === 'Escape') {
-        e.preventDefault();
-        mp.trigger('chat:client:close');
-        return;
-    }
-
-    // TAB: Complete
-    if (e.key === 'Tab') {
-        e.preventDefault();
-        if (activeSuggestions.length > 0) {
-            const idx = selectedIndex > -1 ? selectedIndex : 0;
-            input.value = '/' + activeSuggestions[idx] + ' ';
-            closeSuggestions();
-        }
-        return;
-    }
-
-    // UP: History or Suggestions
-    if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (activeSuggestions.length > 0) {
-            selectedIndex--;
-            if (selectedIndex < 0) selectedIndex = activeSuggestions.length - 1;
-            renderSuggestions();
-        } else if (history.length > 0) {
-            if (historyIndex < history.length - 1) {
-                historyIndex++;
-                input.value = history[historyIndex];
-            }
-        }
-        return;
-    }
-
-    // DOWN: History or Suggestions
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (activeSuggestions.length > 0) {
-            selectedIndex++;
-            if (selectedIndex >= activeSuggestions.length) selectedIndex = 0;
-            renderSuggestions();
-        } else if (historyIndex > -1) {
-            historyIndex--;
-            input.value = historyIndex >= 0 ? history[historyIndex] : '';
-        }
-        return;
-    }
-});
-
 function renderSuggestions() {
-    suggestionsDiv.innerHTML = '';
-    activeSuggestions.forEach((cmd, idx) => {
+    autoList.innerHTML = '';
+    suggestions.forEach((cmd, index) => {
         const div = document.createElement('div');
-        div.className = 'suggestion-item' + (idx === selectedIndex ? ' selected' : '');
-        div.innerText = '/' + cmd;
-        suggestionsDiv.appendChild(div);
+        div.className = 'suggestion' + (index === selectIndex ? ' selected' : '');
+        div.innerHTML = `<span>/${cmd}</span>`;
+        autoList.appendChild(div);
     });
 }
 
 function closeSuggestions() {
-    suggestionsDiv.style.display = 'none';
-    selectedIndex = -1;
+    autoList.style.display = 'none';
+    suggestions = [];
+    selectIndex = 0;
 }

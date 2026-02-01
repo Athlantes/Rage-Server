@@ -1,24 +1,19 @@
-// This array will hold all command names automatically
+// packages/chat/command-collector.js
 const serverCommands = [];
-
-// We save the original RAGE function
 const originalAddCommand = mp.events.addCommand;
 
-// We overwrite it with our "spy" function
+// Override the default addCommand to "steal" the name
 mp.events.addCommand = (command, handler) => {
-    // 1. Add to our list
     if (!serverCommands.includes(command)) {
         serverCommands.push(command);
     }
-    // 2. Actually register the command in RAGE
-    if (originalAddCommand) {
-        originalAddCommand(command, handler);
-    }
+    // Actually register it so it works
+    if (originalAddCommand) originalAddCommand(command, handler);
 };
 
-// When a player joins/is ready, send them the list
+// Send the list to players when they join
 mp.events.add('playerReady', (player) => {
-    player.call('client:chat:receiveCommands', [serverCommands]);
+    player.call('client:chat:init', [serverCommands]);
 });
 
 console.log('[Chat] Command Collector initialized.');
