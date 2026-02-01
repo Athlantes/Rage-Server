@@ -22,7 +22,6 @@ require('./systems/fuel.js');
 require('./systems/dumpster.js');
 require('./systems/returo.js');
 require('./systems/atm.js');
-require('./systems/scooters.js');
 
 // 4. Jobs
 require('./jobs/manager.js');

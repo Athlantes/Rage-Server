@@ -30,6 +30,14 @@ mp.keys.bind(0x28, true, () => { // Down Arrow
     if(isPhoneOpen) closePhone();
 });
 
+// Auto-close phone when entering vehicle (safety feature)
+mp.events.add('playerEnterVehicle', (vehicle, seat) => {
+    if (isPhoneOpen) {
+        closePhone();
+        mp.game.graphics.notify("~y~Phone closed for safety.");
+    }
+});
+
 function closePhone() {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
@@ -64,41 +72,6 @@ mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
     if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
 });
 
-// --- ESCOOTR UI EVENTS ---
-// Note: Blip/GPS tracking is now handled in client_packages/systems/scooters.js
-
-mp.events.add('client:phone:receiveScooters', (scooters) => {
-    if (!phoneBrowser) return;
-    
-    // 1. Update the "Find List"
-    phoneBrowser.execute(`app.loadScooterList(${JSON.stringify(scooters)})`);
-    
-    // 2. Check if we are riding one to update the Dashboard
-    const veh = mp.players.local.vehicle;
-    const isOnScooter = (veh && veh.getVariable('isScooter'));
-    let timeLeft = 0;
-    let battery = 0;
-    
-    if (isOnScooter) {
-        // We use 'battery' variable now from the new system
-        battery = veh.getVariable('battery') || 100;
-        const endTime = veh.getVariable('rentEndTime') || 0;
-        const now = Date.now();
-        
-        if (endTime > now) {
-            timeLeft = Math.ceil((endTime - now) / 1000);
-        }
-    }
-    
-    // Update UI Dashboard
-    phoneBrowser.execute(`app.updateScooterUI(${isOnScooter}, ${battery}, ${timeLeft})`);
-});
-
-mp.events.add('client:phone:rentSuccess', (endTime) => {
-    // Force UI update to show the "Active Ride" screen immediately
-    if (phoneBrowser) phoneBrowser.execute(`app.updateScooterUI(true, 100, 600)`);
-});
-
 // --- PROXY HANDLER ---
 
 mp.events.add('client:proxyAction', (action, data) => {
@@ -114,27 +87,6 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'bankTransfer':
             const transferData = JSON.parse(data); 
             mp.events.callRemote('server:phone:bank:transfer', transferData.t, transferData.a);
-            break;
-            
-        case 'requestScooters':
-        case 'checkScooterStatus':
-            mp.events.callRemote('server:phone:requestScooters');
-            break;
-            
-        case 'locateScooter': 
-            const scootId = parseInt(data);
-            if (!isNaN(scootId)) {
-                mp.events.callRemote('server:scooter:locate', scootId);
-            } else {
-                mp.gui.chat.push("~r~[Phone] Error: Invalid ID format.");
-            }
-            break;
-            
-        case 'rentScooter':
-            const veh = mp.players.local.vehicle;
-            if (veh && veh.getVariable('isScooter')) {
-                 mp.events.callRemote('server:phone:rentScooter', veh.getVariable('scooterId'), data);
-            }
             break;
             
         case 'readMail':
