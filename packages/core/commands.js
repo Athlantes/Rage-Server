@@ -5,7 +5,6 @@ const ZoneManager = require('../zones/index.js');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
-const ScooterManager = require('../systems/escootr.js');
 
 // --- CONFIGURATION ---
 const RANKS = {
@@ -164,44 +163,6 @@ mp.events.addCommand('aduty', (player) => {
     }
 });
 
-// --- SCOOTER SPAWN MANAGEMENT ---
-
-mp.events.addCommand('escootr_create', async (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    try {
-        const id = await ScooterManager.createSpawn(player);
-        player.outputChatBox(`[eScootr] Spawn #${id} created.`);
-    } catch (e) {
-        console.error(e);
-        player.outputChatBox(`[eScootr] Error creating spawn.`);
-    }
-});
-
-mp.events.addCommand('escootr_remove', async (player, fullText, id) => {
-    if (!checkRank(player, RANKS.ADMIN) || !id) return player.outputChatBox("Usage: /escootr_remove [id]");
-    await ScooterManager.removeSpawn(parseInt(id));
-    player.outputChatBox(`[eScootr] Spawn #${id} removed.`);
-});
-
-mp.events.addCommand('escootr_list', async (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    const [rows] = await db.query("SELECT id, position FROM escootr_spawns");
-    player.outputChatBox(`--- eScootr Spawns (${rows.length}) ---`);
-    rows.forEach(r => {
-        player.outputChatBox(`ID: ${r.id} | Pos: ${r.position}`);
-    });
-});
-
-mp.events.addCommand('escootr_tp', async (player, fullText, id) => {
-    if (!checkRank(player, RANKS.ADMIN) || !id) return player.outputChatBox("Usage: /escootr_tp [id]");
-    const [rows] = await db.query("SELECT position FROM escootr_spawns WHERE id = ?", [id]);
-    if (rows.length) {
-        const pos = rows[0].position.split(',');
-        player.position = new mp.Vector3(parseFloat(pos[0]), parseFloat(pos[1]), parseFloat(pos[2]));
-    } else {
-        player.outputChatBox("Spawn not found.");
-    }
-});
 
 // --- ADMIN CHAT ---
 mp.events.addCommand('a', (player, fullText) => {

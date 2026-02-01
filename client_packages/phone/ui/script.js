@@ -41,10 +41,6 @@ const app = {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }
 
-        if (appName === 'escootr') {
-             if('mp' in window) mp.trigger('client:proxyAction', 'checkScooterStatus', null);
-        }
-
         document.querySelectorAll('.view').forEach(el => {
             el.classList.add('hidden');
         });
