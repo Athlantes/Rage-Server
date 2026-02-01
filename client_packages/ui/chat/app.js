@@ -5,16 +5,15 @@ const app = new Vue({
         currentInput: '',
         messages: [],
         commands: [],
-        // Defined tabs. 'All' shows everything. Others filter by 'type'.
-        tabs: ['All', 'Local', 'Admin', 'Clan', 'Faction'],
+        // UPDATED TABS: Removed Trade, added typical RPG tabs
+        tabs: ['All', 'Local', 'Whisper', 'Clan', 'Faction', 'Admin'],
         currentTab: 'All',
         showSettings: false,
         settings: {
             height: 300,
-            nameColor: '#aaaaaa', // User can still change their own name color locally if desired
+            nameColor: '#aaaaaa',
             timestamp: false
         },
-        // Autocomplete & History
         suggestionIndex: -1,
         messageHistory: [],
         historyIndex: -1
@@ -22,57 +21,38 @@ const app = new Vue({
     computed: {
         filteredMessages() {
             if (this.currentTab === 'All') return this.messages;
-            // Filter messages where msg.type matches the current tab (case-insensitive)
+            
+            // Filter logic:
+            // "Whisper" tab catches both incoming and outgoing whispers
+            if (this.currentTab === 'Whisper') {
+                return this.messages.filter(m => m.type === 'whisper');
+            }
+            
             return this.messages.filter(m => m.type.toLowerCase() === this.currentTab.toLowerCase());
         },
-        
+        // ... (rest of suggestions logic stays the same)
         suggestions() {
-            // 1. Only show if input starts with '/'
             if (!this.currentInput.startsWith('/')) return [];
-            
             const search = this.currentInput.substring(1).toLowerCase();
-            
-            // 2. IF JUST '/': Show the first 5 commands available
-            if (search.length === 0) {
-                return this.commands.slice(0, 5);
-            }
-
-            // 3. OTHERWISE: Filter based on what you typed
-            return this.commands
-                .filter(cmd => cmd.toLowerCase().startsWith(search))
-                .slice(0, 5); 
+            if (search.length === 0) return this.commands.slice(0, 5);
+            return this.commands.filter(cmd => cmd.toLowerCase().startsWith(search)).slice(0, 5); 
         }
     },
     methods: {
-        // Safe color parser
         formatMessage(text) {
             if (!text) return '';
+            let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
-            // 1. Sanitize HTML (prevent XSS)
-            let safeText = text.replace(/&/g, "&amp;")
-                               .replace(/</g, "&lt;")
-                               .replace(/>/g, "&gt;")
-                               .replace(/"/g, "&quot;")
-                               .replace(/'/g, "&#039;");
-
-            // 2. Parse Colors: !{RRGGBB} -> <span style="color:#RRGGBB">
-            // Regex matches !{ followed by 6 hex characters }
+            // Basic color parsing
             safeText = safeText.replace(/!\{([a-fA-F0-9]{6})\}/g, (match, color) => {
                 return `<span style="color: #${color}">`;
             });
-
-            // 3. Close spans (optional, but good practice if you want to reset colors)
-            // Browsers usually auto-close, but we can append </span> if needed. 
-            // For simple implementation, the browser handles unclosed spans at end of div.
             return safeText;
         },
         addMessage(username, text, type = 'local') {
-            // Automatically add a tab if it doesn't exist (optional, makes it super easy to extend)
-            const capType = type.charAt(0).toUpperCase() + type.slice(1);
-            if (!this.tabs.includes(capType) && type.toLowerCase() !== 'info') {
-                this.tabs.push(capType);
-            }
-
+            // Check if we need to auto-add a tab? (Disabled to keep your fixed list clean)
+            // const capType = type.charAt(0).toUpperCase() + type.slice(1);
+            
             this.messages.push({ 
                 username, 
                 text, 
@@ -81,9 +61,9 @@ const app = new Vue({
             });
 
             if (this.messages.length > 100) this.messages.shift();
-            
             this.scrollToBottom();
         },
+        // ... (rest of the methods: scrollToBottom, openInput, closeChat, etc. remain unchanged)
         scrollToBottom() {
             this.$nextTick(() => {
                 const container = this.$el.querySelector('.chat-messages');
@@ -105,37 +85,29 @@ const app = new Vue({
         sendMessage() {
             const text = this.currentInput.trim();
             if (text !== '') {
-                // Save to history
-                if (this.messageHistory[0] !== text) {
-                    this.messageHistory.unshift(text);
-                }
+                if (this.messageHistory[0] !== text) this.messageHistory.unshift(text);
                 mp.trigger('chat:submit', text);
             }
             this.currentInput = '';
             this.closeChat();
         },
-        // Navigation: Up/Down for History OR Suggestions
         handleUp() {
-            // If suggestions are visible, navigate them
             if (this.suggestions.length > 0) {
                 this.suggestionIndex--;
                 if (this.suggestionIndex < 0) this.suggestionIndex = this.suggestions.length - 1;
                 return;
             }
-            // Otherwise, navigate history
             if (this.historyIndex < this.messageHistory.length - 1) {
                 this.historyIndex++;
                 this.currentInput = this.messageHistory[this.historyIndex];
             }
         },
         handleDown() {
-            // If suggestions are visible
             if (this.suggestions.length > 0) {
                 this.suggestionIndex++;
                 if (this.suggestionIndex >= this.suggestions.length) this.suggestionIndex = 0;
                 return;
             }
-            // History
             if (this.historyIndex > -1) {
                 this.historyIndex--;
                 this.currentInput = this.historyIndex >= 0 ? this.messageHistory[this.historyIndex] : '';
@@ -143,7 +115,6 @@ const app = new Vue({
         },
         handleTab() {
             if (this.suggestions.length > 0) {
-                // If user selected one with arrows, use that. Otherwise use first.
                 const idx = this.suggestionIndex >= 0 ? this.suggestionIndex : 0;
                 this.selectSuggestion(this.suggestions[idx]);
             }

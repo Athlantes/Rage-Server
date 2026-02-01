@@ -2,6 +2,7 @@ const vehicleManager = require('./vehicles/vehicleManager');
 const playerManager = require('./playerManager');
 const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
+const Chat = require('../chat/index.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,6 +12,53 @@ function broadcastLocal(player, text, type = 'local') {
         target.call('chat:push', [null, text, type]);
     });
 }
+
+// --- Proximity Whisper ---
+mp.events.addCommand('w', (player, fullText) => {
+    const args = fullText.split(' ');
+    const targetIdOrName = args[0];
+    const msg = args.slice(1).join(' ');
+
+    if (!targetIdOrName || !msg) return player.outputChatBox("Usage: /w [id/name] [message]");
+
+    const target = mp.players.at(parseInt(targetIdOrName)) || mp.players.find(p => p.name === targetIdOrName);
+    
+    if (!target) return player.outputChatBox("!{FF0000}Player not found.");
+    if (target === player) return player.outputChatBox("!{FF0000}You can't whisper to yourself.");
+
+    // Distance Check
+    if (player.dist(target.position) > WHISPER_RANGE) {
+        return player.outputChatBox("!{FF0000}Player is too far away to whisper.");
+    }
+
+    // Send to both (Purple/Italic usually for whispers)
+    target.call('chat:push', [`(Whisper) ${player.name}`, msg, 'whisper']);
+    player.call('chat:push', [`(Whisper) to ${target.name}`, msg, 'whisper']);
+});
+
+// --- Clan / Faction Examples ---
+// These add the Prefixes you wanted for the "All" tab.
+mp.events.addCommand('c', (player, fullText) => {
+    if (!player.data.clan) return player.outputChatBox("!{FF0000}You are not in a clan.");
+    if (!fullText) return player.outputChatBox("Usage: /c [message]");
+
+    // Logic: Find all clan members and send
+    const clanMembers = mp.players.toArray().filter(p => p.data.clan === player.data.clan);
+    clanMembers.forEach(p => {
+        // Prefix added here:
+        p.call('chat:push', [`[Clan] ${player.name}`, fullText, 'clan']);
+    });
+});
+
+mp.events.addCommand('f', (player, fullText) => {
+    if (!player.data.faction) return player.outputChatBox("!{FF0000}You are not in a faction.");
+    if (!fullText) return player.outputChatBox("Usage: /f [message]");
+
+    const factionMembers = mp.players.toArray().filter(p => p.data.faction === player.data.faction);
+    factionMembers.forEach(p => {
+        p.call('chat:push', [`[Faction] ${player.name}`, fullText, 'faction']);
+    });
+});
 
 // ----------------------------------------------------------------------------
 // GENERAL & ROLEPLAY COMMANDS
@@ -33,14 +81,23 @@ mp.events.addCommand('stats', (player) => {
 
 mp.events.addCommand('me', (player, fullText) => {
     if (!fullText) return player.outputChatBox("Usage: /me [action]");
-    broadcastLocal(player, `!{C2A2DA}* ${player.name} ${fullText}`);
+    
+    const msg = `* ${player.name} ${fullText}`;
+    
+    mp.players.forEachInRange(player.position, 20.0, (target) => {
+        target.call('chat:push', [null, msg, 'me']);
+    });
 });
 
 mp.events.addCommand('do', (player, fullText) => {
     if (!fullText) return player.outputChatBox("Usage: /do [description]");
-    broadcastLocal(player, `!{C2A2DA}* ${fullText} (( ${player.name} ))`);
+    
+    const msg = `* ${fullText} (( ${player.name} ))`;
+    
+    mp.players.forEachInRange(player.position, 20.0, (target) => {
+        target.call('chat:push', [null, msg, 'do']);
+    });
 });
-
 // ----------------------------------------------------------------------------
 // VEHICLE COMMANDS
 // ----------------------------------------------------------------------------
@@ -105,6 +162,27 @@ function isAdmin(player) {
     // Check if player has admin level (Adjust level requirement as needed)
     return (player.data.level >= 5);
 }
+
+// --- Admin Private Message (Global) ---
+mp.events.addCommand('pm', (player, fullText) => {
+    // Check Admin (Replace with your actual admin variable)
+    if (!player.data.isAdmin && !player.adminLevel) {
+        return player.outputChatBox("!{FF0000}You are not authorized to use this command.");
+    }
+
+    const args = fullText.split(' ');
+    const targetIdOrName = args[0];
+    const msg = args.slice(1).join(' ');
+
+    if (!targetIdOrName || !msg) return player.outputChatBox("Usage: /pm [id/name] [message]");
+
+    const target = mp.players.at(parseInt(targetIdOrName)) || mp.players.find(p => p.name === targetIdOrName);
+    
+    if (!target) return player.outputChatBox("!{FF0000}Player not found.");
+
+    target.call('chat:push', [`[Admin PM] ${player.name}`, msg, 'admin']);
+    player.call('chat:push', [`[PM to ${target.name}]`, msg, 'admin']);
+});
 
 mp.events.addCommand('veh', (player, model) => {
     if (!isAdmin(player)) return;
