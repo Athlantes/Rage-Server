@@ -1,4 +1,3 @@
-// client_packages/chat/index.js
 let chatBrowser = null;
 let isChatOpen = false;
 
@@ -8,16 +7,12 @@ mp.events.add('playerReady', () => {
     mp.gui.chat.activate(false);
 });
 
-// 1. When Browser is ready, ask Server for commands
 mp.events.add('chat:browserReady', () => {
     mp.events.callRemote('chat:fetchCommands');
 });
 
-// 2. Receive commands from Server and pass to Vue
 mp.events.add('chat:updateCommands', (commands) => {
     if (chatBrowser) {
-        mp.gui.chat.push(`Debug: Received ${commands.length} commands.`); // Debug line in chat
-        // Pass array to Vue
         chatBrowser.execute(`app.setCommands(${JSON.stringify(commands)})`);
     }
 });
@@ -26,6 +21,7 @@ mp.events.add('chat:toggleVisibility', (visible) => {
     if (chatBrowser) chatBrowser.active = visible;
 });
 
+// Key T (0x54)
 mp.keys.bind(0x54, true, () => {
     if (isChatOpen || mp.gui.cursor.visible) return;
     isChatOpen = true;
@@ -44,10 +40,12 @@ mp.events.add('chat:submit', (text) => {
     mp.events.callRemote('chat:say', text);
 });
 
+// The main event that receives messages from Server
 mp.events.add('chat:push', (username, message, type) => {
     if (chatBrowser) {
-        const cleanName = username ? username.replace(/'/g, "\\'") : null;
-        const cleanMsg = message.replace(/'/g, "\\'");
-        chatBrowser.execute(`app.addMessage('${cleanName}', '${cleanMsg}', '${type}')`);
+        // Escape quotes to prevent JS errors in execute
+        const safeName = username ? username.replace(/'/g, "\\'") : null;
+        const safeMsg = message.replace(/'/g, "\\'").replace(/\n/g, ""); // Remove newlines
+        chatBrowser.execute(`app.addMessage('${safeName}', '${safeMsg}', '${type}')`);
     }
 });

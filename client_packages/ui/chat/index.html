@@ -3,41 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
-    <title>Chat</title>
+    <title>RAGE Chat</title>
 </head>
 <body>
     <div id="app" class="chat-container">
         <div class="chat-messages" 
             :class="{ active: inputActive }" 
             :style="{ height: settings.height + 'px' }">
-            <div v-for="msg in filteredMessages" :class="['message', msg.type]">
-                <span v-if="msg.username" class="username" :style="{ color: settings.nameColor }">{{ msg.username }}:</span>
-                <span class="text" :style="{ color: settings.textColor }">{{ msg.text }}</span>
+            
+            <div v-for="(msg, idx) in filteredMessages" :key="idx" :class="['message', msg.type]">
+                <span v-if="msg.username" class="username" :style="{ color: settings.nameColor }">
+                    {{ msg.username }}:
+                </span>
+                <span class="text" v-html="msg.formattedText"></span>
             </div>
         </div>
 
         <div class="chat-input-wrapper" v-show="inputActive">
-            <div class="settings-btn" @click="toggleSettings">⚙️</div>
+            <div class="settings-btn" @click="showSettings = !showSettings">⚙️</div>
             
             <input type="text" 
                 id="chatInput" 
                 v-model="currentInput" 
-                @keydown.tab.prevent="applySuggestion" 
-                @keydown.enter="sendMessage" 
-                @keydown.esc="closeChat"
-                placeholder="Type a message..."
+                @keydown.tab.prevent="handleTab" 
+                @keydown.enter.prevent="sendMessage" 
+                @keydown.esc.prevent="closeChat"
+                @keydown.up.prevent="handleUp"
+                @keydown.down.prevent="handleDown"
+                placeholder="Type a command or message..."
                 autocomplete="off">
 
             <div class="suggestions" v-if="suggestions.length > 0">
                 <div v-for="(cmd, index) in suggestions" 
                     class="suggestion-item" 
-                    :class="{ selected: index === 0 }"
+                    :class="{ selected: index === suggestionIndex }"
                     @click="selectSuggestion(cmd)">
                     /{{ cmd }}
                 </div>
             </div>
+
             <div class="channel-tabs">
-                <span v-for="tab in tabs" :class="{ active: currentTab === tab }" @click="currentTab = tab">{{ tab }}</span>
+                <span v-for="tab in tabs" 
+                      :class="{ active: currentTab === tab }" 
+                      @click="currentTab = tab">
+                    {{ tab }}
+                </span>
             </div>
         </div>
 
@@ -45,7 +55,7 @@
             <h3>Chat Settings</h3>
             <label>Height: <input type="range" v-model="settings.height" min="150" max="600"></label>
             <label>Name Color: <input type="color" v-model="settings.nameColor"></label>
-            <label>Text Color: <input type="color" v-model="settings.textColor"></label>
+            <label><input type="checkbox" v-model="settings.timestamp"> Show Timestamps</label>
             <button @click="saveSettings">Save & Close</button>
         </div>
     </div>
