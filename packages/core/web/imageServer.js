@@ -36,7 +36,7 @@ app.post('/upload', (req, res) => {
         // Since we saved it in client_packages/phone/ui/photos, it is accessible via the "package://" protocol in-game
         // BUT for the database, we might want a relative path or a full URL if you plan to show these on a website later.
         // For now, we return the relative path used by the phone UI.
-        const PUBLIC_IP = "127.0.0.1"; 
+        const PUBLIC_IP = "26.170.61.66"; 
         res.json({ 
             success: true, 
             url: `http://${PUBLIC_IP}:${PORT}/photos/${filename}` 

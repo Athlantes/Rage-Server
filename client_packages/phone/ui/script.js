@@ -1,7 +1,3 @@
-// client_packages/phone/ui/script.js
-
-const IMGUR_CLIENT_ID = "YOUR_IMGUR_CLIENT_ID_HERE";
-
 const app = {
     isLocked: true, 
     toastTimeout: null,
@@ -74,7 +70,7 @@ const app = {
                 // Ensure this matches the IP/Port in your imageServer.js
                 // If you are developing locally, 127.0.0.1 is fine. 
                 // If this is a live server, use your server's Public IP.
-                const SERVER_UPLOAD_URL = "http://127.0.0.1:3000/upload"; 
+                const SERVER_UPLOAD_URL = "http://26.170.61.66:3000/upload"; 
 
                 fetch(SERVER_UPLOAD_URL, {
                     method: "POST",
