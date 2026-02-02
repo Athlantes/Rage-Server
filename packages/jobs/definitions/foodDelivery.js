@@ -20,6 +20,9 @@ const logic = {
         player.quickEatsState = null;
         player.quickEatsOrder = null;
         player.setVariable('quickEatsActive', false);
+
+        if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
+        jobManager.clearJobPeds(player);
         
         // This will also clear the Chef/Customer peds via jobManager.stopJob
         jobManager.clearObjective(player); 
@@ -33,6 +36,13 @@ jobManager.register(JOB_KEY, {
 
 
 // --- CHECKS ---
+
+function getFacingAngle(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    let theta = Math.atan2(dx, dy); 
+    return -(theta * 180.0 / Math.PI);
+}
 
 function canReceiveOrder(player) {
     if (!ZoneManager.isPlayerInZone(player, REQUIRED_ZONE)) {
@@ -100,12 +110,13 @@ function assignOrder(player) {
 function handlePickup(player) {
     if (!player.quickEatsOrder) return;
 
-    // Remove the Chef
+    // Remove the Chef (Pickup Phase done)
     jobManager.clearJobPeds(player);
 
     player.quickEatsState = 'delivery';
     const order = player.quickEatsOrder;
     const dest = order.house.door;
+    const street = order.house.street; // Used for orientation
 
     player.call('showNotification', ['QuickEats', 'Order picked up. Delivering...']);
     player.call('client:phone:quickEats:update', [true, "Delivering", "Residential Area"]);
@@ -114,12 +125,29 @@ function handlePickup(player) {
     const distanceBonus = Math.floor((dist / 1000) * REWARDS.perKm);
     order.pay = REWARDS.basePay + distanceBonus;
 
-    // NEW: Spawn Customer at the door
-    // We adjust Z slightly down if needed, or assume door Z is ground level
-    jobManager.createJobPed(player, "a_f_y_hipster_01", dest, 0, {
-        dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
-        name: "idle_a"
-    });
+    // --- NEW: DYNAMIC PED STREAMER ---
+    const properHeading = getFacingAngle(dest, street);
+    
+    if (player.pedStreamer) clearInterval(player.pedStreamer);
+
+    player.pedStreamer = setInterval(() => {
+        if (!mp.players.exists(player)) return;
+
+        const currentDist = player.dist(new mp.Vector3(dest.x, dest.y, dest.z));
+
+        if (currentDist < 35.0 && !player.hasJobPed) {
+            player.hasJobPed = true;
+            jobManager.createJobPed(player, "a_f_y_hipster_01", dest, properHeading, {
+                dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
+                name: "idle_a"
+            });
+        }
+        else if (currentDist > 45.0 && player.hasJobPed) {
+            player.hasJobPed = false;
+            jobManager.clearJobPeds(player);
+        }
+    }, 1000);
+    // --- END NEW LOGIC ---
 
     jobManager.createObjective(player, dest, "Customer Drop-off", 1.5, (p) => {
         handleFinish(p);
@@ -133,7 +161,8 @@ function handlePickup(player) {
 async function handleFinish(player) {
     if (!player.quickEatsOrder) return;
     
-    // Remove the Customer
+    if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
+    player.hasJobPed = false;
     jobManager.clearJobPeds(player);
 
     const pay = player.quickEatsOrder.pay;

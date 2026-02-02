@@ -50,6 +50,15 @@ function getMaxPackages(level) {
     return limit;
 }
 
+function getFacingAngle(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    // Calculate angle in degrees relative to North for GTA coords
+    let theta = Math.atan2(dx, dy); 
+    let heading = -(theta * 180.0 / Math.PI);
+    return heading;
+}
+
 // --- HELPER: UPDATE HUD ---
 function updateUI(player, text, targetPos = null) {
     if(mp.players.exists(player)) {
@@ -132,6 +141,8 @@ const logic = {
         if (player.jobVehicle && mp.vehicles.exists(player.jobVehicle)) player.jobVehicle.destroy();
         if (player.courierBox && mp.objects.exists(player.courierBox)) player.courierBox.destroy();
         
+        if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
+
         // 3. Clear timers
         if (player.abandonTimer) { 
             clearTimeout(player.abandonTimer); 
@@ -141,6 +152,8 @@ const logic = {
             clearInterval(player.jobExitCheck); 
             player.jobExitCheck = null; 
         }
+
+        jobManager.clearJobPeds(player);
         
         // 4. Reset player variables
         player.setVariable('isJobCarrying', null);
@@ -149,6 +162,7 @@ const logic = {
         player.jobVehicle = null;
         player.courierBox = null;
         player.courierData = null;
+        
         hideUI(player);
     }
 };
@@ -272,13 +286,38 @@ function startTrunkPhase(player) {
 
 function startDoorPhase(player) {
     const doorPos = player.courierData.currentStop.door;
+    const streetPos = player.courierData.currentStop.street; // Get street pos for heading calculation
+    
     updateUI(player, "Deliver to Door", doorPos);
 
-    // --- NEW: SPAWN CUSTOMER NPC ---
-    jobManager.createJobPed(player, "a_f_y_hipster_01", doorPos, 0, {
-        dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
-        name: "idle_a"
-    });
+    // --- NEW: DYNAMIC PED STREAMER ---
+    // 1. Calculate proper heading so NPC looks at the street/player
+    const properHeading = getFacingAngle(doorPos, streetPos);
+
+    // 2. Start checking distance
+    if (player.pedStreamer) clearInterval(player.pedStreamer);
+    
+    player.pedStreamer = setInterval(() => {
+        if (!mp.players.exists(player)) return;
+        
+        const dist = player.dist(new mp.Vector3(doorPos.x, doorPos.y, doorPos.z));
+        
+        // Spawn if close (35m) and not yet spawned
+        if (dist < 35.0 && !player.hasJobPed) {
+            player.hasJobPed = true;
+            jobManager.createJobPed(player, "a_f_y_hipster_01", doorPos, properHeading, {
+                dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
+                name: "idle_a"
+            });
+        }
+        // Despawn if player runs away (45m)
+        else if (dist > 45.0 && player.hasJobPed) {
+            player.hasJobPed = false;
+            jobManager.clearJobPeds(player);
+        }
+    }, 1000);
+
+    // --- END NEW LOGIC ---
 
     jobManager.createObjective(player, doorPos, "Drop Off", 1.2, async (p) => {
         if (p.isProcessingPayout) return; 
@@ -291,7 +330,9 @@ function startDoorPhase(player) {
         p.isProcessingPayout = true; 
         jobManager.clearObjective(p);
         
-        // --- NEW: REMOVE NPC AFTER DELIVERY ---
+        // CLEANUP STREAMER
+        if (p.pedStreamer) { clearInterval(p.pedStreamer); p.pedStreamer = null; }
+        p.hasJobPed = false;
         jobManager.clearJobPeds(p);
         
         // 1. Clear State
