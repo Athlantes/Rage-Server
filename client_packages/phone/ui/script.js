@@ -357,8 +357,9 @@ const app = {
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
     },
 
+    // --- eSCOOTR APP ---
     scooter: {
-        state: 'idle', // idle, scanning, found, active
+        state: 'idle', 
         timerInterval: null,
         startTime: null,
         unlockCost: 5,
@@ -367,29 +368,23 @@ const app = {
 
         scan: () => {
             if (app.scooter.state === 'found') {
-                // If already found, this button acts as "Unlock"
                 app.scooter.unlock();
                 return;
             }
             
-            // UI Animation
             const circle = document.querySelector('.radar-circle');
             const msg = document.getElementById('escootr-status-msg');
             const btn = document.getElementById('btn-escootr-main');
             
             app.scooter.state = 'scanning';
             circle.classList.add('pulsing');
-            msg.innerText = "Scanning nearby streets...";
+            // Make message feel like it's working
+            msg.innerText = "Triangulating nearby scooters..."; 
             btn.disabled = true;
             btn.innerText = "SEARCHING...";
 
-            // Send request to server
             if ('mp' in window) {
-                // We assume client:proxyAction forwards 'scooterAction' to the server
                 mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'scan' }));
-            } else {
-                // Debug mode for browser testing
-                setTimeout(() => app.scooter.onScanResult({ status: 'found', battery: 88 }), 2000);
             }
         },
 
@@ -405,14 +400,19 @@ const app = {
             if (data.status === 'found') {
                 app.scooter.state = 'found';
                 app.scooter.simulatedBattery = data.battery;
-                msg.innerText = "Scooter located!";
+                msg.innerText = "Signal acquired.";
                 info.classList.remove('hidden');
+                
+                // UPDATE: Show the dynamic distance from server
+                const distContainer = info.querySelector('div > span:first-child');
+                if(distContainer) distContainer.innerHTML = `<i class="fas fa-walking"></i> ${data.dist || 15}m`;
+                
                 document.getElementById('escootr-found-batt').innerText = data.battery;
                 btn.innerText = `UNLOCK ($${app.scooter.unlockCost})`;
-                btn.style.background = "white"; // Highlight action
+                btn.style.background = "white"; 
             } else {
                 app.scooter.state = 'idle';
-                msg.innerText = "No scooters found nearby. Try closer to a road.";
+                msg.innerText = "No scooters signal nearby.";
                 btn.innerText = "SCAN AGAIN";
             }
         },
@@ -420,8 +420,6 @@ const app = {
         unlock: () => {
              if ('mp' in window) {
                 mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'rent' }));
-            } else {
-                app.scooter.startRide();
             }
         },
 
@@ -433,7 +431,6 @@ const app = {
             app.scooter.startTime = Date.now();
             app.scooter.timerInterval = setInterval(app.scooter.updateRideUI, 1000);
             
-            // Close phone automatically to ride
             closePhone();
         },
 
@@ -446,7 +443,7 @@ const app = {
             document.getElementById('escootr-timer').innerText = 
                 `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             
-            const currentCost = app.scooter.unlockCost + (mins * app.scooter.costPerMin) + (secs > 0 ? 0 : 0); // Simple logic
+            const currentCost = app.scooter.unlockCost + (mins * app.scooter.costPerMin) + (secs > 0 ? 0 : 0);
             document.getElementById('escootr-cost').innerText = '$' + currentCost.toFixed(2);
             document.getElementById('escootr-batt-live').innerText = app.scooter.simulatedBattery + "%";
         },
@@ -455,8 +452,7 @@ const app = {
             if ('mp' in window) {
                 mp.trigger('client:proxyAction', 'scooterAction', JSON.stringify({ type: 'end' }));
             }
-            // Reset UI
-            clearInterval(app.scooter.timerInterval);
+            if(app.scooter.timerInterval) clearInterval(app.scooter.timerInterval);
             app.scooter.state = 'idle';
             document.getElementById('escootr-scan-ui').classList.remove('hidden');
             document.getElementById('escootr-active-ui').classList.add('hidden');
@@ -465,7 +461,7 @@ const app = {
             const btn = document.getElementById('btn-escootr-main');
             btn.innerText = "SCAN AREA";
             btn.style.background = "#32cd32";
-            document.getElementById('escootr-status-msg').innerText = "Ride ended. Receipt sent to bank.";
+            document.getElementById('escootr-status-msg').innerText = "Ride ended.";
         }
     },
 };

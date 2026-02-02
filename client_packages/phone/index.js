@@ -3,6 +3,10 @@
 let phoneBrowser = null;
 let isPhoneOpen = false;
 
+// --- SCOOTER TRACKING VARIABLES ---
+let scooterBlip = null;
+let scooterMarker = null;
+
 mp.events.add('playerReady', () => {
     if (!phoneBrowser) {
         phoneBrowser = mp.browsers.new('package://phone/ui/index.html');
@@ -30,13 +34,23 @@ mp.keys.bind(0x28, true, () => { // Down Arrow
     if(isPhoneOpen) closePhone();
 });
 
-// Auto-close phone when entering vehicle (safety feature)
+// --- CLEAR MARKERS ON ENTRY ---
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     if (isPhoneOpen) {
         closePhone();
         mp.game.graphics.notify("~y~Phone closed for safety.");
     }
+    
+    // If we have a scooter marker active, clear it when we get on a vehicle
+    if (scooterBlip || scooterMarker) {
+        clearScooterMarkers();
+    }
 });
+
+function clearScooterMarkers() {
+    if (scooterBlip) { scooterBlip.destroy(); scooterBlip = null; }
+    if (scooterMarker) { scooterMarker.destroy(); scooterMarker = null; }
+}
 
 function closePhone() {
     isPhoneOpen = false;
@@ -46,64 +60,86 @@ function closePhone() {
 }
 
 // --- STANDARD APP EVENTS ---
-
 mp.events.add('client:phone:initialize', (mailsJson) => {
     if(phoneBrowser) phoneBrowser.execute(`app.loadMails(${mailsJson})`);
 });
-
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
 });
-
 mp.events.add('client:phone:updateVehicles', (carsJson) => {
     if(phoneBrowser) phoneBrowser.execute(`app.loadVehicles(${carsJson})`);
 });
-
 mp.events.add('client:closePhoneWrapper', () => {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
 });
-
 mp.events.add('client:phone:bank:data', (json) => {
     if (phoneBrowser) phoneBrowser.execute(`app.loadBankData(${json})`);
 });
-
 mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
     if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
 });
 
-// --- PROXY HANDLER ---
+// --- PROXY HANDLER (Handling Server Responses) ---
+mp.events.add('client:phone:proxyResponse', (action, data) => {
+    if (phoneBrowser) {
+        if (action === 'scooterAction') {
+            
+            // 1. Pass data to UI
+            phoneBrowser.execute(`if(app.scooter) app.scooter.onScanResult(${JSON.stringify(data)})`);
 
+            // 2. Handle Visuals (Blip/Marker)
+            if (data.status === 'started' && data.x && data.y) {
+                // Clear old ones just in case
+                clearScooterMarkers();
+
+                const targetPos = new mp.Vector3(data.x, data.y, data.z);
+
+                // Create Blip (Icon on Map)
+                scooterBlip = mp.blips.new(522, targetPos, {
+                    name: "Your eScooter",
+                    color: 2, 
+                    scale: 1.0,
+                    shortRange: false,
+                });
+                scooterBlip.setRoute(true); // Adds the yellow GPS path on minimap
+
+                // Create Marker (Type 1 = Vertical Cylinder)
+                // Adjusted Z - 1.0 to sit nicely on the ground
+                scooterMarker = mp.markers.new(1, new mp.Vector3(data.x, data.y, data.z - 1.0), 1.2, {
+                    direction: new mp.Vector3(0, 0, 0),
+                    rotation: new mp.Vector3(0, 0, 0),
+                    color: [50, 205, 50, 100], // Lime Green Transparent
+                    visible: true,
+                    dimension: mp.players.local.dimension
+                });
+            }
+        }
+    }
+});
+
+mp.events.add('client:phone:appCallback', (appName, funcName) => {
+    if (phoneBrowser && appName === 'scooter') {
+        if (funcName === 'startRide') phoneBrowser.execute(`if(app.scooter) app.scooter.startRide()`);
+        
+        // If ride ends, ensure markers are gone
+        if (funcName === 'endRide') clearScooterMarkers();
+    }
+});
+
+// --- OUTGOING ACTIONS ---
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
-        case 'requestBankData':
-            mp.events.callRemote('server:phone:bank:open');
-            break;
-            
-        case 'toggleQuickEats':
-            mp.events.callRemote('server:phone:quickEats:toggle');
-            break;
-            
-        case 'bankTransfer':
+        case 'requestBankData': mp.events.callRemote('server:phone:bank:open'); break;
+        case 'toggleQuickEats': mp.events.callRemote('server:phone:quickEats:toggle'); break;
+        case 'bankTransfer': 
             const transferData = JSON.parse(data); 
             mp.events.callRemote('server:phone:bank:transfer', transferData.t, transferData.a);
             break;
-            
-        case 'readMail':
-            mp.events.callRemote('server:phone:readMail', data);
-            break;
-            
-        case 'readAllMails':
-            mp.events.callRemote('server:phone:readAllMails');
-            break;
-            
-        case 'scooterAction':
-            mp.events.callRemote('server:phone:scooterAction', data);
-            break;
-            
-        default:
-            mp.events.callRemote('server:phone:vehicleAction', action, data);
-            break;
+        case 'readMail': mp.events.callRemote('server:phone:readMail', data); break;
+        case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
+        case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
+        default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }
 });
 
