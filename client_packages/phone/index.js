@@ -171,6 +171,9 @@ async function openCamera() {
 }
 
 function updateCameraMode() {
+    // 1. Safety Check: If camera doesn't exist, stop immediately
+    if (!cam || !mp.cameras.exists(cam)) return;
+
     const player = mp.players.local;
     player.clearTasks();
 
@@ -189,8 +192,8 @@ function updateCameraMode() {
         // Attach camera slightly in front of head
         cam.attachTo(player.handle, player.getBoneIndex(12844), 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, true, false, false);
         
-        // Make it look where player is looking
-        // (This simple attach is rigid; for better looking, we usually use the render loop from the previous code)
+        // Reset rotation so it looks straight
+        cam.setRot(0.0, 0.0, player.getHeading(), 2);
     }
 }
 
