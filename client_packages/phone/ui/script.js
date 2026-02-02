@@ -37,6 +37,11 @@ const app = {
     open: (appName) => {
         if(app.isLocked) return; 
 
+        if (appName === 'camera') {
+            if('mp' in window) mp.trigger('client:proxyAction', 'openCamera');
+            return;
+        }
+
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }
@@ -51,6 +56,41 @@ const app = {
         } else {
             document.getElementById('view-home').classList.remove('hidden');
         }
+    },
+
+    loadGallery: (photos) => {
+        const container = document.getElementById('gallery-grid');
+        if(!container) return;
+        container.innerHTML = '';
+        
+        const safePhotos = Array.isArray(photos) ? photos : [];
+        
+        if (safePhotos.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; padding:40px; text-align:center; color:#999;">No photos yet</div>';
+            return;
+        }
+
+        safePhotos.forEach(photo => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.onclick = () => app.openPhotoViewer(photo.url);
+            div.innerHTML = `<img src="${photo.url}" loading="lazy">`;
+            container.appendChild(div);
+        });
+    },
+
+    openPhotoViewer: (url) => {
+        const viewer = document.getElementById('photo-viewer');
+        const img = document.getElementById('photo-viewer-img');
+        if(viewer && img) {
+            img.src = url;
+            viewer.classList.remove('hidden');
+        }
+    },
+
+    closePhotoViewer: () => {
+        const viewer = document.getElementById('photo-viewer');
+        if(viewer) viewer.classList.add('hidden');
     },
     
     goHome: () => {
