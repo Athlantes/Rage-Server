@@ -1,3 +1,4 @@
+// packages/jobs/definitions/courier.js
 const jobManager = require('../jobManager');
 const playerManager = require('../../core/playerManager');
 const HOUSES = require('../../data/houses');
@@ -14,7 +15,7 @@ const JOB_CONFIG = {
     pedModel: "s_m_m_postal_01", 
     blipSprite: 616, 
     blipColor: 26,
-    pos: { x: 78.62, y: 111.93, z: 81.17, h: -112.12 },
+    pos: { x: 82.65, y: 132.93, z: 80.53, h: 67.59 },
     staticPeds: [
         {
             model: "s_m_m_postal_02", 
@@ -24,57 +25,43 @@ const JOB_CONFIG = {
     ]
 };
 
-// --- CONFIG: REWARD MULTIPLIERS ---
 const REWARD_CONFIG = {
     basePayMin: 20,
     basePayMax: 30,
-
     baseXpMin: 3,
     baseXpMax: 5,
-
     perLevel: 2,         
     bonusPercentage: 0.05, 
     tipChanceBase: 5,      
     tipChanceCap: 30       
 };
 
-// --- HELPER: CALCULATE CAPACITY ---
 function getMaxPackages(level) {
-    let limit = 8; // Base Capacity
-    if (level >= 10) limit++; // 9
-    if (level >= 20) limit++; // 10
-    if (level >= 40) limit++; // 11
-    if (level >= 60) limit++; // 12
-    if (level >= 80) limit++; // 13
-    if (level >= 100) limit++; // 14
+    let limit = 8;
+    if (level >= 10) limit++;
+    if (level >= 20) limit++;
+    if (level >= 40) limit++;
+    if (level >= 60) limit++;
+    if (level >= 80) limit++;
+    if (level >= 100) limit++;
     return limit;
 }
 
 function getFacingAngle(from, to) {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    // Calculate angle in degrees relative to North for GTA coords
     let theta = Math.atan2(dx, dy); 
     let heading = -(theta * 180.0 / Math.PI);
     return heading;
 }
 
-// --- HELPER: UPDATE HUD ---
 function updateUI(player, text, targetPos = null) {
     if(mp.players.exists(player)) {
         const current = player.courierData ? player.courierData.packages : 0;
         const max = player.courierData ? player.courierData.totalPackages : 8;
         const earned = player.courierData ? player.courierData.totalSessionEarnings : 0;
-        
-        // Prepare Coordinates
         let x = null, y = null, z = null;
-        if (targetPos) {
-            x = targetPos.x;
-            y = targetPos.y;
-            z = targetPos.z;
-        }
-
-        // Send: visible, text, current, max, earned, X, Y, Z
+        if (targetPos) { x = targetPos.x; y = targetPos.y; z = targetPos.z; }
         player.call('updateJobUI', [true, text, current, max, earned, x, y, z]);
     }
 }
@@ -85,26 +72,20 @@ function hideUI(player) {
     }
 }
 
-// --- LOGIC ---
 const logic = {
     onStart: (player) => {
-        // 1. Get Level
         const level = jobManager.getJobLevel(player, JOB_KEY);
         const rankName = jobManager.getRankName(level);
-        
-        // 2. Calculate Max Packages based on Level
         const maxCapacity = getMaxPackages(level);
 
         player.courierData = { 
             packages: 0, 
-            totalPackages: maxCapacity, // Store session limit
+            totalPackages: maxCapacity, 
             currentStop: null, 
             visitedHouses: [],
             totalSessionEarnings: 0
         };
 
-        // Vehicle Progression
-        // Lv 1: Rumpo (Basic) | Lv 20: Speedo (Faster) | Lv 50: Boxville (The Big One)
         let vehicleModel = 'boxville2'; 
         if (level >= 50) vehicleModel = 'boxville2';
         else if (level >= 20) vehicleModel = 'boxville2';
@@ -134,28 +115,18 @@ const logic = {
     },
 
     onStop: (player) => {
-        // 1. Clear any active physical objectives (Checkpoints/Markers)
         jobManager.clearObjective(player);
 
-        // 2. Destroy job vehicles and props
         if (player.jobVehicle && mp.vehicles.exists(player.jobVehicle)) player.jobVehicle.destroy();
         if (player.courierBox && mp.objects.exists(player.courierBox)) player.courierBox.destroy();
         
         if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
 
-        // 3. Clear timers
-        if (player.abandonTimer) { 
-            clearTimeout(player.abandonTimer); 
-            player.abandonTimer = null; 
-        }
-        if (player.jobExitCheck) { 
-            clearInterval(player.jobExitCheck); 
-            player.jobExitCheck = null; 
-        }
+        if (player.abandonTimer) { clearTimeout(player.abandonTimer); player.abandonTimer = null; }
+        if (player.jobExitCheck) { clearInterval(player.jobExitCheck); player.jobExitCheck = null; }
 
         jobManager.clearJobPeds(player);
         
-        // 4. Reset player variables
         player.setVariable('isJobCarrying', null);
         player.stopAnimation();
         
@@ -188,7 +159,6 @@ function startLoadingPhase(player) {
             if (!mp.players.exists(p)) return;
             if (p.vehicle) p.vehicle.frozen = false; 
 
-            // Set packages to the Calculated Limit
             p.courierData.packages = p.courierData.totalPackages; 
             p.courierData.visitedHouses = []; 
             
@@ -223,6 +193,35 @@ function startDeliveryPhase(player) {
     
     player.courierData.currentStop = stop;
     player.courierData.visitedHouses.push(stop.id);
+
+    // --- CHANGED: SPAWN NPC HERE INSTEAD OF DOOR PHASE ---
+    const doorPos = stop.door;
+    const streetPos = stop.street;
+    const properHeading = getFacingAngle(doorPos, streetPos);
+
+    if (player.pedStreamer) clearInterval(player.pedStreamer);
+    player.hasJobPed = false; // Reset spawn state
+
+    // Start checking distance immediately while driving to the house
+    player.pedStreamer = setInterval(() => {
+        if (!mp.players.exists(player)) return;
+        
+        const dist = player.dist(new mp.Vector3(doorPos.x, doorPos.y, doorPos.z));
+        
+        // Spawn at 150m (Visible before arriving)
+        if (dist < 150.0 && !player.hasJobPed) {
+            player.hasJobPed = true;
+            jobManager.createJobPed(player, "a_f_y_hipster_01", doorPos, properHeading, {
+                dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
+                name: "idle_a"
+            });
+        }
+        else if (dist > 160.0 && player.hasJobPed) {
+            player.hasJobPed = false;
+            jobManager.clearJobPeds(player);
+        }
+    }, 1000);
+    // -----------------------------------------------------
 
     updateUI(player, "Drive to Street", stop.street);
 
@@ -286,38 +285,9 @@ function startTrunkPhase(player) {
 
 function startDoorPhase(player) {
     const doorPos = player.courierData.currentStop.door;
-    const streetPos = player.courierData.currentStop.street; // Get street pos for heading calculation
-    
     updateUI(player, "Deliver to Door", doorPos);
 
-    // --- NEW: DYNAMIC PED STREAMER ---
-    // 1. Calculate proper heading so NPC looks at the street/player
-    const properHeading = getFacingAngle(doorPos, streetPos);
-
-    // 2. Start checking distance
-    if (player.pedStreamer) clearInterval(player.pedStreamer);
-    
-    player.pedStreamer = setInterval(() => {
-        if (!mp.players.exists(player)) return;
-        
-        const dist = player.dist(new mp.Vector3(doorPos.x, doorPos.y, doorPos.z));
-        
-        // Spawn if close (35m) and not yet spawned
-        if (dist < 35.0 && !player.hasJobPed) {
-            player.hasJobPed = true;
-            jobManager.createJobPed(player, "a_f_y_hipster_01", doorPos, properHeading, {
-                dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
-                name: "idle_a"
-            });
-        }
-        // Despawn if player runs away (45m)
-        else if (dist > 45.0 && player.hasJobPed) {
-            player.hasJobPed = false;
-            jobManager.clearJobPeds(player);
-        }
-    }, 1000);
-
-    // --- END NEW LOGIC ---
+    // Note: pedStreamer is already running from startDeliveryPhase
 
     jobManager.createObjective(player, doorPos, "Drop Off", 1.2, async (p) => {
         if (p.isProcessingPayout) return; 
@@ -330,10 +300,20 @@ function startDoorPhase(player) {
         p.isProcessingPayout = true; 
         jobManager.clearObjective(p);
         
-        // CLEANUP STREAMER
+        // Stop the spawning logic
         if (p.pedStreamer) { clearInterval(p.pedStreamer); p.pedStreamer = null; }
         p.hasJobPed = false;
-        jobManager.clearJobPeds(p);
+        
+        // CHANGED: NPC wanders away instead of vanishing
+        const pedsToDismiss = p.jobPeds ? [...p.jobPeds] : [];
+        p.jobPeds = [];
+        pedsToDismiss.forEach(ped => {
+            if(mp.peds.exists(ped)) {
+                ped.frozen = false;
+                ped.taskWanderStandard(10.0, 10);
+                setTimeout(() => { if(mp.peds.exists(ped)) ped.destroy(); }, 10000);
+            }
+        });
         
         // 1. Clear State
         p.setVariable('isJobCarrying', null);
@@ -346,18 +326,12 @@ function startDoorPhase(player) {
 
         p.courierData.packages--;
 
-        // === 2. ECONOMY & XP CALCULATION (RANDOMIZED) ===
         const level = jobManager.getJobLevel(p, JOB_KEY);
-        
-        // Random Base Pay ($25 - $35)
         const randomBasePay = Math.floor(Math.random() * (REWARD_CONFIG.basePayMax - REWARD_CONFIG.basePayMin + 1)) + REWARD_CONFIG.basePayMin;
         let pay = randomBasePay + (level * REWARD_CONFIG.perLevel);
-        
-        // Random Base XP (5 - 10)
         const randomBaseXp = Math.floor(Math.random() * (REWARD_CONFIG.baseXpMax - REWARD_CONFIG.baseXpMin + 1)) + REWARD_CONFIG.baseXpMin;
         const xp = randomBaseXp + Math.floor(level * 0.2);
 
-        // TIP SYSTEM
         const tipChance = Math.min(REWARD_CONFIG.tipChanceCap, REWARD_CONFIG.tipChanceBase + (level * 2)); 
         if (Math.random() * 100 < tipChance) {
             const tip = Math.floor(Math.random() * 50) + 10;
@@ -365,8 +339,7 @@ function startDoorPhase(player) {
             p.call('showNotification', ['Courier', `Customer tipped you +$${tip}!`]);
         }
 
-        // Apply Rewards
-        p.courierData.totalSessionEarnings += pay; // Track for bonus
+        p.courierData.totalSessionEarnings += pay; 
         await playerManager.addMoneyAndSave(p, pay, "Courier Delivery");
         await jobManager.addJobXp(p, JOB_KEY, xp);
         
@@ -395,7 +368,6 @@ function startDoorPhase(player) {
 }
 
 function finishJobRun(player) {
-    // 15% Bonus of total session
     const bonus = Math.floor(player.courierData.totalSessionEarnings * REWARD_CONFIG.bonusPercentage);
     
     player.call('showNotification', ['Courier', `Shift Complete! Depot Bonus: $${bonus}`]);
@@ -405,20 +377,15 @@ function finishJobRun(player) {
     }
 
     updateUI(player, "Return to Depot", DEPOT_CONFIG.loadingBay);
-    // Loop directly back to loading
     startLoadingPhase(player);
 }
 
 mp.events.add('playerExitVehicle', (player, vehicle) => {
-    // Check if the player is currently working as a courier
     if (!player.courierData || !player.jobVehicle) return;
 
-    // If the vehicle they left is their job van
     if (player.jobVehicle === vehicle) {
-        // Clear any existing timer to be safe
         if (player.abandonTimer) clearTimeout(player.abandonTimer);
 
-        // Start 10-minute (600,000ms) abandonment timer
         player.abandonTimer = setTimeout(() => {
             if (mp.players.exists(player) && player.courierData) {
                 player.call('showNotification', ["Job Failed", "You abandoned the GoPostal van."]);
@@ -429,14 +396,12 @@ mp.events.add('playerExitVehicle', (player, vehicle) => {
 });
 
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
-    // Stop the abandonment timer if they get back in their van
     if (player.jobVehicle && player.jobVehicle === vehicle && player.abandonTimer) {
         clearTimeout(player.abandonTimer);
         player.abandonTimer = null;
         player.call('showNotification', ['Courier', 'Vehicle recovered.']);
     }
 
-    // Existing check for carrying boxes
     if (player.getVariable('isJobCarrying')) {
         player.stopAnimation();
         player.call('showNotification', ['Courier', 'You cannot drive while holding a box!']);

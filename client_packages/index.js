@@ -1,5 +1,7 @@
 require('./auth/index.js');
 require('./chat/index.js');
+
+require('./core/cayo/heistisland.js');
 // 1. Core Utilities & Managers
 require('./core/pauseMenu.js');
 require('./core/jobMenu.js');

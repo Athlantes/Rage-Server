@@ -24,7 +24,6 @@ const logic = {
         if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
         jobManager.clearJobPeds(player);
         
-        // This will also clear the Chef/Customer peds via jobManager.stopJob
         jobManager.clearObjective(player); 
         player.call('client:phone:quickEats:update', [false, "Offline", null]);
     }
@@ -93,8 +92,11 @@ function assignOrder(player) {
     player.call('showNotification', ['QuickEats', `New order from ${restaurant.name}!`]);
 
     const chefPos = { x: restaurant.x, y: restaurant.y, z: restaurant.z }; 
+    
+    // CHANGED: Switched to a "Checking List" animation (Standing).
+    // This fixes the "leaning in air" issue and looks okay regardless of rotation.
     jobManager.createJobPed(player, "S_M_Y_Chef_01", chefPos, 0, {
-        dict: "amb@world_human_leaning@male@wall@back@foot_up@idle_a",
+        dict: "amb@world_human_clipboard@male@idle_a",
         name: "idle_a"
     });
 
@@ -110,13 +112,13 @@ function assignOrder(player) {
 function handlePickup(player) {
     if (!player.quickEatsOrder) return;
 
-    // Remove the Chef (Pickup Phase done)
+    // Remove the Chef
     jobManager.clearJobPeds(player);
 
     player.quickEatsState = 'delivery';
     const order = player.quickEatsOrder;
     const dest = order.house.door;
-    const street = order.house.street; // Used for orientation
+    const street = order.house.street; 
 
     player.call('showNotification', ['QuickEats', 'Order picked up. Delivering...']);
     player.call('client:phone:quickEats:update', [true, "Delivering", "Residential Area"]);
@@ -125,29 +127,28 @@ function handlePickup(player) {
     const distanceBonus = Math.floor((dist / 1000) * REWARDS.perKm);
     order.pay = REWARDS.basePay + distanceBonus;
 
-    // --- NEW: DYNAMIC PED STREAMER ---
     const properHeading = getFacingAngle(dest, street);
     
     if (player.pedStreamer) clearInterval(player.pedStreamer);
 
+    // CHANGED: Increased spawn range from 35.0 to 150.0 so they appear while driving up
     player.pedStreamer = setInterval(() => {
         if (!mp.players.exists(player)) return;
 
         const currentDist = player.dist(new mp.Vector3(dest.x, dest.y, dest.z));
 
-        if (currentDist < 35.0 && !player.hasJobPed) {
+        if (currentDist < 150.0 && !player.hasJobPed) {
             player.hasJobPed = true;
             jobManager.createJobPed(player, "a_f_y_hipster_01", dest, properHeading, {
                 dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
                 name: "idle_a"
             });
         }
-        else if (currentDist > 45.0 && player.hasJobPed) {
+        else if (currentDist > 160.0 && player.hasJobPed) {
             player.hasJobPed = false;
             jobManager.clearJobPeds(player);
         }
     }, 1000);
-    // --- END NEW LOGIC ---
 
     jobManager.createObjective(player, dest, "Customer Drop-off", 1.5, (p) => {
         handleFinish(p);
@@ -161,9 +162,22 @@ function handlePickup(player) {
 async function handleFinish(player) {
     if (!player.quickEatsOrder) return;
     
+    // CHANGED: Logic to make Ped wander away instead of deleting instantly
     if (player.pedStreamer) { clearInterval(player.pedStreamer); player.pedStreamer = null; }
     player.hasJobPed = false;
-    jobManager.clearJobPeds(player);
+
+    // Get the current ped(s) before clearing the array reference
+    const pedsToDismiss = player.jobPeds ? [...player.jobPeds] : [];
+    player.jobPeds = []; // Clear reference for the next job logic
+
+    pedsToDismiss.forEach(ped => {
+        if(mp.peds.exists(ped)) {
+            ped.frozen = false; // Unfreeze
+            ped.taskWanderStandard(10.0, 10); // Wander
+            // Delete after 10 seconds
+            setTimeout(() => { if(mp.peds.exists(ped)) ped.destroy(); }, 10000);
+        }
+    });
 
     const pay = player.quickEatsOrder.pay;
     const orderName = player.quickEatsOrder.restaurant.name;
