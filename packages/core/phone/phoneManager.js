@@ -31,31 +31,12 @@ mp.events.add('server:phone:open', async (player) => {
         
         player.call('client:phone:updateVehicles', [JSON.stringify(processedCars)]);
 
-        const [photos] = await db.query(
-            "SELECT id, url, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC LIMIT 30",
-            [player.data.dbId]
-        );
-        player.call('client:phone:updateGallery', [JSON.stringify(photos)]);
-
     } catch (err) {
         console.error("Phone Data Error:", err);
     }
 });
 
 // 2. Handle Actions from Phone (Vehicles & Mail)
-
-mp.events.add('server:phone:camera:save', async (player, imageUrl) => {
-    if (!player.logged || !imageUrl) return;
-    try {
-        await db.query("INSERT INTO player_photos (user_id, url) VALUES (?, ?)", [player.data.dbId, imageUrl]);
-        player.call('showNotification', ['Camera', 'Photo saved to gallery.']);
-        // Refresh phone data if needed, or just let the client push it locally
-        mp.events.call('server:phone:open', player);
-    } catch (err) {
-        console.error("Save Photo Error:", err);
-    }
-});
-
 mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
     if (!player.logged) return;
 

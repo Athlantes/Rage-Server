@@ -1,4 +1,3 @@
-require('./web/imageServer');
 require('./database');
 require('./playerManager');
 require('./auth');

@@ -1,3 +1,4 @@
+// client_packages/phone/ui/script.js
 const app = {
     isLocked: true, 
     toastTimeout: null,
@@ -36,11 +37,6 @@ const app = {
     open: (appName) => {
         if(app.isLocked) return; 
 
-        if (appName === 'camera') {
-            if('mp' in window) mp.trigger('client:proxyAction', 'openCamera');
-            return;
-        }
-
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }
@@ -55,99 +51,6 @@ const app = {
         } else {
             document.getElementById('view-home').classList.remove('hidden');
         }
-    },
-
-    uploadScreenshot: (filename) => {
-        // RAGE saves screenshots to a local internal server accessible via http://screenshots/
-        const sourceUrl = `http://screenshots/${filename}`;
-        
-        // 1. Fetch the image blob from the game client
-        fetch(sourceUrl)
-            .then(res => res.blob())
-            .then(blob => {
-                
-                // 2. Upload to YOUR Self-Hosted Server
-                // Ensure this matches the IP/Port in your imageServer.js
-                // If you are developing locally, 127.0.0.1 is fine. 
-                // If this is a live server, use your server's Public IP.
-                const SERVER_UPLOAD_URL = "http://26.170.61.66:3000/upload"; 
-
-                fetch(SERVER_UPLOAD_URL, {
-                    method: "POST",
-                    body: blob, // Send raw blob directly
-                    headers: {
-                        "Content-Type": "image/png"
-                    }
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        app.showToast('Gallery', 'Saved', 'Photo saved to server.');
-                        
-                        // 3. Send the new HTTP URL to the game server to save in DB
-                        if ('mp' in window) {
-                            mp.trigger('client:proxyAction', 'savePhoto', result.url);
-                        }
-                    } else {
-                        app.showToast('Error', 'Server', 'Upload rejected.');
-                        console.error("Upload Error:", result);
-                    }
-                })
-                .catch(err => {
-                    console.error("Network Error:", err);
-                    app.showToast('Error', 'Network', 'Could not reach upload server.');
-                });
-            })
-            .catch(err => {
-                console.error("Local Fetch Error:", err);
-                app.showToast('Error', 'File', 'Could not find screenshot.');
-            });
-    },
-
-    loadGallery: (photos) => {
-        const container = document.getElementById('gallery-grid');
-        if(!container) return;
-        container.innerHTML = '';
-        
-        const safePhotos = Array.isArray(photos) ? photos : [];
-        
-        if (safePhotos.length === 0) {
-            container.innerHTML = '<div style="grid-column: 1/-1; padding:40px; text-align:center; color:#999;">No photos yet</div>';
-            return;
-        }
-
-        safePhotos.forEach(photo => {
-            const div = document.createElement('div');
-            div.className = 'gallery-item';
-            div.onclick = () => app.openPhotoViewer(photo.url);
-            div.innerHTML = `<img src="${photo.url}" loading="lazy">`;
-            container.appendChild(div);
-        });
-    },
-
-    closePhoneForCamera: () => {
-        // Hides the entire phone shell so it doesn't block the screen
-        document.getElementById('phone-shell').classList.add('hidden');
-    },
-
-    openPhoneFromCamera: () => {
-        // Shows the phone again and goes back to home screen
-        document.getElementById('phone-shell').classList.remove('hidden');
-        app.goHome(); 
-    },
-
-    openPhotoViewer: (url) => {
-        const viewer = document.getElementById('photo-viewer');
-        const img = document.getElementById('photo-viewer-img');
-        if(viewer && img) {
-            img.src = url;
-            viewer.classList.remove('hidden');
-        }
-    },
-
-    closePhotoViewer: () => {
-        const viewer = document.getElementById('photo-viewer');
-        if(viewer) viewer.classList.add('hidden');
     },
     
     goHome: () => {
