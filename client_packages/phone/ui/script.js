@@ -125,6 +125,17 @@ const app = {
         });
     },
 
+    closePhoneForCamera: () => {
+        // Hides the entire phone shell so it doesn't block the screen
+        document.getElementById('phone-shell').classList.add('hidden');
+    },
+
+    openPhoneFromCamera: () => {
+        // Shows the phone again and goes back to home screen
+        document.getElementById('phone-shell').classList.remove('hidden');
+        app.goHome(); 
+    },
+
     openPhotoViewer: (url) => {
         const viewer = document.getElementById('photo-viewer');
         const img = document.getElementById('photo-viewer-img');

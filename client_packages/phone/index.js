@@ -58,9 +58,10 @@ mp.keys.bind(0x01, true, () => {
 });
 
 // TAB - Toggle Selfie
-mp.keys.bind(0x09, true, () => { 
+mp.keys.bind(0x09, true, () => {
     if (isCameraActive) {
-        toggleCameraMode();
+        isSelfie = !isSelfie;
+        updateCameraMode();
     }
 });
 
@@ -112,128 +113,111 @@ mp.events.add('render', () => {
 // --- CAMERA LOGIC ---
 
 async function openCamera() {
-    closePhone(); 
-    isCameraActive = true;
-    isSelfie = false;
-    
-    mp.gui.chat.show(false);
+    // 1. Close UI & Hide Cursor
+    if(phoneBrowser) phoneBrowser.execute("app.closePhoneForCamera()");
+    mp.gui.cursor.show(false, false);
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
-    camAngleZ = mp.players.local.getRotation(2).z + 180;
-    camAngleX = 0.0;
+    isCameraActive = true;
+    isSelfie = false;
 
+    // 2. Load Animations
     await loadAnim("cellphone@");
     await loadAnim("cellphone@selfie");
     
-    if (!phoneObject) {
+    // 3. Create Phone Object (Safely)
+    if (!phoneObject || !mp.objects.exists(phoneObject)) {
         const modelName = "prop_player_phone_01";
-        mp.game.streaming.requestModel(mp.game.joaat(modelName));
-        while (!mp.game.streaming.hasModelLoaded(mp.game.joaat(modelName))) await mp.game.waitAsync(10);
+        const modelHash = mp.game.joaat(modelName);
+
+        // Request Model
+        mp.game.streaming.requestModel(modelHash);
+        while (!mp.game.streaming.hasModelLoaded(modelHash)) await mp.game.waitAsync(10);
         
-        phoneObject = mp.objects.new(mp.game.joaat(modelName), mp.players.local.position, {
+        // Create Object
+        phoneObject = mp.objects.new(modelHash, mp.players.local.position, {
             rotation: new mp.Vector3(0,0,0),
             alpha: 255,
             dimension: mp.players.local.dimension
         });
-        phoneObject.attachTo(mp.players.local.handle, 
-            mp.players.local.getBoneIndex(28422), 
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, false, 2, true);
+
+        // SAFETY CHECK: Only attach if creation succeeded
+        if (phoneObject) {
+            // Wait 1 tick for the handle to be valid
+            await mp.game.waitAsync(10);
+            
+            // Try/Catch the attachment just in case
+            try {
+                phoneObject.attachTo(mp.players.local.handle, 
+                    mp.players.local.getBoneIndex(28422), // Right Hand
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, false, 2, true);
+            } catch (e) {
+                mp.game.graphics.notify("~r~Error attaching phone");
+                console.error(e);
+            }
+        } else {
+            mp.game.graphics.notify("~r~Error: Could not create phone object.");
+        }
     }
 
+    // 4. Create Camera
     if (cam) cam.destroy();
-    cam = mp.cameras.new('default', mp.players.local.position, new mp.Vector3(0,0,0), 40);
+    cam = mp.cameras.new('default', mp.players.local.position, new mp.Vector3(0,0,0), 50);
     cam.setActive(true);
     mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
-    setCameraMode("back");
+    updateCameraMode();
+}
+
+function updateCameraMode() {
+    const player = mp.players.local;
+    player.clearTasks();
+
+    if (isSelfie) {
+        // SELFIE MODE
+        player.taskPlayAnim("cellphone@selfie", "selfie", 8.0, 1.0, -1, 49, 0, false, false, false);
+        
+        // Attach camera to look at face
+        cam.attachTo(player.handle, player.getBoneIndex(12844), 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, true, false, false);
+        cam.pointAtPedBone(player.handle, 12844, 0.0, 0.0, 0.0, true);
+        
+    } else {
+        // BACK CAMERA (First Person-ish)
+        player.taskPlayAnim("cellphone@", "cellphone_text_read_base", 8.0, 1.0, -1, 49, 0, false, false, false);
+        
+        // Attach camera slightly in front of head
+        cam.attachTo(player.handle, player.getBoneIndex(12844), 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, true, false, false);
+        
+        // Make it look where player is looking
+        // (This simple attach is rigid; for better looking, we usually use the render loop from the previous code)
+    }
 }
 
 function closeCamera() {
     isCameraActive = false;
     
-    mp.players.local.setAlpha(255);
-    mp.game.ui.displayRadar(true);
-    mp.game.ui.displayHud(true);
-    mp.gui.chat.show(true);
-
+    // 1. Destroy Camera
     if (cam) {
         cam.destroy();
         cam = null;
     }
     mp.game.cam.renderScriptCams(false, false, 0, true, false);
 
+    // 2. Remove Phone Object
     if (phoneObject) {
         phoneObject.destroy();
         phoneObject = null;
     }
 
+    // 3. Restore UI
+    mp.game.ui.displayRadar(true);
+    mp.game.ui.displayHud(true);
     mp.players.local.clearTasks();
 
-    isPhoneOpen = true;
-    mp.events.callRemote('server:phone:open');
+    // 4. Re-open Phone UI and SHOW CURSOR
     mp.gui.cursor.show(true, true);
-    phoneBrowser.execute(`openPhone()`);
-}
-
-function toggleCameraMode() {
-    isSelfie = !isSelfie;
-    setCameraMode(isSelfie ? "selfie" : "back");
-}
-
-function setCameraMode(mode) {
-    mp.players.local.clearTasks();
-
-    if (mode === "back") {
-        mp.players.local.setAlpha(0); // Hide player for First Person feel
-        mp.players.local.taskPlayAnim("cellphone@", "cellphone_text_read_base", 8.0, 1.0, -1, 49, 0, false, false, false);
-    } else {
-        mp.players.local.setAlpha(255);
-        mp.players.local.taskPlayAnim("cellphone@selfie", "selfie", 8.0, 1.0, -1, 49, 0, false, false, false);
-        
-        // Reset angle to look AT player face
-        camAngleZ = mp.players.local.getRotation(2).z; 
-        camAngleX = 0.0;
-    }
-    updateCameraPosition();
-}
-
-function updateCameraPosition() {
-    if (!cam) return;
-
-    const radZ = camAngleZ * (Math.PI / 180);
-    const radX = camAngleX * (Math.PI / 180);
-
-    // Direction vector where the camera "looks"
-    const dirX = -Math.sin(radZ) * Math.cos(radX);
-    const dirY = Math.cos(radZ) * Math.cos(radX);
-    const dirZ = Math.sin(radX);
-
-    const headPos = mp.players.local.getBoneCoords(12844, 0, 0, 0);
-
-    if (isSelfie) {
-        // FIX: Use PLUS (+) to place camera IN FRONT of the player
-        const dist = 0.85; 
-        
-        const camPos = new mp.Vector3(
-            headPos.x + (dirX * dist),
-            headPos.y + (dirY * dist),
-            headPos.z + (dirZ * dist)
-        );
-        cam.setCoord(camPos.x, camPos.y, camPos.z);
-        cam.pointAtCoord(headPos.x, headPos.y, headPos.z);
-
-    } else {
-        // Back Cam (First Person)
-        const camPos = new mp.Vector3(
-            headPos.x + (dirX * 0.2),
-            headPos.y + (dirY * 0.2),
-            headPos.z + (dirZ * 0.2)
-        );
-        
-        cam.setCoord(camPos.x, camPos.y, camPos.z);
-        cam.setRot(camAngleX, 0, camAngleZ, 2);
-    }
+    if(phoneBrowser) phoneBrowser.execute("app.openPhoneFromCamera()");
 }
 
 async function loadAnim(dict) {
