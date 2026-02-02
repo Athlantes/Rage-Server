@@ -14,7 +14,7 @@ const JOB_CONFIG = {
     pedModel: "s_m_m_postal_01", 
     blipSprite: 616, 
     blipColor: 26,
-    pos: { x: 83.51, y: 133.92, z: 80.53, h: 69.79 },
+    pos: { x: 78.62, y: 111.93, z: 81.17, h: -112.12 },
     staticPeds: [
         {
             model: "s_m_m_postal_02", 
