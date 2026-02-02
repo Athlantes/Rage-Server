@@ -1,4 +1,7 @@
 // client_packages/phone/ui/script.js
+
+const IMGUR_CLIENT_ID = "YOUR_IMGUR_CLIENT_ID_HERE";
+
 const app = {
     isLocked: true, 
     toastTimeout: null,
@@ -56,6 +59,53 @@ const app = {
         } else {
             document.getElementById('view-home').classList.remove('hidden');
         }
+    },
+
+    uploadScreenshot: (filename) => {
+        // RAGE saves screenshots to a local internal server accessible via http://screenshots/
+        const sourceUrl = `http://screenshots/${filename}`;
+        
+        // 1. Fetch the image blob from the game client
+        fetch(sourceUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                
+                // 2. Upload to YOUR Self-Hosted Server
+                // Ensure this matches the IP/Port in your imageServer.js
+                // If you are developing locally, 127.0.0.1 is fine. 
+                // If this is a live server, use your server's Public IP.
+                const SERVER_UPLOAD_URL = "http://127.0.0.1:3000/upload"; 
+
+                fetch(SERVER_UPLOAD_URL, {
+                    method: "POST",
+                    body: blob, // Send raw blob directly
+                    headers: {
+                        "Content-Type": "image/png"
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        app.showToast('Gallery', 'Saved', 'Photo saved to server.');
+                        
+                        // 3. Send the new HTTP URL to the game server to save in DB
+                        if ('mp' in window) {
+                            mp.trigger('client:proxyAction', 'savePhoto', result.url);
+                        }
+                    } else {
+                        app.showToast('Error', 'Server', 'Upload rejected.');
+                        console.error("Upload Error:", result);
+                    }
+                })
+                .catch(err => {
+                    console.error("Network Error:", err);
+                    app.showToast('Error', 'Network', 'Could not reach upload server.');
+                });
+            })
+            .catch(err => {
+                console.error("Local Fetch Error:", err);
+                app.showToast('Error', 'File', 'Could not find screenshot.');
+            });
     },
 
     loadGallery: (photos) => {
