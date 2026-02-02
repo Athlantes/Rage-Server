@@ -76,8 +76,7 @@ const jobManager = {
         if (availableJobs.has(id)) return console.log(`[Jobs] Error: ID ${id} exists.`);
         availableJobs.set(id, { config, logic });
 
-        // --- UPDATE STARTS HERE ---
-        // Only create physical entities if a position is provided
+        // 1. Create Main Job Interaction Ped
         if (config.pos) {
             mp.peds.new(mp.joaat(config.pedModel), new mp.Vector3(config.pos.x, config.pos.y, config.pos.z), {
                 heading: config.pos.h || 0,
@@ -93,7 +92,21 @@ const jobManager = {
                 title: config.name, text: "Press E to Start Job", event: "server:job:requestStart", data: id
             });
         }
-        // --- UPDATE ENDS HERE ---
+
+        // 2. Create Extra Static Peds
+        if (config.staticPeds && Array.isArray(config.staticPeds)) {
+            config.staticPeds.forEach(pedData => {
+                const ped = mp.peds.new(mp.joaat(pedData.model), new mp.Vector3(pedData.x, pedData.y, pedData.z), {
+                    heading: pedData.h || 0,
+                    dynamic: false, invincible: true, frozen: true
+                });
+                
+                // FIX: Use setVariable instead of playAnimation
+                if (pedData.anim) {
+                    ped.setVariable('staticAnim', pedData.anim);
+                }
+            });
+        }
     },
 
     startJobSession: (player, jobId) => {
@@ -102,6 +115,7 @@ const jobManager = {
 
         player.activeJobId = jobId;
         player.setVariable('activeJobId', jobId);
+        player.jobPeds = []; // Initialize dynamic ped tracker
         player.call('showNotification', ['Job Center', `You started working as a ${job.config.name}.`]);
     },
 
@@ -109,12 +123,17 @@ const jobManager = {
         if (!player.activeJobId) return;
         const job = availableJobs.get(player.activeJobId);
 
+        // Clean up Job Peds
+        jobManager.clearJobPeds(player);
+
         if (job && job.logic.onStop) job.logic.onStop(player);
 
         player.setVariable('activeJobId', null);
         player.activeJobId = null;
         if(reason) player.call('showNotification', ['Job Center', reason]);
     },
+
+    // --- OBJECTIVE HELPERS ---
 
     createObjective: (player, pos, label, radius = 2.0, onEnterCallback, options = {}) => {
         jobManager.clearObjective(player);
@@ -148,6 +167,37 @@ const jobManager = {
             player.jobExitCheck = null; 
         }
     },
+
+    // --- DYNAMIC PED HELPERS ---
+
+    createJobPed: (player, model, pos, heading, anim = null) => {
+        if (!player.jobPeds) player.jobPeds = [];
+
+        const ped = mp.peds.new(mp.joaat(model), new mp.Vector3(pos.x, pos.y, pos.z), {
+            heading: heading,
+            dimension: player.dimension,
+            dynamic: false, 
+            invincible: true, 
+            frozen: true
+        });
+
+        if (anim) {
+            // FIX: Use setVariable
+            ped.setVariable('staticAnim', anim);
+        }
+
+        player.jobPeds.push(ped);
+        return ped;
+    },
+
+    clearJobPeds: (player) => {
+        if (player.jobPeds && player.jobPeds.length > 0) {
+            player.jobPeds.forEach(ped => {
+                if (mp.peds.exists(ped)) ped.destroy();
+            });
+        }
+        player.jobPeds = [];
+    }
 };
 
 // --- EVENTS ---
@@ -158,7 +208,6 @@ mp.events.add('server:loadAccount', async (player) => {
 mp.events.add('server:job:requestStart', (player) => {
     let closestId = null, minDist = 5.0;
     
-    // Only check jobs that actually have positions
     availableJobs.forEach((job, id) => {
         if (job.config.pos) {
             const dist = player.dist(new mp.Vector3(job.config.pos.x, job.config.pos.y, job.config.pos.z));

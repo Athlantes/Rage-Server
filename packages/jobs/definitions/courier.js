@@ -14,7 +14,14 @@ const JOB_CONFIG = {
     pedModel: "s_m_m_postal_01", 
     blipSprite: 616, 
     blipColor: 26,
-    pos: { x: 83.51, y: 133.92, z: 80.53, h: 69.79 }
+    pos: { x: 83.51, y: 133.92, z: 80.53, h: 69.79 },
+    staticPeds: [
+        {
+            model: "s_m_m_postal_02", 
+            x: 115.72, y: 102.57, z: 81.11, h: 162.94,
+            anim: { dict: "missheistdockssetup1clipboard@idle_a", name: "idle_a", flag: 1 }
+        }
+    ]
 };
 
 // --- CONFIG: REWARD MULTIPLIERS ---
@@ -267,6 +274,12 @@ function startDoorPhase(player) {
     const doorPos = player.courierData.currentStop.door;
     updateUI(player, "Deliver to Door", doorPos);
 
+    // --- NEW: SPAWN CUSTOMER NPC ---
+    jobManager.createJobPed(player, "a_f_y_hipster_01", doorPos, 0, {
+        dict: "amb@world_human_stand_impatient@male@no_sign@idle_a",
+        name: "idle_a"
+    });
+
     jobManager.createObjective(player, doorPos, "Drop Off", 1.2, async (p) => {
         if (p.isProcessingPayout) return; 
         
@@ -277,6 +290,9 @@ function startDoorPhase(player) {
 
         p.isProcessingPayout = true; 
         jobManager.clearObjective(p);
+        
+        // --- NEW: REMOVE NPC AFTER DELIVERY ---
+        jobManager.clearJobPeds(p);
         
         // 1. Clear State
         p.setVariable('isJobCarrying', null);

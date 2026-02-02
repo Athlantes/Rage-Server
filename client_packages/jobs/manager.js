@@ -40,6 +40,43 @@ mp.events.add('client:setJobObjective', (id, pos, options) => {
     }
 });
 
+const playPedAnim = (ped, animData) => {
+    if (!ped || !mp.peds.exists(ped) || !animData) return;
+    
+    mp.game.streaming.requestAnimDict(animData.dict);
+    
+    // Wait for animation dictionary to load (non-blocking)
+    let attempts = 0;
+    const interval = setInterval(() => {
+        if (mp.game.streaming.hasAnimDictLoaded(animData.dict)) {
+            if (mp.peds.exists(ped)) {
+                // playAnim(dict, name, speed, speedMult, duration, flag, playbackRate, lockX, lockY, lockZ)
+                ped.taskPlayAnim(animData.dict, animData.name, 8.0, 1.0, -1, animData.flag || 1, 0.0, false, false, false);
+            }
+            clearInterval(interval);
+        }
+
+        attempts++;
+        if (attempts > 50) clearInterval(interval); // Stop after 2.5 seconds if it fails
+    }, 50);
+};
+
+mp.events.add('entityStreamIn', (entity) => {
+    if (entity.type === 'ped') {
+        const anim = entity.getVariable('staticAnim');
+        if (anim) {
+            playPedAnim(entity, anim);
+        }
+    }
+});
+
+// 3. Play if Variable Changes (Dynamic Updates)
+mp.events.addDataHandler('staticAnim', (entity, value) => {
+    if (entity.type === 'ped') {
+        playPedAnim(entity, value);
+    }
+});
+
 // --- BULK OBJECTIVES (Used by Garbage Job) ---
 mp.events.add('client:setupJobObjectives', (dataArray) => {
     // dataArray = [ { id, x, y, z, markerColor, blipSprite, ... }, ... ]

@@ -116,3 +116,70 @@ setInterval(() => {
     mp.game.invoke('0xF4F2C0D4EE209E20'); 
     mp.game.invoke('0x9E4CFFF989258472'); 
 }, 25000);
+
+// --------------------------------------------------------------------
+// 5. DOOR UNLOCKER (Fixes GoPostal & Other MLO doors)
+// --------------------------------------------------------------------
+
+// List of doors to force unlock. 
+// "model" is the string name of the prop (e.g. 'v_ilev_ph_gendoor004').
+const FORCE_UNLOCK_DOORS = [
+    // GoPostal (Downtown Vinewood) Main Double Doors
+    { model: 'v_ilev_ph_gendoor004', x: 78.9, y: 111.6, z: 81.6 }, 
+    { model: 'v_ilev_ph_gendoor004', x: 79.8, y: 113.6, z: 81.6 },
+    // GoPostal Loading Bay
+    { model: 'prop_com_ls_door_01', x: 115.1, y: 99.9, z: 80.8 },
+    // Add more here if needed...
+];
+
+// Run this every second to ensure they stay unlocked
+setInterval(() => {
+    const pPos = player.position;
+    
+    FORCE_UNLOCK_DOORS.forEach(door => {
+        // Only try to unlock if we are close (optimization)
+        if (mp.game.system.vdist(pPos.x, pPos.y, pPos.z, door.x, door.y, door.z) < 50.0) {
+            mp.game.object.doorControl(
+                mp.game.joaat(door.model), 
+                door.x, door.y, door.z, 
+                false, // false = UNLOCKED
+                0.0, 0.0, 0.0 // Rotation (usually ignored for unlocking)
+            );
+        }
+    });
+}, 1000);
+
+// --- DEBUG COMMAND: Find Door Hash ---
+// Type /finddoor in chat while standing next to the stuck door
+mp.events.add('client:console:finddoor', () => {
+    const pPos = player.position;
+    // Search for any object within 2 meters
+    let found = false;
+    
+    // Common door models to check against
+    const commonDoors = ['v_ilev_ph_gendoor004', 'prop_com_ls_door_01', 'v_ilev_cbank_door01', 'v_ilev_gc_door03'];
+    
+    mp.gui.chat.push("Scanning for doors...");
+
+    // This native gets the closest object of a specific type
+    // Since we don't know the type, we have to guess or iterate common ones.
+    // However, a better way for debug is using raycast or getClosestObjectOfType if we know the hash.
+    
+    // For now, let's just tell the user to check F8 console
+    mp.objects.forEachInStreamRange(obj => {
+        if (obj.handle && mp.game.system.vdist(pPos.x, pPos.y, pPos.z, obj.position.x, obj.position.y, obj.position.z) < 3.0) {
+            const model = obj.model;
+            mp.gui.chat.push(`Obj Found: Hash: ${model} | Pos: ${obj.position.x.toFixed(1)}, ${obj.position.y.toFixed(1)}`);
+            found = true;
+        }
+    });
+
+    if(!found) mp.gui.chat.push("No objects found nearby. Try getting closer.");
+});
+
+// Hook up the chat command
+mp.events.add('playerCommand', (command) => {
+    if (command === 'finddoor') {
+        mp.events.call('client:console:finddoor');
+    }
+});
