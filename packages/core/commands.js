@@ -138,7 +138,7 @@ mp.events.addCommand('ahelp', (player) => {
     player.outputChatBox(`${COLORS.ADMIN}--- Admin Commands ---`);
     player.outputChatBox(`!{FFFFFF}Helper: /a, /aduty, /goto, /gethere, /kick, /spectate`);
     if (player.data.adminLevel >= RANKS.MODERATOR) player.outputChatBox(`!{FFFFFF}Mod: /ban, /unban, /freeze, /unfreeze, /tpcoords,`);
-    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth, /addscooter, /delscooter`);
+    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth, /savelandmark`);
     if (player.data.adminLevel >= RANKS.OWNER) player.outputChatBox(`!{FFFFFF}Owner: /makeadmin, /giveveh, /savecoords`);
 });
 
@@ -174,6 +174,37 @@ mp.events.addCommand('a', (player, fullText) => {
     mp.players.forEach(p => {
         if (p.logged && p.data.adminLevel > 0) {
             p.outputChatBox(msg);
+        }
+    });
+});
+
+mp.events.addCommand('savelandmark', (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+
+    // Parse arguments: First arg is reward, rest is the name
+    const args = fullText.split(' ');
+    const reward = parseInt(args[0]);
+    const name = args.slice(1).join(' ');
+
+    if (isNaN(reward) || !name) {
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /savelandmark [reward_amount] [Landmark Name]`);
+    }
+
+    const pos = player.position;
+
+    // Format matches packages/data/landmarks.js structure
+    // We use '0' as a placeholder ID so you can number them correctly when you copy-paste
+    const outputString = `\n    { id: 0, name: "${name}", pos: { x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)} }, reward: ${reward} },`;
+
+    const filePath = path.join(__dirname, '../../saved_landmarks.txt');
+
+    fs.appendFile(filePath, outputString, (err) => {
+        if (err) {
+            console.error(err);
+            player.outputChatBox(`${COLORS.ERROR}Failed to save landmark.`);
+        } else {
+            player.outputChatBox(`${COLORS.SUCCESS}Saved landmark "${name}" with reward $${reward}.`);
+            player.outputChatBox(`${COLORS.INFO}Check root folder for saved_landmarks.txt`);
         }
     });
 });

@@ -5,3 +5,4 @@ require('./fuel');
 require('./atm');
 require('./charCreator');
 require('./scooter');
+require('./photoHunt/photoHuntManager');

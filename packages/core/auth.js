@@ -4,7 +4,7 @@ const playerManager = require('./playerManager');
 const QuestManager = require('./questManager');
 const Banking = require('./banking');
 const CharCreator = require('../systems/charCreator');
-
+const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
     player.logged = false;
@@ -253,6 +253,7 @@ function startSession(player, userData) {
     player.data.vehicle_slots = userData.vehicle_slots;
 
     // Init Managers
+    PhotoHuntManager.initPlayer(player);
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
 

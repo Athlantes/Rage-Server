@@ -50,6 +50,11 @@ function takePhoto() {
 
     setTimeout(() => {
         mp.gui.takeScreenshot(`photo_${Date.now()}.png`, 1, 100, 0);
+        
+        // --- ADD THIS LINE ---
+        mp.events.call('client:cameraCapture'); 
+        // ---------------------
+
         mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
         mp.game.ui.displayRadar(true);
         mp.game.ui.displayHud(true);
