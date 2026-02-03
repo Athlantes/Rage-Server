@@ -11,8 +11,6 @@ mp.events.add("client:toggleCamera", () => {
         mp.game.mobile.createMobilePhone(0);
         mp.game.mobile.scriptIsMovingMobilePhoneOffscreen(false);
         mp.game.mobile.cellCamActivate(true, true);
-        mp.gui.chat.push("Camera Active. [LMB] Photo | [RMB] Selfie | [ESC] Close");
-        mp.gui.chat.activate(false); 
     } else {
         closeCamera();
     }
@@ -25,7 +23,6 @@ function closeCamera() {
     mp.game.mobile.cellCamActivate(false, false);
     mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); 
     
-    mp.gui.chat.push("Camera Closed.");
     mp.gui.chat.activate(true);
 }
 
@@ -68,3 +65,12 @@ function takePhoto() {
         mp.game.ui.displayHud(true);
     }, 50);
 }
+
+mp.events.add('playerReady', () => {
+    global.isCameraActive = false;
+    isSelfieMode = false;
+    
+    // Force destroy the phone and camera natives
+    mp.game.mobile.cellCamActivate(false, false);
+    mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); // Destroy Mobile Phone Native
+});

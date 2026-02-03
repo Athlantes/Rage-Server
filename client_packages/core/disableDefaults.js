@@ -23,7 +23,7 @@ mp.events.add('render', () => {
     mp.game.controls.disableControlAction(0, 200, true); 
 
     if (mp.game.controls.isDisabledControlJustPressed(0, 200)) {
-        if (!mp.game.ui.isPauseMenuActive()) {
+        if (!global.isCameraActive && !mp.game.ui.isPauseMenuActive()) {
             mp.events.call('client:togglePauseMenu');
         }
     }

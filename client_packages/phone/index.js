@@ -2,38 +2,34 @@
 
 let phoneBrowser = null;
 let isPhoneOpen = false;
-
-// --- PHONE PROP VARIABLES ---
-let phoneProp = null;
-const ANIM_DICT = "cellphone@";
-const ANIM_NAME = "cellphone_text_read_base";
-const PROP_NAME = "prop_npc_phone_02";
+let nativePhoneInitiated = false; // [NEW] Track if native phone exists
 
 // --- SCOOTER TRACKING VARIABLES ---
 let scooterBlip = null;
 let scooterMarker = null;
 
 mp.events.add('playerReady', () => {
+    // [FIX] Reset state on load
+    nativePhoneInitiated = false; 
+    // Force destroy any lingering native phone from previous sessions
+    mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); 
+
     if (!phoneBrowser) {
         phoneBrowser = mp.browsers.new('package://phone/ui/index.html');
         phoneBrowser.active = true;
     }
-    // Preload animation dictionary
-    mp.game.streaming.requestAnimDict(ANIM_DICT);
 });
 
 // --- KEYBINDS ---
 mp.keys.bind(0x26, true, () => { // Up Arrow
     if (mp.gui.chat.visible) return;
     if (mp.gui.cursor.visible && !isPhoneOpen) return;
-    
-    // Block if Camera is active (using global variable from camera.js)
     if (global.isCameraActive) return;
 
     isPhoneOpen = !isPhoneOpen;
     
     if (isPhoneOpen) {
-        createPhoneProp(); // Create Visual Prop + Animation
+        createPhoneProp(); // Use Native Phone
         
         mp.events.callRemote('server:phone:open');
         mp.gui.cursor.show(true, true);
@@ -54,7 +50,6 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
         closePhone();
         mp.game.graphics.notify("~y~Phone closed for safety.");
     }
-    
     if (scooterBlip || scooterMarker) {
         clearScooterMarkers();
     }
@@ -71,48 +66,39 @@ function closePhone() {
     mp.gui.chat.activate(true); 
     if(phoneBrowser) phoneBrowser.execute(`closePhone()`);
     
-    destroyPhoneProp(); // Remove Visual Prop
+    destroyPhoneProp(); // This now just "hides" it
 }
 
-// --- PHONE PROP & ANIMATION HELPERS ---
+// --- NATIVE PHONE HELPERS (FIXED) ---
 function createPhoneProp() {
-    if (phoneProp) return;
+    // [FIX] Only create the native phone ONCE.
+    if (!nativePhoneInitiated) {
+        mp.game.mobile.createMobilePhone(0); // 0 = iFruit
+        nativePhoneInitiated = true;
+    }
     
-    const player = mp.players.local;
-    
-    // 1. Play Animation (Upper body only, allows walking)
-    player.taskPlayAnim(ANIM_DICT, ANIM_NAME, 8.0, 1.0, -1, 49, 0, false, false, false);
-
-    // 2. Create Object
-    phoneProp = mp.objects.new(mp.game.joaat(PROP_NAME), player.position, {
-        rotation: new mp.Vector3(0,0,0),
-        alpha: 255,
-        dimension: player.dimension
-    });
-
-    // 3. Attach to Right Hand (Bone 57005)
-    // Offsets: x (forward/back), y (left/right), z (up/down) relative to bone
-    phoneProp.attachTo(
-        player.handle, 
-        player.getBoneIndex(57005), 
-        0.13, 0.05, -0.02, 
-        -10, 110, 0, 
-        true, true, false, false, 2, true
-    );
+    // [FIX] Just tell the game to "Show" the phone (Pull it out)
+    mp.game.mobile.scriptIsMovingMobilePhoneOffscreen(false);
 }
 
 function destroyPhoneProp() {
-    const player = mp.players.local;
-    
-    // Stop Animation
-    player.stopAnimTask(ANIM_DICT, ANIM_NAME, 3.0);
-    
-    // Destroy Object
-    if (phoneProp) {
-        phoneProp.destroy();
-        phoneProp = null;
-    }
+    // [FIX] Do NOT destroy the phone object. Just tell game to "Hide" it (Put in pocket)
+    mp.game.mobile.scriptIsMovingMobilePhoneOffscreen(true);
 }
+
+// --- RENDER LOOP: DISABLE NATIVE INPUTS ---
+mp.events.add('render', () => {
+    if (isPhoneOpen) {
+        // [IMPORTANT] Block controls so you don't navigate the native phone underneath
+        mp.game.controls.disableControlAction(0, 27, true); 
+        mp.game.controls.disableControlAction(0, 172, true); 
+        mp.game.controls.disableControlAction(0, 173, true); 
+        mp.game.controls.disableControlAction(0, 174, true); 
+        mp.game.controls.disableControlAction(0, 175, true); 
+        mp.game.controls.disableControlAction(0, 176, true); 
+        mp.game.controls.disableControlAction(0, 177, true); 
+    }
+});
 
 // --- STANDARD APP EVENTS ---
 mp.events.add('client:phone:initialize', (mailsJson) => {
@@ -166,10 +152,9 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
 // --- OUTGOING ACTIONS ---
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
-        // New Camera App Action
         case 'openCamera': 
-            closePhone(); // Removes UI and Prop
-            mp.events.call('client:toggleCamera'); // Starts Native Camera
+            closePhone(); 
+            mp.events.call('client:toggleCamera'); 
             break;
         case 'requestBankData': mp.events.callRemote('server:phone:bank:open'); break;
         case 'toggleQuickEats': mp.events.callRemote('server:phone:quickEats:toggle'); break;
