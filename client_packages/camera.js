@@ -1,45 +1,32 @@
-// client_packages/camera.js
-
-global.isCameraActive = false;
-let isSelfieMode = false;
+let isCameraActive = false;
+let isSelfieMode = false; // 1. New variable to track selfie state
 
 mp.events.add("client:toggleCamera", () => {
-    // Toggle state
-    global.isCameraActive = !global.isCameraActive;
+    isCameraActive = !isCameraActive;
 
-    if (global.isCameraActive) {
+    if (isCameraActive) {
         mp.game.mobile.createMobilePhone(0);
         mp.game.mobile.scriptIsMovingMobilePhoneOffscreen(false);
         mp.game.mobile.cellCamActivate(true, true);
+        mp.gui.chat.push("Camera Active. [LMB] Photo | [RMB] Selfie");
     } else {
         closeCamera();
     }
 });
 
 function closeCamera() {
-    global.isCameraActive = false;
+    isCameraActive = false;
+    
+    // 2. Reset selfie mode so it doesn't stay stuck for next time
     isSelfieMode = false; 
     
     mp.game.mobile.cellCamActivate(false, false);
     mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); 
-    
-    mp.gui.chat.activate(true);
+    mp.gui.chat.push("Camera Closed.");
 }
 
-// 1. Add Escape Key to Close Camera
-mp.keys.bind(0x1B, true, () => { // ESC Key
-    if (global.isCameraActive) {
-        closeCamera();
-    }
-});
-
 mp.events.add("render", () => {
-    if (!global.isCameraActive) return;
-
-    // 2. Disable Pause Menu so ESC doesn't open the map
-    mp.game.controls.disableControlAction(0, 199, true); // P
-    mp.game.controls.disableControlAction(0, 200, true); // ESC
-    mp.game.ui.setPauseMenuActive(false);
+    if (!isCameraActive) return;
 
     mp.game.controls.disableControlAction(0, 24, true); 
     mp.game.controls.disableControlAction(0, 25, true); 
@@ -48,8 +35,11 @@ mp.events.add("render", () => {
         takePhoto();
     }
 
-    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { 
+    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { // Right Mouse Button
+        // 3. Flip the variable (true -> false, or false -> true)
         isSelfieMode = !isSelfieMode;
+        
+        // 4. Pass the variable instead of "true"
         mp.game.invoke("0x015C49A93E3E086E", isSelfieMode); 
     }
 });
@@ -65,12 +55,3 @@ function takePhoto() {
         mp.game.ui.displayHud(true);
     }, 50);
 }
-
-mp.events.add('playerReady', () => {
-    global.isCameraActive = false;
-    isSelfieMode = false;
-    
-    // Force destroy the phone and camera natives
-    mp.game.mobile.cellCamActivate(false, false);
-    mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); // Destroy Mobile Phone Native
-});
