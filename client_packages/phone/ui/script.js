@@ -37,6 +37,12 @@ const app = {
     open: (appName) => {
         if(app.isLocked) return; 
 
+        // HANDLE CAMERA APP
+        if (appName === 'camera') {
+            if('mp' in window) mp.trigger('client:proxyAction', 'openCamera', null);
+            return;
+        }
+
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }

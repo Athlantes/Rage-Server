@@ -23,6 +23,9 @@ mp.keys.bind(0x49, true, () => { // "I" Key
     if (global.isReturoOpen) return;
     if (mp.game.ui.isPauseMenuActive()) return;
 
+    // BLOCK IF CAMERA IS ACTIVE
+    if (global.isCameraActive) return;
+
     isInventoryOpen = !isInventoryOpen;
     toggleInventory(isInventoryOpen);
     lastToggle = Date.now();

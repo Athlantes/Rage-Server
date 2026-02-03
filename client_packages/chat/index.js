@@ -22,6 +22,9 @@ mp.events.add('client:chat:init', (commands) => {
 mp.keys.bind(0x54, true, () => {
     if (isChatOpen || mp.gui.cursor.visible) return;
     
+    // BLOCK IF CAMERA IS ACTIVE
+    if (global.isCameraActive) return;
+    
     isChatOpen = true;
     mp.gui.cursor.visible = true;
     chatBrowser.execute('window.chatAPI.showInput(true);');

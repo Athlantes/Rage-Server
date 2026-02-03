@@ -3,6 +3,12 @@
 let phoneBrowser = null;
 let isPhoneOpen = false;
 
+// --- PHONE PROP VARIABLES ---
+let phoneProp = null;
+const ANIM_DICT = "cellphone@";
+const ANIM_NAME = "cellphone_text_read_base";
+const PROP_NAME = "prop_npc_phone_02";
+
 // --- SCOOTER TRACKING VARIABLES ---
 let scooterBlip = null;
 let scooterMarker = null;
@@ -12,15 +18,23 @@ mp.events.add('playerReady', () => {
         phoneBrowser = mp.browsers.new('package://phone/ui/index.html');
         phoneBrowser.active = true;
     }
+    // Preload animation dictionary
+    mp.game.streaming.requestAnimDict(ANIM_DICT);
 });
 
 // --- KEYBINDS ---
 mp.keys.bind(0x26, true, () => { // Up Arrow
     if (mp.gui.chat.visible) return;
     if (mp.gui.cursor.visible && !isPhoneOpen) return;
+    
+    // Block if Camera is active (using global variable from camera.js)
+    if (global.isCameraActive) return;
+
     isPhoneOpen = !isPhoneOpen;
     
     if (isPhoneOpen) {
+        createPhoneProp(); // Create Visual Prop + Animation
+        
         mp.events.callRemote('server:phone:open');
         mp.gui.cursor.show(true, true);
         mp.gui.chat.activate(false); 
@@ -41,7 +55,6 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
         mp.game.graphics.notify("~y~Phone closed for safety.");
     }
     
-    // If we have a scooter marker active, clear it when we get on a vehicle
     if (scooterBlip || scooterMarker) {
         clearScooterMarkers();
     }
@@ -57,6 +70,48 @@ function closePhone() {
     mp.gui.cursor.show(false, false);
     mp.gui.chat.activate(true); 
     if(phoneBrowser) phoneBrowser.execute(`closePhone()`);
+    
+    destroyPhoneProp(); // Remove Visual Prop
+}
+
+// --- PHONE PROP & ANIMATION HELPERS ---
+function createPhoneProp() {
+    if (phoneProp) return;
+    
+    const player = mp.players.local;
+    
+    // 1. Play Animation (Upper body only, allows walking)
+    player.taskPlayAnim(ANIM_DICT, ANIM_NAME, 8.0, 1.0, -1, 49, 0, false, false, false);
+
+    // 2. Create Object
+    phoneProp = mp.objects.new(mp.game.joaat(PROP_NAME), player.position, {
+        rotation: new mp.Vector3(0,0,0),
+        alpha: 255,
+        dimension: player.dimension
+    });
+
+    // 3. Attach to Right Hand (Bone 57005)
+    // Offsets: x (forward/back), y (left/right), z (up/down) relative to bone
+    phoneProp.attachTo(
+        player.handle, 
+        player.getBoneIndex(57005), 
+        0.13, 0.05, -0.02, 
+        -10, 110, 0, 
+        true, true, false, false, 2, true
+    );
+}
+
+function destroyPhoneProp() {
+    const player = mp.players.local;
+    
+    // Stop Animation
+    player.stopAnimTask(ANIM_DICT, ANIM_NAME, 3.0);
+    
+    // Destroy Object
+    if (phoneProp) {
+        phoneProp.destroy();
+        phoneProp = null;
+    }
 }
 
 // --- STANDARD APP EVENTS ---
@@ -70,8 +125,7 @@ mp.events.add('client:phone:updateVehicles', (carsJson) => {
     if(phoneBrowser) phoneBrowser.execute(`app.loadVehicles(${carsJson})`);
 });
 mp.events.add('client:closePhoneWrapper', () => {
-    isPhoneOpen = false;
-    mp.gui.cursor.show(false, false);
+    closePhone();
 });
 mp.events.add('client:phone:bank:data', (json) => {
     if (phoneBrowser) phoneBrowser.execute(`app.loadBankData(${json})`);
@@ -84,32 +138,16 @@ mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
 mp.events.add('client:phone:proxyResponse', (action, data) => {
     if (phoneBrowser) {
         if (action === 'scooterAction') {
-            
-            // 1. Pass data to UI
             phoneBrowser.execute(`if(app.scooter) app.scooter.onScanResult(${JSON.stringify(data)})`);
-
-            // 2. Handle Visuals (Blip/Marker)
             if (data.status === 'started' && data.x && data.y) {
-                // Clear old ones just in case
                 clearScooterMarkers();
-
                 const targetPos = new mp.Vector3(data.x, data.y, data.z);
-
-                // Create Blip (Icon on Map)
-                scooterBlip = mp.blips.new(522, targetPos, {
-                    name: "Your eScooter",
-                    color: 2, 
-                    scale: 1.0,
-                    shortRange: false,
-                });
-                scooterBlip.setRoute(true); // Adds the yellow GPS path on minimap
-
-                // Create Marker (Type 1 = Vertical Cylinder)
-                // Adjusted Z - 1.0 to sit nicely on the ground
+                scooterBlip = mp.blips.new(522, targetPos, { name: "Your eScooter", color: 2, scale: 1.0, shortRange: false });
+                scooterBlip.setRoute(true); 
                 scooterMarker = mp.markers.new(1, new mp.Vector3(data.x, data.y, data.z - 1.0), 1.2, {
                     direction: new mp.Vector3(0, 0, 0),
                     rotation: new mp.Vector3(0, 0, 0),
-                    color: [50, 205, 50, 100], // Lime Green Transparent
+                    color: [50, 205, 50, 100], 
                     visible: true,
                     dimension: mp.players.local.dimension
                 });
@@ -121,8 +159,6 @@ mp.events.add('client:phone:proxyResponse', (action, data) => {
 mp.events.add('client:phone:appCallback', (appName, funcName) => {
     if (phoneBrowser && appName === 'scooter') {
         if (funcName === 'startRide') phoneBrowser.execute(`if(app.scooter) app.scooter.startRide()`);
-        
-        // If ride ends, ensure markers are gone
         if (funcName === 'endRide') clearScooterMarkers();
     }
 });
@@ -130,6 +166,11 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
 // --- OUTGOING ACTIONS ---
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
+        // New Camera App Action
+        case 'openCamera': 
+            closePhone(); // Removes UI and Prop
+            mp.events.call('client:toggleCamera'); // Starts Native Camera
+            break;
         case 'requestBankData': mp.events.callRemote('server:phone:bank:open'); break;
         case 'toggleQuickEats': mp.events.callRemote('server:phone:quickEats:toggle'); break;
         case 'bankTransfer': 

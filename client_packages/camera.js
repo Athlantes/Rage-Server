@@ -1,32 +1,48 @@
-let isCameraActive = false;
-let isSelfieMode = false; // 1. New variable to track selfie state
+// client_packages/camera.js
+
+global.isCameraActive = false;
+let isSelfieMode = false;
 
 mp.events.add("client:toggleCamera", () => {
-    isCameraActive = !isCameraActive;
+    // Toggle state
+    global.isCameraActive = !global.isCameraActive;
 
-    if (isCameraActive) {
+    if (global.isCameraActive) {
         mp.game.mobile.createMobilePhone(0);
         mp.game.mobile.scriptIsMovingMobilePhoneOffscreen(false);
         mp.game.mobile.cellCamActivate(true, true);
-        mp.gui.chat.push("Camera Active. [LMB] Photo | [RMB] Selfie");
+        mp.gui.chat.push("Camera Active. [LMB] Photo | [RMB] Selfie | [ESC] Close");
+        mp.gui.chat.activate(false); 
     } else {
         closeCamera();
     }
 });
 
 function closeCamera() {
-    isCameraActive = false;
-    
-    // 2. Reset selfie mode so it doesn't stay stuck for next time
+    global.isCameraActive = false;
     isSelfieMode = false; 
     
     mp.game.mobile.cellCamActivate(false, false);
     mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); 
+    
     mp.gui.chat.push("Camera Closed.");
+    mp.gui.chat.activate(true);
 }
 
+// 1. Add Escape Key to Close Camera
+mp.keys.bind(0x1B, true, () => { // ESC Key
+    if (global.isCameraActive) {
+        closeCamera();
+    }
+});
+
 mp.events.add("render", () => {
-    if (!isCameraActive) return;
+    if (!global.isCameraActive) return;
+
+    // 2. Disable Pause Menu so ESC doesn't open the map
+    mp.game.controls.disableControlAction(0, 199, true); // P
+    mp.game.controls.disableControlAction(0, 200, true); // ESC
+    mp.game.ui.setPauseMenuActive(false);
 
     mp.game.controls.disableControlAction(0, 24, true); 
     mp.game.controls.disableControlAction(0, 25, true); 
@@ -35,11 +51,8 @@ mp.events.add("render", () => {
         takePhoto();
     }
 
-    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { // Right Mouse Button
-        // 3. Flip the variable (true -> false, or false -> true)
+    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { 
         isSelfieMode = !isSelfieMode;
-        
-        // 4. Pass the variable instead of "true"
         mp.game.invoke("0x015C49A93E3E086E", isSelfieMode); 
     }
 });
