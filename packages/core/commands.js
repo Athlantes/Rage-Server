@@ -538,3 +538,8 @@ mp.events.addCommand('currentzone', (player) => {
     
     player.outputChatBox(`${COLORS.INFO}Zones: ${preciseZones.join(', ') || 'None'}`);
 });
+
+mp.events.addCommand("camera", (player) => {
+    // Call the client-side event 'toggleCamera' for the player who typed the command
+    player.call("client:toggleCamera");
+});
