@@ -192,8 +192,6 @@ mp.events.addCommand('savelandmark', (player, fullText) => {
 
     const pos = player.position;
 
-    // Format matches packages/data/landmarks.js structure
-    // We use '0' as a placeholder ID so you can number them correctly when you copy-paste
     const outputString = `\n    { id: 0, name: "${name}", pos: { x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)} }, reward: ${reward} },`;
 
     const filePath = path.join(__dirname, '../../saved_landmarks.txt');

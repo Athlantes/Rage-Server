@@ -1,0 +1,2 @@
+
+    { id: 0, name: "Vagos Grafitti", pos: { x: 1117.20, y: -2590.57, z: 18.63 }, reward: 250 },

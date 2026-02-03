@@ -3,6 +3,11 @@ let isPauseMenuOpen = false;
 let lastToggleTime = 0;
 let isMapOpen = false; // [Fix] Track if we sent player to map
 
+// [NEW] Bind 'O' key (0x4F) to toggle the menu
+mp.keys.bind(0x4F, true, function() {
+    mp.events.call('client:togglePauseMenu');
+});
+
 mp.events.add('client:updateQuestUI', (questJson) => {
     if (pauseMenuBrowser) {
         pauseMenuBrowser.execute(`updateQuests('${questJson}')`);
@@ -65,12 +70,7 @@ mp.events.add('client:pauseMenuAction', (action) => {
             mp.events.call('client:togglePauseMenu', true); // Force Close
             mp.events.call('client:toggleQuestMenu');
             break;
-        case 'resume':
-            mp.events.call('client:togglePauseMenu', false); // Normal close
-            break;
-        case 'quit':
-            mp.events.callRemote('server:kickPlayer');
-            break;
+        // [MODIFIED] Removed 'resume' and 'quit' cases
     }
 });
 

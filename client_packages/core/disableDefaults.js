@@ -18,16 +18,9 @@ mp.events.add('playerReady', () => {
 
 mp.events.add('render', () => {
     mp.gui.chat.show(false);
-    // 1. Pause Menu & HUD Management
-    mp.game.controls.disableControlAction(0, 199, true); 
-    mp.game.controls.disableControlAction(0, 200, true); 
-
-    if (mp.game.controls.isDisabledControlJustPressed(0, 200)) {
-        if (!mp.game.ui.isPauseMenuActive()) {
-            mp.events.call('client:togglePauseMenu');
-        }
-    }
-
+    
+    // [MODIFIED] Removed Pause Menu & ESC Disabling to restore native menu
+    
     const hudComponents = [3, 4, 19, 20, 6, 7, 9];
     hudComponents.forEach(id => mp.game.ui.hideHudComponentThisFrame(id));
 

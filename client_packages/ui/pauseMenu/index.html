@@ -23,14 +23,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>Central Online</h1>
-        <div class="menu-item" onclick="sendAction('resume')">RESUME</div>
+        <h1>Player Menu</h1>
+        
         <div class="menu-item" onclick="sendAction('map')">MAP</div>
         <div class="menu-item" onclick="sendAction('user_info')">USER INFO</div>
         <div class="menu-item" onclick="sendAction('jobs')">JOBS</div>
         <div class="menu-item" onclick="sendAction('quests')">QUESTS</div>
-        <div class="menu-item" onclick="sendAction('quit')" style="margin-top: 50px; color: #ff4d4d;">DISCONNECT</div>
-    </div>
+        
+        </div>
     <script>
         function sendAction(action) {
             mp.trigger('client:pauseMenuAction', action);
