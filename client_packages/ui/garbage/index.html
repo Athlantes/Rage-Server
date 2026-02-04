@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanitation Job</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
 
     <style>
         body {
@@ -21,7 +21,7 @@
 
         .container {
             background: rgba(20, 20, 25, 0.95);
-            width: 900px; /* Made wider for map */
+            width: 900px;
             height: 600px;
             border-radius: 10px;
             display: flex;
@@ -30,7 +30,7 @@
             border: 1px solid #444;
         }
 
-        /* Left Side: Route List */
+        /* Sidebar */
         .sidebar {
             width: 30%;
             background: rgba(30, 30, 35, 0.9);
@@ -74,22 +74,23 @@
             color: #fff;
         }
 
-        /* Right Side: Map & Details */
+        /* Content Area */
         .content {
             width: 70%;
             position: relative;
             display: flex;
             flex-direction: column;
+            background-color: #141b2d; /* Fallback color if map fails */
         }
 
-        /* The Map Container */
+        /* Map Container */
         #map {
             width: 100%;
             height: 100%;
-            background: #141b2d; /* Ocean color matching standard GTA maps */
+            z-index: 1;
         }
 
-        /* Overlay for Job Details */
+        /* Overlay */
         .job-overlay {
             position: absolute;
             bottom: 20px;
@@ -100,8 +101,8 @@
             color: white;
             border: 1px solid #f8b632;
             width: 250px;
-            pointer-events: auto; /* Allow clicking buttons */
-            z-index: 500; /* Above map */
+            pointer-events: auto;
+            z-index: 500;
         }
 
         .job-overlay h2 { margin: 0 0 10px 0; color: #f8b632; font-size: 1.5rem; }
@@ -158,54 +159,56 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="../lib/leaflet/leaflet.js"></script>
 
     <script>
         let selectedRouteId = null;
         let map = null;
-        let currentRouteLayer = null; // Store the route polyline/markers to clear them later
+        let currentRouteLayer = null;
 
-        // --- MAP CONFIGURATION ---
         function initMap() {
-            // GTA V Map Bounds (Approximate for standard Atlas maps)
+            // Standard GTA V Map Bounds/Scale
             const center_x = 117.3;
             const center_y = 172.8;
             const scale_x = 0.02072;
             const scale_y = 0.0205;
 
-            // Define the custom coordinate system for GTA V
             const CustomCRS = L.extend({}, L.CRS.Simple, {
                 transformation: new L.Transformation(scale_x, center_x, -scale_y, center_y)
             });
 
-            // Initialize Map
             map = L.map('map', {
                 crs: CustomCRS,
-                minZoom: 1,
-                maxZoom: 5, // Adjust based on how many folder levels you actually have
-                zoomControl: false, // Hide zoom buttons for cleaner look
-                attributionControl: false
+                minZoom: 2, // Allow zooming out a bit (tiles might blur but you see more)
+                maxZoom: 5,
+                zoomControl: false,
+                attributionControl: false,
+                center: [0, 0],
+                zoom: 3
             });
 
-            // Load Custom Tiles
-            // Path structure: ../WebMap/images/map/4/{x}x{y}.jpg
-            // Since you said "folder 4", I assume you might only have zoom level 4?
-            // If you have multiple zoom levels, change '4' to '{z}'
-            L.tileLayer('../WebMap/images/map/4/{x}x{y}.jpg', {
-                minZoom: 1,
-                maxZoom: 5,
-                tileSize: 1024, // GTA tiles are often huge, check if yours are 256 or 1024
+            // FIX 3: Tile Layer Path
+            // Using ../WebMap/images/map/4/{x}x{y}.jpg based on your folder structure
+            // We trick Leaflet: even if you only have zoom level 4, we show it at all zoom levels
+            // or you can restrict minZoom/maxZoom to 4 if you prefer.
+            
+            const tilePath = 'package://ui/WebMap/images/map/{z}/{x}x{y}.png';
+            
+            L.tileLayer(tilePath, {
+                minZoom: 2,
+                maxZoom: 4,
+                tileSize: 256, // IMPORTANT: GTA tiles are often 1024x1024. If your map looks "tiled" or broken, change this to 512 or 256.
                 noWrap: true,
-                tms: false
-            }).addTo(map);
-
-            // Center on Los Santos
-            map.setView([0, 0], 3);
+                tms: false,
+                bounds: [[-4000, -4000], [8000, 8000]] // Approximate map bounds
+            }).addTo(map)
+            .on('tileerror', function(e) {
+                console.error('Map tile missing:', e.url);
+            });
         }
 
-        // --- JOB LOGIC ---
         function loadRoutes(routesJson) {
-            if (!map) initMap(); // Ensure map is ready
+            if (!map) initMap(); 
 
             const routes = JSON.parse(routesJson);
             const list = document.getElementById('routeList');
@@ -221,11 +224,9 @@
         }
 
         function selectRoute(element, route, serverId) {
-            // UI Highlight
             document.querySelectorAll('.route-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
 
-            // Show Details Overlay
             document.getElementById('details').style.display = 'block';
             document.getElementById('rTitle').innerText = route.name;
             document.getElementById('rDiff').innerText = route.difficulty;
@@ -235,22 +236,17 @@
             
             selectedRouteId = serverId;
 
-            // --- DRAW ROUTE ON MAP ---
             if (currentRouteLayer) {
                 map.removeLayer(currentRouteLayer);
             }
 
-            // Convert GTA Dumpster Coords to Leaflet Coords
-            const mapPoints = route.dumpsters.map(d => [d.y, d.x]); // Leaflet uses [Lat(y), Lng(x)]
+            // Convert GTA Coords (y, x) -> Map Coords
+            const mapPoints = route.dumpsters.map(d => [d.y, d.x]);
 
-            // Create a feature group for markers and lines
             const markers = [];
-            
-            // Add Start Marker (Depot/First point)
             markers.push(L.circleMarker(mapPoints[0], { color: '#00ff00', radius: 6 }).bindPopup("Start"));
 
-            // Add Dumpsters
-            route.dumpsters.forEach((d, i) => {
+            route.dumpsters.forEach((d) => {
                 markers.push(L.circleMarker([d.y, d.x], {
                     color: '#f8b632',
                     fillColor: '#f8b632',
@@ -259,14 +255,11 @@
                 }));
             });
 
-            // Draw Line
             const polyline = L.polyline(mapPoints, { color: '#f8b632', weight: 3 });
             markers.push(polyline);
 
             currentRouteLayer = L.layerGroup(markers).addTo(map);
-
-            // Zoom map to fit the route
-            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            map.fitBounds(polyline.getBounds(), { padding: [100, 100] });
         }
 
         function startJob() {
@@ -278,8 +271,7 @@
             mp.trigger('client:garbage:close');
         }
 
-        // Initialize map on load (empty)
-        setTimeout(initMap, 100); 
+        setTimeout(initMap, 200);
     </script>
 </body>
 </html>
