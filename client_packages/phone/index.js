@@ -118,12 +118,39 @@ mp.events.add('client:phone:proxyResponse', (action, data) => {
     }
 });
 
+mp.events.add('client:phone:findScooterSpawn', () => {
+    const player = mp.players.local;
+    const pos = player.position;
+    const heading = player.getHeading();
+    const distance = 5.0; // Distance behind player (reduced slightly for reliability)
+
+    // Calculate position behind the player
+    const rad = heading * (Math.PI / 180);
+    const backX = pos.x + (Math.sin(rad) * distance); 
+    const backY = pos.y + (-Math.cos(rad) * distance);
+
+    // FIX: Correct arguments for getClosestVehicleNode
+    // Args: x, y, z, nodeType (1=roads), p5 (3.0), p6 (0)
+    const spawnPos = mp.game.pathfind.getClosestVehicleNode(backX, backY, pos.z, 1, 3.0, 0);
+
+    if (spawnPos) {
+        // Found a valid road/sidewalk
+        // spawnPos is usually returned as a Vector3 object directly
+        mp.events.callRemote('server:scooter:performRent', spawnPos);
+    } else {
+        // Fallback: Just use the calculated back position if no node found
+        mp.events.callRemote('server:scooter:performRent', new mp.Vector3(backX, backY, pos.z));
+    }
+});
+
 mp.events.add('client:phone:appCallback', (appName, funcName) => {
     if (phoneBrowser && appName === 'scooter') {
         if (funcName === 'startRide') phoneBrowser.execute(`if(app.scooter) app.scooter.startRide()`);
         
-        // If ride ends, ensure markers are gone
-        if (funcName === 'endRide') clearScooterMarkers();
+        if (funcName === 'endRide') {
+            clearScooterMarkers();
+            phoneBrowser.execute(`if(app.scooter && app.scooter.endRide) app.scooter.endRide()`);
+        }
     }
 });
 

@@ -23,6 +23,7 @@ async function endRental(scooter, reason = "Ride ended") {
     if (player && mp.players.exists(player)) {
         await PlayerManager.removeMoney(player, cost, "eScootr Ride");
         player.call('showNotification', ['eScootr', `${reason}. Charged: $${cost}`]);
+        // Calls the wrapper in client index.js, which must now notify the Browser UI
         player.call('client:phone:appCallback', ['scooter', 'endRide']);
     }
 }
@@ -36,12 +37,12 @@ mp.events.add('server:phone:scooterAction', async (player, dataJson) => {
             return player.call('client:phone:proxyResponse', ['scooterAction', { status: 'failed', msg: 'Invalid location' }]);
         }
 
-        const searchDelay = Math.floor(Math.random() * (10000 - 5000 + 1) + 5000);
+        const searchDelay = Math.floor(Math.random() * (5000) + 5000); // 5-10s
 
         setTimeout(() => {
             if (!mp.players.exists(player)) return;
-            const batt = Math.floor(Math.random() * (100 - 40 + 1) + 40);
-            const estDist = Math.floor(Math.random() * (30 - 10 + 1) + 10); 
+            const batt = Math.floor(Math.random() * (61) + 40); // 40-100
+            const estDist = Math.floor(Math.random() * (21) + 10); // 10-30
             player.call('client:phone:proxyResponse', ['scooterAction', { status: 'found', battery: batt, dist: estDist }]);
         }, searchDelay);
     }
@@ -51,49 +52,11 @@ mp.events.add('server:phone:scooterAction', async (player, dataJson) => {
             return player.call('showNotification', ['eScootr', 'Insufficient funds.']);
         }
 
-        const paid = await PlayerManager.removeMoney(player, CONFIG.unlockCost, "eScootr Unlock");
-        if (!paid) return;
-
-        // Spawn Logic
-        const pos = player.position;
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * (25 - 10) + 10;
-        const offsetX = Math.cos(angle) * dist;
-        const offsetY = Math.sin(angle) * dist;
-        
-        const spawnPos = new mp.Vector3(pos.x + offsetX, pos.y + offsetY, pos.z); // Store this!
-
-        const scooter = mp.vehicles.new(mp.joaat(CONFIG.model), spawnPos, {
-            heading: (angle * 180 / Math.PI) + 90,
-            dimension: player.dimension
-        });
-
-        const initialBatt = Math.floor(Math.random() * (100 - 60 + 1) + 60);
-        scooter.setVariable('fuel', initialBatt);
-        scooter.setVariable('owner_id', player.data.dbId); 
-        scooter.data.renter = player;           
-        scooter.data.rentStartTime = Date.now();
-        scooter.data.lastActiveTime = Date.now();
-
-        scooter.locked = true;
-        setTimeout(() => {
-            if (mp.vehicles.exists(scooter)) scooter.locked = false;
-        }, 2000);
-
-        // SEND COORDINATES BACK TO CLIENT
-        player.call('client:phone:proxyResponse', ['scooterAction', { 
-            status: 'started', 
-            x: spawnPos.x, 
-            y: spawnPos.y, 
-            z: spawnPos.z 
-        }]);
-        
-        player.call('showNotification', ['eScootr', `Unlocked! Follow the marker.`]);
-        player.call('client:phone:appCallback', ['scooter', 'startRide']);
+        // Instead of spawning here, ask Client to find a safe road/sidewalk behind them
+        player.call('client:phone:findScooterSpawn');
     }
 
     else if (data.type === 'end') {
-        // ... [Keep the end logic exactly as it was] ...
         let targetScootr = null;
         const vehicles = mp.vehicles.toArray();
         if (player.vehicle && player.vehicle.getVariable('owner_id') === player.data.dbId) {
@@ -107,12 +70,66 @@ mp.events.add('server:phone:scooterAction', async (player, dataJson) => {
     }
 });
 
+// --- NEW EVENT: Called by client after finding a valid road spot ---
+mp.events.add('server:scooter:performRent', async (player, spawnPoint) => {
+    if (!player || !mp.players.exists(player)) return;
+
+    // Re-check funds just in case
+    if (player.data.money < CONFIG.unlockCost) return;
+
+    const paid = await PlayerManager.removeMoney(player, CONFIG.unlockCost, "eScootr Unlock");
+    if (!paid) return;
+
+    // Use found point or fallback to player pos if client failed
+    const pos = spawnPoint || player.position;
+    
+    const scooter = mp.vehicles.new(mp.joaat(CONFIG.model), new mp.Vector3(pos.x, pos.y, pos.z), {
+        heading: player.heading, // Match player heading
+        dimension: player.dimension
+    });
+
+    const initialBatt = Math.floor(Math.random() * (41) + 60); // 60-100
+    scooter.setVariable('fuel', initialBatt);
+    scooter.setVariable('owner_id', player.data.dbId); 
+    scooter.data.renter = player;           
+    scooter.data.rentStartTime = Date.now();
+    scooter.data.lastActiveTime = Date.now();
+
+    // Lock initially for realism (unlocking sequence), but ensure it opens
+    scooter.locked = true;
+    setTimeout(() => {
+        if (mp.vehicles.exists(scooter)) {
+            scooter.locked = false;
+        }
+    }, 2000);
+
+    // SEND COORDINATES BACK TO CLIENT
+    player.call('client:phone:proxyResponse', ['scooterAction', { 
+        status: 'started', 
+        x: pos.x, 
+        y: pos.y, 
+        z: pos.z 
+    }]);
+    
+    player.call('showNotification', ['eScootr', `Unlocked! It's behind you.`]);
+    player.call('client:phone:appCallback', ['scooter', 'startRide']);
+});
+
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     if (vehicle.model === mp.joaat(CONFIG.model)) {
         const ownerId = vehicle.getVariable('owner_id');
+        
+        // Anti-Theft Logic
         if (ownerId && ownerId !== player.data.dbId) {
             player.call('showNotification', ['eScootr', '~r~ANTI-THEFT: This vehicle is rented by another user.']);
             player.removeFromVehicle();
+            
+            // FIX: Ensure vehicle remains unlocked so the owner can still get in later
+            vehicle.locked = false;
+        }
+        // Owner entering - double check it's unlocked
+        else if (ownerId === player.data.dbId) {
+            vehicle.locked = false;
         }
     }
 });
@@ -122,6 +139,10 @@ setInterval(() => {
         if (veh.model === mp.joaat(CONFIG.model) && veh.getVariable('owner_id')) {
             const renter = veh.data.renter;
             if (!renter || !mp.players.exists(renter)) { endRental(veh, "Player disconnected"); return; }
+            
+            // Ensure owner can always enter (fixes "locked" bug)
+            if (veh.locked) veh.locked = false; 
+
             const driver = veh.getOccupant(0);
             if (driver === renter) { veh.data.lastActiveTime = Date.now(); } 
             else {

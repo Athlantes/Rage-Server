@@ -1,2 +1,4 @@
 
     { id: 0, name: "Vagos Grafitti", pos: { x: 1117.20, y: -2590.57, z: 18.63 }, reward: 250 },
+    { id: 0, name: "Chilliad Church", pos: { x: 382.00, y: 5316.65, z: 665.57 }, reward: 300 },
+    { id: 0, name: "Chilliad Lake", pos: { x: 158.68, y: 5423.68, z: 604.69 }, reward: 350 },
