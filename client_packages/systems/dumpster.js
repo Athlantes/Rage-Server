@@ -61,7 +61,7 @@ setInterval(() => {
     for (const hash of DUMPSTER_HASHES) {
         const handle = mp.game.object.getClosestObjectOfType(
             player.position.x, player.position.y, player.position.z,
-            1.5, 
+            0.75, 
             hash, 
             false, false, false
         );

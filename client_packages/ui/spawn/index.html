@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Spawn</title>
+    <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #191919; }
+        
+        /* FIX: Match background to the map's ocean color to hide white flashes */
+        #map { 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+            background: #191919; 
+        }
+
+        /* Force Leaflet to use this background */
+        .leaflet-container {
+            background: #191919 !important;
+        }
+
+        /* Floating Sidebar */
+        .sidebar {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            width: 320px;
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            z-index: 100;
+            color: white;
+            border-left: 4px solid #f8b632; /* Orange accent */
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+        p { color: #888; margin-bottom: 25px; font-size: 14px; }
+
+        .location-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #2a2a2e;
+            border: 1px solid #333;
+            color: #ccc;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .location-btn:hover {
+            background: #333;
+            border-color: #555;
+            padding-left: 20px; /* Slide effect */
+            color: white;
+        }
+
+        .location-btn.active {
+            background: #f8b632;
+            color: #111;
+            border-color: #f8b632;
+        }
+
+        .btn-spawn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 15px;
+            background: #f8b632;
+            color: #111;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+
+        .btn-spawn:hover { background: #e0a42e; }
+        .btn-spawn:disabled { background: #444; color: #777; cursor: not-allowed; }
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Welcome Back</h1>
+        <p>Select a location to wake up.</p>
+        <div id="locationList"></div>
+        <button id="spawnBtn" class="btn-spawn" onclick="confirmSpawn()" disabled>Spawn Here</button>
+    </div>
+    <div id="map"></div>
+
+    <script src="../lib/leaflet/leaflet.js"></script>
+    <script src="../lib/customMap.js"></script>
+
+    <script>
+        const spawnMap = new GameMap('map', { initialZoom: 3, minZoom: 2, maxZoom: 5 });
+        spawnMap.disableInteraction(); 
+
+        let selectedSpawnIndex = null; // Changed from -1 to null for clarity
+
+        // Standard Spawns
+        const spawns = [
+            { name: "Legion Square", x: 206.56, y: -909.89, desc: "Central meeting point." },
+            { name: "Vinewood Blvd", x: 384.62, y: 260.67, desc: "The heart of the city." },
+            { name: "Sandy Shores", x: 1941.40, y: 3747.01, desc: "Desert safezone." },
+            { name: "Paleto Bay", x: -113.84, y: 6445.62, desc: "Northern getaway." },
+            { name: "LS Airport", x: -1037.76, y: -2737.67, desc: "Travel hub." }
+        ];
+
+        // NEW FUNCTION: Called from Client Script
+        function addLastLocation(jsonPos) {
+            const pos = JSON.parse(jsonPos);
+            const list = document.getElementById('locationList');
+
+            // Create Special Button
+            const el = document.createElement('button');
+            el.className = 'location-btn';
+            // Use a different style or icon to make it stand out
+            el.style.borderLeft = "4px solid #fff"; 
+            el.innerHTML = `LAST LOCATION <span style="font-size:11px; color:#aaa; display:block;">Resume where you left off</span>`;
+            
+            // Special OnClick: Pass -1 as index
+            el.onclick = () => {
+                selectLocation(-1, el, pos.x, pos.y);
+            };
+
+            // Add to TOP of list
+            list.insertBefore(el, list.firstChild);
+        }
+
+        // Render Standard List
+        const list = document.getElementById('locationList');
+        spawns.forEach((spawn, index) => {
+            const el = document.createElement('button');
+            el.className = 'location-btn';
+            el.innerHTML = `${spawn.name} <span style="font-size:11px; color:#888; font-weight:normal; display:block;">${spawn.desc}</span>`;
+            el.onclick = () => selectLocation(index, el, spawn.x, spawn.y);
+            list.appendChild(el);
+        });
+
+        // Updated Selection Logic
+        function selectLocation(index, element, x, y) {
+            selectedSpawnIndex = index;
+            
+            document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            
+            const btn = document.getElementById('spawnBtn');
+            btn.disabled = false;
+            btn.innerText = index === -1 ? "Spawn at Last Loc" : "Spawn at Location";
+
+            // Map FlyTo
+            const target = [y, x]; 
+            spawnMap.getInstance().flyTo(target, 5, { animate: true, duration: 1.5 });
+            spawnMap.setMarkers([{x: x, y: y}], {
+                iconUrl: '../lib/leaflet/images/marker-icon.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
+            });
+        }
+
+        function confirmSpawn() {
+            if(selectedSpawnIndex === null) return;
+            mp.trigger('client:spawn:select', selectedSpawnIndex);
+        }
+    </script>
+</body>
+</html>

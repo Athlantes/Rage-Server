@@ -1,5 +1,6 @@
 require('./auth/index.js');
 require('./chat/index.js');
+require('./ui/spawn/index.js');
 
 require('./camera.js');
 

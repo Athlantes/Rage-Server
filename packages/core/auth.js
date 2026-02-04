@@ -62,6 +62,7 @@ mp.events.add('server:auth:login', async (player, username, password) => {
         if (rows.length === 0) return player.call('client:auth:error', ["Account not found."]);
         const user = rows[0];
 
+        // This function handles the rest (password check -> finalize -> startSession)
         performLoginChecks(player, user, password);
 
     } catch (err) {
@@ -232,23 +233,20 @@ async function finalizeLogin(player, userData) {
     startSession(player, userData);
 }
 
-// NEW FUNCTION: Actually spawn the player
 function startSession(player, userData) {
     player.logged = true;
     player.name = userData.username;
     player.data.dbId = userData.id;
     player.data.username = userData.username;
-    player.data.appearance = userData.appearance; // Cache appearance
-    player.data.gender = userData.gender; // Cache gender
+    player.data.appearance = userData.appearance; 
+    player.data.gender = userData.gender; 
     player.data.adminLevel = userData.admin_level || 0; 
     player.setVariable('adminLevel', player.data.adminLevel);
 
-    // Load Economy
+    // Load Economy & Stats
     player.data.money = userData.money;
     player.data.bank_money = userData.bank_money || 0;
     player.setVariable('money', userData.money);
-    
-    // Load Stats
     player.data.level = userData.level;
     player.data.vehicle_slots = userData.vehicle_slots;
 
@@ -277,21 +275,38 @@ function startSession(player, userData) {
     };
     player.hasCooldown = (name) => player.data.cooldowns && player.data.cooldowns[name] > Date.now();
 
-    // Spawn
-    player.dim = 0;
-    if (userData.position) {
-        try {
-            const pos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position;
-            player.position = new mp.Vector3(pos.x, pos.y, pos.z);
-        } catch(e) { player.position = new mp.Vector3(-1037, -2738, 13); }
-    } else {
-        player.position = new mp.Vector3(-1037, -2738, 13);
-    }
-
     // Apply Appearance
     CharCreator.applyAppearance(player, userData.appearance);
 
-    player.call('client:auth:success');
+    // --- NEW LOGIC: SPAWN CHECK ---
+    const lastActive = new Date(userData.last_active).getTime();
+    const now = Date.now();
+    const diffMinutes = (now - lastActive) / 1000 / 60;
+    
+    let showSpawnSelector = true; // Default: Show menu
+    let lastPos = null;
+
+    if (userData.position) {
+        try {
+            lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position;
+        } catch (e) {}
+    }
+
+    if (lastPos) {
+        player.data.lastLocation = lastPos;
+    }
+
+    // If connected within 5 minutes AND has a valid position
+    if (diffMinutes < 5 && lastPos) {
+        player.spawn(new mp.Vector3(lastPos.x, lastPos.y, lastPos.z));
+        player.dim = 0; 
+        player.heading = lastPos.heading || 0;
+        showSpawnSelector = false; 
+    }
+
+    // Trigger Success (Pass 'false' if we already spawned them, 'true' if they need to choose)
+    player.call('client:auth:success', [showSpawnSelector, lastPos]);
+    
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
     mp.events.call('server:loadAccount', player);
 }

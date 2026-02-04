@@ -68,24 +68,27 @@ mp.events.add('client:auth:destroy', () => {
     }
 });
 
-mp.events.add('client:auth:success', () => {
-    isAuthOpen = false; // Stop the control disable loop
-
-    // Cleanup Browser
+mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos) => {
+    // 1. Destroy Login Browser
     if (authBrowser) {
         authBrowser.destroy();
         authBrowser = null;
     }
-    
-    // Reset Camera
-    mp.game.cam.renderScriptCams(false, true, 2000, true, false);
-    if(authCam) authCam.destroy();
 
-    // Reset Player & UI
-    mp.gui.cursor.show(false, false);
-    mp.gui.chat.show(true);  // Re-enable chat
-    mp.game.ui.displayRadar(true);
-    mp.game.ui.displayHud(true);
-    mp.players.local.freezePosition(false);
-    mp.players.local.setVisible(true, true);
+    // 2. Logic Split
+    if (shouldSpawnSelector) {
+        mp.gui.cursor.show(false, false);
+        mp.events.call('client:spawn:openMenu', lastPos);
+
+    } else {
+        mp.gui.cursor.show(false, false);
+
+        const player = mp.players.local;
+        player.freezePosition(false);
+        player.setVisible(true, false);
+        player.setAlpha(255);
+        player.setInvincible(false);
+
+        mp.game.cam.renderScriptCams(false, false, 0, true, false);
+    }
 });

@@ -6,29 +6,22 @@
     <title>Sanitation Job</title>
     <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
     <style>
-        /* Body no longer needs to center items, it just holds the full screen container */
+        /* ... (Your existing CSS remains exactly the same) ... */
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background: #141b2d; /* Match map bg to prevent flickering */
+            background: #141b2d; 
             margin: 0; 
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden; 
             user-select: none; 
         }
-
-        /* Container is now Full Screen */
         .container { 
             width: 100vw; 
             height: 100vh; 
-            background: rgba(20, 20, 25, 1); /* Solid background */
+            background: rgba(20, 20, 25, 1); 
             display: flex; 
-            border-radius: 0; /* Remove rounded corners */
-            box-shadow: none; /* Remove shadow */
-            border: none; 
         }
-
-        /* Sidebar styling */
         .sidebar { 
-            width: 350px; /* Fixed width looks better on fullscreen than % */
+            width: 350px; 
             min-width: 300px;
             background: rgba(30, 30, 35, 1); 
             border-right: 1px solid #444; 
@@ -36,7 +29,6 @@
             flex-direction: column; 
             z-index: 10;
         }
-
         .header { 
             padding: 25px; 
             background: #f8b632; 
@@ -47,13 +39,11 @@
             font-size: 1.2rem;
             letter-spacing: 1px;
         }
-
         .route-list { 
             flex-grow: 1; 
             overflow-y: auto; 
             padding: 15px; 
         }
-
         .route-item { 
             background: #2a2a2e; 
             color: #ccc; 
@@ -64,30 +54,23 @@
             border-left: 4px solid transparent; 
             transition: background 0.2s;
         }
-
         .route-item:hover { background: #333; }
-        
         .route-item.active { 
             background: #383838; 
             border-left: 4px solid #f8b632; 
             color: white; 
         }
-
-        /* Map Content Area */
         .content { 
             flex-grow: 1; 
             position: relative; 
             background: #141b2d; 
         }
-
         #map { 
             width: 100%; 
             height: 100%; 
             z-index: 1; 
             background: #141b2d; 
         }
-
-        /* Close Button - Moved slightly for fullscreen aesthetics */
         .btn-close { 
             position: absolute; 
             top: 20px; 
@@ -105,10 +88,7 @@
             font-size: 20px;
             transition: background 0.2s;
         }
-        
         .btn-close:hover { background: #d32f2f; }
-
-        /* Job Details Overlay */
         .job-overlay { 
             position: absolute; 
             bottom: 30px; 
@@ -122,7 +102,6 @@
             z-index: 500; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
-
         .btn-start { 
             margin-top: 20px; 
             background: #f8b632; 
@@ -136,9 +115,7 @@
             text-transform: uppercase;
             font-size: 14px;
         }
-        
         .btn-start:hover { background: #e0a42e; }
-
         .stat { 
             display: flex; 
             justify-content: space-between; 
@@ -146,7 +123,6 @@
             color: #aaa; 
             font-size: 14px;
         }
-        
         .stat span { color: white; font-weight: 500; }
     </style>
 </head>
@@ -172,69 +148,27 @@
     </div>
 
     <script src="../lib/leaflet/leaflet.js"></script>
+    
+    <script src="../lib/customMap.js"></script>
 
     <script>
-        let map = null;
-        let currentRouteLayer = null;
+        let gameMap = null;
         let selectedRouteId = null;
 
-        const CenterX = 59.5028;
-        const CenterY = 119.3981;
-        const ScaleX = 0.01443;
-        const ScaleY = 0.01424;
-
-        const binIcon = L.icon({
+        // Shared Icon Configuration for Garbage Job
+        const binIconOptions = {
             iconUrl: 'package://ui/WebMap/images/icons/bin.png', 
-            
             iconSize: [20, 20],  
             iconAnchor: [10, 10], 
             popupAnchor: [0, -10] 
-        });
-
-        function initMap() {
-            // 1. Define Coordinate System (UNCHANGED)
-            const CustomCRS = L.extend({}, L.CRS.Simple, {
-                transformation: new L.Transformation(ScaleX, CenterX, -ScaleY, CenterY)
-            });
-
-            // 2. Initialize Map - UPDATED OPTIONS
-            map = L.map('map', {
-                crs: CustomCRS,
-                minZoom: 2,
-                maxZoom: 5,
-                zoomControl: false,       // Hides +/- buttons
-                attributionControl: false,
-                center: [0, 0],
-                zoom: 5,
-                // DISABLE INTERACTION:
-                dragging: false,          // Disables panning
-                touchZoom: false,         // Disables touch zooming
-                doubleClickZoom: false,   // Disables double click zoom
-                scrollWheelZoom: false,   // Disables scroll wheel zoom
-                boxZoom: false,           // Disables shift+drag zoom
-                keyboard: false           // Disables arrow keys
-            });
-
-            // 3. Define Tile Layer (UNCHANGED)
-            const tilePath = 'package://ui/WebMap/images/map/{z}/{x}x{y}.png'; 
-
-            const tileLayer = L.tileLayer(tilePath, {
-                minZoom: 2,
-                maxZoom: 5,
-                tileSize: 256, 
-                noWrap: true,
-                tms: false 
-            });
-
-            tileLayer.on('tileerror', function(error, tile) {
-                console.error("Tile Error (Check Path):", error.url);
-            });
-
-            tileLayer.addTo(map);
-        }
+        };
 
         function loadRoutes(routesJson) {
-            if (!map) initMap(); 
+            // Initialize the shared map class
+            if (!gameMap) {
+                gameMap = new GameMap('map', { initialZoom: 5 });
+                gameMap.disableInteraction(); // Specific to Garbage Job requirements
+            }
 
             const routes = JSON.parse(routesJson);
             const list = document.getElementById('routeList');
@@ -262,25 +196,9 @@
             document.getElementById('rDist').innerText = (route.distance ? route.distance.toFixed(2) : "0.00") + " km";
             selectedRouteId = serverId;
 
-            // Remove previous markers
-            if (currentRouteLayer) map.removeLayer(currentRouteLayer);
-
-            // Get all coordinates
-            const mapPoints = route.dumpsters.map(d => [d.y, d.x]);
-            const markers = [];
-            
-            // Loop through ALL points and apply the same Bin Icon
-            mapPoints.forEach(point => {
-                markers.push(L.marker(point, { icon: binIcon }));
-            });
-            
-            // Add all markers to the map
-            currentRouteLayer = L.layerGroup(markers).addTo(map);
-            
-            // Zoom to fit all the bins (calculate bounds without drawing a line)
-            if (mapPoints.length > 0) {
-                map.fitBounds(L.latLngBounds(mapPoints), { padding: [100, 100] });
-            }
+            // Use the shared map to show markers
+            // route.dumpsters contains {x, y, z} objects
+            gameMap.setMarkers(route.dumpsters, binIconOptions);
         }
 
         function startJob() {
@@ -289,8 +207,6 @@
         function closeMenu() {
             mp.trigger('client:garbage:close');
         }
-
-        setTimeout(initMap, 100);
     </script>
 </body>
 </html>
