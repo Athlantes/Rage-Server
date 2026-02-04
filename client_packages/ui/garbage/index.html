@@ -52,8 +52,8 @@
         let currentRouteLayer = null;
         let selectedRouteId = null;
 
-        const CenterX = 58.8628;
-        const CenterY = -119.3981;
+        const CenterX = 59.5028;
+        const CenterY = 119.3981;
         const ScaleX = 0.01443;
         const ScaleY = 0.01424;
 
@@ -66,8 +66,8 @@
             // 2. Initialize Map
             map = L.map('map', {
                 crs: CustomCRS,
-                minZoom: 0,
-                maxZoom: 5,
+                minZoom: 2,
+                maxZoom: 4,
                 zoomControl: false,
                 attributionControl: false,
                 center: [0, 0],
@@ -79,8 +79,8 @@
             const tilePath = 'package://ui/WebMap/images/map/{z}/{x}x{y}.png'; 
 
             const tileLayer = L.tileLayer(tilePath, {
-                minZoom: 0,
-                maxZoom: 5,
+                minZoom: 2,
+                maxZoom: 4,
                 tileSize: 256, 
                 noWrap: true,
                 tms: false 
@@ -93,8 +93,6 @@
 
             tileLayer.addTo(map);
 
-            // 5. Center Marker
-            L.circleMarker([0, 0], { color: 'red', radius: 10 }).bindPopup("CENTER (0,0)").addTo(map);
         }
 
         function loadRoutes(routesJson) {
