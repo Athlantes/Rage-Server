@@ -1,0 +1,80 @@
+const db = require('./database');
+const Inventory = require('../systems/inventory');
+const PhotoHunt = require('../systems/photoHunt/photoHuntManager');
+const JobManager = require('../jobs/jobManager'); // [NEW] Import JobManager
+
+const MAX_VEHICLE_SLOTS = 5; 
+
+mp.events.add('server:playerMenu:getData', async (player) => {
+    if (!player.data.dbId) return;
+
+    try {
+        // 1. Basic Stats
+        const stats = {
+            level: player.data.level || 1,
+            xp: player.data.xp || 0, 
+            xpMax: 1000,
+            money: player.data.money || 0,
+            bank: player.data.bank || 0,
+            weight: Inventory.getWeight(player),
+            maxWeight: 40.0
+        };
+
+        // 2. Vehicle Count
+        const [vehRows] = await db.query("SELECT COUNT(*) as count FROM server_vehicles WHERE owner_id = ?", [player.data.dbId]);
+        const vehicleCount = vehRows[0].count;
+
+        // 3. Job Skills (Merged)
+        const allJobs = JobManager.getDefinitions(); // Get all registered jobs
+        const playerSkills = player.data.jobSkills || {};
+        const formattedJobs = [];
+
+        // Iterate through ALL defined jobs, not just the ones the player has done
+        allJobs.forEach((jobData, jobKey) => {
+            const skill = playerSkills[jobKey] || { level: 1, xp: 0 }; // Default to Lvl 1 if no data
+            
+            const nextLevelXp = Math.pow(skill.level, 2) * 100;
+            const prevLevelXp = Math.pow(skill.level - 1, 2) * 100;
+            
+            formattedJobs.push({
+                name: jobData.config.name, // Use the nice name (e.g., "Sanitation Worker")
+                key: jobKey,
+                level: skill.level,
+                xp: skill.xp,
+                nextXp: nextLevelXp,
+                prevXp: prevLevelXp
+            });
+        });
+
+        // 4. Quests
+        const dailyQuests = player.quests || [];
+
+        // 5. PhotoHunt Progress
+        const dateStr = PhotoHunt.getGameDate();
+        const [phRows] = await db.query("SELECT completed_landmarks, assigned_landmarks FROM player_photo_hunt WHERE user_id = ? AND activity_date = ?", [player.data.dbId, dateStr]);
+        
+        let photoHuntData = { progress: 0, total: 6, completed: false };
+        if (phRows.length > 0) {
+            const completed = JSON.parse(phRows[0].completed_landmarks || '[]');
+            const assigned = JSON.parse(phRows[0].assigned_landmarks || '[]');
+            photoHuntData = {
+                progress: completed.length,
+                total: assigned.length,
+                completed: completed.length >= assigned.length
+            };
+        }
+
+        // Send payload
+        const payload = {
+            stats: { ...stats, vehicleCount, maxVehicles: MAX_VEHICLE_SLOTS },
+            jobs: formattedJobs,
+            quests: dailyQuests,
+            photoHunt: photoHuntData
+        };
+
+        player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);
+
+    } catch (err) {
+        console.error("PlayerMenu Data Error:", err);
+    }
+});

@@ -8,7 +8,8 @@ const pool = mysql.createPool({
     database: 'rage_trucking_db', 
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    connectTimeout: 30000
 });
 
 const promisePool = pool.promise();

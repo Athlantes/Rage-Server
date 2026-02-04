@@ -1,39 +1,297 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>Player Menu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; color: white; }
-        .container {
-            height: 100vh; width: 100vw;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
-            padding-left: 10%;
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: rgba(15, 15, 15, 0.98); /* Almost opaque dark background */
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            user-select: none;
         }
-        h1 { font-size: 3rem; margin-bottom: 50px; text-transform: uppercase; letter-spacing: 5px; }
-        .menu-item {
-            font-size: 1.5rem; padding: 15px 40px; margin: 5px 0;
-            background: rgba(255, 255, 255, 0.05); border-left: 4px solid transparent;
-            cursor: pointer; transition: all 0.3s; width: 300px;
+
+        /* Full Screen Container */
+        .menu-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
         }
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.15); border-left: 4px solid #00a2ff;
-            transform: translateX(20px);
+
+        /* --- Header / Tabs --- */
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            height: 80px; /* Taller header */
+            border-bottom: 1px solid #333;
+            padding: 0 50px; /* Padding on sides */
+            align-items: center;
         }
+
+        .tab {
+            margin-right: 40px;
+            font-size: 1.4rem; /* Larger Text */
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            border-bottom: 4px solid transparent;
+        }
+
+        .tab:hover { color: #ccc; }
+        .tab.active { color: #fff; border-bottom-color: #00a2ff; text-shadow: 0 0 10px rgba(0, 162, 255, 0.5); }
+
+        /* --- Content Area --- */
+        .content {
+            flex: 1;
+            padding: 50px 10%; /* Center content with 10% padding on sides */
+            overflow-y: auto;
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* --- PLAYER TAB --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 4px;
+            border-left: 6px solid #444;
+        }
+        .stat-card h3 { margin: 0 0 15px 0; color: #888; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; }
+        .stat-sub { font-size: 1rem; color: #777; margin-top: 10px; }
+        
+        .progress-bar { background: rgba(0,0,0,0.5); height: 12px; border-radius: 6px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #00a2ff; width: 0%; transition: width 0.5s ease-in-out; }
+
+        /* --- JOBS TAB --- */
+        .jobs-list { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); 
+            gap: 20px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+        }
+        .job-card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 4px; display: flex; align-items: center; transition: 0.2s; }
+        .job-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .job-icon { font-size: 2.5rem; width: 80px; text-align: center; color: #555; }
+        .job-details { flex: 1; }
+        .job-name { font-weight: bold; font-size: 1.3rem; color: #fff; }
+        .job-level { color: #f0c400; font-size: 1rem; font-weight: bold; }
+
+        /* --- QUESTS TAB --- */
+        .quest-container-limit { max-width: 1200px; margin: 0 auto; }
+        .quest-section { margin-bottom: 40px; }
+        .quest-title { font-size: 1.8rem; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 25px; color: #ddd; }
+        .quest-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #00a2ff; }
+        .quest-card.done { border-left-color: #2ecc71; opacity: 0.6; }
+        
+        .landmark-box { 
+            background: linear-gradient(45deg, rgba(30,30,30,0.9), rgba(42,42,42,0.9)); 
+            padding: 30px; border-radius: 4px; text-align: center; 
+            border: 1px solid #444;
+        }
+        .landmark-val { font-size: 3rem; color: #f0c400; font-weight: bold; margin: 15px 0; }
+
+        /* --- SETTINGS TAB --- */
+        .settings-placeholder { text-align: center; color: #555; margin-top: 15vh; font-size: 2rem; }
+
+        /* Close Button (Top Right) */
+        .close-btn { 
+            position: absolute; 
+            top: 25px; 
+            right: 40px; 
+            font-size: 2.5rem; 
+            color: #555; 
+            cursor: pointer; 
+            z-index: 100;
+            transition: 0.2s;
+        }
+        .close-btn:hover { color: #ff4d4d; transform: scale(1.1); }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Player Menu</h1>
-        
-        <div class="menu-item" onclick="sendAction('map')">MAP</div>
-        <div class="menu-item" onclick="sendAction('user_info')">USER INFO</div>
-        <div class="menu-item" onclick="sendAction('jobs')">JOBS</div>
-        <div class="menu-item" onclick="sendAction('quests')">QUESTS</div>
-        
+    <div class="close-btn" onclick="mp.trigger('client:closePlayerMenu')">&times;</div>
+
+    <div class="menu-container">
+        <div class="tabs">
+            <div class="tab active" onclick="setTab('player')">Stats</div>
+            <div class="tab" onclick="setTab('jobs')">Careers</div>
+            <div class="tab" onclick="setTab('quests')">Objectives</div>
+            <div class="tab" onclick="setTab('settings')">Settings</div>
         </div>
+
+        <div id="player" class="content active">
+            <div class="stats-grid">
+                <div class="stat-card" style="border-color: #00a2ff">
+                    <h3>Player Level <span id="lvl-num" style="color:#fff">1</span></h3>
+                    <div class="progress-bar"><div class="progress-fill" id="xp-fill" style="width: 0%"></div></div>
+                    <div class="stat-sub"><span id="xp-val">0</span> / <span id="xp-max">1000</span> XP</div>
+                </div>
+
+                <div class="stat-card" style="border-color: #2ecc71">
+                    <h3>Finances</h3>
+                    <div class="stat-value" style="color:#2ecc71">$<span id="cash-val">0</span></div>
+                    <div class="stat-sub">Bank: <span style="color:#fff">$<span id="bank-val">0</span></span></div>
+                </div>
+
+                <div class="stat-card" style="border-color: #f39c12">
+                    <h3>Garage Status</h3>
+                    <div class="stat-value" style="color:#f39c12"><span id="veh-count">0</span> / <span id="veh-max">5</span></div>
+                    <div class="stat-sub">Personal Vehicles Owned</div>
+                </div>
+
+                <div class="stat-card" style="border-color: #e74c3c">
+                    <h3>Backpack Weight</h3>
+                    <div class="stat-value"><span id="inv-weight">0.0</span> <span style="font-size:1.2rem; color:#777">kg</span></div>
+                    <div class="progress-bar"><div class="progress-fill" id="weight-fill" style="background:#e74c3c; width:0%"></div></div>
+                    <div class="stat-sub">Capacity: <span id="inv-max">40.0</span> kg</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="jobs" class="content">
+            <div class="jobs-list" id="jobs-container">
+                </div>
+        </div>
+
+        <div id="quests" class="content">
+            <div class="quest-container-limit">
+                <div class="quest-section">
+                    <div class="quest-title">Daily Assignments</div>
+                    <div id="quests-container">
+                        </div>
+                </div>
+                
+                <div class="quest-section">
+                    <div class="quest-title">Exploration</div>
+                    <div class="landmark-box">
+                        <div style="text-transform: uppercase; letter-spacing: 2px; color: #888;">Landmark Spotter</div>
+                        <div class="landmark-val"><span id="ph-prog">0</span> / <span id="ph-total">6</span></div>
+                        <div style="color: #aaa; font-size: 1.1rem;">Find hidden landmarks around the city and capture a photo.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings" class="content">
+            <div class="settings-placeholder">
+                <i class="fas fa-tools" style="font-size: 4rem; margin-bottom: 30px; opacity: 0.5;"></i><br>
+                Settings Panel Under Construction
+            </div>
+        </div>
+    </div>
+
     <script>
-        function sendAction(action) {
-            mp.trigger('client:pauseMenuAction', action);
+        function setTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`.tab[onclick="setTab('${id}')"]`).classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        function receiveData(jsonString) {
+            const data = JSON.parse(jsonString);
+            const stats = data.stats;
+
+            // 1. Update Player Tab
+            document.getElementById('lvl-num').innerText = stats.level;
+            document.getElementById('xp-val').innerText = stats.xp;
+            document.getElementById('xp-max').innerText = stats.xpMax;
+            document.getElementById('xp-fill').style.width = (stats.xp / stats.xpMax * 100) + "%";
+
+            document.getElementById('cash-val').innerText = stats.money.toLocaleString();
+            document.getElementById('bank-val').innerText = stats.bank.toLocaleString();
+
+            document.getElementById('veh-count').innerText = stats.vehicleCount;
+            document.getElementById('veh-max').innerText = stats.maxVehicles;
+
+            document.getElementById('inv-weight').innerText = stats.weight;
+            document.getElementById('inv-max').innerText = stats.maxWeight;
+            document.getElementById('weight-fill').style.width = (stats.weight / stats.maxWeight * 100) + "%";
+
+            // 2. Update Jobs Tab
+            const jobsContainer = document.getElementById('jobs-container');
+            jobsContainer.innerHTML = '';
+            if(data.jobs.length === 0) jobsContainer.innerHTML = '<div style="color:#777; font-size:1.2rem; margin-left:10px;">No job history found. Visit the Job Center!</div>';
+            
+            data.jobs.forEach(job => {
+                const range = job.nextXp - job.prevXp;
+                const progress = job.xp - job.prevXp;
+                let pct = (progress / range) * 100;
+                if(pct > 100) pct = 100;
+                if(pct < 0) pct = 0; // Safety for lvl 1
+
+                const html = `
+                    <div class="job-card">
+                        <div class="job-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="job-details">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                                <span class="job-name">${job.name}</span>
+                                <span class="job-level">LVL ${job.level}</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px; background:rgba(255,255,255,0.1); margin-top:10px;">
+                                <div class="progress-fill" style="width:${pct}%; background:#f0c400;"></div>
+                            </div>
+                            <div style="font-size:0.8rem; color:#777; margin-top:5px; text-align:right;">${Math.floor(pct)}% to promotion</div>
+                        </div>
+                    </div>
+                `;
+                jobsContainer.innerHTML += html;
+            });
+
+            // 3. Update Quests Tab
+            const qContainer = document.getElementById('quests-container');
+            qContainer.innerHTML = '';
+            if(data.quests.length === 0) qContainer.innerHTML = '<div style="color:#777; font-size:1.1rem;">All daily quests completed or none available.</div>';
+
+            data.quests.forEach(q => {
+                const qPct = Math.min(100, (q.progress / q.targetAmount) * 100);
+                const isDone = q.completed ? 'done' : '';
+                const html = `
+                    <div class="quest-card ${isDone}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+                            <span style="font-weight:bold; font-size:1.1rem;">${q.title}</span>
+                            <span style="color:#2ecc71; font-weight:bold; font-size:1.1rem;">$${q.reward}</span>
+                        </div>
+                        <div style="font-size:0.95rem; color:#ccc; margin-bottom:12px;">${q.description}</div>
+                        <div class="progress-bar" style="height:8px; margin-top:0;">
+                            <div class="progress-fill" style="width:${qPct}%; background:${q.completed ? '#2ecc71' : '#00a2ff'}"></div>
+                        </div>
+                        <div style="text-align:right; font-size:0.85rem; color:#777; margin-top:5px;">${q.progress} / ${q.targetAmount}</div>
+                    </div>
+                `;
+                qContainer.innerHTML += html;
+            });
+
+            // Landmark Spotter
+            document.getElementById('ph-prog').innerText = data.photoHunt.progress;
+            document.getElementById('ph-total').innerText = data.photoHunt.total;
         }
     </script>
 </body>

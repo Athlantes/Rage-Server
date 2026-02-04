@@ -6,6 +6,7 @@ require('./commands');
 require('./phone/index');
 require('./questManager');
 require('./banking');
+require('./playerMenu');
 
 const vehicleManager = require('./vehicles/vehicleManager');
 

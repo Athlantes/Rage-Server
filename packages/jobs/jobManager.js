@@ -6,6 +6,11 @@ const availableJobs = new Map();
 
 const jobManager = {
 
+    // [NEW] Allow other scripts to get the list of jobs
+    getDefinitions: () => {
+        return availableJobs;
+    },
+
     // A. Load Skills when player joins
     loadJobSkills: async (player) => {
         if (!player.data.dbId) {
@@ -14,7 +19,7 @@ const jobManager = {
             return;
         }
 
-        console.log(`[Jobs] Loading skills for ${player.name} (DB ID: ${player.data.dbId})...`);
+        // console.log(`[Jobs] Loading skills for ${player.name}...`);
 
         const loadedSkills = {}; 
         try {
@@ -100,8 +105,6 @@ const jobManager = {
                     heading: pedData.h || 0,
                     dynamic: false, invincible: true, frozen: true
                 });
-                
-                // FIX: Use setVariable instead of playAnimation
                 if (pedData.anim) {
                     ped.setVariable('staticAnim', pedData.anim);
                 }
@@ -115,7 +118,7 @@ const jobManager = {
 
         player.activeJobId = jobId;
         player.setVariable('activeJobId', jobId);
-        player.jobPeds = []; // Initialize dynamic ped tracker
+        player.jobPeds = []; 
         player.call('showNotification', ['Job Center', `You started working as a ${job.config.name}.`]);
     },
 
@@ -123,7 +126,6 @@ const jobManager = {
         if (!player.activeJobId) return;
         const job = availableJobs.get(player.activeJobId);
 
-        // Clean up Job Peds
         jobManager.clearJobPeds(player);
 
         if (job && job.logic.onStop) job.logic.onStop(player);
@@ -134,7 +136,6 @@ const jobManager = {
     },
 
     // --- OBJECTIVE HELPERS ---
-
     createObjective: (player, pos, label, radius = 2.0, onEnterCallback, options = {}) => {
         jobManager.clearObjective(player);
 
@@ -169,7 +170,6 @@ const jobManager = {
     },
 
     // --- DYNAMIC PED HELPERS ---
-
     createJobPed: (player, model, pos, heading, anim = null) => {
         if (!player.jobPeds) player.jobPeds = [];
 
@@ -182,7 +182,6 @@ const jobManager = {
         });
 
         if (anim) {
-            // FIX: Use setVariable
             ped.setVariable('staticAnim', anim);
         }
 

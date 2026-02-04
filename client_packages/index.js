@@ -6,8 +6,6 @@ require('./camera.js');
 require('./core/cayo/heistisland.js');
 // 1. Core Utilities & Managers
 require('./core/pauseMenu.js');
-require('./core/jobMenu.js');
-require('./core/questMenu.js');
 require('./core/disableDefaults.js');
 require('./core/interaction.js');
 require('./core/keys.js');
