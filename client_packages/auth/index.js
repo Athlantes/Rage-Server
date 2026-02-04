@@ -69,6 +69,8 @@ mp.events.add('client:auth:destroy', () => {
 });
 
 mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos) => {
+    isAuthOpen = false; 
+
     // 1. Destroy Login Browser
     if (authBrowser) {
         authBrowser.destroy();
@@ -79,7 +81,6 @@ mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos) => {
     if (shouldSpawnSelector) {
         mp.gui.cursor.show(false, false);
         mp.events.call('client:spawn:openMenu', lastPos);
-
     } else {
         mp.gui.cursor.show(false, false);
 
