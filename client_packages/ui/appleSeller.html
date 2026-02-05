@@ -71,6 +71,18 @@
     </div>
 
     <script>
+        function notifyReady() {
+            if (window.mp) {
+                mp.trigger("client:farmer:browserReady");
+            } else {
+                // If RAGE isn't injected yet, try again in 20ms
+                setTimeout(notifyReady, 20);
+            }
+        }
+    
+        // Start checking as soon as the page loads
+        document.addEventListener("DOMContentLoaded", notifyReady);
+        
         function updateInfo(max, price) {
             document.getElementById('max-count').innerText = max;
             document.getElementById('price').innerText = price;

@@ -243,6 +243,7 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
             if (state.harvests_left <= 0) {
                 // Depleted -> Set Cooldown
                 state.cooldown_expiry = Date.now() + RECOVERY_TIME_MS;
+                player.call('showNotification', ['Farmer', `Collected Apple.`]);
                 player.call('showNotification', ['Farmer', `Tree depleted. Recovering...`]);
                 requiresSync = true; // Tree died, remove marker
             } else {
