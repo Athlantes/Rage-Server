@@ -35,6 +35,8 @@ class DumpsterSystem {
     }
 
     async handleSearch(player, dumpsterPos) {
+        if (player.vehicle) return;
+        
         // 1. Validation: Ensure player is actually near that location
         if (player.dist(new mp.Vector3(dumpsterPos.x, dumpsterPos.y, dumpsterPos.z)) >  2) {
             return; 

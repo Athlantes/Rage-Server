@@ -19,6 +19,15 @@ setInterval(() => {
     const player = mp.players.local;
     let found = null;
 
+    if (player.vehicle) {
+            nearbyDumpster = null;
+            if (lastInteractionState) {
+                mp.events.call('hideInteraction');
+                lastInteractionState = false;
+            }
+            return;
+        }
+
     // --- 1. Immediate Search/Animation Check ---
     if (isSearching) {
         if (lastInteractionState) {
@@ -93,6 +102,8 @@ mp.keys.bind(0x45, true, () => {
     if (isSearching) return; // Prevent spam
 
     const player = mp.players.local;
+
+    if (player.vehicle) return;
 
     // Double check constraints
     const serverCooldown = player.getVariable('cooldown_dumpster');
