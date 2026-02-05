@@ -26,7 +26,6 @@ require('./systems/dumpster.js');
 require('./systems/returo.js');
 require('./systems/atm.js');
 require('./systems/photoHunt');
-require('./systems/appleSeller.js');
 
 // 4. Jobs
 require('./jobs/manager.js');
