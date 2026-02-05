@@ -14,7 +14,7 @@ const RECOVERY_TIME_MS = 30 * 60 * 1000; // 30 Minutes
 const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
 const VEHICLE_SPAWN = { x: 2411.58, y: 4988.95, z: 45.43, h: 133.84 };
-const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22, h: 134.69 }; 
+const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22 }; 
 
 const TREES = [
     { id: 'tree_1', x: 2389.63, y: 4991.62, z: 45.15 },
@@ -47,21 +47,18 @@ const TREES = [
 const activeJobs = new Map();
 
 // --- HELPER: Random Harvest Count ---
-const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1; // 1 to 6 harvests
+const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1;
 
 // --- JOB LOGIC ---
 const logic = {
     onInteract: async (player) => { 
-        // 1. Check Level
         const level = jobManager.getJobLevel(player, JOB_KEY);
         if (level < JOB_REQUIREMENT_LEVEL) {
             return player.call('showNotification', ['Job Center', `You need Level ${JOB_REQUIREMENT_LEVEL} Farming.`]);
         }
 
-        // 2. Start Job Session
         jobManager.startJobSession(player, JOB_KEY);
         
-        // 3. Load Tree Data from DB
         const treeStates = {};
         try {
             const [rows] = await db.query('SELECT tree_id, harvests_left, cooldown_expiry FROM character_farm_trees WHERE character_id = ?', [player.data.dbId]);
@@ -75,19 +72,17 @@ const logic = {
             console.error(`[FARMER] Failed to load tree data for ${player.name}:`, err);
         }
 
-        // 4. Initialize Data
         activeJobs.set(player.id, {
             vehicle: null,
             treeStates: treeStates 
         });
 
-        // 5. Sync Visual Markers
         syncTreeMarkers(player);
-
+        
+        // [NEW] Enable Seller for this player
         player.call('client:farmer:toggleSeller', [true]);
 
-        // 6. Notify (No forced objective)
-        player.call('showNotification', ['Farmer', 'Job started. You can use the Garage to spawn a tractor.']);
+        player.call('showNotification', ['Farmer', 'Job started. Use the Garage or go to the fields.']);
     },
     
     onStop: (player) => {
@@ -98,7 +93,8 @@ const logic = {
         activeJobs.delete(player.id);
         jobManager.clearObjective(player);
         player.call('client:farmer:clearMarkers'); 
-
+        
+        // [NEW] Disable Seller for this player
         player.call('client:farmer:toggleSeller', [false]);
     }
 };
@@ -112,7 +108,7 @@ function spawnTractor(player) {
     if (data.vehicle && mp.vehicles.exists(data.vehicle)) data.vehicle.destroy();
 
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    const model = level > 20 ? 'warrener2' : 'tractor2'; 
+    const model = level > 20 ? 'bodhi2' : 'warrener2'; 
 
     data.vehicle = mp.vehicles.new(mp.joaat(model), new mp.Vector3(VEHICLE_SPAWN.x, VEHICLE_SPAWN.y, VEHICLE_SPAWN.z), {
         heading: VEHICLE_SPAWN.h,
@@ -143,14 +139,12 @@ function syncTreeMarkers(player) {
 
     TREES.forEach(tree => {
         const state = data.treeStates[tree.id];
-        
         let isAvailable = true;
         if (state) {
             if (state.harvests_left <= 0 && state.cooldown_expiry > now) {
                 isAvailable = false;
             }
         }
-
         if (isAvailable) {
             validTrees.push({ x: tree.x, y: tree.y, z: tree.z });
         }
@@ -170,7 +164,6 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     if (!treeInfo) return;
     const treeId = treeInfo.id;
 
-    // Get or Init Tree State
     let state = data.treeStates[treeId];
     if (!state) {
         state = { harvests_left: getRandomHarvests(), cooldown_expiry: 0 };
@@ -180,20 +173,17 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     const now = Date.now();
     let requiresSync = false;
 
-    // Logic: Check Cooldown
     if (state.cooldown_expiry > now) {
         const minsLeft = Math.ceil((state.cooldown_expiry - now) / 60000);
         return player.call('showNotification', ['Farmer', `This tree is recovering. Available in ${minsLeft} mins.`]);
     }
 
-    // Logic: Reset if cooldown finished
     if (state.harvests_left <= 0 && state.cooldown_expiry <= now) {
         state.harvests_left = getRandomHarvests();
         state.cooldown_expiry = 0;
         requiresSync = true; 
     }
 
-    // Freeze & Animate
     player.call('client:freezePlayer', [true]);
     player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
 
@@ -202,14 +192,10 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
         player.stopAnimation();
         player.call('client:freezePlayer', [false]);
 
-        // Inventory Check
         const amount = 1; 
         if (await inventory.addItem(player, 'apple', amount)) {
-            
             state.harvests_left--;
-
             if (state.harvests_left <= 0) {
-                // Depleted -> Set Cooldown
                 state.cooldown_expiry = Date.now() + RECOVERY_TIME_MS;
                 player.call('showNotification', ['Farmer', `Collected Apple.`]);
                 player.call('showNotification', ['Farmer', `Tree depleted. Recovering...`]);
@@ -218,7 +204,6 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
                 player.call('showNotification', ['Farmer', `Collected Apple.`]);
             }
 
-            // Save to DB
             try {
                 await db.query(`
                     INSERT INTO character_farm_trees (character_id, tree_id, harvests_left, cooldown_expiry) 
@@ -227,13 +212,8 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
                 `, [player.data.dbId, treeId, state.harvests_left, state.cooldown_expiry]);
             } catch(e) { console.error(e); }
 
-            // Sync visual markers if status changed
             if (requiresSync) syncTreeMarkers(player);
-
-            // Give XP
             await jobManager.addJobXp(player, JOB_KEY, 1);
-            // REMOVED: checkInventoryStatus(player); 
-
         } else {
             player.call('showNotification', ['Inventory', 'Inventory Full! Go sell your apples.']);
         }
@@ -242,8 +222,9 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
 
 // --- SELLER INTERACTION ---
 mp.events.add('server:farmer:openSeller', (player) => {
+    // [SECURITY] Ensure player has the job
     if (player.activeJobId !== JOB_KEY) return;
-    
+
     let appleCount = 0;
     if (player.inventory) {
         player.inventory.forEach(item => { if (item.itemId === 'apple') appleCount += item.count; });
@@ -256,6 +237,7 @@ mp.events.add('server:farmer:openSeller', (player) => {
 });
 
 mp.events.add('server:farmer:sell', async (player, amount) => {
+    if (player.activeJobId !== JOB_KEY) return;
     amount = parseInt(amount);
     if (amount <= 0) return;
 
@@ -312,24 +294,7 @@ TREES.forEach((tree, index) => {
     });
 });
 
-// Create Seller Interaction
-const sellerCol = mp.colshapes.newSphere(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z, 2.0);
-sellerCol.setVariable('interaction', {
-    title: 'Apple Seller', 
-    text: 'Press E to Sell', 
-    event: 'server:farmer:openSeller', 
-    requireOnFoot: true
-});
-
-mp.peds.new(mp.joaat('cs_old_man2'), new mp.Vector3(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z), {
-    heading: SELLER_NPC.h, dynamic: false, invincible: true, frozen: true
-});
-
-mp.blips.new(605, new mp.Vector3(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z), {
-    name: 'Apple Wholesaler', color: 1, shortRange: true, scale: 0.8
-});
-
-// --- NEW GARAGE INTERACTION ---
+// --- GARAGE INTERACTION ---
 mp.events.add('server:farmer:spawnTractor', (player) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You are not on the clock.']);
     spawnTractor(player);
