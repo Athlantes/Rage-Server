@@ -41,14 +41,31 @@ const playerManager = {
         }
     },
 
-    removeMoney: (player, amount, reason = "Unknown") => {
+    removeMoneyAndSave: async (player, amount, reason = "Unknown") => {
         if (!player || !mp.players.exists(player)) return false;
+        
+        // Check balance before proceeding
         if (player.data.money < amount) return false;
 
+        // 1. Update Memory immediately
         player.data.money -= amount;
         player.setVariable('money', player.data.money);
-        console.log(`[Economy] ${player.name} spent $${amount} (${reason}). Total: ${player.data.money}`);
-        return true;
+
+        // 2. Immediate Database Write
+        try {
+            const dbId = player.data.dbId;
+            if (!dbId) return false;
+
+            // Use subtractive SQL logic
+            await db.query("UPDATE users SET money = money - ? WHERE id = ?", [amount, dbId]);
+
+            console.log(`[Economy-Secure] ${player.name} -$${amount} (${reason}). DB Synced.`);
+            return true;
+        } catch (err) {
+            console.error(`[CRITICAL] Failed to sync money removal for ${player.name}:`, err);
+            // Note: Money was already removed from memory.
+            return false;
+        }
     },
 
     saveAccount: async (player) => {
