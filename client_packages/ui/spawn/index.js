@@ -47,6 +47,13 @@ mp.events.add('client:spawn:select', (index) => {
 
     // Tell Server
     mp.events.callRemote('server:spawn:player', index);
+
+    const player = mp.players.local;
+
+    player.freezePosition(false);
+    player.setVisible(true, false);
+    player.setAlpha(255);
+    player.setInvincible(false);
     
     // Cam Fade
     setTimeout(() => {

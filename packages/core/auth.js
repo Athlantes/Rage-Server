@@ -244,6 +244,7 @@ function startSession(player, userData) {
     player.setVariable('adminLevel', player.data.adminLevel);
 
     // Load Economy & Stats
+    player.model = (player.data.gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
     player.data.money = userData.money;
     player.data.bank_money = userData.bank_money || 0;
     player.setVariable('money', userData.money);
@@ -251,6 +252,7 @@ function startSession(player, userData) {
     player.data.vehicle_slots = userData.vehicle_slots;
 
     // Init Managers
+    CharCreator.applyAppearance(player, userData.appearance);
     PhotoHuntManager.initPlayer(player);
     QuestManager.initPlayer(player);
     Banking.initAccount(player);

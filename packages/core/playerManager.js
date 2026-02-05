@@ -56,7 +56,6 @@ const playerManager = {
 
         const name = player.name; 
         const dbId = player.data.dbId;
-        const money = player.data.money;
         const level = player.data.level;
         let currentPos;
 
@@ -68,8 +67,8 @@ const playerManager = {
 
         try {
             await db.query(
-                "UPDATE users SET money=?, level=?, position=? WHERE id=?", 
-                [money, level, currentPos, dbId]
+                "UPDATE users SET level=?, position=? WHERE id=?", 
+                [level, currentPos, dbId]
             );
             console.log(`[Data] Saved account: ${name}`);
         } catch (e) {
