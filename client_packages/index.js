@@ -30,5 +30,6 @@ require('./systems/photoHunt');
 // 4. Jobs
 require('./jobs/manager.js');
 require('./jobs/garbage.js');
+require('./jobs/farmer.js');
 
 require('./creator/index.js');
