@@ -5,160 +5,313 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select Spawn</title>
     <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #191919; }
+        /* Import Poppins to match Auth theme */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Poppins', sans-serif; 
+            background: #191919; 
+            user-select: none;
+        }
         
-        /* FIX: Match background to the map's ocean color to hide white flashes */
+        /* FULL SCREEN MAP BEHIND UI */
         #map { 
             width: 100vw; 
             height: 100vh; 
             z-index: 1; 
-            background: #191919; 
+            background: #191919; /* Ocean color match */
         }
+        .leaflet-container { background: #191919 !important; }
 
-        /* Force Leaflet to use this background */
-        .leaflet-container {
-            background: #191919 !important;
-        }
-
-        /* Floating Sidebar */
-        .sidebar {
+        /* UI LAYER (Glassmorphism Overlay) */
+        .ui-layer {
             position: absolute;
-            top: 50%;
-            left: 50px;
-            transform: translateY(-50%);
-            width: 320px;
-            background: rgba(20, 20, 25, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            top: 0; left: 0; right: 0; bottom: 0;
             z-index: 100;
-            color: white;
-            border-left: 4px solid #f8b632; /* Orange accent */
+            pointer-events: none; /* Allow clicks to pass to map where empty */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px;
+            background: radial-gradient(circle at center, transparent 0%, rgba(10, 15, 20, 0.4) 100%);
         }
 
-        h1 { margin: 0 0 10px 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-        p { color: #888; margin-bottom: 25px; font-size: 14px; }
+        /* HEADER TITLE */
+        .header-title {
+            text-align: center;
+            margin-top: 60px;
+            pointer-events: auto;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            animation: floatInDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
-        .location-btn {
+        .header-title h1 {
+            color: white;
+            font-weight: 800;
+            font-size: 42px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            /* Gradient Text from Auth */
+            background: linear-gradient(to right, #fff, #a5c9ca);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: #cbd5e1;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            font-weight: 300;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        /* BOTTOM SPAWN SELECTOR */
+        .spawn-selector-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            pointer-events: auto;
+            animation: floatInUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 20px;
+        }
+
+        .spawn-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+
+        /* SPAWN CARDS */
+        .spawn-card {
+            width: 160px;
+            height: 140px;
+            /* Auth Theme: Blue-Gray Glass */
+            background: rgba(15, 23, 35, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(100, 180, 255, 0.15);
+            border-radius: 16px;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spawn-card:hover {
+            transform: translateY(-8px);
+            background: rgba(25, 35, 50, 0.85);
+            border-color: rgba(0, 168, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 168, 255, 0.15);
+        }
+
+        .spawn-card.active {
+            background: rgba(0, 168, 255, 0.15);
+            border-color: #00a8ff;
+            box-shadow: 0 0 30px rgba(0, 168, 255, 0.25);
+            transform: translateY(-8px);
+        }
+
+        /* Card Icons */
+        .spawn-card i {
+            font-size: 32px;
+            color: #64748b;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        
+        .spawn-card.active i, .spawn-card:hover i {
+            color: #00a8ff;
+            transform: scale(1.1);
+        }
+
+        .spawn-card h3 {
+            margin: 0;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .spawn-card span {
+            color: #94a3b8;
+            font-size: 10px;
+            margin-top: 4px;
             display: block;
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #2a2a2e;
-            border: 1px solid #333;
-            color: #ccc;
-            border-radius: 6px;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.3s;
-            font-weight: 600;
+            font-weight: 400;
         }
 
-        .location-btn:hover {
-            background: #333;
-            border-color: #555;
-            padding-left: 20px; /* Slide effect */
-            color: white;
+        /* SPECIAL STYLE FOR 'LAST LOCATION' */
+        .spawn-card.special {
+            border-color: rgba(255, 215, 0, 0.3);
         }
-
-        .location-btn.active {
-            background: #f8b632;
-            color: #111;
-            border-color: #f8b632;
+        .spawn-card.special i { color: #ffd700; opacity: 0.8; }
+        .spawn-card.special:hover { border-color: rgba(255, 215, 0, 0.6); }
+        .spawn-card.special.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
         }
+        .spawn-card.special.active i { color: #ffd700; opacity: 1; }
 
+        /* WAKE UP BUTTON */
         .btn-spawn {
-            margin-top: 20px;
-            width: 100%;
-            padding: 15px;
-            background: #f8b632;
-            color: #111;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+            padding: 16px 60px;
+            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); /* Auth Button Gradient */
+            color: white;
+            font-weight: 700;
             font-size: 16px;
             text-transform: uppercase;
-            transition: background 0.2s;
+            letter-spacing: 2px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(0, 114, 255, 0.3);
+            
+            /* Hidden state */
+            opacity: 0; 
+            transform: translateY(20px);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .btn-spawn:hover { background: #e0a42e; }
-        .btn-spawn:disabled { background: #444; color: #777; cursor: not-allowed; }
+        /* Show button when spawn selected */
+        .btn-spawn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .btn-spawn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 114, 255, 0.5);
+        }
+
+        .btn-spawn:active { transform: scale(0.98); }
+
+        /* Animations */
+        @keyframes floatInDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes floatInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
 
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h1>Welcome Back</h1>
-        <p>Select a location to wake up.</p>
-        <div id="locationList"></div>
-        <button id="spawnBtn" class="btn-spawn" onclick="confirmSpawn()" disabled>Spawn Here</button>
+
+    <div class="ui-layer">
+        <div class="header-title">
+            <h1>Welcome Back</h1>
+            <p>Where does your story continue today?</p>
+        </div>
+
+        <div class="spawn-selector-container">
+            <div id="locationList" class="spawn-row">
+                </div>
+            
+            <button id="spawnBtn" class="btn-spawn" onclick="confirmSpawn()">
+                <i class="fas fa-sign-in-alt"></i> Wake Up
+            </button>
+        </div>
     </div>
+
     <div id="map"></div>
 
     <script src="../lib/leaflet/leaflet.js"></script>
     <script src="../lib/customMap.js"></script>
 
     <script>
+        // Init Map
         const spawnMap = new GameMap('map', { initialZoom: 3, minZoom: 2, maxZoom: 5 });
         spawnMap.disableInteraction(); 
 
-        let selectedSpawnIndex = null; // Changed from -1 to null for clarity
+        let selectedSpawnIndex = null;
 
-        // Standard Spawns
+        // Enhanced Spawn List with Icons (Font Awesome classes)
         const spawns = [
-            { name: "Legion Square", x: 206.56, y: -909.89, desc: "Central meeting point." },
-            { name: "Vinewood Blvd", x: 384.62, y: 260.67, desc: "The heart of the city." },
-            { name: "Sandy Shores", x: 1941.40, y: 3747.01, desc: "Desert safezone." },
-            { name: "Paleto Bay", x: -113.84, y: 6445.62, desc: "Northern getaway." },
-            { name: "LS Airport", x: -1037.76, y: -2737.67, desc: "Travel hub." }
+            { name: "Legion Square", x: 206.56, y: -909.89, desc: "City Center", icon: "fa-users" },
+            { name: "Vinewood Blvd", x: 384.62, y: 260.67, desc: "Entertainment", icon: "fa-star" },
+            { name: "Sandy Shores", x: 1941.40, y: 3747.01, desc: "Desert Region", icon: "fa-sun" },
+            { name: "Paleto Bay", x: -113.84, y: 6445.62, desc: "Northern Coast", icon: "fa-tree" },
+            { name: "LS Airport", x: -1037.76, y: -2737.67, desc: "Travel Hub", icon: "fa-plane" }
         ];
 
-        // NEW FUNCTION: Called from Client Script
+        // ADD LAST LOCATION CARD
         function addLastLocation(jsonPos) {
             const pos = JSON.parse(jsonPos);
             const list = document.getElementById('locationList');
 
-            // Create Special Button
-            const el = document.createElement('button');
-            el.className = 'location-btn';
-            // Use a different style or icon to make it stand out
-            el.style.borderLeft = "4px solid #fff"; 
-            el.innerHTML = `LAST LOCATION <span style="font-size:11px; color:#aaa; display:block;">Resume where you left off</span>`;
+            const card = document.createElement('div');
+            card.className = 'spawn-card special';
+            card.innerHTML = `
+                <i class="fas fa-history"></i>
+                <h3>Last Location</h3>
+                <span>Resume previous position</span>
+            `;
             
-            // Special OnClick: Pass -1 as index
-            el.onclick = () => {
-                selectLocation(-1, el, pos.x, pos.y);
+            card.onclick = () => {
+                selectLocation(-1, card, pos.x, pos.y);
             };
 
-            // Add to TOP of list
-            list.insertBefore(el, list.firstChild);
+            // Prepend to list
+            if(list.firstChild) {
+                list.insertBefore(card, list.firstChild);
+            } else {
+                list.appendChild(card);
+            }
         }
 
-        // Render Standard List
+        // RENDER STANDARD SPAWNS
         const list = document.getElementById('locationList');
         spawns.forEach((spawn, index) => {
-            const el = document.createElement('button');
-            el.className = 'location-btn';
-            el.innerHTML = `${spawn.name} <span style="font-size:11px; color:#888; font-weight:normal; display:block;">${spawn.desc}</span>`;
-            el.onclick = () => selectLocation(index, el, spawn.x, spawn.y);
-            list.appendChild(el);
+            const card = document.createElement('div');
+            card.className = 'spawn-card';
+            card.innerHTML = `
+                <i class="fas ${spawn.icon}"></i>
+                <h3>${spawn.name}</h3>
+                <span>${spawn.desc}</span>
+            `;
+            card.onclick = () => selectLocation(index, card, spawn.x, spawn.y);
+            list.appendChild(card);
         });
 
-        // Updated Selection Logic
+        // SELECTION LOGIC
         function selectLocation(index, element, x, y) {
             selectedSpawnIndex = index;
             
-            document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('active'));
+            // Handle Visual Active State
+            document.querySelectorAll('.spawn-card').forEach(c => c.classList.remove('active'));
             element.classList.add('active');
             
+            // Show Confirm Button
             const btn = document.getElementById('spawnBtn');
-            btn.disabled = false;
-            btn.innerText = index === -1 ? "Spawn at Last Loc" : "Spawn at Location";
-
-            // Map FlyTo
+            btn.classList.add('visible');
+            
+            // Map Animation
             const target = [y, x]; 
             spawnMap.getInstance().flyTo(target, 5, { animate: true, duration: 1.5 });
             spawnMap.setMarkers([{x: x, y: y}], {
@@ -168,8 +321,10 @@
             });
         }
 
+        // CONFIRM
         function confirmSpawn() {
             if(selectedSpawnIndex === null) return;
+            // Play a sound or visual effect here if desired
             mp.trigger('client:spawn:select', selectedSpawnIndex);
         }
     </script>
