@@ -16,6 +16,14 @@ module.exports = {
         maxStack: 5,
         icon: "water.png"
     },
+    "apple": {
+        name: "Apple",
+        type: "food",
+        weight: 0.1,
+        isEquippable: true, // <--- ALLOW
+        maxStack: 20,
+        icon: "apple.png"
+    },
 
     // --- DUMPSTER LOOT ---
     "scrap_metal": {

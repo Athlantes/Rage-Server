@@ -1,13 +1,14 @@
 const db = require('../../core/database');
+const inventory = require('../../systems/inventory');
 const zones = require('../../zones/index');
 const jobManager = require('../jobManager');
 
 // --- CONFIGURATION ---
 const JOB_LEVEL_REQ = 10;
 const TREE_COOLDOWN = 30 * 60 * 1000; // 30 Minutes
+const JOB_BLIP_COORDS = new mp.Vector3(2415.25, 4977.49, 46.23);
 
-// COORDINATES FOR EXISTING MAP TREES
-// Go in-game, stand next to a tree, type /save tree, and copy the coords here.
+// --- COORDINATES ---
 const EXISTING_TREES = [
     { id: 'tree_1', x: 2389.63, y: 4991.62, z: 45.15 },
     { id: 'tree_2', x: 2374.04, y: 4988.31, z: 43.99 },
@@ -43,84 +44,77 @@ const CROP_TYPES = {
 
 let activeCrops = [];
 
-// --- INIT ---
+// --- HELPER: CUSTOM CHAT ---
+function sendChat(player, message) {
+    if(!player || !mp.players.exists(player)) return;
+    player.outputChatBox(message);
+    if ('call' in player) player.call('chat:push', [message]);
+}
+
+// --- INITIALIZATION ---
 async function initFarmerJob() {
-    console.log("[Farmer] Initializing Real-Map Integration...");
+    console.log("[Farmer] Initializing Grapeseed Farm...");
 
-    // 1. CREATE THE GENERIC JOB BLIP & JOB UNLOCK
-    // This places the Blip on the map
-    jobManager.register('farmer', {
-        name: "Farmer",
-        pos: { x: 2446.0, y: 4975.0, z: 46.5, h: 45 }, // Main Farm House
-        pedModel: 's_m_m_gardener_01', 
-        blipSprite: 88, // Farm icon
-        blipColor: 25,  // Earthy color
-        onStart: (player) => {
-            if (player.data.level < JOB_LEVEL_REQ) {
-                player.notify(`~r~You need Level ${JOB_LEVEL_REQ} to work here.`);
-                return jobManager.stopJob(player);
-            }
-            // Give Uniform
-            player.setClothes(11, 120, 0, 0); 
-            player.setClothes(4, 98, 0, 0);
-            player.notify("~g~You are now a Farmer. Talk to the section managers.");
-        }
-    }, {}); // Passing empty object {} as options
-
-    // 2. SPAWN THE 3 SUB-NPCS (No Blips)
-    
-    // NPC A: Orchard Keeper (Near the trees)
-    spawnWorkerNPC('s_m_m_migrant_01', 2395.16, 4983.64, 45.33, -155.93, "Orchard Keeper", "Sell Apples");
-    
-    // NPC B: Animal Handler (Near the barns)
-    spawnWorkerNPC('a_c_cow', 2441.0, 4755.0, 34.0, 45, "Head Cow", "Moo?"); // Just a joke placeholder, swap for a human model if needed
-    spawnWorkerNPC('s_m_m_countrybar_01', 2416.11, 4993.71, 46.23, 134.87, "Animal Handler", "Manage Livestock");
-
-    // NPC C: Field Manager (Near the fields)
-    spawnWorkerNPC('s_m_y_airworker', 2435.55, 4975.88, 46.57, 47.72, "Field Manager", "Crop Info");
-
-    // 3. SETUP EXISTING TREES (Invisible Interactions)
-    EXISTING_TREES.forEach(tree => {
-        // We do NOT spawn an object. We just put the interaction point.
-        createInteractionPoint(tree.x, tree.y, tree.z, "Apple Tree", `server:farmer:tree`, tree.id);
+    // 1. CREATE MAIN JOB BLIP
+    mp.blips.new(88, JOB_BLIP_COORDS, {
+        name: "Farmer Job",
+        color: 25, 
+        shortRange: true,
+        scale: 1.0,
+        dimension: 0
     });
 
-    // 4. LOAD CROPS FROM DB
-    const [rows] = await db.query("SELECT * FROM player_crops");
-    rows.forEach(spawnCropVisual);
+    // 2. SPAWN WORKER NPCs
+    spawnWorkerNPC('s_m_m_migrant_01', 2395.16, 4983.64, 45.33, -155.93, "Orchard Keeper", "Sell Apples");
+    spawnWorkerNPC('s_m_m_countrybar_01', 2416.11, 4993.71, 46.23, 134.87, "Animal Handler", "Manage Livestock");
+    spawnWorkerNPC('s_m_y_airworker', 2435.55, 4975.88, 46.57, 47.72, "Field Manager", "Crop Info");
+
+    // 3. SETUP TREES
+    EXISTING_TREES.forEach(tree => {
+        createInteractionPoint(tree.x, tree.y, tree.z, "Apple Tree", `server:farmer:treeInteract`, tree.id);
+    });
+
+    // 4. LOAD CROPS (Crops persist, Job does not)
+    try {
+        const [rows] = await db.query("SELECT * FROM player_crops");
+        if(rows) rows.forEach(spawnCropVisual);
+    } catch (e) { console.log("[Farmer] DB Error: " + e); }
 }
-initFarmerJob();
 
-// --- HELPER FUNCTIONS ---
-
-function spawnWorkerNPC(model, x, y, z, h, name, interactionText) {
+// --- FUNCTIONS ---
+function spawnWorkerNPC(model, x, y, z, h, name, jobPart) {
     const ped = mp.peds.new(mp.joaat(model), new mp.Vector3(x, y, z), {
         heading: h,
         dynamic: false,
-        invincible: true
+        frozen: true,
+        invincible: true,
+        dimension: 0
     });
     
-    // Create text label above head (optional)
-    mp.labels.new(name, new mp.Vector3(x, y, z + 2.0), { los: true, font: 4, drawDistance: 10 });
+    mp.labels.new(`${name}\n~y~${jobPart}`, new mp.Vector3(x, y, z + 2.0), { 
+        los: true, font: 4, drawDistance: 10, dimension: 0 
+    });
 
-    // Interaction point
-    createInteractionPoint(x, y, z, name, 'server:farmer:npcTalk', name); 
+    createInteractionPoint(x, y, z, name, 'server:farmer:npcTalk', name);
 }
 
 function createInteractionPoint(x, y, z, label, eventName, dataStr) {
-    const shape = mp.colshapes.newTube(x, y, z, 2.0, 2.0);
+    const shape = mp.colshapes.newTube(x, y, z, 1.5, 2.0, 0);
     shape.setVariable('interaction', {
         title: label,
         text: "Press E",
+        key: 69, 
         event: eventName,
         data: dataStr
     });
 }
 
 function spawnCropVisual(cropData) {
+    if (!CROP_TYPES[cropData.type]) return;
     const model = CROP_TYPES[cropData.type].object;
     const obj = mp.objects.new(mp.joaat(model), new mp.Vector3(cropData.x, cropData.y, cropData.z - 1.0), {
-        rotation: new mp.Vector3(0, 0, Math.random() * 360)
+        rotation: new mp.Vector3(0, 0, Math.random() * 360),
+        dimension: 0
     });
     cropData.objectHandle = obj;
     activeCrops.push(cropData);
@@ -128,43 +122,78 @@ function spawnCropVisual(cropData) {
 
 // --- EVENTS ---
 
-mp.events.add('server:farmer:tree', async (player, treeId) => {
-    // 1. Check Job
-    if (player.activeJobId !== 'farmer') return player.notify("~r~Farmers only.");
-
-    // 2. Check Cooldown
-    const [rows] = await db.query("SELECT last_action FROM player_farm_cooldowns WHERE user_id = ? AND object_id = ?", [player.data.dbId, treeId]);
-    if (rows.length > 0) {
-        const diff = Date.now() - rows[0].last_action;
-        if (diff < TREE_COOLDOWN) return player.notify("~y~Tree empty.");
-    }
-
-    // 3. Animation & Reward
-    player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
-    setTimeout(async () => {
-        player.stopAnimation();
-        // Give Apples (Add to your inventory logic)
-        // inventory.giveItem(player, 'apple', 3);
-        player.notify("~g~Collected Apples.");
-
-        // Set Cooldown
-        await db.query(`INSERT INTO player_farm_cooldowns (user_id, object_id, last_action) VALUES (?, ?, ?) 
-            ON DUPLICATE KEY UPDATE last_action = VALUES(last_action)`, 
-            [player.data.dbId, treeId, Date.now()]
-        );
-    }, 4000);
-});
-
-// Event for talking to the specific NPCs
 mp.events.add('server:farmer:npcTalk', (player, npcName) => {
-    if (npcName === "Orchard Keeper") {
-        player.notify("~b~Keeper: ~w~Go find the ripe trees. I buy apples for $2 each.");
-        // Open a selling menu here if you want
+    // 1. Level Check
+    if (player.data.level < JOB_LEVEL_REQ) {
+        return player.notify(`~r~You need Level ${JOB_LEVEL_REQ} for this work.`);
     }
+
+    // 2. Assign Temporary Job (RAM only)
+    if (player.data.job !== 'farmer') {
+        player.data.job = 'farmer'; // Sets it for this session only
+        
+        sendChat(player, "!{#00FF00}[Farm] !{#FFFFFF}You signed in. This job resets when the city sleeps.");
+        player.notify("~g~You are now a Farmer!");
+    }
+
+    // 3. Dialogue
+    if (npcName === "Orchard Keeper") {
+        sendChat(player, "!{#FFFF00}[Keeper] !{#FFFFFF}Go to the trees behind me. Pick apples, but don't overharvest!");
+    } 
     else if (npcName === "Animal Handler") {
-        player.notify("~b~Handler: ~w~Bring me grain sacks to feed the cows.");
+        sendChat(player, "!{#FFFF00}[Handler] !{#FFFFFF}The cows are hungry. Grab sacks from the barn.");
     }
     else if (npcName === "Field Manager") {
-        player.notify("~b~Manager: ~w~Plant seeds in the designated zones.");
+        sendChat(player, "!{#FFFF00}[Manager] !{#FFFFFF}Plant seeds in the marked fields. I'll text you when they grow.");
     }
 });
+
+mp.events.add('server:farmer:treeInteract', async (player, treeId) => {
+    // Security Check
+    if (player.data.job !== 'farmer') return player.notify("~r~You must sign in with the Orchard Keeper first.");
+
+    try {
+        // A. Check Cooldown (Keep DB for this so they can't relog to reset trees)
+        const [rows] = await db.query("SELECT last_action FROM player_farm_cooldowns WHERE user_id = ? AND object_id = ?", [player.data.dbId, treeId]);
+        
+        if (rows.length > 0) {
+            const diff = Date.now() - rows[0].last_action;
+            if (diff < TREE_COOLDOWN) {
+                const minLeft = Math.ceil((TREE_COOLDOWN - diff) / 60000);
+                return player.notify(`~y~Tree is empty. Ready in ${minLeft} min.`);
+            }
+        }
+
+        // B. Animation
+        player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
+        player.notify("~g~Harvesting...");
+
+        // C. Give Item
+        setTimeout(async () => {
+            if (!mp.players.exists(player)) return;
+            player.stopAnimation();
+
+            const amount = Math.floor(Math.random() * 3) + 1;
+            const success = await inventory.addItem(player, 'apple', amount); // Fixed function call
+
+            if (success) {
+                player.notify(`~g~+${amount} Apples`);
+                sendChat(player, `!{#00FF00}[Farm] !{#FFFFFF}You collected ${amount} apples.`);
+                
+                await db.query(`INSERT INTO player_farm_cooldowns (user_id, object_id, last_action) VALUES (?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE last_action = VALUES(last_action)`, 
+                    [player.data.dbId, treeId, Date.now()]
+                );
+            } else {
+                player.notify("~r~Inventory Full!");
+            }
+        }, 4000);
+
+    } catch (err) {
+        console.error(err);
+        player.notify("~r~Server Error");
+    }
+});
+
+initFarmerJob();
+module.exports = { initFarmerJob };

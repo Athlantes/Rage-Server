@@ -6,3 +6,4 @@ require('./atm');
 require('./charCreator');
 require('./scooter');
 require('./photoHunt/photoHuntManager');
+require('./appleSeller');
