@@ -79,6 +79,11 @@ const jobManager = {
     // --- JOB REGISTRATION & MANAGEMENT ---
     register: (id, config, logic) => {
         if (availableJobs.has(id)) return console.log(`[Jobs] Error: ID ${id} exists.`);
+        
+        // Ensure default description/buttons if missing
+        if (!config.description) config.description = "Perform tasks to earn money and experience.";
+        if (!config.previewButtons) config.previewButtons = [{ label: "Start Job", action: "default" }];
+
         availableJobs.set(id, { config, logic });
 
         // 1. Create Main Job Interaction Ped
@@ -219,10 +224,28 @@ mp.events.add('server:job:requestStart', (player) => {
 
     const job = availableJobs.get(closestId);
 
+    // Send data to client for the UI
+    player.call('client:job:openPreview', [{
+        id: closestId,
+        name: job.config.name,
+        description: job.config.description,
+        pos: job.config.pos, // Needed for camera
+        buttons: job.config.previewButtons
+    }]);
+});
+
+mp.events.add('server:job:continue', (player, jobId, action) => {
+    // Basic validation
+    const job = availableJobs.get(jobId);
+    if (!job) return;
+    if (player.activeJobId) return; // Anti-cheat/double click check
+
     if (job.logic.onInteract) {
-        job.logic.onInteract(player);
+        // Pass the 'action' (e.g., 'apple', 'crop') to the job logic
+        job.logic.onInteract(player, action);
     } else {
-        jobManager.startJobSession(player, closestId);
+        // Fallback for simple jobs (Courier) that rely on onStart
+        jobManager.startJobSession(player, jobId);
         if (job.logic.onStart) job.logic.onStart(player);
     }
 });

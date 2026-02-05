@@ -51,7 +51,16 @@ const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1;
 
 // --- JOB LOGIC ---
 const logic = {
-    onInteract: async (player) => { 
+    onInteract: async (player, action) => { 
+        // Handle specific activities
+        if (action === 'crop') {
+            return player.call('showNotification', ['Farmer', 'Crop planting is coming soon!']);
+        }
+        if (action === 'animal') {
+            return player.call('showNotification', ['Farmer', 'Animal keeping is coming soon!']);
+        }
+
+        // Default 'apple' logic below:
         const level = jobManager.getJobLevel(player, JOB_KEY);
         if (level < JOB_REQUIREMENT_LEVEL) {
             return player.call('showNotification', ['Job Center', `You need Level ${JOB_REQUIREMENT_LEVEL} Farming.`]);
@@ -276,6 +285,12 @@ mp.events.add('server:farmer:sell', async (player, amount) => {
 // --- INITIALIZATION ---
 jobManager.register(JOB_KEY, {
     name: 'Farmer',
+    description: "Work in the fields harvesting crops, planting seeds, or taking care of farm animals.",
+    previewButtons: [
+        { label: "Apple Collector", action: "apple" },
+        { label: "Crop Planter", action: "crop" },
+        { label: "Animal Keeper", action: "animal" }
+    ],
     pedModel: 'a_m_m_farmer_01', 
     pos: JOB_NPC,
     blipSprite: 496, 

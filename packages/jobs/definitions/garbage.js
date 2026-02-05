@@ -537,6 +537,10 @@ mp.events.add('vehicleDeath', (vehicle) => {
 
 const JOB_CONFIG = {
     name: "Sanitation Worker",
+    description: "Help keep the city clean. Select a route and collect trash bags from dumpsters.",
+    previewButtons: [
+        { label: "Select Route", action: "default" }
+    ],
     pedModel: "s_m_y_garbage", 
     blipSprite: 318, 
     blipColor: 26,   

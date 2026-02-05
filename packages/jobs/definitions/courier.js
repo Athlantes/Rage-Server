@@ -12,7 +12,11 @@ const DEPOT_CONFIG = {
 
 const JOB_CONFIG = {
     name: "GoPostal Courier",
-    pedModel: "s_m_m_postal_01", 
+    description: "Pick up packages from the depot and deliver them to doorsteps around the city.",
+    previewButtons: [
+        { label: "Start Job", action: "default" }
+    ],
+    pedModel: "s_m_m_postal_01",
     blipSprite: 616, 
     blipColor: 26,
     pos: { x: 82.65, y: 132.93, z: 80.53, h: 67.59 },
