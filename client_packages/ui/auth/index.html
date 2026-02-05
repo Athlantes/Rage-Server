@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Server Login</title>
+    <title>Central Online - Login</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 
     <div class="auth-wrapper">
+        <h1 class="server-title">Central Online</h1>
+        
         <div id="notification" class="notification hidden"></div>
 
         <div id="login-panel">
@@ -24,22 +26,24 @@
                 <i class="fas fa-lock"></i>
             </div>
 
-            <button class="btn-primary" onclick="attemptLogin()">LOGIN</button>
+            <button class="btn-primary" onclick="attemptLogin()">
+                <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i> Login
+            </button>
 
             <div class="toggle-link">
-                New citizen? <span onclick="switchTab('register')">Create Account</span>
+                New to the city? <span onclick="switchTab('register')">Create Account</span>
             </div>
 
             <div id="quick-access-area" class="quick-access hidden">
-                <div class="qa-title">Quick Login</div>
-                <div id="recent-list">
+                <div class="qa-title">Quick Access</div>
+                <div id="recent-list" class="recent-list">
                     </div>
             </div>
         </div>
 
         <div id="register-panel" class="hidden">
-            <h2>Create Identity</h2>
-            <p class="sub-text">Begin your new life in the city</p>
+            <h2>Identity Creation</h2>
+            <p class="sub-text">Begin your new life in Central Online</p>
 
             <div class="input-group">
                 <input type="text" id="reg-user" placeholder="Choose Username">
@@ -54,10 +58,12 @@
                 <i class="fas fa-check-circle"></i>
             </div>
 
-            <button class="btn-primary" onclick="attemptRegister()">REGISTER</button>
+            <button class="btn-primary" onclick="attemptRegister()">
+                <i class="fas fa-user-plus" style="margin-right: 8px;"></i> Register
+            </button>
 
             <div class="toggle-link">
-                Have an account? <span onclick="switchTab('login')">Login instead</span>
+                Already a citizen? <span onclick="switchTab('login')">Access Account</span>
             </div>
         </div>
     </div>
