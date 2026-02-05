@@ -14,8 +14,7 @@ const RECOVERY_TIME_MS = 30 * 60 * 1000; // 30 Minutes
 const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
 const VEHICLE_SPAWN = { x: 2411.58, y: 4988.95, z: 45.43, h: 133.84 };
-const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22 }; 
-const ORCHARD_CENTER = { x: 2358.96, y: 5009.84, z: 43.34 }; 
+const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22, h: 134.69 }; 
 
 const TREES = [
     { id: 'tree_1', x: 2389.63, y: 4991.62, z: 45.15 },
@@ -82,11 +81,13 @@ const logic = {
             treeStates: treeStates 
         });
 
-        // 5. Sync Visual Markers (NEW)
+        // 5. Sync Visual Markers
         syncTreeMarkers(player);
 
-        // 6. Step 1: Go to Garage
-        setObjectiveGarage(player);
+        player.call('client:farmer:toggleSeller', [true]);
+
+        // 6. Notify (No forced objective)
+        player.call('showNotification', ['Farmer', 'Job started. You can use the Garage to spawn a tractor.']);
     },
     
     onStop: (player) => {
@@ -96,30 +97,22 @@ const logic = {
         }
         activeJobs.delete(player.id);
         jobManager.clearObjective(player);
-        player.call('client:farmer:clearMarkers'); // Clear visual markers
+        player.call('client:farmer:clearMarkers'); 
+
+        player.call('client:farmer:toggleSeller', [false]);
     }
 };
 
-// --- OBJECTIVES ---
-
-function setObjectiveGarage(player) {
-    player.call('showNotification', ['Farmer', 'Go to the Garage to get your vehicle.']);
-    jobManager.createObjective(player, GARAGE_POS, "Farm Garage", 2.0, (p) => {
-        if (p.vehicle) return p.call('showNotification', ['Farmer', 'Exit your vehicle first.']);
-        spawnTractor(p);
-    });
-}
+// --- OBJECTIVES / ACTIONS ---
 
 function spawnTractor(player) {
     const data = activeJobs.get(player.id);
     if (!data) return;
 
-    jobManager.clearObjective(player);
-
     if (data.vehicle && mp.vehicles.exists(data.vehicle)) data.vehicle.destroy();
 
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    const model = level > 20 ? 'bodhi2' : 'warrener2'; 
+    const model = level > 20 ? 'warrener2' : 'tractor2'; 
 
     data.vehicle = mp.vehicles.new(mp.joaat(model), new mp.Vector3(VEHICLE_SPAWN.x, VEHICLE_SPAWN.y, VEHICLE_SPAWN.z), {
         heading: VEHICLE_SPAWN.h,
@@ -137,26 +130,7 @@ function spawnTractor(player) {
         }
     }, 200);
 
-    player.call('showNotification', ['Farmer', 'Go to the fields and collect Apples!']);
-    
-    jobManager.createObjective(player, ORCHARD_CENTER, "Apple Orchard", 10.0, (p) => {
-        jobManager.clearObjective(p);
-        p.call('showNotification', ['Farmer', 'Walk up to trees and press E.']);
-    }, { blipSprite: 1, markerColor: [0, 255, 0, 100] });
-}
-
-function checkInventoryStatus(player) {
-    let appleCount = 0;
-    if (player.inventory) {
-        player.inventory.forEach(item => { if (item.itemId === 'apple') appleCount += item.count; });
-    }
-
-    if (appleCount >= 60) {
-        player.call('showNotification', ['Farmer', 'Your basket is getting full. Go sell them!']);
-        jobManager.createObjective(player, SELLER_NPC, "Apple Wholesaler", 3.0, null, {
-            blipSprite: 605, blipColor: 1
-        });
-    }
+    player.call('showNotification', ['Farmer', 'Vehicle spawned.']);
 }
 
 // --- HELPER: SYNC MARKERS ---
@@ -170,14 +144,8 @@ function syncTreeMarkers(player) {
     TREES.forEach(tree => {
         const state = data.treeStates[tree.id];
         
-        // A tree is available if:
-        // 1. It has no state (never picked)
-        // 2. OR state exists but Cooldown is expired (it will reset on next interact)
-        // 3. OR state exists and Harvests are > 0
-        
         let isAvailable = true;
         if (state) {
-            // It is NOT available ONLY if it is empty AND cooldown is active
             if (state.harvests_left <= 0 && state.cooldown_expiry > now) {
                 isAvailable = false;
             }
@@ -222,7 +190,7 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     if (state.harvests_left <= 0 && state.cooldown_expiry <= now) {
         state.harvests_left = getRandomHarvests();
         state.cooldown_expiry = 0;
-        requiresSync = true; // Tree came back online, show marker
+        requiresSync = true; 
     }
 
     // Freeze & Animate
@@ -245,7 +213,7 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
                 state.cooldown_expiry = Date.now() + RECOVERY_TIME_MS;
                 player.call('showNotification', ['Farmer', `Collected Apple.`]);
                 player.call('showNotification', ['Farmer', `Tree depleted. Recovering...`]);
-                requiresSync = true; // Tree died, remove marker
+                requiresSync = true;
             } else {
                 player.call('showNotification', ['Farmer', `Collected Apple.`]);
             }
@@ -264,17 +232,18 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
 
             // Give XP
             await jobManager.addJobXp(player, JOB_KEY, 1);
-            checkInventoryStatus(player);
+            // REMOVED: checkInventoryStatus(player); 
 
         } else {
             player.call('showNotification', ['Inventory', 'Inventory Full! Go sell your apples.']);
-            jobManager.createObjective(player, SELLER_NPC, "Apple Wholesaler", 3.0, null);
         }
     }, 4000);
 });
 
 // --- SELLER INTERACTION ---
 mp.events.add('server:farmer:openSeller', (player) => {
+    if (player.activeJobId !== JOB_KEY) return;
+    
     let appleCount = 0;
     if (player.inventory) {
         player.inventory.forEach(item => { if (item.itemId === 'apple') appleCount += item.count; });
@@ -355,6 +324,25 @@ sellerCol.setVariable('interaction', {
 mp.peds.new(mp.joaat('cs_old_man2'), new mp.Vector3(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z), {
     heading: SELLER_NPC.h, dynamic: false, invincible: true, frozen: true
 });
+
 mp.blips.new(605, new mp.Vector3(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z), {
     name: 'Apple Wholesaler', color: 1, shortRange: true, scale: 0.8
+});
+
+// --- NEW GARAGE INTERACTION ---
+mp.events.add('server:farmer:spawnTractor', (player) => {
+    if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You are not on the clock.']);
+    spawnTractor(player);
+});
+
+const garageCol = mp.colshapes.newSphere(GARAGE_POS.x, GARAGE_POS.y, GARAGE_POS.z, 2.0);
+garageCol.setVariable('interaction', {
+    title: 'Farmer Garage', 
+    text: 'Spawn Tractor', 
+    event: 'server:farmer:spawnTractor', 
+    requireOnFoot: true
+});
+
+mp.peds.new(mp.joaat('cs_old_man2'), new mp.Vector3(GARAGE_POS.x, GARAGE_POS.y, GARAGE_POS.z), {
+    heading: GARAGE_POS.h, dynamic: false, invincible: true, frozen: true
 });
