@@ -1,352 +1,375 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>Central Online Blue HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
-            --accent: #ffcc00;
-            --text-shadow-strong: 2px 2px 0px #000000, 0 0 10px rgba(0,0,0,0.8);
+            /* BLUE THEME */
+            --primary: #00a8ff; 
+            --danger: #ff4757;
+            --success: #2ecc71;
+            /* Strong Shadow for readability on transparent bg */
         }
 
         body {
-            background-color: transparent; 
+            background: transparent !important;
             margin: 0; padding: 0;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Poppins', sans-serif;
             overflow: hidden;
             user-select: none;
+            width: 100vw; height: 100vh;
         }
 
-        /* --- TOP RIGHT HUD --- */
+        /* --- TOP RIGHT: MONEY & INFO --- */
         .hud-container {
-            position: fixed; top: 30px; right: 30px; 
-            background: transparent; 
-            padding: 10px 15px; 
-            border-right: 4px solid var(--accent);
+            position: fixed; top: 30px; right: 35px;
             text-align: right;
-            min-width: 200px;
-            transition: opacity 0.3s ease;
-            text-shadow: var(--text-shadow-strong);
+            display: flex; flex-direction: column; gap: 2px;
+            /* NO BACKGROUND */
         }
 
-        .hud-username { 
-            font-size: 14px; color: var(--accent); 
-            font-weight: 800; text-transform: uppercase; letter-spacing: 1px; 
-            text-shadow: 1px 1px 0 #000;
+        .hud-row {
+            display: flex; align-items: center; justify-content: flex-end;
+            line-height: 1;
         }
 
-        .hud-money { 
-            font-size: 28px; font-weight: 700; color: white; 
-            margin: 2px 0 8px 0; letter-spacing: -0.5px;
-        }
-        .hud-money span { font-size: 18px; color: #4caf50; vertical-align: top; margin-right: 2px; }
+        /* Money */
+        .money-val { font-size: 32px; font-weight: 700; color: #fff; letter-spacing: -1px; }
+        .money-sym { color: var(--success); font-size: 22px; margin-right: 2px; font-weight: 800; }
 
-        .hud-bank { 
-            font-size: 24px; /* Slightly smaller than cash */
-            font-weight: 700; color: #eee; 
-            margin: 0 0 8px 0; 
-            letter-spacing: -0.5px;
-        }
-        /* Blue color (#3498db) for Bank */
-        .hud-bank span { font-size: 16px; color: #3498db; vertical-align: top; margin-right: 2px; }
+        /* Bank */
+        .bank-val { font-size: 22px; font-weight: 600; color: #dcdcdc; letter-spacing: -0.5px; }
+        .bank-sym { color: var(--primary); font-size: 18px; margin-right: 4px; }
 
-        .hud-meta { 
-            display: flex; justify-content: flex-end; gap: 10px; 
-            font-size: 12px; font-weight: 600; color: #ddd; 
+        /* Meta (Date/ID) */
+        .meta-row {
+            margin-top: 8px;
+            font-size: 12px; font-weight: 700; color: #eee;
+            text-transform: uppercase; letter-spacing: 1px;
+            opacity: 0.9;
         }
+        .meta-sep { color: var(--primary); margin: 0 6px; }
 
-        /* --- SPEEDOMETER --- */
+        /* --- BOTTOM RIGHT: SPEEDOMETER --- */
         .speedo-container {
-            position: fixed; bottom: 30px; right: 30px; width: 220px;
-            background: transparent;
-            color: white; 
-            padding: 10px 20px; 
-            border-bottom: 4px solid var(--accent);
-            display: none; transition: opacity 0.3s;
+            position: fixed; bottom: 35px; right: 35px;
             text-align: right;
-            text-shadow: var(--text-shadow-strong);
+            display: none; /* Toggled by JS */
+            flex-direction: column; align-items: flex-end;
         }
 
-        .speed-main { 
-            display: flex; align-items: baseline; justify-content: flex-end; 
-            margin-bottom: 0px;
+        .speed-val {
+            font-size: 90px; font-weight: 900; color: white;
+            line-height: 0.8; font-style: italic;
         }
-        .speed-val { font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
-        .speed-unit { font-size: 14px; color: var(--accent); font-weight: 800; margin-left: 5px; text-shadow: 1px 1px 0 #000; }
-
-        .speed-info { 
-            display: flex; justify-content: space-between; 
-            padding: 6px 0;
-            font-size: 13px; font-weight: 700; color: #eee;
+        .speed-unit {
+            font-size: 16px; font-weight: 800; color: var(--primary);
+            letter-spacing: 2px; margin-right: 5px;
+            margin-bottom: 5px;
         }
-        .locked { color: #ff4444; } .unlocked { color: #44ff44; } .fuel-low { color: #ffaa00; }
 
-        /* --- JOB DASHBOARD --- */
+        /* Fuel Bar (Floating Line) */
+        .fuel-track {
+            width: 180px; height: 6px;
+            /* Semi-transparent track, not a black box */
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 5px;
+            position: relative;
+        }
+        .fuel-fill {
+            height: 100%; background: #fff; width: 100%;
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            transition: width 0.3s;
+        }
+        .fuel-fill.low { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .fuel-fill.crit { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        .car-status {
+            display: flex; gap: 15px; margin-top: 5px;
+            font-size: 12px; font-weight: 800; color: white;
+
+        }
+        .lock-icon.locked { color: var(--danger); }
+        .lock-icon.open { color: var(--success); }
+
+        /* --- MIDDLE RIGHT: JOB --- */
         .job-hud {
-            position: fixed; top: 35%; right: 30px; width: 280px;
-            background: rgba(15, 15, 15, 0.95);
-            border-right: 4px solid var(--accent);
-            padding: 0;
-            display: none; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            border-radius: 4px 0 0 4px;
-            text-shadow: none;
+            position: fixed; top: 35%; right: 35px;
+            width: 300px;
+            display: none;
+            text-align: right;
+            /* NO BACKGROUND */
         }
 
-        .job-header {
-            background: rgba(255, 204, 0, 0.1);
-            padding: 10px 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+        .job-label {
+            font-size: 11px; font-weight: 800; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            margin-bottom: 2px;
+        }
+        
+        .job-text {
+            font-size: 15px; font-weight: 700; color: white;
+            line-height: 1.3; margin-bottom: 10px;
         }
 
-        .job-label { 
-            font-size: 10px; color: var(--accent); font-weight: 800; 
-            text-transform: uppercase; letter-spacing: 1px; 
+        .job-details {
+            display: flex; justify-content: flex-end; gap: 20px;
+            margin-bottom: 8px;
         }
+        .jd-item {
+            display: flex; flex-direction: column; align-items: flex-end;
+        }
+        .jd-lbl { font-size: 9px; color: #ccc; font-weight: 700; text-transform: uppercase; }
+        .jd-val { font-size: 14px; color: white; font-weight: 700; }
+        .jd-val.green { color: var(--success); }
 
-        .job-instruction { 
-            font-size: 16px; font-weight: 700; color: white; 
-            margin-top: 2px; line-height: 1.3; 
+        /* Progress Line (Floating) */
+        .job-prog-track {
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px; margin-top: 5px;
         }
-
-        .job-stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+        .job-prog-fill {
+            height: 100%; background: var(--primary); width: 0%;
+            box-shadow: 0 0 10px var(--primary);
+            transition: width 0.3s;
         }
-
-        .job-stat-box {
-            padding: 10px 15px;
-            border-right: 1px solid rgba(255,255,255,0.05);
-        }
-        .job-stat-box:last-child { border-right: none; }
-
-        .stat-label { font-size: 9px; color: #888; font-weight: 700; text-transform: uppercase; }
-        .stat-value { font-size: 14px; color: #eee; font-weight: 700; margin-top: 2px; }
-        .stat-value.money { color: #4caf50; }
-
-        .job-footer {
-            padding: 10px 15px;
-        }
-
-        .job-progress-bg { 
-            background: rgba(255,255,255,0.1); height: 6px; width: 100%; 
-            border-radius: 3px; overflow: hidden; 
-        }
-        .job-progress-fill { 
-            height: 100%; background: var(--accent); width: 0%; 
-            transition: width 0.4s; box-shadow: 0 0 10px var(--accent); 
-        }
-        .job-counter { 
-            margin-top: 5px; font-size: 12px; color: #aaa; font-weight: 600; 
-            display: flex; justify-content: space-between;
-        }
+        .job-count { font-size: 10px; color: #ddd; font-weight: 700; margin-top: 3px; }
 
         /* --- NOTIFICATIONS --- */
         #notif-stack {
-            position: fixed; bottom: 250px; left: 30px; width: 320px;
+            position: fixed; bottom: 250px; left: 30px; width: 300px;
             display: flex; flex-direction: column-reverse; pointer-events: none;
         }
         .notif-card {
-            background: rgba(15, 15, 15, 0.95); 
-            border-left: 4px solid var(--accent);
-            padding: 15px; margin-top: 10px; border-radius: 0 4px 4px 0;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
-            animation: notifSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            position: relative; overflow: hidden;
+            /* Very minimal transparent bg just for text contrast if needed, or purely text */
+            background: rgba(0, 0, 0, 0.4); 
+            border-left: 3px solid var(--primary);
+            padding: 10px 15px; margin-top: 10px; border-radius: 4px;
+            animation: slideIn 0.3s ease-out;
         }
-        .notif-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
-        .notif-msg { font-size: 13px; color: #ddd; line-height: 1.4; }
-        @keyframes notifSlide { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        .notif-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; }
+        .notif-msg { font-size: 13px; color: white; font-weight: 500; line-height: 1.3; }
+        @keyframes slideIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
 
         /* --- INTERACTION --- */
-        .interaction-box {
+        .inter-box {
             position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.9); padding: 12px 25px;
-            border-radius: 50px; display: none; align-items: center;
-            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; align-items: center; gap: 10px;
+            /* Floating text/icon only */
         }
-        .key-circle { 
-            width: 28px; height: 28px; background: var(--accent); color: black; 
-            border-radius: 50%; font-weight: 800; font-size: 14px; 
-            display: flex; align-items: center; justify-content: center; margin-right: 15px; 
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+        .inter-key {
+            width: 30px; height: 30px; background: white; color: #000;
+            border-radius: 50%; font-weight: 800; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
-        .inter-text { font-size: 14px; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+        .inter-lbl {
+            font-size: 14px; font-weight: 800; color: white;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
 
-        /* --- HOTBAR & ZONES --- */
-        .pop-hotbar {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px 15px;
-            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); 
-            opacity: 0; transition: opacity 0.3s;
+        /* --- HOTBAR --- */
+        .hotbar {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s;
         }
-        .pop-slot { 
-            width: 40px; height: 40px; background: rgba(255,255,255,0.05); 
-            border-radius: 6px; display: flex; justify-content: center; align-items: center; position: relative;
-            border: 1px solid transparent; transition: 0.2s;
+        .hb-slot {
+            width: 45px; height: 45px;
+            /* Slight darkness for items, but mostly transparent */
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; display: flex; justify-content: center; align-items: center;
+            position: relative;
         }
-        .pop-slot.active { border-color: var(--accent); background: rgba(255, 204, 0, 0.1); transform: scale(1.1); }
-        .pop-img { width: 28px; height: 28px; object-fit: contain; }
-        .pop-key { position: absolute; top: -8px; right: -5px; background: var(--accent); color: black; font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; }
+        .hb-slot.active { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 0 15px rgba(0, 168, 255, 0.4); }
+        .hb-img { width: 32px; height: 32px; object-fit: contain; }
+        .hb-idx { position: absolute; top: 2px; right: 4px; font-size: 9px; color: #fff; font-weight: bold; }
 
-        .zone-status {
-            position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
-            padding: 8px 20px; background: rgba(0,0,0,0.85); border-radius: 50px;
-            display: none; animation: slideDown 0.3s forwards;
-            border: 1px solid rgba(255,255,255,0.1);
+        /* --- ZONES --- */
+        .zone-text {
+            position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
+            font-size: 14px; font-weight: 900; color: white; letter-spacing: 2px;
+            text-transform: uppercase;
+            display: none;
         }
-        .zone-status.safe { border-bottom: 2px solid #4caf50; }
-        .zone-status.noclip { border-bottom: 2px solid #2196f3; }
-        .zone-text { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: white; }
-        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        .zone-text.safe { color: var(--success); }
+        .zone-text.noclip { color: var(--primary); }
 
     </style>
 </head>
 <body>
 
     <div class="hud-container" id="hud-container">
-        <div class="hud-username" id="hud-name">PLAYER</div>
-        <div class="hud-money"><span>$</span><span id="hud-cash">0</span></div>
-        <div class="hud-bank"><span>$</span><span id="hud-bank-val">0</span></div>
-        <div class="hud-meta">
-            <div class="hud-date" id="hud-date">00:00 | JAN 01</div>
+        <div class="hud-row">
+            <span class="money-sym">$</span><span class="money-val" id="hud-cash">0</span>
+        </div>
+        <div class="hud-row">
+            <span class="bank-sym">$</span><span class="bank-val" id="hud-bank-val">0</span>
+        </div>
+        <div class="meta-row">
+            <span id="hud-name">PLAYER</span>
+            <span class="meta-sep">|</span>
+            <span id="hud-date">00:00</span>
         </div>
     </div>
 
     <div class="speedo-container" id="speedo">
-        <div class="speed-main">
-            <div class="speed-val" id="speed">0</div>
-            <div class="speed-unit">KM/H</div>
+        <div class="speed-val" id="speed">0</div>
+        <div class="speed-unit">KM/H</div>
+        
+        <div class="fuel-track">
+            <div class="fuel-fill" id="fuel-fill"></div>
         </div>
-        <div class="speed-info">
-            <span>FUEL <span id="fuel">100%</span></span>
-            <span id="lock">OPEN</span>
+        
+        <div class="car-status">
+            <span id="fuel-text">100%</span>
+            <span id="lock-icon" class="lock-icon locked"><i class="fas fa-lock"></i> LOCKED</span>
         </div>
+
+        <div id="fuel" style="display:none;">100%</div> 
+        <div id="lock" style="display:none;">LOCKED</div> 
+    </div>
+
+    <div class="job-hud" id="job-hud">
+        <div class="job-label">Objective</div>
+        <div class="job-text" id="job-text">Wait...</div>
+
+        <div class="job-details">
+            <div class="jd-item">
+                <span class="jd-lbl">Dist</span>
+                <span class="jd-val" id="job-dist">0m</span>
+            </div>
+            <div class="jd-item">
+                <span class="jd-lbl">Earned</span>
+                <span class="jd-val green" id="job-cash">$0</span>
+            </div>
+        </div>
+
+        <div class="job-prog-track"><div class="job-prog-fill" id="job-bar"></div></div>
+        <div class="job-count" id="job-count">0 / 0</div>
     </div>
 
     <div id="notif-stack"></div>
 
-    <div class="job-hud" id="job-hud">
-        <div class="job-header">
-            <div class="job-label">Current Objective</div>
-            <div class="job-instruction" id="job-text">Wait for instructions...</div>
-        </div>
-
-        <div class="job-stats-grid">
-            <div class="job-stat-box">
-                <div class="stat-label">Distance</div>
-                <div class="stat-value" id="job-dist">0.0 km</div>
-            </div>
-            <div class="job-stat-box">
-                <div class="stat-label">Earnings</div>
-                <div class="stat-value money" id="job-cash">$0</div>
-            </div>
-        </div>
-
-        <div class="job-footer">
-            <div class="job-progress-bg"><div class="job-progress-fill" id="job-bar"></div></div>
-            <div class="job-counter">
-                <span>Progress</span>
-                <span id="job-count">0 / 0</span>
-            </div>
-        </div>
+    <div class="inter-box" id="interaction">
+        <div class="inter-key">E</div>
+        <div class="inter-lbl" id="inter-text">INTERACT</div>
     </div>
 
-    <div id="zone-status" class="zone-status"><div class="zone-text" id="zone-label">ZONE</div></div>
-    <div class="interaction-box" id="interaction"><div class="key-circle">E</div><div class="inter-text" id="inter-text">INTERACT</div></div>
-    <div class="pop-hotbar" id="pop-hotbar"></div>
+    <div class="hotbar" id="pop-hotbar"></div>
+
+    <div class="zone-text" id="zone-status"><span id="zone-label">ZONE</span></div>
+
 
     <script>
+        // --- HUD STATS ---
         function updateInfoHud(name, money, bank, dateStr) {
             document.getElementById('hud-name').innerText = name;
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
-
             document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
-            
             document.getElementById('hud-date').innerText = dateStr;
         }
 
+        // --- SPEEDOMETER ---
         function updateSpeedo(speed, fuel, isLocked) {
-            document.getElementById('speedo').style.display = 'block';
+            document.getElementById('speedo').style.display = 'flex';
             document.getElementById('speed').innerText = Math.floor(speed);
-            const f = document.getElementById('fuel');
-            f.innerText = Math.floor(fuel) + '%';
-            f.className = fuel < 20 ? 'fuel-low' : '';
-            const l = document.getElementById('lock');
-            l.innerText = isLocked ? "LOCKED" : "OPEN";
-            l.className = isLocked ? "locked" : "unlocked";
+
+            const fVal = Math.floor(fuel);
+            const bar = document.getElementById('fuel-fill');
+            
+            // Width
+            bar.style.width = fVal + '%';
+            
+            // Color Logic
+            bar.className = 'fuel-fill'; 
+            if(fVal < 20) bar.classList.add('crit');
+            else if(fVal < 40) bar.classList.add('low');
+
+            document.getElementById('fuel-text').innerText = fVal + '%';
+            document.getElementById('fuel').innerText = fVal + '%'; // legacy
+
+            // Lock Logic
+            const lIcon = document.getElementById('lock-icon');
+            const lTxt = document.getElementById('lock'); // legacy
+
+            if(isLocked) {
+                lIcon.innerHTML = '<i class="fas fa-lock"></i> LOCKED';
+                lIcon.className = 'lock-icon locked';
+                lTxt.innerText = "LOCKED";
+            } else {
+                lIcon.innerHTML = '<i class="fas fa-lock-open"></i> OPEN';
+                lIcon.className = 'lock-icon open';
+                lTxt.innerText = "OPEN";
+            }
         }
+
         function hideSpeedo() { document.getElementById('speedo').style.display = 'none'; }
 
-        function showNotification(title, message) {
-            const container = document.getElementById('notif-stack');
-            const card = document.createElement('div');
-            card.className = 'notif-card';
-            card.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${message}</div>`;
-            container.appendChild(card);
-            setTimeout(() => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateX(-20px)';
-                setTimeout(() => card.remove(), 400);
-            }, 5000);
-        }
-
-        function setInteraction(visible, title, text) {
-            const box = document.getElementById('interaction');
-            if (visible) {
-                document.getElementById('inter-text').innerText = title ? `${title}: ${text}` : text;
-                box.style.display = 'flex';
-            } else { box.style.display = 'none'; }
-        }
-
-        // --- UPDATED JOB UI FUNCTION ---
+        // --- JOB SYSTEM ---
         function updateJobUI(visible, text, current, max, earned = 0, dist = 0) {
             const hud = document.getElementById('job-hud');
-            if (!hud) return; // Safety check
+            if(!hud) return;
 
             if (!visible) {
                 hud.style.display = 'none';
                 return;
             }
-            
-            // Force show immediately before doing math
             hud.style.display = 'block';
-
-            // Safely handle text
+            
             document.getElementById('job-text').innerText = text || "Loading...";
+            document.getElementById('job-cash').innerText = '$' + new Intl.NumberFormat().format(earned || 0);
 
-            // Safely handle money (prevent undefined crashes)
-            const safeEarned = typeof earned === 'number' ? earned : 0;
-            document.getElementById('job-cash').innerText = '$' + new Intl.NumberFormat().format(safeEarned);
-                    
-            // Distance Formatting
-            let distStr = "0 m";
-            if (dist >= 1000) {
-                distStr = (dist / 1000).toFixed(2) + " km";
-            } else {
-                distStr = Math.floor(dist) + " m";
-            }
+            // Distance
+            let distStr = (dist >= 1000) ? (dist / 1000).toFixed(2) + " km" : Math.floor(dist) + " m";
             document.getElementById('job-dist').innerText = distStr;
 
-            // Progress Bar
+            // Progress
             const pct = max > 0 ? (current / max) * 100 : 0;
             document.getElementById('job-bar').style.width = pct + '%';
             document.getElementById('job-count').innerText = `${current} / ${max}`;
         }
 
-        // --- DISTANCE ONLY UPDATE ---
         function updateDistance(dist) {
             const el = document.getElementById('job-dist');
             if (el) {
-                let distStr = "0 m";
-                if (dist >= 1000) {
-                    distStr = (dist / 1000).toFixed(2) + " km";
-                } else {
-                    distStr = Math.floor(dist) + " m";
-                }
+                let distStr = (dist >= 1000) ? (dist / 1000).toFixed(2) + " km" : Math.floor(dist) + " m";
                 el.innerText = distStr;
             }
         }
 
+        // --- NOTIFICATIONS ---
+        function showNotification(title, message) {
+            const stack = document.getElementById('notif-stack');
+            const el = document.createElement('div');
+            el.className = 'notif-card';
+            el.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${message}</div>`;
+            stack.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            }, 5000);
+        }
+
+        // --- INTERACTION ---
+        function setInteraction(visible, title, text) {
+            const box = document.getElementById('interaction');
+            if(visible) {
+                const content = title ? `${title}: ${text}` : text;
+                document.getElementById('inter-text').innerText = content;
+                box.style.display = 'flex';
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        // --- VISIBILITY ---
         function setGameHUD(visible) {
             const ids = ['hud-container', 'speedo', 'job-hud', 'interaction'];
             ids.forEach(id => {
@@ -358,6 +381,7 @@
             });
         }
 
+        // --- HOTBAR ---
         let hotbarTimer = null;
         function updateHotbar(itemsJson) {
             const items = JSON.parse(itemsJson); 
@@ -366,10 +390,11 @@
             for(let i=0; i<5; i++) {
                 const realSlot = -51 - i; 
                 const item = items.find(x => x.slot === realSlot);
-                let html = `<span class="pop-key">${i+1}</span>`;
-                if(item) html += `<img src="items/${item.icon || item.itemId + '.png'}" class="pop-img" onerror="this.src='items/default.png'">`;
+                let html = `<span class="hb-idx">${i+1}</span>`;
+                if(item) html += `<img src="items/${item.icon || item.itemId + '.png'}" class="hb-img" onerror="this.src='items/default.png'">`;
+                
                 let div = document.createElement('div');
-                div.className = 'pop-slot';
+                div.className = 'hb-slot';
                 div.id = `pop-slot-${i}`;
                 div.innerHTML = html;
                 container.appendChild(div);
@@ -390,14 +415,16 @@
             hotbarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
         }
 
+        // --- ZONES ---
         function updateZoneStatus(visible, type) {
             const el = document.getElementById('zone-status');
             const label = document.getElementById('zone-label');
             if (!visible) { el.style.display = 'none'; return; }
             el.style.display = 'block';
-            el.className = 'zone-status'; 
+            el.className = 'zone-text'; 
             if (type === 'safe_zone') { el.classList.add('safe'); label.innerText = "SAFE ZONE"; } 
             else if (type === 'no_collision') { el.classList.add('noclip'); label.innerText = "NO COLLISION"; }
+            else { label.innerText = type.replace('_', ' '); }
         }
     </script>
 </body>
