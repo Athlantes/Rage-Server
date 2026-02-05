@@ -7,7 +7,7 @@ const playerManager = require('../../core/playerManager');
 const JOB_KEY = 'farmer';
 const JOB_REQUIREMENT_LEVEL = 1; 
 const APPLE_PRICE = 4; // Price per apple
-const TREE_COOLDOWN_MS = 60 * 1000; // 1 Minute refresh rate
+const TREE_COOLDOWN_MS = 60 * 30000; // 30 Minute refresh rate
 
 // Locations
 const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
