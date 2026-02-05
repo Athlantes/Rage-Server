@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    user-select: none;
+    overflow: hidden;
+    /* Transparent background so the game camera is visible */
+    background: transparent;
+    display: flex;
+    align-items: center; /* Vertically Center */
+}
+
+/* Floating Card Style
+   Positioned to the left to leave room for the camera preview 
+*/
+.preview-card {
+    margin-left: 5%; /* Spacing from left edge */
+    width: 380px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+
+    /* Glassmorphism Effect matching Auth UI */
+    background: rgba(15, 23, 35, 0.85); 
+    
+    border: 1px solid rgba(100, 180, 255, 0.15);
+    border-radius: 16px;
+    padding: 40px;
+    
+    position: relative;
+    
+    /* Entry Animation */
+    opacity: 0;
+    transform: translateX(-50px);
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideIn {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Close Button */
+.close-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #64748b;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+}
+.close-icon:hover {
+    color: #ef4444; /* Red on hover */
+    transform: scale(1.1);
+}
+
+/* Typography */
+.header-group {
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+}
+
+.sub-title {
+    margin: 0;
+    color: #00a8ff;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+h1#job-title {
+    margin: 5px 0 0 0;
+    color: white;
+    font-weight: 800;
+    font-size: 32px;
+    text-transform: uppercase;
+    line-height: 1.1;
+    /* Text Gradient */
+    background: linear-gradient(to right, #fff, #a5c9ca);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+/* Content Area */
+.content-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 30px;
+    padding-right: 10px; /* Space for scrollbar */
+    max-height: 300px;
+}
+
+/* Scrollbar Styling */
+.content-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.content-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+.content-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 168, 255, 0.3);
+    border-radius: 4px;
+}
+
+p#job-desc {
+    color: #cbd5e1; /* Light Gray */
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Button Container */
+.action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Buttons (Targeting class .job-btn created in app.js) */
+.job-btn {
+    width: 100%;
+    padding: 16px;
+    /* Gradient Blue matching Auth */
+    background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 10px 20px rgba(0, 114, 255, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.job-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(0, 114, 255, 0.4);
+}
+
+.job-btn:active {
+    transform: scale(0.98);
+}

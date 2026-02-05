@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Preview</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="preview-card">
+        <div class="close-icon" onclick="closeMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div class="header-group">
+            <h4 class="sub-title">Career Opportunity</h4>
+            <h1 id="job-title">Loading Job...</h1>
+        </div>
+
+        <div class="content-scroll">
+            <p id="job-desc">Retrieving job details from the server...</p>
+        </div>
+
+        <div id="button-container" class="action-list">
+            </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
