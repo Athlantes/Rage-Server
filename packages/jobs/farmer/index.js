@@ -74,10 +74,10 @@ async function initFarmerJob() {
     
     // NPC B: Animal Handler (Near the barns)
     spawnWorkerNPC('a_c_cow', 2441.0, 4755.0, 34.0, 45, "Head Cow", "Moo?"); // Just a joke placeholder, swap for a human model if needed
-    spawnWorkerNPC('s_m_m_countrybar_01', 2443.0, 4760.0, 34.0, 180, "Animal Handler", "Manage Livestock");
+    spawnWorkerNPC('s_m_m_countrybar_01', 2416.11, 4993.71, 46.23, 134.87, "Animal Handler", "Manage Livestock");
 
     // NPC C: Field Manager (Near the fields)
-    spawnWorkerNPC('s_m_y_airworker', 2220.0, 5060.0, 46.0, 90, "Field Manager", "Crop Info");
+    spawnWorkerNPC('s_m_y_airworker', 2435.55, 4975.88, 46.57, 47.72, "Field Manager", "Crop Info");
 
     // 3. SETUP EXISTING TREES (Invisible Interactions)
     EXISTING_TREES.forEach(tree => {
