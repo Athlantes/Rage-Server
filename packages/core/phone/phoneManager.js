@@ -6,7 +6,7 @@ mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
 
     try {
-        // Load Mails - Added is_read to the selection
+        // Load Mails
         const [mails] = await db.query(
             "SELECT id, user_id, sender, title, message, is_read, created_at FROM player_mails " +
             "WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY) " +
@@ -36,38 +36,40 @@ mp.events.add('server:phone:open', async (player) => {
     }
 });
 
-// 2. Handle Actions from Phone (Vehicles & Mail)
+// --- NEW: Dedicated Handlers for Mail ---
+
+mp.events.add('server:phone:readAllMails', async (player) => {
+    if (!player.logged) return;
+    try {
+        // Update all unread mails for this specific player
+        await db.query("UPDATE player_mails SET is_read = 1 WHERE user_id = ? AND is_read = 0", [player.data.dbId]);
+        
+        // Refresh the phone data logic (Optional since client is optimistic, but good for sync)
+        mp.events.call('server:phone:open', player);
+    } catch (err) {
+        console.error("Read All Mails Error:", err);
+    }
+});
+
+mp.events.add('server:phone:readMail', async (player, id) => {
+    if (!player.logged) return;
+    try {
+        const mailId = parseInt(id);
+        await db.query(
+            "UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", 
+            [mailId, player.data.dbId]
+        );
+        // Silent update; no need to refresh entire phone for one read mail if UI handles it
+    } catch (err) {
+        console.error("Read Mail Error:", err);
+    }
+});
+
+// 2. Handle Vehicle Actions
 mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
     if (!player.logged) return;
 
     try {
-        // --- NEW: Handle Reading Mails ---
-        if (action === 'readMail') {
-            const mailId = parseInt(id);
-            // Update the mail to read status in DB
-            await db.query(
-                "UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", 
-                [mailId, player.data.dbId]
-            );
-            
-            // Refresh the mail list immediately to update UI colors/badges
-            const [mails] = await db.query(
-                "SELECT id, user_id, sender, title, message, is_read, created_at FROM player_mails " +
-                "WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY) " +
-                "ORDER BY created_at DESC LIMIT 20", 
-                [player.data.dbId]
-            );
-            player.call('client:phone:initialize', [JSON.stringify(mails)]);
-            return;
-        } else if (action === 'readAllMails') {
-            // Update all unread mails for this specific player
-            await db.query("UPDATE player_mails SET is_read = 1 WHERE user_id = ? AND is_read = 0", [player.data.dbId]);
-            
-            // Refresh the phone data so the badges and colors update immediately
-            mp.events.call('server:phone:open', player);
-        }
-
-        // --- Existing Vehicle Actions ---
         const vehDbId = parseInt(id);
 
         if (action === 'spawn') {
@@ -97,6 +99,22 @@ mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
     }
 });
 
+mp.events.add('server:phone:readMail', async (player, id) => {
+    if (!player.logged) return;
+    try {
+        const mailId = parseInt(id);
+        
+        // 1. Update database
+        await db.query(
+            "UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", 
+            [mailId, player.data.dbId]
+        );
+        
+    } catch (err) {
+        console.error("Read Mail Error:", err);
+    }
+});
+
 // API to send a mail
 mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) => {
     try {
@@ -107,9 +125,7 @@ mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) 
 
         const target = mp.players.toArray().find(p => p.data.dbId === targetId);
         if (target) {
-            // 1. Refresh the mail list data (Existing)
             mp.events.call('server:phone:open', target);
-
             target.call('client:phone:receiveMail', [sender, title, message]);
         }
     } catch (err) {

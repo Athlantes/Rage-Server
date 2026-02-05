@@ -79,6 +79,7 @@ const app = {
         safeMails.forEach(mail => {
             const timeAgo = app.getRelativeTime(mail.created_at);
             const div = document.createElement('div');
+            div.id = 'mail-item-' + mail.id;
             div.className = `mail-item ${mail.is_read ? 'read' : ''}`;
             div.onclick = () => app.openMailDetail(mail);
             div.innerHTML = `
@@ -115,6 +116,21 @@ const app = {
     },
 
     readAllMails: () => {
+        // 1. Visually mark all items as read immediately
+        const items = document.querySelectorAll('.mail-item');
+        items.forEach(el => {
+            el.classList.add('read');
+        });
+
+        // 2. Hide the notification badge
+        const badge = document.getElementById('badge-mail');
+        if(badge) badge.classList.add('hidden');
+
+        // 3. Clear the lock screen notifications
+        const lockContainer = document.getElementById('lock-notification-list');
+        if(lockContainer) lockContainer.innerHTML = '';
+
+        // 4. Send the event to the server to save changes in the database
         if ('mp' in window) mp.trigger('client:proxyAction', 'readAllMails', 0);
     },
 
@@ -124,8 +140,33 @@ const app = {
         document.getElementById('mail-detail-title').innerText = mail.title;
         document.getElementById('mail-detail-body').innerText = mail.message;
 
-        if (!mail.is_read && 'mp' in window) {
-            mp.trigger('client:proxyAction', 'readMail', mail.id);
+        // ONLY TRIGGER IF IT WAS UNREAD
+        if (!mail.is_read) {
+            if ('mp' in window) {
+                mp.trigger('client:proxyAction', 'readMail', mail.id);
+            }
+
+            mail.is_read = 1;
+            
+            //Turn off the unread styling
+            const listEl = document.getElementById('mail-item-' + mail.id);
+            if (listEl) {
+                listEl.classList.add('read');
+                listEl.classList.remove('unread');
+            }
+
+            // Update the badge count
+            const badge = document.getElementById('badge-mail');
+            if (badge && !badge.classList.contains('hidden')) {
+                let count = parseInt(badge.innerText) || 0;
+                if (count > 0) count--;
+                
+                if (count <= 0) {
+                    badge.classList.add('hidden');
+                } else {
+                    badge.innerText = count;
+                }
+            }
         }
     },
 

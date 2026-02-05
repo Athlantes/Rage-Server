@@ -30,6 +30,10 @@ mp.keys.bind(0x26, true, () => { // Up Arrow
     }
 });
 
+mp.keys.bind(0x1B, false, function() {
+    if (isPhoneOpen) closePhone();
+});
+
 mp.keys.bind(0x28, true, () => { // Down Arrow
     if(isPhoneOpen) closePhone();
 });
