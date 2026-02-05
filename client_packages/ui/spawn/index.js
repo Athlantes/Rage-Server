@@ -39,23 +39,24 @@ mp.events.add('client:spawn:openMenu', (lastPos) => {
 mp.events.add('client:spawn:select', (index) => {
     if (!spawnBrowser) return;
     
-    // Cleanup
     spawnBrowser.destroy();
     spawnBrowser = null;
     mp.gui.cursor.show(false, false);
-    mp.gui.chat.show(true);
-
-    // Tell Server
+    
+    // Call Server
     mp.events.callRemote('server:spawn:player', index);
 
     const player = mp.players.local;
-
     player.freezePosition(false);
     player.setVisible(true, false);
     player.setAlpha(255);
     player.setInvincible(false);
     
-    // Cam Fade
+    // --- ENABLE UI HERE ---
+    mp.game.ui.displayRadar(true);
+    mp.game.ui.displayHud(true);
+    // ----------------------
+    
     setTimeout(() => {
         mp.game.cam.renderScriptCams(false, true, 5000, true, false);
         if (spawnCam) {

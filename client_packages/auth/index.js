@@ -1,39 +1,34 @@
 // client_packages/auth/index.js
 let authBrowser = null;
 let authCam = null;
-let isAuthOpen = false; // Track state
+let isAuthOpen = false;
 
 // --- 1. SETUP CAMERA & UI ---
 mp.events.add('client:auth:show', (recentJson) => {
     if (authBrowser) return;
     isAuthOpen = true;
     
-    // 2. Create Browser
     authBrowser = mp.browsers.new("package://ui/auth/index.html");
     
-    // 3. LOCK INPUTS & SHOW CURSOR
-    mp.gui.cursor.show(true, true);       // Show cursor
-    mp.gui.chat.show(false);              // Hide chat to prevent conflict
+    mp.gui.cursor.show(true, true);
+    mp.gui.chat.show(false);
+    
+    // THIS DISABLES THE MAP. WE MUST RE-ENABLE IT LATER.
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
     
     mp.players.local.freezePosition(true);
     mp.players.local.setVisible(false, false);
 
-    // 4. Load Recent Data
     setTimeout(() => {
         if(authBrowser) authBrowser.execute(`loadRecent('${recentJson}')`);
     }, 200);
 });
 
 // --- 2. DISABLE GAME CONTROLS LOOP ---
-// This runs every frame to ensure you cannot move/look while logging in
 mp.events.add('render', () => {
     if (isAuthOpen) {
-        // Disable all controls (Movement, combat, looking, pause menu, etc)
         mp.game.controls.disableAllControlActions(0);
-        
-        // Optionally enable cursor again if it gets lost
         if (!mp.gui.cursor.visible) mp.gui.cursor.show(true, true);
     }
 });
@@ -57,7 +52,7 @@ mp.events.add('client:auth:error', (msg) => {
 });
 
 mp.events.add('client:auth:destroy', () => {
-    isAuthOpen = false; // Stop the control disable loop
+    isAuthOpen = false;
     if (authBrowser) {
         authBrowser.destroy();
         authBrowser = null;
@@ -79,9 +74,14 @@ mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos) => {
 
     // 2. Logic Split
     if (shouldSpawnSelector) {
+        // Case A: Going to Spawn Selector
+        // We DON'T enable Radar yet, because we want the clean spawn menu.
+        // The Radar must be enabled in client_packages/ui/spawn/index.js
         mp.gui.cursor.show(false, false);
         mp.events.call('client:spawn:openMenu', lastPos);
     } else {
+        // Case B: Auto-Spawn (Last Location)
+        // [FIX] WE MUST ENABLE RADAR/HUD HERE
         mp.gui.cursor.show(false, false);
 
         const player = mp.players.local;
@@ -89,6 +89,11 @@ mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos) => {
         player.setVisible(true, false);
         player.setAlpha(255);
         player.setInvincible(false);
+
+        // --- ENABLE UI HERE ---
+        mp.game.ui.displayRadar(true);
+        mp.game.ui.displayHud(true);
+        // ----------------------
 
         mp.game.cam.renderScriptCams(false, false, 0, true, false);
     }
