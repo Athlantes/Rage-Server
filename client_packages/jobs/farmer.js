@@ -4,8 +4,11 @@ let sellerMenu = null;
 let cropObjects = {}; 
 let cropData = []; 
 
+//
 const CROP_MODELS = {
-    'seed_pumpkin': { start: 'prop_veg_crop_03_cab', end: 'prop_veg_crop_03_pump', zOff: -0.05 }
+    // start: The leaf model that rises from the ground
+    // end: The final pumpkin model
+    'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 }
 };
 
 mp.events.add('client:farmer:updateMarkers', (json) => {
@@ -95,27 +98,23 @@ mp.events.add('client:farmer:syncCrops', (json) => {
         const model = isReady ? def.end : def.start;
 
         if (!cropObjects[crop.id]) {
-            // Create the object
+            // Create the object at the calculated Z
             cropObjects[crop.id] = mp.objects.new(mp.game.joaat(model), new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
                 rotation: new mp.Vector3(0, 0, crop.h),
                 dimension: 0
             });
 
-            // --- ADD THESE LINES TO PROTECT THE CROP ---
+            // Apply protections
             const obj = cropObjects[crop.id];
-            obj.freezePosition(true);  // Stops it from moving when hit by cars
-            obj.setInvincible(true);   // Stops it from breaking if shot/damaged
-            obj.setProofs(true, true, true, true, true, true, true, true); // Bullet, Fire, Explosion, etc.
-            // -------------------------------------------
+            obj.freezePosition(true);  
+            obj.setInvincible(true);   
+            obj.setProofs(true, true, true, true, true, true, true, true); 
             
         } else {
-            // Update model if grew
             const obj = cropObjects[crop.id];
-            if (obj.model !== mp.game.joaat(model)) {
-                obj.model = mp.game.joaat(model);
-                // Re-apply protections just in case model change resets them
-                obj.freezePosition(true);
-                obj.setInvincible(true);
+            if(mp.objects.exists(obj)) {
+                 obj.freezePosition(true);
+                 obj.setInvincible(true);
             }
         }
     });
@@ -135,38 +134,70 @@ mp.events.add('render', () => {
     const myDbId = mp.players.local.getVariable('dbId'); 
 
     cropData.forEach(crop => {
-        // Visual Update for Growth (Client side prediction)
-        if (cropObjects[crop.id] && now >= crop.ready) {
-            const def = CROP_MODELS[crop.item];
-            if (def && cropObjects[crop.id].model !== mp.game.joaat(def.end)) {
-                 const obj = cropObjects[crop.id];
-                 obj.model = mp.game.joaat(def.end);
-                 
-                 // Re-apply protections (from your previous request)
-                 obj.freezePosition(true);
-                 obj.setInvincible(true);
+        const obj = cropObjects[crop.id];
+        if (!obj || !obj.handle) return;
+
+        const def = CROP_MODELS[crop.item];
+        if (def) {
+            const totalTime = crop.ready - crop.planted;
+            const elapsed = now - crop.planted;
+            
+            // Calculate progress (0.0 to 1.0)
+            let progress = 0;
+            if (totalTime > 0) progress = elapsed / totalTime;
+            if (progress < 0) progress = 0;
+            if (progress > 1) progress = 1;
+
+            if (progress < 1.0) {
+                // --- GROWING PHASE (SPROUTING) ---
+                
+                // 1. Ensure Model is the Start Prop (Leaf)
+                if (obj.model !== mp.game.joaat(def.start)) {
+                    obj.model = mp.game.joaat(def.start);
+                    obj.freezePosition(true);
+                    obj.setInvincible(true);
+                    obj.setProofs(true, true, true, true, true, true, true, true);
+                }
+
+                // 2. Rising Animation (Z-Axis Lerp)
+                // Start: 0.3 units below target (Underground)
+                // End: Target Z (Surface)
+                const startZ = (crop.z + def.zOff) - 0.3; 
+                const endZ = (crop.z + def.zOff);
+                const currentZ = startZ + ((endZ - startZ) * progress);
+
+                obj.position = new mp.Vector3(crop.x, crop.y, currentZ);
+
+            } else {
+                // --- READY PHASE ---
+                
+                // 1. Ensure Model is the End Prop (Pumpkin)
+                if (obj.model !== mp.game.joaat(def.end)) {
+                    obj.model = mp.game.joaat(def.end);
+                    obj.freezePosition(true);
+                    obj.setInvincible(true);
+                    obj.setProofs(true, true, true, true, true, true, true, true);
+                }
+
+                // 2. Lock to Final Z
+                obj.position = new mp.Vector3(crop.x, crop.y, crop.z + def.zOff);
             }
         }
 
-        // Interaction & Markers
-        // Only for my crops that are ready
+        // --- INTERACTION & MARKERS ---
         if (crop.owner === myDbId && now >= crop.ready) {
-            
-             // --- NEW: DRAW MARKER ---
-             // Type 0 (Inverted Cone) or 1 (Cylinder). 
-             // We use Type 20 (Upside down Chevron) or Type 1 (like trees) but smaller.
-             // Here is a small Cylinder (Type 1) floating slightly above the crop:
+             
+             // Green Marker above crop
              mp.game.graphics.drawMarker(
-                1,                       // type (1 = Cylinder, same as trees)
-                crop.x, crop.y, crop.z + 0.3, // position (z + 0.3 puts it around the crop base/middle)
-                0, 0, 0,                 // direction
-                0, 0, 0,                 // rotation
-                0.6, 0.6, 0.4,           // scale (Small: 0.6 width, 0.4 height)
-                0, 255, 0, 100,          // color (R, G, B, Alpha) -> Green for "Ready"
-                true,                    // bobUpAndDown (Animates it slightly)
+                1,                       
+                crop.x, crop.y, crop.z + 0.3, 
+                0, 0, 0,                 
+                0, 0, 0,                 
+                0.6, 0.6, 0.4,           
+                0, 255, 0, 100,          
+                true,                    
                 false, 2, false, null, null, false
              );
-             // ------------------------
 
              const dist = mp.game.system.vdist(playerPos.x, playerPos.y, playerPos.z, crop.x, crop.y, crop.z);
              if (dist < 1.5) {

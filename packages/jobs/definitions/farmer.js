@@ -6,6 +6,7 @@ const db = require('../../core/database');
 const zones = require('../../zones/config');
 const ItemRegistry = require('../../data/items');
 
+//
 // --- CONFIGURATION ---
 const JOB_KEY = 'farmer';
 const JOB_REQUIREMENT_LEVEL = 1; 
@@ -247,8 +248,11 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     }, 4000);
 });
 
-// 2. HARVEST
+// 2. HARVEST (UPDATED)
 mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
+    // Prevent spam if already harvesting
+    if (player.data.isHarvesting) return;
+
     let foundCrop = null;
     let foundField = null;
 
@@ -264,28 +268,39 @@ mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
     const seedDef = ItemRegistry[foundCrop.item];
     const rewardId = seedDef.data.reward;
     
-    if (await inventory.addItem(player, rewardId, 1)) {
-        // [FIXED] Ground Animation
-        player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
-        player.call('client:freezePlayer', [true]);
+    // --- ANIMATION START ---
+    player.data.isHarvesting = true;
+    player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
+    player.call('client:freezePlayer', [true]);
 
-        setTimeout(async () => {
-             if(mp.players.exists(player)) {
-                 player.stopAnimation(); // [FIXED] Stop animation
-                 player.call('client:freezePlayer', [false]);
-             }
-        }, 4000);
+    // --- WAIT FOR ANIMATION TO FINISH ---
+    setTimeout(async () => {
+        player.data.isHarvesting = false;
+        
+        if (mp.players.exists(player)) {
+            player.stopAnimation();
+            player.call('client:freezePlayer', [false]);
 
-        await db.query('DELETE FROM character_farm_crops WHERE id = ?', [cropId]);
-        const idx = activeCrops[foundField].indexOf(foundCrop);
-        if (idx > -1) activeCrops[foundField].splice(idx, 1);
+            // --- REWARD & DELETE ---
+            if (await inventory.addItem(player, rewardId, 1)) {
+                
+                await db.query('DELETE FROM character_farm_crops WHERE id = ?', [cropId]);
+                
+                // Remove from cache safely
+                const currentCrops = activeCrops[foundField];
+                if (currentCrops) {
+                    const idx = currentCrops.findIndex(x => x.id === cropId);
+                    if (idx > -1) currentCrops.splice(idx, 1);
+                }
 
-        syncCropsToZone(foundField);
-        await jobManager.addJobXp(player, JOB_KEY, 5);
-        player.call('showNotification', ['Farmer', 'Harvested crop.']);
-    } else {
-        player.call('showNotification', ['Inventory', 'Inventory Full!']);
-    }
+                syncCropsToZone(foundField);
+                await jobManager.addJobXp(player, JOB_KEY, 5);
+                player.call('showNotification', ['Farmer', 'Harvested crop.']);
+            } else {
+                player.call('showNotification', ['Inventory', 'Inventory Full!']);
+            }
+        }
+    }, 4000); // 4 Seconds Duration
 });
 
 function syncCropsToZone(fieldId) {
