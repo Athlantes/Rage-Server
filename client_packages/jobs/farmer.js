@@ -95,15 +95,27 @@ mp.events.add('client:farmer:syncCrops', (json) => {
         const model = isReady ? def.end : def.start;
 
         if (!cropObjects[crop.id]) {
+            // Create the object
             cropObjects[crop.id] = mp.objects.new(mp.game.joaat(model), new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
                 rotation: new mp.Vector3(0, 0, crop.h),
                 dimension: 0
             });
+
+            // --- ADD THESE LINES TO PROTECT THE CROP ---
+            const obj = cropObjects[crop.id];
+            obj.freezePosition(true);  // Stops it from moving when hit by cars
+            obj.setInvincible(true);   // Stops it from breaking if shot/damaged
+            obj.setProofs(true, true, true, true, true, true, true, true); // Bullet, Fire, Explosion, etc.
+            // -------------------------------------------
+            
         } else {
             // Update model if grew
             const obj = cropObjects[crop.id];
             if (obj.model !== mp.game.joaat(model)) {
                 obj.model = mp.game.joaat(model);
+                // Re-apply protections just in case model change resets them
+                obj.freezePosition(true);
+                obj.setInvincible(true);
             }
         }
     });
@@ -127,12 +139,35 @@ mp.events.add('render', () => {
         if (cropObjects[crop.id] && now >= crop.ready) {
             const def = CROP_MODELS[crop.item];
             if (def && cropObjects[crop.id].model !== mp.game.joaat(def.end)) {
-                 cropObjects[crop.id].model = mp.game.joaat(def.end);
+                 const obj = cropObjects[crop.id];
+                 obj.model = mp.game.joaat(def.end);
+                 
+                 // Re-apply protections (from your previous request)
+                 obj.freezePosition(true);
+                 obj.setInvincible(true);
             }
         }
 
-        // Interaction
+        // Interaction & Markers
+        // Only for my crops that are ready
         if (crop.owner === myDbId && now >= crop.ready) {
+            
+             // --- NEW: DRAW MARKER ---
+             // Type 0 (Inverted Cone) or 1 (Cylinder). 
+             // We use Type 20 (Upside down Chevron) or Type 1 (like trees) but smaller.
+             // Here is a small Cylinder (Type 1) floating slightly above the crop:
+             mp.game.graphics.drawMarker(
+                1,                       // type (1 = Cylinder, same as trees)
+                crop.x, crop.y, crop.z + 0.3, // position (z + 0.3 puts it around the crop base/middle)
+                0, 0, 0,                 // direction
+                0, 0, 0,                 // rotation
+                0.6, 0.6, 0.4,           // scale (Small: 0.6 width, 0.4 height)
+                0, 255, 0, 100,          // color (R, G, B, Alpha) -> Green for "Ready"
+                true,                    // bobUpAndDown (Animates it slightly)
+                false, 2, false, null, null, false
+             );
+             // ------------------------
+
              const dist = mp.game.system.vdist(playerPos.x, playerPos.y, playerPos.z, crop.x, crop.y, crop.z);
              if (dist < 1.5) {
                  mp.game.graphics.drawText("Press [E] to Harvest", [0.5, 0.8], { 
