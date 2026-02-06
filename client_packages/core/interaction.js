@@ -1,9 +1,10 @@
-// --- INTERACTION SYSTEM ---
+// client_packages/core/interaction.js
 let activeInteraction = null; 
 
-// 1. Listen for Server ColShapes
+// 1. Listen for ColShapes (Server Synced OR Client Local)
 mp.events.add("playerEnterColshape", (shape) => {
-    const data = shape.getVariable('interaction');
+    // MODIFIED: Check for server-synced variable OR local property
+    const data = shape.getVariable('interaction') || shape.interaction;
     
     if (data) {
         const localPlayer = mp.players.local;
@@ -26,20 +27,21 @@ mp.events.add("playerEnterColshape", (shape) => {
 });
 
 mp.events.add("playerExitColshape", (shape) => {
-    const data = shape.getVariable('interaction');
+    // MODIFIED: Check for server-synced variable OR local property
+    const data = shape.getVariable('interaction') || shape.interaction;
     if (data) {
         mp.events.call('hideInteraction');
         activeInteraction = null;
     }
 });
 
-// [NEW] Event to restore interaction (called when menus close)
+// Event to restore interaction (called when menus close)
 mp.events.add('interaction:restore', () => {
     if (activeInteraction) {
         const localPlayer = mp.players.local;
         const veh = localPlayer.vehicle;
 
-        // Re-check conditions in case player state changed while in menu
+        // Re-check conditions
         if (activeInteraction.requireOnFoot && veh) return;
         if (activeInteraction.requireVehicle && !veh) return;
 
@@ -55,14 +57,14 @@ mp.keys.bind(0x45, true, function() {
         const localPlayer = mp.players.local;
         const veh = localPlayer.vehicle;
 
-        // Re-verify conditions before triggering
+        // Re-verify conditions
         if (activeInteraction.requireOnFoot && veh) return;
         if (activeInteraction.requireVehicle && !veh) return;
         if (activeInteraction.requireDriver && veh) {
             if (veh.getPedInSeat(-1) !== localPlayer.handle) return;
         }
 
-        // --- FIX: Pass the 'data' (treeId) to the server ---
+        // Trigger Event
         mp.events.callRemote(activeInteraction.event, activeInteraction.data);
     }
 });

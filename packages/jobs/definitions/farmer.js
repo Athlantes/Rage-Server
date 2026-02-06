@@ -6,7 +6,6 @@ const db = require('../../core/database');
 const zones = require('../../zones/config');
 const ItemRegistry = require('../../data/items');
 
-//
 // --- CONFIGURATION ---
 const JOB_KEY = 'farmer';
 const JOB_REQUIREMENT_LEVEL = 1; 
@@ -51,12 +50,9 @@ const TREES = [
 ];
 
 const activeJobs = new Map();
-
-// CACHE: Key = CharacterDBId, Value = Array of Crops
-// We organize by player ID now for instancing
 const activeCropsByPlayer = new Map(); 
 
-// --- INITIALIZATION: LOAD CROPS ---
+// --- INITIALIZATION ---
 async function loadCrops() {
     try {
         const [rows] = await db.query('SELECT * FROM character_farm_crops');
@@ -66,189 +62,109 @@ async function loadCrops() {
             activeCropsByPlayer.get(charId).push(formatCropRow(row));
         });
         console.log(`[FARMER] Loaded crops for ${activeCropsByPlayer.size} players.`);
-    } catch (e) {
-        console.error('[FARMER] Failed to load crops:', e);
-    }
+    } catch (e) { console.error(e); }
 }
 loadCrops();
 
 function formatCropRow(row) {
     return {
-        id: row.id,
-        owner: row.character_id,
-        item: row.seed_item_id,
+        id: row.id, owner: row.character_id, item: row.seed_item_id,
         x: row.x, y: row.y, z: row.z, h: row.heading,
-        planted: Number(row.planted_at),
-        ready: Number(row.ready_at)
+        planted: Number(row.planted_at), ready: Number(row.ready_at)
     };
 }
 
-// --- HELPER: Random Harvest Count ---
 const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1;
 
-// --- HELPER: Polygon Check ---
+// --- POLYGON HELPER ---
 function isPointInPolygon(p, vertices) {
     let inside = false;
     for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
         const xi = vertices[i].x, yi = vertices[i].y;
         const xj = vertices[j].x, yj = vertices[j].y;
-        const intersect = ((yi > p.y) !== (yj > p.y))
-            && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
+        const intersect = ((yi > p.y) !== (yj > p.y)) && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
     }
     return inside;
 }
 
-// --- JOB LOGIC ---
 const logic = {
     onInteract: async (player, action) => { 
-        // 1. APPLE COLLECTOR
-        if (action === 'apple') {
-            return startAppleJob(player);
-        }
-
-        // 2. CROP PLANTER
-        if (action === 'crop') {
-            return startCropJob(player);
-        }
-
-        if (action === 'animal') {
-            return player.call('showNotification', ['Farmer', 'Animal keeping is coming soon!']);
-        }
+        if (action === 'apple') return startAppleJob(player);
+        if (action === 'crop') return startCropJob(player);
+        if (action === 'animal') return player.call('showNotification', ['Farmer', 'Coming soon!']);
     },
-    
     onStop: (player) => {
         const data = activeJobs.get(player.id);
-        if (data && data.vehicle && mp.vehicles.exists(data.vehicle)) {
-            data.vehicle.destroy();
-        }
+        if (data && data.vehicle && mp.vehicles.exists(data.vehicle)) data.vehicle.destroy();
         activeJobs.delete(player.id);
         jobManager.clearObjective(player);
-        
-        // Client Cleanup
         player.call('client:farmer:clearMarkers'); 
         player.call('client:farmer:clearCrops'); 
-        player.call('client:farmer:clearFieldBlips'); // Remove field blips
+        player.call('client:farmer:clearFieldBlips');
         player.call('client:farmer:toggleSeller', [false]);
     }
 };
 
-// --- SUB-LOGIC: APPLE ---
 async function startAppleJob(player) {
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    if (level < JOB_REQUIREMENT_LEVEL) {
-        return player.call('showNotification', ['Job Center', `You need Level ${JOB_REQUIREMENT_LEVEL} Farming.`]);
-    }
-    
+    if (level < JOB_REQUIREMENT_LEVEL) return player.call('showNotification', ['Job Center', `Need Level ${JOB_REQUIREMENT_LEVEL}.`]);
     jobManager.startJobSession(player, JOB_KEY);
-    
     const treeStates = {};
     try {
         const [rows] = await db.query('SELECT tree_id, harvests_left, cooldown_expiry FROM character_farm_trees WHERE character_id = ?', [player.data.dbId]);
-        rows.forEach(row => {
-            treeStates[row.tree_id] = { harvests_left: row.harvests_left, cooldown_expiry: Number(row.cooldown_expiry) };
-        });
-    } catch (err) { console.error(err); }
-
-    activeJobs.set(player.id, { vehicle: null, treeStates: treeStates });
+        rows.forEach(r => treeStates[r.tree_id] = { harvests_left: r.harvests_left, cooldown_expiry: Number(r.cooldown_expiry) });
+    } catch (e) {}
+    activeJobs.set(player.id, { vehicle: null, treeStates });
     syncTreeMarkers(player);
     player.call('client:farmer:toggleSeller', [true]);
-    player.call('showNotification', ['Farmer', 'Apple Job started. Use the Garage or go to the orchard.']);
+    player.call('showNotification', ['Farmer', 'Apple Job started.']);
 }
 
-// --- SUB-LOGIC: CROP JOB START ---
 async function startCropJob(player) {
-    const level = jobManager.getJobLevel(player, JOB_KEY);
-    
-    // Check for seeds or existing active crops
-    const hasSeeds = player.inventory.some(i => ItemRegistry[i.itemId] && ItemRegistry[i.itemId].type === 'seed');
-    const existingCrops = activeCropsByPlayer.get(player.data.dbId) || [];
-    
-    if (!hasSeeds && existingCrops.length === 0) {
-        return player.call('showNotification', ['Farmer', 'You need seeds (buy at store) or active crops to start.']);
-    }
-
     jobManager.startJobSession(player, JOB_KEY);
     activeJobs.set(player.id, { vehicle: null }); 
-
-    // Sync only YOUR crops (Client side visibility only)
     syncCropsToPlayer(player);
-    
-    // Calculate Centroids for Blips
-    const farmFields = zones.Zones
-        .filter(z => z.id && z.id.startsWith('farm_field_'))
-        .map(z => {
-            // Calculate center point of the polygon for the blip
-            let sumX = 0, sumY = 0;
-            if (z.vertices && z.vertices.length > 0) {
-                z.vertices.forEach(v => { sumX += v.x; sumY += v.y; });
-                return { 
-                    x: sumX / z.vertices.length, 
-                    y: sumY / z.vertices.length, 
-                    z: z.minZ || 40.0 
-                };
-            }
-            return null;
-        })
-        .filter(pos => pos !== null);
-    
-    if(farmFields.length > 0) {
-        player.call('client:farmer:createFieldBlips', [JSON.stringify(farmFields)]);
-    }
 
-    player.call('showNotification', ['Farmer', `Crop Job Started. Go to any marked field to plant.`]);
+    const farmFields = zones.Zones.filter(z => z.id && z.id.startsWith('farm_field_')).map(z => {
+        let sumX = 0, sumY = 0;
+        if (z.vertices && z.vertices.length > 0) {
+            z.vertices.forEach(v => { sumX += v.x; sumY += v.y; });
+            return { x: sumX / z.vertices.length, y: sumY / z.vertices.length, z: z.minZ || 40.0 };
+        }
+        return null;
+    }).filter(p => p !== null);
+    
+    if(farmFields.length > 0) player.call('client:farmer:createFieldBlips', [JSON.stringify(farmFields)]);
+    player.call('showNotification', ['Farmer', `Crop Job Started.`]);
 }
 
-// --- CROP EVENTS ---
-
-// 1. PLANT
 mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'Start the job first.']);
-
-    // 1. Validate Location: Is player in ANY farm field?
+    
     const pPos = player.position;
     const fields = zones.Zones.filter(z => z.id.startsWith('farm_field_'));
-    
-    let inField = null;
+    const inField = fields.find(z => {
+        if (z.minZ && pPos.z < z.minZ) return false;
+        if (z.maxZ && pPos.z > z.maxZ) return false;
+        return z.vertices && isPointInPolygon(pPos, z.vertices);
+    });
 
-    for (const field of fields) {
-        // Check Z bounds first (optimization)
-        if (field.minZ && pPos.z < field.minZ) continue;
-        if (field.maxZ && pPos.z > field.maxZ) continue;
-
-        // Check Polygon
-        if (field.vertices && isPointInPolygon(pPos, field.vertices)) {
-            inField = field;
-            break;
-        }
-    }
-
-    if (!inField) {
-        return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field to plant.']);
-    }
+    if (!inField) return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field.']);
 
     const seedDef = ItemRegistry[seedId];
     if (!seedDef) return;
 
-    // 2. Calculate Scaled Limit
     const level = jobManager.getJobLevel(player, JOB_KEY);
     const variableAmount = Math.floor((Math.min(level, 100) / 100) * (CROP_LIMIT_MAX - CROP_LIMIT_MIN));
     const allowed = CROP_LIMIT_MIN + variableAmount;
     
     const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+    if (myCrops.length >= allowed) return player.call('showNotification', ['Farmer', `Limit Reached! (Max: ${allowed})`]);
+    if (myCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.0)) return player.call('showNotification', ['Farmer', 'Too close to another crop.']);
 
-    if (myCrops.length >= allowed) {
-        return player.call('showNotification', ['Farmer', `Limit Reached! (Level ${level}: ${allowed} crops)`]);
-    }
-
-    // 3. Check Spacing (Against OWN crops only)
-    const tooClose = myCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.0);
-    if (tooClose) return player.call('showNotification', ['Farmer', 'Too close to your other crops.']);
-
-    // Consume Item
     const itemObj = player.inventory.find(i => i.slot === slot);
     if (!itemObj) return;
-    
     if (itemObj.count > 1) {
         itemObj.count--;
         await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [itemObj.count, itemObj.id]);
@@ -257,9 +173,7 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     }
     inventory.syncClient(player);
 
-    // Animation
     const groundZ = player.position.z - 1.0; 
-
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
     player.call('client:freezePlayer', [true]);
 
@@ -267,65 +181,43 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
         if (!mp.players.exists(player)) return;
         player.stopAnimation();
         player.call('client:freezePlayer', [false]);
-
         const now = Date.now();
         const readyAt = now + (seedDef.data.growTime || 60000);
+        
+        const [res] = await db.query('INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [player.data.dbId, inField.id, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]);
 
-        // Save
-        const [res] = await db.query(
-            'INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [player.data.dbId, inField.id, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]
-        );
-
-        const newCrop = {
-            id: res.insertId, owner: player.data.dbId, item: seedId,
-            x: player.position.x, y: player.position.y, z: groundZ, h: player.heading,
-            planted: now, ready: readyAt
-        };
-
+        const newCrop = { id: res.insertId, owner: player.data.dbId, item: seedId, x: player.position.x, y: player.position.y, z: groundZ, h: player.heading, planted: now, ready: readyAt };
         if (!activeCropsByPlayer.has(player.data.dbId)) activeCropsByPlayer.set(player.data.dbId, []);
         activeCropsByPlayer.get(player.data.dbId).push(newCrop);
-
         syncCropsToPlayer(player);
         player.call('showNotification', ['Farmer', 'Seed planted!']);
     }, 4000);
 });
 
-// 2. HARVEST
 mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
     if (player.data.isHarvesting) return;
-
-    // Look in player's personal cache
     const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
     const foundCrop = myCrops.find(x => x.id === cropId);
 
-    if (!foundCrop) return player.call('showNotification', ['Farmer', 'Crop not found or not yours.']);
+    if (!foundCrop) return player.call('showNotification', ['Farmer', 'Crop error.']);
     if (Date.now() < foundCrop.ready) return player.call('showNotification', ['Farmer', 'Not ready yet.']);
 
     const seedDef = ItemRegistry[foundCrop.item];
     const rewardId = seedDef.data.reward;
     
-    // --- ANIMATION ---
     player.data.isHarvesting = true;
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
     player.call('client:freezePlayer', [true]);
 
     setTimeout(async () => {
         player.data.isHarvesting = false;
-        
         if (mp.players.exists(player)) {
             player.stopAnimation();
             player.call('client:freezePlayer', [false]);
-
-            // --- REWARD & DELETE ---
             if (await inventory.addItem(player, rewardId, 1)) {
-                
                 await db.query('DELETE FROM character_farm_crops WHERE id = ?', [cropId]);
-                
-                // Remove from cache
                 const idx = myCrops.findIndex(x => x.id === cropId);
                 if (idx > -1) myCrops.splice(idx, 1);
-
                 syncCropsToPlayer(player);
                 await jobManager.addJobXp(player, JOB_KEY, 5);
                 player.call('showNotification', ['Farmer', 'Harvested crop.']);
@@ -341,14 +233,11 @@ function syncCropsToPlayer(player) {
     player.call('client:farmer:syncCrops', [JSON.stringify(crops)]);
 }
 
-// --- APPLE LOGIC: TREE SYNC ---
 function syncTreeMarkers(player) {
     const data = activeJobs.get(player.id);
     if (!data) return;
-
     const validTrees = [];
     const now = Date.now();
-
     TREES.forEach(tree => {
         const state = data.treeStates[tree.id];
         let isAvailable = true;
@@ -357,7 +246,6 @@ function syncTreeMarkers(player) {
         }
         if (isAvailable) validTrees.push({ x: tree.x, y: tree.y, z: tree.z });
     });
-
     player.call('client:farmer:updateMarkers', [JSON.stringify(validTrees)]);
 }
 
@@ -365,39 +253,31 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You are not on the clock.']);
     const data = activeJobs.get(player.id);
     if (!data || !data.treeStates) return;
-
     const treeInfo = TREES[treeIndex];
     if (!treeInfo) return;
     const treeId = treeInfo.id;
-
     let state = data.treeStates[treeId];
     if (!state) {
         state = { harvests_left: getRandomHarvests(), cooldown_expiry: 0 };
         data.treeStates[treeId] = state;
     }
-
     const now = Date.now();
     let requiresSync = false;
-
     if (state.cooldown_expiry > now) {
         const minsLeft = Math.ceil((state.cooldown_expiry - now) / 60000);
         return player.call('showNotification', ['Farmer', `This tree is recovering. Available in ${minsLeft} mins.`]);
     }
-
     if (state.harvests_left <= 0 && state.cooldown_expiry <= now) {
         state.harvests_left = getRandomHarvests();
         state.cooldown_expiry = 0;
         requiresSync = true; 
     }
-
     player.call('client:freezePlayer', [true]);
     player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
-
     setTimeout(async () => {
         if (!mp.players.exists(player)) return;
         player.stopAnimation();
         player.call('client:freezePlayer', [false]);
-
         if (await inventory.addItem(player, 'apple', 1)) {
             state.harvests_left--;
             if (state.harvests_left <= 0) {
@@ -407,7 +287,6 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
             } else {
                 player.call('showNotification', ['Farmer', `Collected Apple.`]);
             }
-
             try {
                 await db.query(`
                     INSERT INTO character_farm_trees (character_id, tree_id, harvests_left, cooldown_expiry) 
@@ -415,7 +294,6 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
                     ON DUPLICATE KEY UPDATE harvests_left = VALUES(harvests_left), cooldown_expiry = VALUES(cooldown_expiry)
                 `, [player.data.dbId, treeId, state.harvests_left, state.cooldown_expiry]);
             } catch(e) { console.error(e); }
-
             if (requiresSync) syncTreeMarkers(player);
             await jobManager.addJobXp(player, JOB_KEY, 1);
         } else {
@@ -424,12 +302,10 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     }, 4000);
 });
 
-// --- SELLER LOGIC ---
 mp.events.add('server:farmer:openSeller', (player) => {
     if (player.activeJobId !== JOB_KEY) return;
     let appleCount = 0;
     if (player.inventory) player.inventory.forEach(item => { if (item.itemId === 'apple') appleCount += item.count; });
-    
     if (appleCount === 0) return player.call('showNotification', ['Seller', "You don't have any apples."]);
     jobManager.clearObjective(player);
     player.call('client:farmer:openMenu', [appleCount, APPLE_PRICE]);
@@ -439,15 +315,11 @@ mp.events.add('server:farmer:sell', async (player, amount) => {
     if (player.activeJobId !== JOB_KEY) return;
     amount = parseInt(amount);
     if (amount <= 0) return;
-
     const appleItems = player.inventory.filter(i => i.itemId === 'apple');
     let totalApples = appleItems.reduce((acc, i) => acc + i.count, 0);
-
     if (totalApples < amount) return;
-
     let remaining = amount;
     const removalPromises = [];
-    
     for (const item of appleItems) {
         if (remaining <= 0) break;
         if (item.count <= remaining) {
@@ -460,7 +332,6 @@ mp.events.add('server:farmer:sell', async (player, amount) => {
         }
     }
     await Promise.all(removalPromises);
-
     const money = amount * APPLE_PRICE;
     const xp = Math.ceil(amount * 0.5); 
     await playerManager.addMoneyAndSave(player, money, 'Apple Sales');
@@ -469,22 +340,12 @@ mp.events.add('server:farmer:sell', async (player, amount) => {
     inventory.syncClient(player);
 });
 
-// --- INITIALIZATION ---
 jobManager.register(JOB_KEY, {
-    name: 'Farmer',
-    description: "Work in the fields harvesting crops, planting seeds, or taking care of farm animals.",
-    previewButtons: [
-        { label: "Apple Collector", action: "apple" },
-        { label: "Crop Planter", action: "crop" }, 
-        { label: "Animal Keeper", action: "animal" }
-    ],
-    pedModel: 'a_m_m_farmer_01', 
-    pos: JOB_NPC,
-    blipSprite: 846, 
-    blipColor: 25,
+    name: 'Farmer', description: "Work in the fields.",
+    previewButtons: [ { label: "Apple Collector", action: "apple" }, { label: "Crop Planter", action: "crop" }, { label: "Animal Keeper", action: "animal" } ],
+    pedModel: 'a_m_m_farmer_01', pos: JOB_NPC, blipSprite: 846, blipColor: 25,
 }, logic);
 
-// Create Tree Interactions
 TREES.forEach((tree, index) => {
     const col = mp.colshapes.newSphere(tree.x, tree.y, tree.z, 2.0);
     col.setVariable('interaction', {
