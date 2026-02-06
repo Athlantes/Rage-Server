@@ -17,7 +17,7 @@ const RECOVERY_TIME_MS = 30 * 60 * 1000;
 const CROP_LIMIT_MIN = 50;   // Level 1
 const CROP_LIMIT_MAX = 100;  // Level 100
 
-const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
+const JOB_NPC = { x: 2434.66, y: 4976.76, z: 46.57, h: 43.95 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
 const VEHICLE_SPAWN = { x: 2411.58, y: 4988.95, z: 45.43, h: 133.84 };
 const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22, h: 134.69 }; 
@@ -85,6 +85,19 @@ function formatCropRow(row) {
 
 // --- HELPER: Random Harvest Count ---
 const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1;
+
+// --- HELPER: Polygon Check ---
+function isPointInPolygon(p, vertices) {
+    let inside = false;
+    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+        const xi = vertices[i].x, yi = vertices[i].y;
+        const xj = vertices[j].x, yj = vertices[j].y;
+        const intersect = ((yi > p.y) !== (yj > p.y))
+            && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
 
 // --- JOB LOGIC ---
 const logic = {
@@ -161,11 +174,23 @@ async function startCropJob(player) {
     // Sync only YOUR crops (Client side visibility only)
     syncCropsToPlayer(player);
     
-    // Find Fields and Send Blips
-    // Assumes zones/config exports 'Zones' array
+    // Calculate Centroids for Blips
     const farmFields = zones.Zones
         .filter(z => z.id && z.id.startsWith('farm_field_'))
-        .map(z => ({ x: z.x, y: z.y, z: z.z }));
+        .map(z => {
+            // Calculate center point of the polygon for the blip
+            let sumX = 0, sumY = 0;
+            if (z.vertices && z.vertices.length > 0) {
+                z.vertices.forEach(v => { sumX += v.x; sumY += v.y; });
+                return { 
+                    x: sumX / z.vertices.length, 
+                    y: sumY / z.vertices.length, 
+                    z: z.minZ || 40.0 
+                };
+            }
+            return null;
+        })
+        .filter(pos => pos !== null);
     
     if(farmFields.length > 0) {
         player.call('client:farmer:createFieldBlips', [JSON.stringify(farmFields)]);
@@ -184,12 +209,19 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     const pPos = player.position;
     const fields = zones.Zones.filter(z => z.id.startsWith('farm_field_'));
     
-    // Find if inside any zone
-    // If zone.radius is not defined in config, default to 20m
-    const inField = fields.find(z => {
-        const radius = z.radius || 30.0;
-        return player.dist(new mp.Vector3(z.x, z.y, z.z)) <= radius;
-    });
+    let inField = null;
+
+    for (const field of fields) {
+        // Check Z bounds first (optimization)
+        if (field.minZ && pPos.z < field.minZ) continue;
+        if (field.maxZ && pPos.z > field.maxZ) continue;
+
+        // Check Polygon
+        if (field.vertices && isPointInPolygon(pPos, field.vertices)) {
+            inField = field;
+            break;
+        }
+    }
 
     if (!inField) {
         return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field to plant.']);
@@ -200,8 +232,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
 
     // 2. Calculate Scaled Limit
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    // Formula: 50 base. At level 100, add 50 more. 
-    // Ratio: (Level / 100). Clamp level at 100.
     const variableAmount = Math.floor((Math.min(level, 100) / 100) * (CROP_LIMIT_MAX - CROP_LIMIT_MIN));
     const allowed = CROP_LIMIT_MIN + variableAmount;
     
@@ -212,7 +242,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     }
 
     // 3. Check Spacing (Against OWN crops only)
-    // Instanced means they only collide with themselves
     const tooClose = myCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.0);
     if (tooClose) return player.call('showNotification', ['Farmer', 'Too close to your other crops.']);
 
@@ -451,7 +480,7 @@ jobManager.register(JOB_KEY, {
     ],
     pedModel: 'a_m_m_farmer_01', 
     pos: JOB_NPC,
-    blipSprite: 210, 
+    blipSprite: 846, 
     blipColor: 25,
 }, logic);
 
