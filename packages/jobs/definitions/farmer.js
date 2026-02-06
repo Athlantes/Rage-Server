@@ -50,6 +50,7 @@ const TREES = [
 ];
 
 const activeJobs = new Map();
+// Cache: { 'farm_field_1': [ { id, owner, item, x, y, z, ready... } ] }
 const activeCrops = {}; 
 
 // --- INITIALIZATION: LOAD CROPS ---
@@ -212,6 +213,9 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     inventory.syncClient(player);
 
     // Animation
+    // We adjust Z by -1.0 to ensure it spawns on ground, not chest level
+    const groundZ = player.position.z - 1.0; 
+
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
     player.call('client:freezePlayer', [true]);
 
@@ -223,15 +227,15 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
         const now = Date.now();
         const readyAt = now + (seedDef.data.growTime || 60000);
 
-        // Save
+        // Save with groundZ
         const [res] = await db.query(
             'INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [player.data.dbId, fieldId, seedId, player.position.x, player.position.y, player.position.z, player.heading, now, readyAt]
+            [player.data.dbId, fieldId, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]
         );
 
         const newCrop = {
             id: res.insertId, owner: player.data.dbId, item: seedId,
-            x: player.position.x, y: player.position.y, z: player.position.z, h: player.heading,
+            x: player.position.x, y: player.position.y, z: groundZ, h: player.heading,
             planted: now, ready: readyAt
         };
 
@@ -261,12 +265,16 @@ mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
     const rewardId = seedDef.data.reward;
     
     if (await inventory.addItem(player, rewardId, 1)) {
-        player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
+        // [FIXED] Ground Animation
+        player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
         player.call('client:freezePlayer', [true]);
 
         setTimeout(async () => {
-             if(mp.players.exists(player)) player.call('client:freezePlayer', [false]);
-        }, 2000);
+             if(mp.players.exists(player)) {
+                 player.stopAnimation(); // [FIXED] Stop animation
+                 player.call('client:freezePlayer', [false]);
+             }
+        }, 4000);
 
         await db.query('DELETE FROM character_farm_crops WHERE id = ?', [cropId]);
         const idx = activeCrops[foundField].indexOf(foundCrop);
@@ -458,7 +466,6 @@ mp.events.add('server:farmer:spawnTractor', (player) => {
     });
     data.vehicle.jobOwner = player.id;
     data.vehicle.setVariable('fuel', 100);
-    
     setTimeout(() => {
         if (mp.players.exists(player) && mp.vehicles.exists(data.vehicle)) {
             player.call('client:warpIntoVehicle', [data.vehicle.id, -1]);
