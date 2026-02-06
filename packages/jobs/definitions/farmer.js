@@ -13,9 +13,9 @@ const JOB_REQUIREMENT_LEVEL = 1;
 const APPLE_PRICE = 2; 
 const RECOVERY_TIME_MS = 30 * 60 * 1000; 
 
-// Crop Settings
-const CROP_LIMIT_BASE = 10;
-const CROP_LIMIT_MAX = 20;
+// Crop Settings - Dynamic Limits
+const CROP_LIMIT_MIN = 50;   // Level 1
+const CROP_LIMIT_MAX = 100;  // Level 100
 
 const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
@@ -51,17 +51,24 @@ const TREES = [
 ];
 
 const activeJobs = new Map();
-// Cache: { 'farm_field_1': [ { id, owner, item, x, y, z, ready... } ] }
-const activeCrops = {}; 
+
+// CACHE: Key = CharacterDBId, Value = Array of Crops
+// We organize by player ID now for instancing
+const activeCropsByPlayer = new Map(); 
 
 // --- INITIALIZATION: LOAD CROPS ---
 async function loadCrops() {
-    const [rows] = await db.query('SELECT * FROM character_farm_crops');
-    rows.forEach(row => {
-        if (!activeCrops[row.field_id]) activeCrops[row.field_id] = [];
-        activeCrops[row.field_id].push(formatCropRow(row));
-    });
-    console.log(`[FARMER] Loaded ${rows.length} active crops.`);
+    try {
+        const [rows] = await db.query('SELECT * FROM character_farm_crops');
+        rows.forEach(row => {
+            const charId = row.character_id;
+            if (!activeCropsByPlayer.has(charId)) activeCropsByPlayer.set(charId, []);
+            activeCropsByPlayer.get(charId).push(formatCropRow(row));
+        });
+        console.log(`[FARMER] Loaded crops for ${activeCropsByPlayer.size} players.`);
+    } catch (e) {
+        console.error('[FARMER] Failed to load crops:', e);
+    }
 }
 loadCrops();
 
@@ -87,9 +94,9 @@ const logic = {
             return startAppleJob(player);
         }
 
-        // 2. CROP PLANTER (Assignments)
+        // 2. CROP PLANTER
         if (action === 'crop') {
-            return assignField(player);
+            return startCropJob(player);
         }
 
         if (action === 'animal') {
@@ -104,10 +111,12 @@ const logic = {
         }
         activeJobs.delete(player.id);
         jobManager.clearObjective(player);
+        
+        // Client Cleanup
         player.call('client:farmer:clearMarkers'); 
         player.call('client:farmer:clearCrops'); 
+        player.call('client:farmer:clearFieldBlips'); // Remove field blips
         player.call('client:farmer:toggleSeller', [false]);
-        player.data.assignedField = null;
     }
 };
 
@@ -134,46 +143,35 @@ async function startAppleJob(player) {
     player.call('showNotification', ['Farmer', 'Apple Job started. Use the Garage or go to the orchard.']);
 }
 
-// --- SUB-LOGIC: CROP ASSIGNMENT ---
-async function assignField(player) {
-    const hasSeeds = player.inventory.some(i => ItemRegistry[i.itemId] && ItemRegistry[i.itemId].type === 'seed');
-    const [existing] = await db.query('SELECT field_id FROM character_farm_crops WHERE character_id = ? LIMIT 1', [player.data.dbId]);
+// --- SUB-LOGIC: CROP JOB START ---
+async function startCropJob(player) {
+    const level = jobManager.getJobLevel(player, JOB_KEY);
     
-    if (!hasSeeds && existing.length === 0) {
+    // Check for seeds or existing active crops
+    const hasSeeds = player.inventory.some(i => ItemRegistry[i.itemId] && ItemRegistry[i.itemId].type === 'seed');
+    const existingCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+    
+    if (!hasSeeds && existingCrops.length === 0) {
         return player.call('showNotification', ['Farmer', 'You need seeds (buy at store) or active crops to start.']);
     }
 
-    let assignedId = null;
-
-    if (existing.length > 0) {
-        assignedId = existing[0].field_id;
-    } else {
-        const fields = zones.Zones.filter(z => z.id.startsWith('farm_field_'));
-        
-        fields.sort((a, b) => {
-            const countA = (activeCrops[a.id] || []).length;
-            const countB = (activeCrops[b.id] || []).length;
-            return (countA / a.maxCapacity) - (countB / b.maxCapacity);
-        });
-
-        for (const field of fields) {
-            const currentCount = (activeCrops[field.id] || []).length;
-            if (currentCount + 10 <= field.maxCapacity) {
-                assignedId = field.id;
-                break;
-            }
-        }
-    }
-
-    if (!assignedId) return player.call('showNotification', ['Farmer', 'All fields are currently full. Please wait.']);
-
     jobManager.startJobSession(player, JOB_KEY);
-    player.data.assignedField = assignedId;
     activeJobs.set(player.id, { vehicle: null }); 
 
-    syncCropsToPlayer(player, assignedId);
+    // Sync only YOUR crops (Client side visibility only)
+    syncCropsToPlayer(player);
     
-    player.call('showNotification', ['Farmer', `You are assigned to ${assignedId.replace('farm_field_', 'Field ')}.`]);
+    // Find Fields and Send Blips
+    // Assumes zones/config exports 'Zones' array
+    const farmFields = zones.Zones
+        .filter(z => z.id && z.id.startsWith('farm_field_'))
+        .map(z => ({ x: z.x, y: z.y, z: z.z }));
+    
+    if(farmFields.length > 0) {
+        player.call('client:farmer:createFieldBlips', [JSON.stringify(farmFields)]);
+    }
+
+    player.call('showNotification', ['Farmer', `Crop Job Started. Go to any marked field to plant.`]);
 }
 
 // --- CROP EVENTS ---
@@ -181,25 +179,42 @@ async function assignField(player) {
 // 1. PLANT
 mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'Start the job first.']);
-    if (!player.data.assignedField) return player.call('showNotification', ['Farmer', 'You have no assigned field.']);
+
+    // 1. Validate Location: Is player in ANY farm field?
+    const pPos = player.position;
+    const fields = zones.Zones.filter(z => z.id.startsWith('farm_field_'));
+    
+    // Find if inside any zone
+    // If zone.radius is not defined in config, default to 20m
+    const inField = fields.find(z => {
+        const radius = z.radius || 30.0;
+        return player.dist(new mp.Vector3(z.x, z.y, z.z)) <= radius;
+    });
+
+    if (!inField) {
+        return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field to plant.']);
+    }
 
     const seedDef = ItemRegistry[seedId];
     if (!seedDef) return;
 
-    // Check Limits
+    // 2. Calculate Scaled Limit
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    const allowed = Math.min(CROP_LIMIT_MAX, CROP_LIMIT_BASE + Math.floor(level / 2));
+    // Formula: 50 base. At level 100, add 50 more. 
+    // Ratio: (Level / 100). Clamp level at 100.
+    const variableAmount = Math.floor((Math.min(level, 100) / 100) * (CROP_LIMIT_MAX - CROP_LIMIT_MIN));
+    const allowed = CROP_LIMIT_MIN + variableAmount;
     
-    const [countRows] = await db.query('SELECT COUNT(*) as count FROM character_farm_crops WHERE character_id = ?', [player.data.dbId]);
-    if (countRows[0].count >= allowed) {
+    const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+
+    if (myCrops.length >= allowed) {
         return player.call('showNotification', ['Farmer', `Limit Reached! (Level ${level}: ${allowed} crops)`]);
     }
 
-    // Check Spacing
-    const fieldId = player.data.assignedField;
-    const zoneCrops = activeCrops[fieldId] || [];
-    const tooClose = zoneCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.5);
-    if (tooClose) return player.call('showNotification', ['Farmer', 'Too close to another crop.']);
+    // 3. Check Spacing (Against OWN crops only)
+    // Instanced means they only collide with themselves
+    const tooClose = myCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.0);
+    if (tooClose) return player.call('showNotification', ['Farmer', 'Too close to your other crops.']);
 
     // Consume Item
     const itemObj = player.inventory.find(i => i.slot === slot);
@@ -214,7 +229,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     inventory.syncClient(player);
 
     // Animation
-    // We adjust Z by -1.0 to ensure it spawns on ground, not chest level
     const groundZ = player.position.z - 1.0; 
 
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
@@ -228,10 +242,10 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
         const now = Date.now();
         const readyAt = now + (seedDef.data.growTime || 60000);
 
-        // Save with groundZ
+        // Save
         const [res] = await db.query(
             'INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [player.data.dbId, fieldId, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]
+            [player.data.dbId, inField.id, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]
         );
 
         const newCrop = {
@@ -240,40 +254,33 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
             planted: now, ready: readyAt
         };
 
-        if (!activeCrops[fieldId]) activeCrops[fieldId] = [];
-        activeCrops[fieldId].push(newCrop);
+        if (!activeCropsByPlayer.has(player.data.dbId)) activeCropsByPlayer.set(player.data.dbId, []);
+        activeCropsByPlayer.get(player.data.dbId).push(newCrop);
 
-        syncCropsToZone(fieldId);
+        syncCropsToPlayer(player);
         player.call('showNotification', ['Farmer', 'Seed planted!']);
     }, 4000);
 });
 
-// 2. HARVEST (UPDATED)
+// 2. HARVEST
 mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
-    // Prevent spam if already harvesting
     if (player.data.isHarvesting) return;
 
-    let foundCrop = null;
-    let foundField = null;
+    // Look in player's personal cache
+    const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+    const foundCrop = myCrops.find(x => x.id === cropId);
 
-    for (const [fId, crops] of Object.entries(activeCrops)) {
-        const c = crops.find(x => x.id === cropId);
-        if (c) { foundCrop = c; foundField = fId; break; }
-    }
-
-    if (!foundCrop) return;
-    if (foundCrop.owner !== player.data.dbId) return player.call('showNotification', ['Farmer', 'Not your crop.']);
+    if (!foundCrop) return player.call('showNotification', ['Farmer', 'Crop not found or not yours.']);
     if (Date.now() < foundCrop.ready) return player.call('showNotification', ['Farmer', 'Not ready yet.']);
 
     const seedDef = ItemRegistry[foundCrop.item];
     const rewardId = seedDef.data.reward;
     
-    // --- ANIMATION START ---
+    // --- ANIMATION ---
     player.data.isHarvesting = true;
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
     player.call('client:freezePlayer', [true]);
 
-    // --- WAIT FOR ANIMATION TO FINISH ---
     setTimeout(async () => {
         player.data.isHarvesting = false;
         
@@ -286,35 +293,22 @@ mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
                 
                 await db.query('DELETE FROM character_farm_crops WHERE id = ?', [cropId]);
                 
-                // Remove from cache safely
-                const currentCrops = activeCrops[foundField];
-                if (currentCrops) {
-                    const idx = currentCrops.findIndex(x => x.id === cropId);
-                    if (idx > -1) currentCrops.splice(idx, 1);
-                }
+                // Remove from cache
+                const idx = myCrops.findIndex(x => x.id === cropId);
+                if (idx > -1) myCrops.splice(idx, 1);
 
-                syncCropsToZone(foundField);
+                syncCropsToPlayer(player);
                 await jobManager.addJobXp(player, JOB_KEY, 5);
                 player.call('showNotification', ['Farmer', 'Harvested crop.']);
             } else {
                 player.call('showNotification', ['Inventory', 'Inventory Full!']);
             }
         }
-    }, 4000); // 4 Seconds Duration
+    }, 4000); 
 });
 
-function syncCropsToZone(fieldId) {
-    const crops = activeCrops[fieldId] || [];
-    const data = JSON.stringify(crops);
-    mp.players.forEach(p => {
-        if (p.activeJobId === JOB_KEY && p.data.assignedField === fieldId) {
-            p.call('client:farmer:syncCrops', [data]);
-        }
-    });
-}
-
-function syncCropsToPlayer(player, fieldId) {
-    const crops = activeCrops[fieldId] || [];
+function syncCropsToPlayer(player) {
+    const crops = activeCropsByPlayer.get(player.data.dbId) || [];
     player.call('client:farmer:syncCrops', [JSON.stringify(crops)]);
 }
 

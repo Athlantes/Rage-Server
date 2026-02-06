@@ -1,4 +1,6 @@
+// client_packages/jobs/farmer.js
 let markers = [];
+let fieldBlips = []; // Stores blips for farm fields
 let sellerBlip = null;
 let sellerMenu = null;
 let cropObjects = {}; 
@@ -8,8 +10,11 @@ let cropData = [];
 const CROP_MODELS = {
     // start: The leaf model that rises from the ground
     // end: The final pumpkin model
-    'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 }
+    'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 },
+    // You can add more seed definitions here
 };
+
+// --- MARKERS & BLIPS ---
 
 mp.events.add('client:farmer:updateMarkers', (json) => {
     // Clear old
@@ -30,6 +35,29 @@ mp.events.add('client:farmer:clearMarkers', () => {
     markers = [];
 });
 
+// NEW: Create blips for all valid farming fields
+mp.events.add('client:farmer:createFieldBlips', (json) => {
+    // Clear existing just in case
+    fieldBlips.forEach(b => b.destroy());
+    fieldBlips = [];
+
+    const positions = JSON.parse(json);
+    positions.forEach(pos => {
+        const blip = mp.blips.new(88, new mp.Vector3(pos.x, pos.y, pos.z), {
+            name: 'Farm Field',
+            color: 25,
+            shortRange: true,
+            scale: 0.8
+        });
+        fieldBlips.push(blip);
+    });
+});
+
+mp.events.add('client:farmer:clearFieldBlips', () => {
+    fieldBlips.forEach(b => b.destroy());
+    fieldBlips = [];
+});
+
 mp.events.add('client:farmer:toggleSeller', (state) => {
     if (state) {
         if (!sellerBlip) {
@@ -41,6 +69,8 @@ mp.events.add('client:farmer:toggleSeller', (state) => {
         if (sellerBlip) { sellerBlip.destroy(); sellerBlip = null; }
     }
 });
+
+// --- MENU & UI ---
 
 mp.events.add('client:farmer:openMenu', (count, price) => {
     if (sellerMenu) return;
@@ -80,7 +110,7 @@ mp.events.add('client:farmer:syncCrops', (json) => {
 
     const newIds = new Set(newCrops.map(c => c.id));
 
-    // 1. Remove old
+    // 1. Remove old objects that are no longer in the list
     Object.keys(cropObjects).forEach(k => {
         const id = parseInt(k);
         if (!newIds.has(id)) {
@@ -89,7 +119,7 @@ mp.events.add('client:farmer:syncCrops', (json) => {
         }
     });
 
-    // 2. Add/Update
+    // 2. Add/Update new objects
     newCrops.forEach(crop => {
         const def = CROP_MODELS[crop.item];
         if (!def) return;
@@ -111,6 +141,7 @@ mp.events.add('client:farmer:syncCrops', (json) => {
             obj.setProofs(true, true, true, true, true, true, true, true); 
             
         } else {
+            // Maintenance for existing objects
             const obj = cropObjects[crop.id];
             if(mp.objects.exists(obj)) {
                  obj.freezePosition(true);
@@ -131,7 +162,7 @@ mp.events.add('render', () => {
 
     const now = Date.now();
     const playerPos = mp.players.local.position;
-    const myDbId = mp.players.local.getVariable('dbId'); 
+    // We don't need to check crop.owner anymore because cropData only contains OUR crops sent by server.
 
     cropData.forEach(crop => {
         const obj = cropObjects[crop.id];
@@ -185,7 +216,7 @@ mp.events.add('render', () => {
         }
 
         // --- INTERACTION & MARKERS ---
-        if (crop.owner === myDbId && now >= crop.ready) {
+        if (now >= crop.ready) {
              
              // Green Marker above crop
              mp.game.graphics.drawMarker(
