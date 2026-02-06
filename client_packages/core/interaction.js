@@ -33,6 +33,20 @@ mp.events.add("playerExitColshape", (shape) => {
     }
 });
 
+// [NEW] Event to restore interaction (called when menus close)
+mp.events.add('interaction:restore', () => {
+    if (activeInteraction) {
+        const localPlayer = mp.players.local;
+        const veh = localPlayer.vehicle;
+
+        // Re-check conditions in case player state changed while in menu
+        if (activeInteraction.requireOnFoot && veh) return;
+        if (activeInteraction.requireVehicle && !veh) return;
+
+        mp.events.call('showInteraction', activeInteraction.title, activeInteraction.text);
+    }
+});
+
 // 2. Key Handler (E)
 mp.keys.bind(0x45, true, function() {
     if (mp.gui.cursor.visible) return;

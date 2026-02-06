@@ -14,7 +14,7 @@ const RECOVERY_TIME_MS = 30 * 60 * 1000; // 30 Minutes
 const JOB_NPC = { x: 2395.16, y: 4983.64, z: 45.33, h: -155.93 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
 const VEHICLE_SPAWN = { x: 2411.58, y: 4988.95, z: 45.43, h: 133.84 };
-const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22 }; 
+const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22, h: 134.69 }; 
 
 const TREES = [
     { id: 'tree_1', x: 2389.63, y: 4991.62, z: 45.15 },
@@ -293,7 +293,7 @@ jobManager.register(JOB_KEY, {
     ],
     pedModel: 'a_m_m_farmer_01', 
     pos: JOB_NPC,
-    blipSprite: 496, 
+    blipSprite: 210, 
     blipColor: 25,
 }, logic);
 

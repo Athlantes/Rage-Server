@@ -2,6 +2,13 @@ let previewCam = null;
 let previewBrowser = null;
 let currentJobId = null;
 
+// [NEW] Bind Escape Key (0x1B) to close the menu
+mp.keys.bind(0x1B, false, () => {
+    if (previewBrowser) {
+        cleanupPreview();
+    }
+});
+
 // EVENT: Open the preview menu
 mp.events.add('client:job:openPreview', (jobData) => {
     // 1. Setup Camera
@@ -37,23 +44,28 @@ mp.events.add('client:job:openPreview', (jobData) => {
     // Store ID for the callback
     currentJobId = jobData.id;
 
-    // 3. Send data to UI Safely (Fix for quotes breaking JS)
-    // We stringify the object, then we verify it's clean for execution
+    // 3. Send data to UI Safely
     const safeJson = JSON.stringify(jobData);
-    previewBrowser.execute(`setupPreview(${JSON.stringify(safeJson)});`); // Double stringify handles escaping quotes
+    previewBrowser.execute(`setupPreview(${JSON.stringify(safeJson)});`);
     
     mp.gui.cursor.show(true, true);
     mp.game.ui.displayRadar(false);
+
+    // [NEW] Hide the "Press E" prompt while menu is open
+    mp.events.call('hideInteraction');
 });
 
 // EVENT: Handle button click from UI
 mp.events.add('ui:job:select', (action) => {
-    mp.gui.chat.push(`[Debug] Selected Job Action: ${action}`); // Debug message in chat
+    mp.gui.chat.push(`[Debug] Selected Job Action: ${action}`);
     
+    // [FIX] Capture ID BEFORE cleanup (or the variable becomes null)
+    const idToSend = currentJobId;
+
     cleanupPreview();
     
-    if (currentJobId !== null && currentJobId !== undefined) {
-        mp.events.callRemote('server:job:continue', currentJobId, action);
+    if (idToSend !== null && idToSend !== undefined) {
+        mp.events.callRemote('server:job:continue', idToSend, action);
     } else {
         mp.gui.chat.push("Error: No Job ID found.");
     }
@@ -79,4 +91,7 @@ function cleanupPreview() {
         previewCam = null;
     }
     currentJobId = null;
+
+    // [NEW] Restore the interaction prompt if player is still in the zone
+    mp.events.call('interaction:restore');
 }
