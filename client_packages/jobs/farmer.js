@@ -1,141 +1,151 @@
-// client_packages/jobs/farmer.js
-let sellerBrowser = null;
-let treeMarkers = [];
-let pendingData = null;
+let markers = [];
+let sellerBlip = null;
+let sellerMenu = null;
+let cropObjects = {}; 
+let cropData = []; 
 
-// [NEW] Local Seller Entities
-let sellerEntities = {
-    blip: null,
-    ped: null,
-    marker: null,
-    colshape: null
+const CROP_MODELS = {
+    'seed_pumpkin': { start: 'prop_veg_crop_03_cab', end: 'prop_veg_crop_03_pump', zOff: -0.05 }
 };
-const SELLER_COORDS = new mp.Vector3(1960.07, 3739.94, 32.34);
-const SELLER_HEADING = -50.14;
 
-// --- SELLER UI ---
-mp.events.add('client:farmer:openMenu', (maxApples, price) => {
-    if (sellerBrowser) {
-        sellerBrowser.destroy();
-        sellerBrowser = null;
-    }
-    pendingData = { apples: maxApples, price: price };
-    sellerBrowser = mp.browsers.new("package://ui/appleSeller.html");
-    mp.gui.cursor.show(true, true);
-});
+mp.events.add('client:farmer:updateMarkers', (json) => {
+    // Clear old
+    markers.forEach(m => m.destroy());
+    markers = [];
 
-mp.events.add('client:farmer:browserReady', () => {
-    if (sellerBrowser && pendingData) {
-        sellerBrowser.execute(`updateInfo(${pendingData.apples}, ${pendingData.price});`);
-        pendingData = null;
-        mp.console.logInfo("[FARMER] Menu loaded and data sent.");
-    }
-});
-
-mp.events.add('client:closeAppleBrowser', () => {
-    if (sellerBrowser) {
-        sellerBrowser.destroy();
-        sellerBrowser = null;
-    }
-    mp.gui.cursor.show(false, false);
-});
-
-mp.events.add('client:submitAppleSale', (amount) => {
-    mp.events.call('client:closeAppleBrowser');
-    mp.events.callRemote('server:farmer:sell', amount);
-});
-
-// --- HELPER HANDLERS ---
-mp.events.add('client:freezePlayer', (status) => {
-    if (mp.players.local) mp.players.local.freezePosition(status);
-});
-
-// --- TREE MARKER LOGIC ---
-mp.events.add('client:farmer:updateMarkers', (markerData) => {
-    treeMarkers.forEach(m => { if(mp.markers.exists(m)) m.destroy(); });
-    treeMarkers = [];
-
-    let positions;
-    try { positions = JSON.parse(markerData); } catch (e) { return; }
-    
-    positions.forEach(pos => {
-        const marker = mp.markers.new(0, new mp.Vector3(pos.x, pos.y, pos.z), 0.5, { 
-            color: [0, 255, 0, 150], 
-            visible: true,
-            dimension: mp.players.local.dimension
+    const treePositions = JSON.parse(json);
+    treePositions.forEach(pos => {
+        const m = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.0, {
+            color: [255, 0, 0, 150], visible: true
         });
-        treeMarkers.push(marker);
+        markers.push(m);
     });
 });
 
 mp.events.add('client:farmer:clearMarkers', () => {
-    treeMarkers.forEach(m => { if(mp.markers.exists(m)) m.destroy(); });
-    treeMarkers = [];
+    markers.forEach(m => m.destroy());
+    markers = [];
 });
 
-// --- [NEW] LOCAL SELLER TOGGLE ---
 mp.events.add('client:farmer:toggleSeller', (state) => {
     if (state) {
-        // 1. Create Blip
-        if (!sellerEntities.blip) {
-            sellerEntities.blip = mp.blips.new(605, SELLER_COORDS, {
-                name: 'Apple Wholesaler',
-                color: 1,
-                shortRange: true,
-                scale: 0.8,
-                dimension: mp.players.local.dimension
+        if (!sellerBlip) {
+            sellerBlip = mp.blips.new(500, new mp.Vector3(1960.07, 3739.94, 32.34), {
+                name: 'Apple Seller', color: 2, shortRange: true, scale: 0.8
             });
         }
-
-        // 2. Create Ped
-        if (!sellerEntities.ped) {
-            sellerEntities.ped = mp.peds.new(mp.game.joaat('cs_old_man2'), SELLER_COORDS, SELLER_HEADING, mp.players.local.dimension);
-            sellerEntities.ped.freezePosition(true);
-            sellerEntities.ped.setInvincible(true);
-            sellerEntities.ped.setBlockingOfNonTemporaryEvents(true);
-        }
-
-        // 3. Create ColShape
-        if (!sellerEntities.colshape) {
-            sellerEntities.colshape = mp.colshapes.newSphere(SELLER_COORDS.x, SELLER_COORDS.y, SELLER_COORDS.z, 2.0, mp.players.local.dimension);
-        }
-
     } else {
-        // Destroy Everything
-        if (sellerEntities.blip && mp.blips.exists(sellerEntities.blip)) {
-            sellerEntities.blip.destroy();
-            sellerEntities.blip = null;
-        }
-        if (sellerEntities.ped && mp.peds.exists(sellerEntities.ped)) {
-            sellerEntities.ped.destroy();
-            sellerEntities.ped = null;
-        }
-        if (sellerEntities.colshape && mp.colshapes.exists(sellerEntities.colshape)) {
-            sellerEntities.colshape.destroy();
-            sellerEntities.colshape = null;
-        }
+        if (sellerBlip) { sellerBlip.destroy(); sellerBlip = null; }
     }
 });
 
-// --- [NEW] LOCAL INTERACTION KEYBIND ---
-let insideSellerZone = false;
+mp.events.add('client:farmer:openMenu', (count, price) => {
+    if (sellerMenu) return;
+    sellerMenu = mp.browsers.new('package://ui/appleSeller.html');
+    sellerMenu.execute(`setup(${count}, ${price})`);
+    mp.gui.cursor.show(true, true);
+});
 
-mp.events.add('playerEnterColshape', (shape) => {
-    if (sellerEntities.colshape && shape === sellerEntities.colshape) {
-        insideSellerZone = true;
-        mp.game.graphics.notify("Press ~b~E~w~ to sell apples.");
+mp.events.add('client:farmer:closeMenu', () => {
+    if (sellerMenu) {
+        sellerMenu.destroy();
+        sellerMenu = null;
+        mp.gui.cursor.show(false, false);
     }
 });
 
-mp.events.add('playerExitColshape', (shape) => {
-    if (sellerEntities.colshape && shape === sellerEntities.colshape) {
-        insideSellerZone = false;
-    }
+mp.events.add('client:farmer:sellAction', (amount) => {
+    mp.events.callRemote('server:farmer:sell', amount);
+    if (sellerMenu) { sellerMenu.destroy(); sellerMenu = null; }
+    mp.gui.cursor.show(false, false);
 });
 
-// Bind 'E' Key (0x45)
-mp.keys.bind(0x45, true, () => {
-    if (insideSellerZone && !mp.gui.cursor.visible) {
-        mp.events.callRemote('server:farmer:openSeller');
-    }
+mp.events.add('client:freezePlayer', (state) => {
+    mp.players.local.freezePosition(state);
+});
+
+mp.events.add('client:warpIntoVehicle', (vehId, seat) => {
+    const veh = mp.vehicles.at(vehId);
+    if (veh) mp.players.local.setIntoVehicle(veh.handle, seat);
+});
+
+// --- CROP SYSTEM ---
+
+mp.events.add('client:farmer:syncCrops', (json) => {
+    const newCrops = JSON.parse(json);
+    cropData = newCrops;
+
+    const newIds = new Set(newCrops.map(c => c.id));
+
+    // 1. Remove old
+    Object.keys(cropObjects).forEach(k => {
+        const id = parseInt(k);
+        if (!newIds.has(id)) {
+            if (mp.objects.exists(cropObjects[id])) cropObjects[id].destroy();
+            delete cropObjects[id];
+        }
+    });
+
+    // 2. Add/Update
+    newCrops.forEach(crop => {
+        const def = CROP_MODELS[crop.item];
+        if (!def) return;
+
+        const isReady = Date.now() >= crop.ready;
+        const model = isReady ? def.end : def.start;
+
+        if (!cropObjects[crop.id]) {
+            cropObjects[crop.id] = mp.objects.new(mp.game.joaat(model), new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
+                rotation: new mp.Vector3(0, 0, crop.h),
+                dimension: 0
+            });
+        } else {
+            // Update model if grew
+            const obj = cropObjects[crop.id];
+            if (obj.model !== mp.game.joaat(model)) {
+                obj.model = mp.game.joaat(model);
+            }
+        }
+    });
+});
+
+mp.events.add('client:farmer:clearCrops', () => {
+    Object.values(cropObjects).forEach(o => { if (mp.objects.exists(o)) o.destroy(); });
+    cropObjects = {};
+    cropData = [];
+});
+
+mp.events.add('render', () => {
+    if (cropData.length === 0) return;
+
+    const now = Date.now();
+    const playerPos = mp.players.local.position;
+    const myDbId = mp.players.local.getVariable('dbId'); 
+
+    cropData.forEach(crop => {
+        // Visual Update for Growth (Client side prediction)
+        if (cropObjects[crop.id] && now >= crop.ready) {
+            const def = CROP_MODELS[crop.item];
+            if (def && cropObjects[crop.id].model !== mp.game.joaat(def.end)) {
+                 cropObjects[crop.id].model = mp.game.joaat(def.end);
+            }
+        }
+
+        // Interaction
+        if (crop.owner === myDbId && now >= crop.ready) {
+             const dist = mp.game.system.vdist(playerPos.x, playerPos.y, playerPos.z, crop.x, crop.y, crop.z);
+             if (dist < 1.5) {
+                 mp.game.graphics.drawText("Press [E] to Harvest", [0.5, 0.8], { 
+                    font: 4, color: [255, 255, 255, 255], scale: [0.4, 0.4], outline: true 
+                });
+                
+                if (mp.keys.isDown(69)) { // E
+                    if (!global.lastHarvest || now - global.lastHarvest > 1000) {
+                        global.lastHarvest = now;
+                        mp.events.callRemote('server:farmer:harvestCrop', crop.id);
+                    }
+                }
+             }
+        }
+    });
 });

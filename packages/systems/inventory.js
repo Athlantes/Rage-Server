@@ -399,6 +399,11 @@ class InventorySystem {
         const def = ItemRegistry[item.itemId];
         if (!def) return;
 
+        if (def.type === 'seed') {
+            mp.events.call('server:farmer:tryPlant', player, item.itemId, item.slot);
+            return;
+        }
+
         if (def.type === 'weapon') {
             const weaponHash = mp.joaat(def.data.hash);
             if (player.weapon === weaponHash) {

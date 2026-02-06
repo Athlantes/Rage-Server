@@ -25,6 +25,27 @@ module.exports = {
         icon: "apple.png"
     },
 
+    // --- FARMING ITEMS ---
+    "pumpkin": {
+        name: "Pumpkin", type: "food", weight: 2.0, maxStack: 10,
+        icon: "pumpkin.png" 
+    },
+    "seed_pumpkin": {
+        name: "Pumpkin Seed",
+        type: "seed", // Special type for Inventory logic
+        weight: 0.1,
+        maxStack: 20,
+        icon: "seed_pumpkin.png",
+        data: {
+            propStart: 'prop_veg_crop_03_cab', // Small plant
+            propEnd: 'prop_veg_crop_03_pump',  // Ready plant
+            growTime: 60000 * 5,               // 5 Minutes
+            reward: 'pumpkin',
+            rewardCount: 1,
+            zOffset: -0.05
+        }
+    },
+
     // --- DUMPSTER LOOT ---
     "scrap_metal": {
         name: "Scrap Metal",
