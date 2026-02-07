@@ -587,8 +587,6 @@ const app = {
             });
         },
 
-        openNewMessage: () => { const target = prompt("Enter phone number:"); if(target) app.phoneApp.openChat(target, target); },
-
         openChat: (number, displayName) => {
             app.phoneApp.activeChatNumber = number;
             const notifs = document.querySelectorAll(`.lock-notif-item[data-sender="${displayName}"], .lock-notif-item[data-sender="${number}"]`);
