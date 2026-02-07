@@ -617,7 +617,7 @@ const app = {
         flightMode: false,
         dnd: false,
         zoom: 100,
-        wallpaperClass: 'bg-default', // Default class
+        wallpaperClass: 'bg-default',
 
         predefinedWallpapers: [
             { name: 'Blue Gem', class: 'bg-wall1' },
