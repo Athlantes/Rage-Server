@@ -921,14 +921,22 @@ const messenger = {
     openChat: (number, name) => {
         messenger.activeChatNumber = number;
         
-        // UI Switching
+        // Hide List
         document.getElementById('msg-list-screen').classList.add('hidden');
-        document.getElementById('msg-conversation-screen').classList.remove('hidden');
         
+        // Show Conversation Screen
+        const chatScreen = document.getElementById('msg-conversation-screen');
+        chatScreen.classList.remove('hidden');
+        
+        // Update Header Info
         document.getElementById('chatTitle').innerText = name;
-        document.getElementById('chatNumberDisplay').innerText = number; // Show number under name
-        
-        document.getElementById('msgFeed').innerHTML = '<div style="text-align:center; padding:10px; color:#666;">Loading...</div>';
+        document.getElementById('chatNumberDisplay').innerText = number; 
+        document.getElementById('msgFeed').innerHTML = ''; // Clear previous
+
+        // Trigger Animation (small delay to ensure display:block is applied first)
+        requestAnimationFrame(() => {
+            chatScreen.classList.add('active');
+        });
 
         // Fetch History
         if('mp' in window) {
@@ -939,10 +947,17 @@ const messenger = {
     // 3. Close conversation (Back button)
     closeChat: () => {
         messenger.activeChatNumber = null;
-        document.getElementById('msg-conversation-screen').classList.add('hidden');
-        document.getElementById('msg-list-screen').classList.remove('hidden');
         
-        // Refresh list to update read status or new snippets
+        const chatScreen = document.getElementById('msg-conversation-screen');
+        chatScreen.classList.remove('active');
+
+        // Wait for animation to finish before hiding
+        setTimeout(() => {
+            chatScreen.classList.add('hidden');
+            document.getElementById('msg-list-screen').classList.remove('hidden');
+        }, 300); // Matches CSS transition time
+        
+        // Refresh list
         if('mp' in window) mp.trigger('client:proxyAction', 'chat:fetchChats');
     },
 

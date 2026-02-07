@@ -148,24 +148,23 @@
                     </div>
                 </div>
 
-                <div id="msg-conversation-screen" class="msg-full-height hidden">
+                <div id="msg-conversation-screen" class="view hidden">
                     <div class="msg-chat-header">
                         <div class="msg-back-btn" onclick="messenger.closeChat()">
                             <i class="fas fa-chevron-left"></i>
+                            <span>Back</span>
                         </div>
                         <div class="msg-chat-info">
                             <div class="msg-contact-name" id="chatTitle">Unknown</div>
                             <div class="msg-contact-status" id="chatNumberDisplay"></div>
                         </div>
-                        <div class="msg-header-actions">
-                            <i class="fas fa-phone"></i>
-                        </div>
+                        <div class="msg-header-actions" style="width: 30px;"></div> 
                     </div>
 
                     <div class="msg-feed scrollable-content" id="msgFeed"></div>
 
                     <div class="msg-input-area">
-                        <i class="fas fa-plus" style="color: #0A84FF;"></i>
+                        <i class="fas fa-plus"></i>
                         <div class="msg-input-wrapper">
                             <input type="text" id="msgTextInput" placeholder="iMessage" autocomplete="off">
                             <i class="fas fa-arrow-up-circle" onclick="messenger.sendMessage()" id="msgSendBtn"></i>
