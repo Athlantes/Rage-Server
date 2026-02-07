@@ -52,30 +52,43 @@ mp.events.add("render", () => {
 });
 
 function takePhoto() {
-    isUploading = true; // Lock camera
+    if (isUploading) return;
+    isUploading = true;
+
+    // 1. Hide HUD
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
-    const filename = `img_${Date.now()}.png`; // RAGE saves as png locally first
+    const filename = `img_${Date.now()}.png`;
 
+    // 2. Wait 50ms for HUD to fully vanish
     setTimeout(() => {
+        // 3. Take Screenshot NOW (Before flash)
         mp.gui.takeScreenshot(filename, 1, 100, 0);
         
-        mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
-        mp.game.ui.displayRadar(true);
-        mp.game.ui.displayHud(true);
-        mp.gui.chat.push("~b~Processing image...");
-
-        // Wait 1s for disk save
+        // 4. Wait 100ms AFTER screenshot to play Flash
+        // This ensures the white screen is NOT in the photo
         setTimeout(() => {
-            if (photoProcessor) {
-                photoProcessor.execute(`processPhoto('${filename}')`);
-            } else {
-                isUploading = false;
-            }
-        }, 1000); 
+            mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
+            mp.game.audio.playSoundFrontend(-1, "Camera_Shoot", "Phone_SoundSet_Default", true);
+            
+            // Restore HUD
+            mp.game.ui.displayRadar(true);
+            mp.game.ui.displayHud(true);
+            mp.gui.chat.push("~b~Processing image...");
 
-    }, 100);
+            // 5. Start Processing (Give disk time to save)
+            setTimeout(() => {
+                if (photoProcessor) {
+                    photoProcessor.execute(`processPhoto('${filename}')`);
+                } else {
+                    isUploading = false;
+                }
+            }, 1000); 
+
+        }, 100); 
+
+    }, 50);
 }
 
 // --- Upload Events ---

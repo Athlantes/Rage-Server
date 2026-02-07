@@ -30,7 +30,8 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
     // Only save when we have EVERY piece
     if (upload.received >= upload.total) {
         const fullBase64 = upload.chunks.join('');
-        uploadCache.delete(player.id);
+        
+        uploadCache.delete(player.id); 
         
         savePhotoToDisk(player, fullBase64);
     }
