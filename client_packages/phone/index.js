@@ -64,9 +64,19 @@ function closePhone() {
 }
 
 // --- STANDARD APP EVENTS ---
-mp.events.add('client:phone:initialize', (mailsJson) => {
-    if(phoneBrowser) phoneBrowser.execute(`app.loadMails(${mailsJson})`);
+mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson) => {
+    if(phoneBrowser) {
+        // Pass the raw JSON string or null
+        const safeSettings = settingsJson || '{}';
+        
+        phoneBrowser.execute(`
+            app.loadMails(${mailsJson});
+            app.loadPhotos(${photosJson}, '${mediaUrl}');
+            app.settings.init(${safeSettings}); 
+        `);
+    }
 });
+
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
 });
@@ -215,6 +225,11 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'deletePhoto':
             const photoData = JSON.parse(data); 
             mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
+            break;
+
+        case 'saveSetting':
+            const payload = JSON.parse(data); // Expects { key: "is_dnd", val: 1 }
+            mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
             break;
 
         default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;

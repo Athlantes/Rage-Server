@@ -80,27 +80,56 @@ async function savePhotoToDisk(player, base64Data) {
     }
 }
 
+async function getPhoneSettings(userId) {
+    try {
+        const [rows] = await db.query("SELECT * FROM player_phone WHERE user_id = ?", [userId]);
+        if (rows) return rows;
+
+        // If no settings exist, create default row
+        // Optional: Generate a random phone number here if needed
+        await db.query("INSERT INTO player_phone (user_id) VALUES (?)", [userId]);
+        return {
+            user_id: userId,
+            phone_number: null,
+            wallpaper: 'wall1.jpg',
+            is_dnd: 0,
+            is_flight_mode: 0,
+            is_silent: 0,
+            zoom_level: 100
+        };
+    } catch (err) {
+        console.error("[Phone] Get Settings Error:", err);
+        return null;
+    }
+}
+
 // 1. Open Phone & Load Data
 mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
 
     try {
+        // 1. Get Phone Settings (New Table)
+        const settings = await getPhoneSettings(player.data.dbId);
+        
+        // 2. Get Mails
         const [mails] = await db.query(
-            "SELECT id, user_id, sender, title, message, is_read, created_at FROM player_mails " +
-            "WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY) " +
-            "ORDER BY created_at DESC LIMIT 20", 
+            "SELECT id, sender, title, message, is_read, created_at FROM player_mails WHERE user_id = ? ORDER BY created_at DESC LIMIT 20", 
             [player.data.dbId]
         );
         
+        // 3. Get Photos
         const [photos] = await db.query(
             "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC",
             [player.data.dbId]
         );
 
+        // 4. Send everything to client
+        // settings object contains: { wallpaper, is_dnd, is_flight_mode, etc }
         player.call('client:phone:initialize', [
             JSON.stringify(mails), 
             JSON.stringify(photos), 
-            webServer.baseUrl
+            webServer.baseUrl,
+            JSON.stringify(settings) 
         ]);
         
         const cars = await vehicleManager.getPlayerVehicles(player.data.dbId);
@@ -228,5 +257,24 @@ mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => 
 
     } catch (err) {
         console.error("Delete Photo Error:", err);
+    }
+});
+
+mp.events.add('server:phone:saveSetting', async (player, key, value) => {
+    if (!player.logged) return;
+
+    // Security: Whitelist allowed columns to prevent SQL injection or overwriting sensitive data
+    const allowedKeys = ['wallpaper', 'is_dnd', 'is_flight_mode', 'is_silent', 'zoom_level'];
+    if (!allowedKeys.includes(key)) return;
+
+    try {
+        // Construct query safely
+        // Note: ?? escapes column names, ? escapes values
+        await db.query(`UPDATE player_phone SET ${key} = ? WHERE user_id = ?`, [value, player.data.dbId]);
+        
+        // Debug
+        // console.log(`[Phone] Saved ${key}: ${value} for ${player.name}`);
+    } catch (err) {
+        console.error(`[Phone] Save Error (${key}):`, err);
     }
 });
