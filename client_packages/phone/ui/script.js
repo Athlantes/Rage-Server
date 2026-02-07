@@ -57,6 +57,15 @@ const app = {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }
 
+        if (appName === 'settings-wallpapers') {
+            // Force render the list now that the view is about to be visible
+            setTimeout(() => {
+                if(app.settings && app.settings.renderWallpapers) {
+                    app.settings.renderWallpapers();
+                }
+            }, 50); // Small delay to ensure the 'hidden' class removal has processed
+        }
+
         document.querySelectorAll('.view').forEach(el => {
             el.classList.add('hidden');
         });
