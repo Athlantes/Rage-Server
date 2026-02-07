@@ -621,11 +621,11 @@ const app = {
         );
     },
 
-    // --- SETTINGS V2 ---
-    // --- SETTINGS V2 (Updated for New UI) ---
+    // --- SETTINGS ---
     settings: {
         // Default State
         data: {
+            phone_number: 'Unknown',
             wallpaper: 'wall1.jpg',
             is_dnd: false,
             is_flight_mode: false,
@@ -635,6 +635,7 @@ const app = {
         init: (serverData) => {
             // Merge server data into local data
             if (serverData) {
+                app.settings.data.phone_number = serverData.phone_number || 'Unknown';
                 app.settings.data.wallpaper = serverData.wallpaper || 'wall1.jpg';
                 app.settings.data.is_dnd = !!serverData.is_dnd;
                 app.settings.data.is_flight_mode = !!serverData.is_flight_mode;
@@ -664,6 +665,9 @@ const app = {
             const flightToggle = document.getElementById('toggle-flight-mode');
             if(flightToggle) flightToggle.checked = app.settings.data.is_flight_mode;
             app.settings.toggleFlightUI(app.settings.data.is_flight_mode);
+            
+            const numEl = document.getElementById('setting-my-number');
+            if (numEl) numEl.innerText = app.settings.data.phone_number;
         },
 
         // --- NEW RENDER LOGIC ---

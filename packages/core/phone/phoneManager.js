@@ -80,35 +80,63 @@ async function savePhotoToDisk(player, base64Data) {
     }
 }
 
+async function generatePhoneNumber() {
+    let isUnique = false;
+    let newNumber = '';
+    
+    // Keep generating until we find a unique one
+    while (!isUnique) {
+        // Generate random 6 digits (100000 to 999999)
+        newNumber = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Check database for duplicates
+        const [rows] = await db.query("SELECT id FROM player_phone WHERE phone_number = ?", [newNumber]);
+        if (rows.length === 0) {
+            isUnique = true;
+        }
+    }
+    return newNumber;
+}
+
 async function getPhoneSettings(userId) {
     try {
-        // [FIX] db.query returns [rows, fields]. We destructure to get 'rows'.
         const [rows] = await db.query("SELECT * FROM player_phone WHERE user_id = ?", [userId]);
         
-        // [FIX] Check if we actually found a row, and return the FIRST item (the object), not the array.
-        if (rows.length > 0) {
-            return rows[0];
+        let settings;
+
+        // 1. Create row if it doesn't exist (New User)
+        if (rows.length === 0) {
+            await db.query("INSERT INTO player_phone (user_id) VALUES (?)", [userId]);
+            settings = {
+                user_id: userId,
+                phone_number: null,
+                wallpaper: 'wall1.jpg',
+                is_dnd: 0,
+                is_flight_mode: 0,
+                is_silent: 0,
+                zoom_level: 100
+            };
+        } else {
+            settings = rows[0];
         }
 
-        // If no settings exist, create default row
-        await db.query("INSERT INTO player_phone (user_id) VALUES (?)", [userId]);
-        
-        // Return default structure matching DB columns
-        return {
-            user_id: userId,
-            phone_number: null,
-            wallpaper: 'wall1.jpg',
-            is_dnd: 0,
-            is_flight_mode: 0,
-            is_silent: 0,
-            zoom_level: 100
-        };
+        // 2. Assign Number if Missing (Registration / First Load)
+        if (!settings.phone_number) {
+            const newNum = await generatePhoneNumber();
+            
+            await db.query("UPDATE player_phone SET phone_number = ? WHERE user_id = ?", [newNum, userId]);
+            
+            settings.phone_number = newNum; // Update local object to send to client
+            console.log(`[Phone] Assigned new number ${newNum} to UserID ${userId}`);
+        }
+
+        return settings;
+
     } catch (err) {
         console.error("[Phone] Get Settings Error:", err);
         return null;
     }
 }
-
 // 1. Open Phone & Load Data
 mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
