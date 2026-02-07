@@ -9,10 +9,14 @@ const uploadCache = new Map();
 mp.events.add('server:photo:initUpload', (player, totalChunks) => {
     if (!player.logged) return;
     
+    // [FIX] Ensure totalChunks is a valid number
+    const total = parseInt(totalChunks);
+    if (isNaN(total) || total <= 0) return;
+
     // Initialize an array with empty slots
     uploadCache.set(player.id, {
-        chunks: new Array(totalChunks), // Create empty slots
-        total: totalChunks,
+        chunks: new Array(total), 
+        total: total,
         received: 0,
         timestamp: Date.now()
     });
@@ -23,12 +27,19 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
 
     const upload = uploadCache.get(player.id);
     
-    // Store chunk in the specific slot (Correct Order)
+    // [FIX] DUPLICATE PROTECTION
+    // If we already have a chunk at this index, ignore this packet.
+    // This prevents 'upload.received' from counting the same chunk twice 
+    // and saving the file before it is actually complete.
+    if (upload.chunks[index] !== undefined) return;
+
+    // Store chunk
     upload.chunks[index] = chunkData;
     upload.received++;
 
     // Only save when we have EVERY piece
     if (upload.received >= upload.total) {
+        // Construct the full string
         const fullBase64 = upload.chunks.join('');
         
         uploadCache.delete(player.id); 
@@ -39,6 +50,13 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
 
 async function savePhotoToDisk(player, base64Data) {
     try {
+        // [FIX] TYPE SAFETY CHECK
+        // If data is somehow not a string, stop here to prevent server crash.
+        if (typeof base64Data !== 'string') {
+            console.error(`[Photo] Critical Error: Received ${typeof base64Data} instead of string. Upload aborted.`);
+            return;
+        }
+
         const timestamp = Date.now();
         const userId = player.data.dbId || 0;
         const filename = `${userId}_${timestamp}.jpg`;
@@ -68,41 +86,41 @@ mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
 
     try {
-        console.log(`[Phone] Opening for ${player.name}`);
-
-        // Load Mails (Safe Fallback)
-        let mails = [];
-        try {
-            const [mailRows] = await db.query(
-                "SELECT id, sender, title, message, is_read, created_at FROM player_mails WHERE user_id = ? ORDER BY created_at DESC LIMIT 20", 
-                [player.data.dbId]
-            );
-            mails = mailRows || [];
-        } catch(e) { console.error("[Phone] Mail Error:", e.message); }
+        const [mails] = await db.query(
+            "SELECT id, user_id, sender, title, message, is_read, created_at FROM player_mails " +
+            "WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY) " +
+            "ORDER BY created_at DESC LIMIT 20", 
+            [player.data.dbId]
+        );
         
-        // Load Photos (Safe Fallback)
-        let photos = [];
-        try {
-            const [photoRows] = await db.query(
-                "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ?",
-                [player.data.dbId]
-            );
-            photos = photoRows || [];
-            console.log(`[Phone] Photos found in DB: ${photos.length}`);
-        } catch (e) { console.error("[Phone] Photo Error:", e.message); }
+        const [photos] = await db.query(
+            "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC",
+            [player.data.dbId]
+        );
 
-        // Get URL with fallback
-        const mediaUrl = webServer.baseUrl || "http://localhost:8080/"; 
-
-        // Send to client
         player.call('client:phone:initialize', [
             JSON.stringify(mails), 
             JSON.stringify(photos), 
-            mediaUrl
+            webServer.baseUrl
         ]);
+        
+        const cars = await vehicleManager.getPlayerVehicles(player.data.dbId);
+        const processedCars = cars.map(c => {
+            const activeVeh = vehicleManager.findActiveVehicle(c.id);
+            return {
+                id: c.id,
+                model: c.model,
+                plate: c.plate,
+                fuel: c.fuel,
+                parked: c.parked,
+                spawned: !!activeVeh 
+            };
+        });
+        
+        player.call('client:phone:updateVehicles', [JSON.stringify(processedCars)]);
 
     } catch (err) {
-        console.error("[Phone] Critical Error:", err);
+        console.error("Phone Data Error:", err);
     }
 });
 

@@ -88,7 +88,7 @@ function takePhoto() {
 
         }, 100); 
 
-    }, 50);
+    }, 250);
 }
 
 // --- Upload Events ---
