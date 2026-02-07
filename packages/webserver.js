@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const app = express();
 const PORT = 3008; // You can change this port
+const IP = '26.170.61.66';
 
 // Enable CORS so the in-game phone (CEF) can load images
 app.use(cors());
@@ -17,11 +18,11 @@ const photosDir = path.join(__dirname, '../photos');
 app.use('/photos', express.static(photosDir));
 
 app.listen(PORT, () => {
-    console.log(`[WebServer] Image hosting running at http://localhost:${PORT}/photos/`);
+    console.log(`[WebServer] Image hosting running at http://${IP}:${PORT}/photos/`);
 });
 
 // Export the path so other scripts know where to save files
 module.exports = {
     photosDir: photosDir,
-    baseUrl: `http://localhost:${PORT}/photos/`
+    baseUrl: `http://${IP}:${PORT}/photos/`
 };

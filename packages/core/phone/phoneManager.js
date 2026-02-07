@@ -6,28 +6,31 @@ const webServer = require('../../webserver');
 
 const uploadCache = new Map();
 
-// 1. Initialize Upload
 mp.events.add('server:photo:initUpload', (player, totalChunks) => {
     if (!player.logged) return;
+    
+    // Initialize an array with empty slots
     uploadCache.set(player.id, {
-        chunks: [],
+        chunks: new Array(totalChunks), // Create empty slots
         total: totalChunks,
+        received: 0,
         timestamp: Date.now()
     });
 });
 
-// 2. Receive Chunk
-mp.events.add('server:photo:receiveChunk', async (player, chunkData) => {
+mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
     if (!uploadCache.has(player.id)) return;
 
     const upload = uploadCache.get(player.id);
-    upload.chunks.push(chunkData);
+    
+    // Store chunk in the specific slot (Correct Order)
+    upload.chunks[index] = chunkData;
+    upload.received++;
 
-    // If all chunks received, save the file
-    if (upload.chunks.length >= upload.total) {
-        // Join all chunks back into one string
+    // Only save when we have EVERY piece
+    if (upload.received >= upload.total) {
         const fullBase64 = upload.chunks.join('');
-        uploadCache.delete(player.id); // Clear memory
+        uploadCache.delete(player.id);
         
         savePhotoToDisk(player, fullBase64);
     }
@@ -37,7 +40,7 @@ async function savePhotoToDisk(player, base64Data) {
     try {
         const timestamp = Date.now();
         const userId = player.data.dbId || 0;
-        const filename = `${userId}_${timestamp}.png`;
+        const filename = `${userId}_${timestamp}.jpg`;
         const filePath = path.join(webServer.photosDir, filename);
 
         fs.writeFile(filePath, base64Data, 'base64', async (err) => {
@@ -58,22 +61,6 @@ async function savePhotoToDisk(player, base64Data) {
         console.error("[Photo] Error:", err);
     }
 }
-
-// Ensure you keep your existing 'server:phone:requestPhotos' event here
-mp.events.add('server:phone:requestPhotos', async (player) => {
-    const userId = player.data.dbId || 0;
-    try {
-        const [rows] = await db.query(
-            "SELECT id, image_path FROM player_photos WHERE user_id = ? ORDER BY id DESC LIMIT 20",
-            [userId]
-        );
-        const photos = rows.map(r => ({
-            id: r.id,
-            url: webServer.baseUrl + r.image_path 
-        }));
-        player.call('client:phone:receivePhotos', [JSON.stringify(photos)]);
-    } catch (err) { console.error(err); }
-});
 
 // 1. Open Phone & Load Data
 mp.events.add('server:phone:open', async (player) => {
@@ -170,22 +157,6 @@ mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
         }
     } catch (err) {
         console.error("Phone Action Error:", err);
-    }
-});
-
-mp.events.add('server:phone:readMail', async (player, id) => {
-    if (!player.logged) return;
-    try {
-        const mailId = parseInt(id);
-        
-        // 1. Update database
-        await db.query(
-            "UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", 
-            [mailId, player.data.dbId]
-        );
-        
-    } catch (err) {
-        console.error("Read Mail Error:", err);
     }
 });
 
