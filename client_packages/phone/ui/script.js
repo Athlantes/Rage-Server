@@ -612,50 +612,41 @@ const app = {
         );
     },
 
-    // --- SETTINGS ---
+    // --- SETTINGS V2 ---
     settings: {
         flightMode: false,
         dnd: false,
         zoom: 100,
-        currentWallpaper: 'wall1.jpg', // Default filename
-
-        // Make sure these filenames match your actual files EXACTLY (case-sensitive!)
-        predefinedWallpapers: [
-            { name: 'Blue Gem', file: 'wall1.jpg' },
-            { name: 'Sweet Pink', file: 'wall2.jpg' },
-            { name: 'Sweet Blue', file: 'wall3.jpg' },
-            { name: 'Dark Night', file: 'wall4.jpg' },
-            { name: 'Aurora Blue', file: 'wall5.jpg' },
-            { name: 'Midnight Forest', file: 'wall6.jpg' }
-        ],
+        currentWallpaper: 'wall1.jpg',
 
         init: () => {
             // Load saved settings
-            const saved = localStorage.getItem('phoneSettings');
+            const saved = localStorage.getItem('phoneSettings_v2');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     app.settings.flightMode = parsed.flightMode || false;
                     app.settings.dnd = parsed.dnd || false;
                     app.settings.zoom = parsed.zoom || 100;
-                    // Load saved wallpaper or default to wall1.jpg
                     app.settings.currentWallpaper = parsed.currentWallpaper || 'wall1.jpg';
                 } catch (err) {
-                    localStorage.removeItem('phoneSettings');
+                    console.error("Settings Parse Error", err);
                 }
             }
 
-            // Apply Settings
             app.settings.applyAll();
-            app.settings.renderWallpapers();
             
-            // Set Player ID (Visual)
+            // Force render with a slight delay to ensure DOM is ready
+            setTimeout(() => {
+                app.settings.renderWallpapers();
+            }, 100);
+            
             const idEl = document.getElementById('settings-my-id');
             if(idEl) idEl.innerText = "Unknown"; 
         },
 
         applyAll: () => {
-            // 1. Apply Zoom
+            // Zoom
             const shell = document.getElementById('phone-shell');
             if (shell) {
                 shell.style.transform = `scale(${app.settings.zoom / 100})`;
@@ -663,22 +654,139 @@ const app = {
             }
             const inputZoom = document.getElementById('input-zoom');
             if(inputZoom) inputZoom.value = app.settings.zoom;
-            
             const zoomVal = document.getElementById('zoom-val');
             if(zoomVal) zoomVal.innerText = app.settings.zoom + '%';
 
-            // 2. Apply Flight Mode
+            // Toggles
             const flightToggle = document.getElementById('toggle-flight-mode');
             if(flightToggle) flightToggle.checked = app.settings.flightMode;
             app.settings.updateSignalIcon();
 
-            // 3. Apply DND
             const dndToggle = document.getElementById('toggle-dnd');
             if(dndToggle) dndToggle.checked = app.settings.dnd;
             app.settings.toggleDND(app.settings.dnd);
 
-            // 4. Apply Wallpaper
+            // Wallpaper
             app.settings.setWallpaper(app.settings.currentWallpaper, false);
+        },
+
+        setWallpaper: (source, save = true) => {
+            const screen = document.querySelector('.screen-content');
+            if(!screen) return;
+
+            let finalUrl = '';
+            if (source.startsWith('http') || source.startsWith('data:')) {
+                finalUrl = `url('${source}')`;
+            } else {
+                finalUrl = `url('package://phone/ui/images/wallpapers/${source}')`;
+            }
+
+            screen.style.backgroundImage = finalUrl;
+            screen.style.backgroundSize = 'cover';
+            screen.style.backgroundPosition = 'center';
+            screen.style.backgroundRepeat = 'no-repeat';
+            
+            app.settings.currentWallpaper = source;
+            if (save) app.settings.save();
+        },
+
+        applyCustomWallpaper: () => {
+            const input = document.getElementById('custom-wall-url');
+            if(!input) return;
+            const url = input.value.trim();
+            if (!url) return app.showToast("Settings", "Error", "Invalid URL.");
+
+            app.settings.setWallpaper(url, true);
+            app.showToast("Settings", "Success", "Custom wallpaper applied.");
+            input.value = '';
+            app.settings.renderWallpapers(); // Refresh to clear selection
+        },
+
+        renderWallpapers: () => {
+            console.log("DEBUG: Rendering Wallpapers..."); // Check F8 console
+            const container = document.getElementById('wallpaper-list');
+            
+            if(!container) {
+                console.error("DEBUG: Container #wallpaper-list NOT FOUND.");
+                return;
+            }
+
+            // 1. HARDCODED LIST (To prevent empty array issues)
+            const wallpapers = [
+                { name: 'Blue Gem', file: 'wall1.jpg' },
+                { name: 'Sweet Pink', file: 'wall2.jpg' },
+                { name: 'Nature Green', file: 'wall3.jpg' },
+                { name: 'Night City', file: 'wall4.jpg' },
+                { name: 'Abstract', file: 'wall5.jpg' },
+                { name: 'Dark Void', file: 'wall6.jpg' }
+            ];
+
+            container.innerHTML = '';
+            
+            wallpapers.forEach(wp => {
+                const div = document.createElement('div');
+                div.className = 'wall-option';
+                
+                // 2. INLINE STYLES (To force visibility even if CSS fails)
+                div.style.position = 'relative';
+                div.style.height = '150px'; // Forced height
+                div.style.backgroundColor = '#444'; // Grey fallback if image missing
+                div.style.borderRadius = '10px';
+                div.style.marginBottom = '10px';
+                div.style.cursor = 'pointer';
+                div.style.overflow = 'hidden';
+                div.style.backgroundSize = 'cover';
+                div.style.backgroundPosition = 'center';
+
+                // Image Source
+                const previewUrl = `package://phone/ui/images/wallpapers/${wp.file}`;
+                div.style.backgroundImage = `url('${previewUrl}')`;
+                
+                // Name Tag
+                div.innerHTML = `<div style="
+                    position: absolute; bottom: 0; width: 100%; 
+                    background: rgba(0,0,0,0.6); color: white; 
+                    font-size: 11px; padding: 5px; text-align: center;">
+                    ${wp.name}
+                </div>`;
+
+                // Selection Border
+                if (wp.file === app.settings.currentWallpaper) {
+                    div.style.border = '3px solid #007aff';
+                } else {
+                    div.style.border = '3px solid transparent';
+                }
+                
+                div.onclick = () => {
+                    app.settings.setWallpaper(wp.file);
+                    app.settings.renderWallpapers(); 
+                };
+                
+                container.appendChild(div);
+            });
+            console.log(`DEBUG: Rendered ${wallpapers.length} wallpapers.`);
+        },
+
+        save: () => {
+            const data = {
+                flightMode: app.settings.flightMode,
+                dnd: app.settings.dnd,
+                zoom: app.settings.zoom,
+                currentWallpaper: app.settings.currentWallpaper
+            };
+            localStorage.setItem('phoneSettings_v2', JSON.stringify(data));
+        },
+
+        updateSignalIcon: () => {
+            const signalIcon = document.querySelector('.fa-signal');
+            if(signalIcon) signalIcon.className = app.settings.flightMode ? "fas fa-plane" : "fas fa-signal";
+        },
+
+        toggleDND: (isActive) => {
+            app.settings.dnd = isActive;
+            app.settings.save();
+            const dndIcon = document.getElementById('status-dnd');
+            if (dndIcon) isActive ? dndIcon.classList.remove('hidden') : dndIcon.classList.add('hidden');
         },
 
         toggleFlightMode: (isActive) => {
@@ -686,15 +794,6 @@ const app = {
             app.settings.updateSignalIcon();
             app.settings.save();
             if (isActive) app.showToast("System", "Settings", "Airplane Mode Enabled");
-        },
-
-        toggleDND: (isActive) => {
-            app.settings.dnd = isActive;
-            app.settings.save();
-            const dndIcon = document.getElementById('status-dnd');
-            if (dndIcon) {
-                isActive ? dndIcon.classList.remove('hidden') : dndIcon.classList.add('hidden');
-            }
         },
 
         setZoom: (value) => {
@@ -707,60 +806,6 @@ const app = {
             const zVal = document.getElementById('zoom-val');
             if(zVal) zVal.innerText = value + '%';
             app.settings.save();
-        },
-
-        updateSignalIcon: () => {
-            const signalIcon = document.querySelector('.fa-signal');
-            if(signalIcon) {
-                signalIcon.className = app.settings.flightMode ? "fas fa-plane" : "fas fa-signal";
-            }
-        },
-
-        renderWallpapers: () => {
-            const container = document.getElementById('wallpaper-list');
-            if(!container) return;
-            
-            container.innerHTML = '';
-            
-            app.settings.predefinedWallpapers.forEach(wp => {
-                const div = document.createElement('div');
-                div.className = 'wall-option';
-                
-                // Use package:// base so CEF resolves assets consistently
-                div.style.background = `url('package://phone/ui/images/wallpapers/${wp.file}') center/cover no-repeat`;
-                
-                if (wp.file === app.settings.currentWallpaper) div.classList.add('selected');
-                
-                div.onclick = () => {
-                    app.settings.setWallpaper(wp.file);
-                    // Update selection visual
-                    document.querySelectorAll('.wall-option').forEach(el => el.classList.remove('selected'));
-                    div.classList.add('selected');
-                };
-                
-                container.appendChild(div);
-            });
-        },
-
-        setWallpaper: (filename, save = true) => {
-            const screen = document.querySelector('.screen-content');
-            if(!screen) return;
-
-            // USE "background" NOT "backgroundImage" to forcefully overwrite the blue gradient
-            screen.style.background = `url('package://phone/ui/images/wallpapers/${filename}') center/cover no-repeat`;
-            
-            app.settings.currentWallpaper = filename;
-            if (save) app.settings.save();
-        },
-
-        save: () => {
-            const data = {
-                flightMode: app.settings.flightMode,
-                dnd: app.settings.dnd,
-                zoom: app.settings.zoom,
-                currentWallpaper: app.settings.currentWallpaper
-            };
-            localStorage.setItem('phoneSettings', JSON.stringify(data));
         }
     },
 };

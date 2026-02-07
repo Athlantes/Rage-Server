@@ -45,7 +45,6 @@ body {
 .screen-content {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Brighter Blue Wallpaper */
     border-radius: 35px;
     position: relative;
     overflow: hidden;
@@ -369,33 +368,85 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+    margin-bottom: 20px;
 }
+
+.wallpaper-section-title {
+    padding: 15px 5px 5px 5px;
+    font-size: 13px;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
 .wall-option {
-    /* Fallback height for older CEF (no aspect-ratio support) */
     height: 180px;
-    aspect-ratio: 9 / 16;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 3px solid transparent;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: transform 0.1s;
-    /* Ensure preview images fit the box */
+    transition: transform 0.1s, border-color 0.2s;
     background-color: #333;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-size: cover !important;
+    background-position: center !important;
+    position: relative;
+    overflow: hidden;
 }
 
-.wall-option:active { transform: scale(0.95); }
+.wall-option:active { transform: scale(0.96); }
 .wall-option.selected { border-color: #007aff; }
+
+/* Label inside the wallpaper preview */
+.wall-name-tag {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 11px;
+    padding: 6px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+}
+
+/* Custom Input Area */
+.custom-wall-box {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.custom-wall-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e5ea;
+    background: #f2f2f7;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    outline: none;
+}
+
+.custom-wall-input:focus { border-color: #007aff; background: #fff; }
+
+.btn-apply-custom {
+    width: 100%;
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-apply-custom:active { opacity: 0.8; }
 
 /* Applied to Screen Content */
 .screen-content {
     width: 100%;
     height: 100%;
-    /* Default fallback color if image fails */
-    background-color: #1c1c1e; 
-    /* Critical: Ensures the wallpaper covers the whole screen */
+    background-color: #222; /* Fallback color */
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
@@ -793,8 +844,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .toast-screen {
     width: 100%;
     height: 100%;
-    /* Wallpaper */
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
     
     /* Screen Corners (Must be slightly less than shell radius) */
     border-radius: 32px 32px 15px 15px; 
