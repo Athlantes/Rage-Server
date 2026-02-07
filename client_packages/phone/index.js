@@ -65,6 +65,50 @@ function closePhone() {
 
 // --- STANDARD APP EVENTS ---
 
+mp.events.add('client:phone:chat:loadChats', (chatsJson) => {
+    if (phoneBrowser) phoneBrowser.execute(`messenger.loadChats('${chatsJson.replace(/'/g, "\\'")}')`);
+});
+
+mp.events.add('client:phone:chat:loadHistory', (targetNumber, msgsJson) => {
+    if (phoneBrowser) phoneBrowser.execute(`messenger.loadHistory('${targetNumber}', '${msgsJson.replace(/'/g, "\\'")}')`);
+});
+
+// Real-time receive
+mp.events.add('client:phone:chat:receive', (sender, content, type, timestamp, msgId) => {
+    if (phoneBrowser) {
+        // Create a temporary object to pass to appendMessage
+        const msgObj = JSON.stringify({
+            sender_number: sender,
+            message: content,
+            created_at: timestamp
+        });
+        
+        phoneBrowser.execute(`
+            if (messenger.activeChatNumber === '${sender}') {
+                messenger.appendMessage(${msgObj});
+            } else {
+                app.showToast('${sender}', 'New Message', '${content}');
+                // Optional: refresh list if they are on the list screen
+                if(!document.getElementById('msg-list-screen').classList.contains('hidden')) {
+                     mp.trigger('client:proxyAction', 'chat:fetchChats');
+                }
+            }
+        `);
+    }
+});
+
+// Real-time sent (Echo back)
+mp.events.add('client:phone:chat:messageSent', (target, content, type, timestamp, msgId) => {
+    if (phoneBrowser) {
+         const msgObj = JSON.stringify({
+            sender_number: 'me', // distinct from target
+            message: content,
+            created_at: timestamp
+        });
+        phoneBrowser.execute(`if(messenger.activeChatNumber === '${target}') messenger.appendMessage(${msgObj});`);
+    }
+});
+
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
 });
@@ -218,7 +262,24 @@ mp.events.add('client:proxyAction', (action, data) => {
             mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
             break;
 
-        default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
+        case 'chat:fetchChats':
+            mp.events.callRemote('server:phone:chat:fetchChats');
+            break;
+            
+        case 'chat:fetchMessages':
+            mp.events.callRemote('server:phone:chat:fetchMessages', data); // data = targetNumber
+            break;
+            
+        case 'chat:send':
+            const chatData = JSON.parse(data);
+            mp.events.callRemote('server:phone:chat:send', chatData.target, chatData.content);
+            break;
+
+        default:
+            // Ensure this doesn't conflict if you have other defaults
+            if (action.startsWith('server:')) break; 
+            mp.events.callRemote('server:phone:vehicleAction', action, data); 
+            break;
     }
 });
 

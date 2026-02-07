@@ -57,6 +57,10 @@ const app = {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
         }
 
+        if (appName === 'messenger') {
+            messenger.open();
+        }
+
         if (appName === 'settings-wallpapers') {
             // Force render the list now that the view is about to be visible
             setTimeout(() => {
@@ -807,6 +811,141 @@ const app = {
             if(zoomVal) zoomVal.innerText = val + '%';
         }
     },
+};
+
+const messenger = {
+    activeChatNumber: null,
+    
+    // Called when you open the app
+    open: () => {
+        if('mp' in window) {
+            mp.trigger('client:proxyAction', 'chat:fetchChats');
+        }
+        // Reset UI state
+        document.getElementById('msg-list-screen').classList.remove('hidden');
+        document.getElementById('msg-conversation-screen').classList.add('hidden');
+    },
+
+    // 1. Load the list of conversations
+    loadChats: (chatsJson) => {
+        const container = document.getElementById('msgChatList');
+        container.innerHTML = '';
+        
+        const chats = (typeof chatsJson === 'string') ? JSON.parse(chatsJson) : chatsJson;
+
+        if (!chats || chats.length === 0) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">No messages</div>';
+            return;
+        }
+
+        chats.forEach(chat => {
+            const div = document.createElement('div');
+            div.className = 'msg-chat-item';
+            div.onclick = () => messenger.openChat(chat.other_party, chat.display_name || chat.other_party);
+            
+            // Format time
+            const date = new Date(chat.created_at);
+            const timeStr = date.getHours() + ':' + date.getMinutes().toString().padStart(2, '0');
+
+            div.innerHTML = `
+                <div class="msg-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="msg-preview-col">
+                    <div class="msg-p-top">
+                        <span class="msg-name">${chat.display_name || chat.other_party}</span>
+                        <span class="msg-date">${timeStr}</span>
+                    </div>
+                    <div class="msg-p-btm">
+                        <span class="msg-snippet">${chat.message}</span>
+                    </div>
+                </div>
+                ${!chat.is_read && chat.sender_number !== app.settings.data.phone_number ? '<div class="msg-unread-dot"></div>' : ''}
+            `;
+            container.appendChild(div);
+        });
+    },
+
+    // 2. Open a specific conversation
+    openChat: (number, name) => {
+        messenger.activeChatNumber = number;
+        
+        // UI Switching
+        document.getElementById('msg-list-screen').classList.add('hidden');
+        document.getElementById('msg-conversation-screen').classList.remove('hidden');
+        document.getElementById('chatTitle').innerText = name;
+        document.getElementById('msgFeed').innerHTML = '<div style="text-align:center; padding:10px; color:#666;">Loading...</div>';
+
+        // Fetch History
+        if('mp' in window) {
+            mp.trigger('client:proxyAction', 'chat:fetchMessages', number);
+        }
+    },
+
+    // 3. Close conversation (Back button)
+    closeChat: () => {
+        messenger.activeChatNumber = null;
+        document.getElementById('msg-conversation-screen').classList.add('hidden');
+        document.getElementById('msg-list-screen').classList.remove('hidden');
+        
+        // Refresh list to update read status or new snippets
+        if('mp' in window) mp.trigger('client:proxyAction', 'chat:fetchChats');
+    },
+
+    // 4. Load Message History
+    loadHistory: (targetNumber, msgsJson) => {
+        if (messenger.activeChatNumber !== targetNumber) return; // Wrong chat open
+
+        const container = document.getElementById('msgFeed');
+        container.innerHTML = '';
+        
+        const msgs = (typeof msgsJson === 'string') ? JSON.parse(msgsJson) : msgsJson;
+
+        msgs.forEach(msg => {
+            messenger.appendMessage(msg);
+        });
+
+        messenger.scrollToBottom();
+    },
+
+    // 5. Send a Message
+    sendMessage: () => {
+        const input = document.getElementById('msgTextInput');
+        const text = input.value.trim();
+        if (!text || !messenger.activeChatNumber) return;
+
+        if('mp' in window) {
+            const payload = JSON.stringify({
+                target: messenger.activeChatNumber,
+                content: text
+            });
+            mp.trigger('client:proxyAction', 'chat:send', payload);
+        }
+
+        input.value = '';
+        input.focus();
+    },
+
+    // 6. Handle Incoming/Sent Messages instantly
+    appendMessage: (msgData) => {
+        const container = document.getElementById('msgFeed');
+        const isMine = (msgData.sender_number !== messenger.activeChatNumber); // If sender is not the guy I'm talking to, it's me.
+        
+        const div = document.createElement('div');
+        div.className = `msg-bubble ${isMine ? 'mine' : 'theirs'}`;
+        div.innerText = msgData.message;
+        
+        container.appendChild(div);
+        messenger.scrollToBottom();
+    },
+
+    // Helper: Scroll to bottom of chat
+    scrollToBottom: () => {
+        const feed = document.getElementById('msgFeed');
+        setTimeout(() => {
+            feed.scrollTop = feed.scrollHeight;
+        }, 50);
+    }
 };
 
 // --- GLOBAL APP FUNCTIONS ---
