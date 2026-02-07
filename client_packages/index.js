@@ -1,3 +1,4 @@
+require('./utils/headshot.js');
 require('./auth/index.js');
 require('./chat/index.js');
 require('./ui/spawn/index.js');
@@ -26,7 +27,7 @@ require('./systems/fuel.js');
 require('./systems/dumpster.js');
 require('./systems/returo.js');
 require('./systems/atm.js');
-require('./systems/photoHunt');
+require('./systems/photoHunt.js');
 
 // 4. Jobs
 require('./jobs/manager.js');

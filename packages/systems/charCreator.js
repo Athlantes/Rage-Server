@@ -101,6 +101,12 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         
         mp.events.call('server:auth:finalized', player);
 
+        // --- NEW: Take Headshot ---
+        // We delay slightly to ensure the camera has transitioned back to the player
+        setTimeout(() => {
+            player.call('client:headshot:take');
+        }, 2000);
+
     } catch (err) {
         console.error("Creator Save Error:", err);
         player.outputChatBox("!{FF0000}Error saving character data.");
