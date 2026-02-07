@@ -121,7 +121,7 @@ mp.events.add('server:phone:open', async (player) => {
             number: (msg.sender_number === myNumber) ? msg.receiver_number : msg.sender_number, 
             body: msg.message,
             isMine: (msg.sender_number === myNumber),
-            is_read: msg.is_read,
+            is_read: Number(msg.is_read),
             time: msg.created_at
         }));
 
@@ -176,6 +176,25 @@ mp.events.add('server:phone:addContact', async (player, name, number) => {
             [player.data.dbId, name, number]);
     } catch (err) {
         console.error("Add Contact Error:", err);
+    }
+});
+
+mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) => {
+    try {
+        // 1. Insert and get Result to have the ID
+        const [result] = await db.query(
+            "INSERT INTO player_mails (user_id, sender, title, message, created_at, is_read) VALUES (?, ?, ?, ?, NOW(), 0)",
+            [targetId, sender, title, message]
+        );
+
+        // 2. Send Notification with ID
+        const targetPlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === targetId);
+        if (targetPlayer) {
+            // PASS THE ID (result.insertId) so the client can reference it
+            targetPlayer.call('client:phone:receiveMail', [result.insertId, sender, title, message]);
+        }
+    } catch (err) {
+        console.error("[Phone] Send Mail Error:", err);
     }
 });
 

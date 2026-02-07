@@ -64,9 +64,25 @@ function closePhone() {
 
 // --- STANDARD APP EVENTS ---
 
-mp.events.add('client:phone:receiveMail', (sender, title, message) => {
-    if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
+mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
+    if(phoneBrowser) {
+        // Escape strings to prevent JS errors
+        const safeBody = message.replace(/'/g, "\\'");
+        const safeTitle = title.replace(/'/g, "\\'");
+        const safeSender = sender.replace(/'/g, "\\'");
+        
+        // Call a dedicated function in UI
+        phoneBrowser.execute(`
+            if(typeof app.receiveMail === 'function') {
+                app.receiveMail(${id}, '${safeSender}', '${safeTitle}', '${safeBody}');
+            } else {
+                // Fallback for older UI versions
+                app.receiveNotification('${safeSender}', '${safeTitle}', '${safeBody}');
+            }
+        `);
+    }
 });
+
 mp.events.add('client:phone:updateVehicles', (carsJson) => {
     if(phoneBrowser) phoneBrowser.execute(`app.loadVehicles(${carsJson})`);
 });
@@ -88,22 +104,29 @@ mp.events.add('client:phone:receiveSMS', (number, body) => {
             number: number, 
             body: body, 
             isMine: false, 
-            is_read: 0, // IMPORTANT: New messages are unread by default
+            is_read: 0, 
             time: new Date().toISOString() 
         };
         
+        // We pass the global 'isPhoneOpen' variable into the browser check
         phoneBrowser.execute(`
             (function() {
                 if(app.phoneApp) {
                     app.phoneApp.messages.push(${JSON.stringify(msgObj)});
                     
-                    if(app.phoneApp.activeChatNumber == '${number}') {
-                        // If chat is open, immediately mark read and render
+                    // CHECK: Is the user actually LOOKING at this chat?
+                    // Must be: Active Chat matches AND Phone is NOT locked AND Phone Shell is visible
+                    const isChatting = (app.phoneApp.activeChatNumber == '${number}') && 
+                                       (!app.isLocked) && 
+                                       (!document.getElementById('phone-shell').classList.contains('hidden'));
+
+                    if(isChatting) {
+                        // Mark read immediately only if looking at it
                         app.phoneApp.messages[app.phoneApp.messages.length - 1].is_read = 1;
-                        mp.trigger('client:proxyAction', 'markMessagesRead', '${number}'); // Sync to DB
+                        mp.trigger('client:proxyAction', 'markMessagesRead', '${number}');
                         app.phoneApp.renderChatBubbles();
                     } else {
-                        // Else, notification
+                        // Otherwise show notification
                         app.phoneApp.renderMessageList();
                         app.receiveNotification('${number}', 'New Message', '${body.replace(/'/g, "\\'")}', 'phone');
                     }

@@ -92,42 +92,30 @@ const app = {
     },
 
     // --- MODULAR NOTIFICATION SYSTEM ---
-    
-    /* Use this function for ALL notifications.
-       appId: key from NOTIFICATION_APPS (e.g., 'bank', 'mail')
-       title: bold text (e.g., 'Sender Name')
-       message: body text
-    */
+
     notify: (appId, title, message) => {
-        // 1. Get Config (fallback to system if invalid ID)
         const config = NOTIFICATION_APPS[appId] || NOTIFICATION_APPS['system'];
 
-        // 2. Update Badge (Visual red dot on app icon in Grid)
-        // Note: You must ensure your HTML IDs match, e.g., badge-mail, badge-phone
         const badge = document.getElementById(`badge-${appId}`);
         if(badge) { 
             badge.classList.remove('hidden'); 
             badge.innerText = "!"; 
         }
 
-        // 3. Add to Lock Screen List
-        // We ALWAYS add to this list. Logic:
-        // - Creates DOM element
-        // - Prepends to top
-        // - Handles click to open app
         const lockContainer = document.getElementById('lock-notification-list');
         if(lockContainer) {
-             const notif = document.createElement('div');
-             notif.className = 'lock-notif-item';
-             
-             notif.innerHTML = `
-                <div class="lock-notif-icon" style="background:${config.color}">
-                    <i class="${config.icon}"></i>
-                </div>
-                <div class="lock-notif-content">
-                    <div class="lock-notif-title">${title}</div>
-                    <div class="lock-notif-msg">${message}</div>
-                </div>
+            const notif = document.createElement('div');
+            notif.className = 'lock-notif-item';
+            notif.setAttribute('data-sender', title); // <--- ADD THIS LINE (Tags the element)
+
+            notif.innerHTML = `
+            <div class="lock-notif-icon" style="background:${config.color}">
+                <i class="${config.icon}"></i>
+            </div>
+            <div class="lock-notif-content">
+                <div class="lock-notif-title">${title}</div>
+                <div class="lock-notif-msg">${message}</div>
+            </div>
             `;
             
             // Interaction: Click notification to unlock and go to app
@@ -249,6 +237,13 @@ const app = {
 
     openMailDetail: (mail) => {
         app.open('mail-detail');
+        
+        // --- ADD THIS TO REMOVE NOTIFICATION ---
+        // Finds notifications from this sender and removes them
+        const notifs = document.querySelectorAll(`.lock-notif-item[data-sender="${mail.sender}"]`);
+        notifs.forEach(el => el.remove());
+        // ---------------------------------------
+
         document.getElementById('mail-detail-sender').innerText = `From: ${mail.sender}`;
         document.getElementById('mail-detail-title').innerText = mail.title;
         document.getElementById('mail-detail-body').innerText = mail.message;
@@ -259,15 +254,65 @@ const app = {
             const listEl = document.getElementById('mail-item-' + mail.id);
             if (listEl) {
                 listEl.classList.add('read');
-                listEl.classList.remove('unread');
+                // listEl.classList.remove('unread'); // Optional depending on your CSS
             }
-            // Update badge logic simplified
+            
+            // Update badge
             const badge = document.getElementById('badge-mail');
             if (badge && !badge.classList.contains('hidden')) {
                 let count = parseInt(badge.innerText) || 0;
                 if (count > 0) count--;
                 if (count <= 0) badge.classList.add('hidden');
                 else badge.innerText = count;
+            }
+        }
+    },
+
+    receiveMail: (id, sender, title, message) => {
+        // 1. Show Notification (Toast/Lockscreen)
+        app.notify('mail', sender, title);
+
+        // 2. Add to Mail List if it exists in DOM
+        const container = document.getElementById('mail-list');
+        if (container) {
+            // Construct object matching DB structure
+            const mail = { 
+                id: id, 
+                sender: sender, 
+                title: title, 
+                message: message, 
+                created_at: new Date().toISOString(), 
+                is_read: 0 
+            };
+            
+            // Remove "No Mail" text if it's there
+            if (container.innerHTML.includes('No Mail')) container.innerHTML = '';
+
+            const timeAgo = app.getRelativeTime(mail.created_at);
+            const div = document.createElement('div');
+            div.id = 'mail-item-' + mail.id;
+            div.className = `mail-item`; // No 'read' class = Unread style
+            div.onclick = () => app.openMailDetail(mail);
+            
+            div.innerHTML = `
+                <div class="mail-header-row" style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <div class="mail-sender">${mail.sender}</div>
+                    <div class="mail-time" style="font-size:11px; color:#8e8e93;">${timeAgo}</div>
+                </div>
+                <div class="mail-title">${mail.title}</div>
+                <div class="mail-msg">${mail.message}</div>
+            `;
+            
+            // Prepend to top of list
+            container.prepend(div);
+
+            // Update Badge Count
+            const badge = document.getElementById('badge-mail');
+            if(badge) {
+                let count = parseInt(badge.innerText) || 0;
+                count++;
+                badge.innerText = count;
+                badge.classList.remove('hidden');
             }
         }
     },
@@ -546,6 +591,9 @@ const app = {
 
         openChat: (number, displayName) => {
             app.phoneApp.activeChatNumber = number;
+            const notifs = document.querySelectorAll(`.lock-notif-item[data-sender="${displayName}"], .lock-notif-item[data-sender="${number}"]`);
+            notifs.forEach(el => el.remove());
+
             document.getElementById('view-phone-app').classList.add('hidden');
             document.getElementById('view-chat-thread').classList.remove('hidden');
             document.getElementById('chat-thread-name').innerText = displayName;
