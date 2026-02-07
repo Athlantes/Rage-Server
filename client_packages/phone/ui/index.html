@@ -156,19 +156,33 @@
 
             <div id="view-settings-wallpapers" class="view hidden">
                 <div class="app-header">
-                    <div class="header-left" onclick="app.open('settings')"><i class="fas fa-chevron-left"></i> Settings</div>
-                    <div class="header-title">Wallpapers</div>
-                    <div class="header-right"></div>
+                    <button class="back-btn" onclick="app.open('settings')">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span>Wallpapers</span>
                 </div>
-                <div class="content-padded">
-                    <div id="wallpaper-grid" class="wallpaper-grid"></div>
+
+                <div class="scrollable-content" style="background: #f2f2f7;">
                     
-                    <div class="input-group" style="margin-top:20px;">
-                        <label>Custom URL</label>
-                        <input type="text" id="custom-wall-url" placeholder="Imgur & Discord links allowed">
-                        <button class="btn-primary" onclick="app.settings.applyCustomWallpaper()">Apply</button>
+                    <div class="wallpaper-section-title">Choose a Wallpaper</div>
+                    <div id="wallpaper-grid" class="wallpaper-grid">
+                        </div>
+                    
+                    <div class="custom-wall-card">
+                        <div class="custom-wall-header">
+                            <i class="fas fa-link"></i>
+                            <span>Custom Image</span>
+                        </div>
+                        <div class="custom-wall-body">
+                            <input type="text" id="custom-wall-url" placeholder="https://imgur.com/..." autocomplete="off">
+                            <button class="btn-primary-blue" onclick="app.settings.applyCustomWallpaper()">
+                                Set Wallpaper
+                            </button>
+                        </div>
+                        <div class="custom-wall-hint">Supported: Imgur, Discord, Direct Links</div>
                     </div>
-                </div>
+
+                    <div style="height: 40px;"></div> </div>
             </div>
 
             <div id="view-gallery" class="view hidden">

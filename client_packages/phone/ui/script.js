@@ -622,6 +622,7 @@ const app = {
     },
 
     // --- SETTINGS V2 ---
+    // --- SETTINGS V2 (Updated for New UI) ---
     settings: {
         // Default State
         data: {
@@ -665,44 +666,42 @@ const app = {
             app.settings.toggleFlightUI(app.settings.data.is_flight_mode);
         },
 
-        // --- CORE FUNCTION THAT WAS MISSING ---
+        // --- NEW RENDER LOGIC ---
         renderWallpapers: () => {
-            console.log("DEBUG: renderWallpapers called"); 
             const grid = document.getElementById('wallpaper-grid');
-            
-            if (!grid) {
-                console.error("DEBUG: #wallpaper-grid NOT FOUND in HTML");
-                return;
-            }
+            if (!grid) return;
             
             grid.innerHTML = '';
-            console.log("DEBUG: Found grid, clearing...");
-
+            
+            // Define your available local wallpapers here
             const walls = ['wall1.jpg', 'wall2.jpg', 'wall3.jpg', 'wall4.jpg', 'wall5.jpg', 'wall6.jpg'];
             
             walls.forEach(wall => {
                 const div = document.createElement('div');
                 div.className = 'wallpaper-item';
                 
-                // Construct path
-                const path = `package://phone/ui/images/wallpapers/${wall}`;
+                // Construct path (adjust if your folder structure is different)
+                const path = `package://phone/ui/images/wallpapers/${wall}`; 
                 div.style.backgroundImage = `url('${path}')`;
                 
-                // Debug click
+                // Apply 'selected' class if active
+                if (app.settings.data.wallpaper === wall) {
+                    div.classList.add('selected');
+                }
+                
+                // Click Handler
                 div.onclick = () => {
-                    console.log(`Clicked wallpaper: ${wall}`);
+                    // 1. Update Visuals Immediately (Fast UI)
+                    document.querySelectorAll('.wallpaper-item').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+
+                    // 2. Set Logic
                     app.settings.setWallpaper(wall);
                 };
                 
-                if (app.settings.data.wallpaper === wall) {
-                    div.style.border = '2px solid #007aff';
-                }
-                
                 grid.appendChild(div);
-                console.log(`DEBUG: Appended ${wall} with path: ${path}`);
             });
         },
-        // --------------------------------------
 
         toggleDND: (checked) => {
             app.settings.data.is_dnd = checked;
@@ -726,9 +725,7 @@ const app = {
             app.settings.data.wallpaper = source;
             app.settings.setWallpaperUI(source);
             app.settings.save('wallpaper', source);
-            
-            // Re-render to update the blue border selection
-            app.settings.renderWallpapers();
+            // Note: We don't re-render the grid here to preserve the scroll position and animation
         },
 
         applyCustomWallpaper: () => {
@@ -736,19 +733,29 @@ const app = {
             if(!input) return;
             const url = input.value.trim();
 
-            if (!url.startsWith('https://')) {
-                return app.showToast("Settings", "Error", "Must start with https://");
+            if (!url) return;
+
+            // Simple validation
+            if (!url.startsWith('http')) {
+                return app.showToast("Settings", "Error", "Link must start with http/s");
             }
 
-            const allowed = ['imgur.com', 'discordapp.com', 'discordapp.net'];
+            // Optional: Filter for specific domains
+            const allowed = ['imgur.com', 'discordapp.com', 'discordapp.net', 'discord.com'];
             const isValidDomain = allowed.some(d => url.includes(d));
 
             if (!isValidDomain) {
                 return app.showToast("Settings", "Error", "Only Imgur or Discord links allowed.");
             }
 
+            // Deselect grid items visually since we are using a custom one
+            document.querySelectorAll('.wallpaper-item').forEach(el => el.classList.remove('selected'));
+
             app.settings.setWallpaper(url);
-            input.value = '';
+            app.showToast("Settings", "Updated", "Custom wallpaper applied.");
+            
+            // Optional: Clear input or leave it for editing
+            input.value = ''; 
         },
 
         save: (key, val) => {
@@ -763,13 +770,18 @@ const app = {
             
             let finalUrl = '';
             if (source.startsWith('http')) {
+                // It's a custom URL
                 finalUrl = `url('${source}')`;
             } else {
+                // It's a local file
                 finalUrl = `url('package://phone/ui/images/wallpapers/${source}')`;
             }
+            
             screen.style.backgroundImage = finalUrl;
+            // Ensure these are set to handle different image sizes
             screen.style.backgroundSize = 'cover';
             screen.style.backgroundPosition = 'center';
+            screen.style.backgroundRepeat = 'no-repeat';
         },
 
         toggleDNDUI: (isActive) => {

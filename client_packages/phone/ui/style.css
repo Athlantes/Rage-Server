@@ -364,86 +364,165 @@ input:checked + .slider:before { transform: translateX(20px); }
     margin-top: 5px;
 }
 
+/* Section Title */
+.wallpaper-section-title {
+    padding: 20px 20px 10px 20px;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Grid Layout */
 .wallpaper-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 10px 0;
+    grid-template-columns: repeat(2, 1fr); /* 2 Columns for better visibility */
+    gap: 15px;
+    padding: 0 20px 20px 20px;
 }
 
+/* Individual Wallpaper Card */
 .wallpaper-item {
+    position: relative;
     width: 100%;
-    height: 120px; /* Force a height so you can see it even if image fails */
-    background-color: #333; /* Fallback color */
-    border-radius: 8px;
+    aspect-ratio: 9 / 18; 
+    background-color: #ddd;
     background-size: cover;
     background-position: center;
+    border-radius: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border: none; 
     cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.1s;
-}
-
-.wallpaper-item:active {
-    transform: scale(0.95);
-}
-
-.wallpaper-section-title {
-    padding: 15px 5px 5px 5px;
-    font-size: 13px;
-    color: #888;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-.wall-option {
-    height: 180px;
-    border-radius: 12px;
-    border: 3px solid transparent;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: transform 0.1s, border-color 0.2s;
-    background-color: #333;
-    background-size: cover !important;
-    background-position: center !important;
-    position: relative;
+    transition: transform 0.2s;
     overflow: hidden;
 }
 
-.wall-option:active { transform: scale(0.96); }
-.wall-option.selected { border-color: #007aff; }
+/* Hover Effect */
+.wallpaper-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
 
-/* Label inside the wallpaper preview */
-.wall-name-tag {
+/* Active / Click Effect */
+.wallpaper-item:active {
+    transform: scale(0.96);
+}
+
+/* Selected State */
+.wallpaper-item.selected {
+    /* REMOVED: border-color: #007aff; */
+    /* REMOVED: box-shadow ring */
+    
+    /* Optional: Add a subtle shadow glow instead of a solid border */
+    box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3);
+}
+
+/* Ensure the Checkmark Badge is still visible */
+.wallpaper-item.selected::after {
+    content: '\f00c'; /* FontAwesome Check */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,0.6);
+    bottom: 10px;
+    right: 10px;
+    background: #007aff;
     color: white;
-    font-size: 11px;
-    padding: 6px;
-    text-align: center;
-    backdrop-filter: blur(4px);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    animation: popIn 0.2s ease-out;
 }
 
-/* Custom Input Area */
-.custom-wall-box {
+/* --- CUSTOM WALLPAPER CARD --- */
+
+.custom-wall-card {
     background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin: 0 20px;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.custom-wall-input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #e5e5ea;
-    background: #f2f2f7;
+.custom-wall-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.custom-wall-header i {
+    margin-right: 10px;
+    color: #007aff;
+    background: rgba(0, 122, 255, 0.1);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 8px;
     font-size: 14px;
-    margin-bottom: 10px;
-    outline: none;
 }
 
-.custom-wall-input:focus { border-color: #007aff; background: #fff; }
+.custom-wall-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.custom-wall-body input {
+    width: 100%;
+    background: #f2f2f7;
+    border: 1px solid transparent;
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.custom-wall-body input:focus {
+    background: white;
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.btn-primary-blue {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-primary-blue:active {
+    opacity: 0.8;
+}
+
+.custom-wall-hint {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #8e8e93;
+    text-align: center;
+}
+
+/* Animation for Checkmark */
+@keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    80% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); }
+}
 
 .btn-apply-custom {
     width: 100%;
