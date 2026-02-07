@@ -4,62 +4,75 @@ const db = require('../database');
 const vehicleManager = require('../vehicles/vehicleManager'); 
 const webServer = require('../../webserver');
 
+const uploadCache = new Map();
 
-if (!fs.existsSync(webServer.photosDir)){
-    fs.mkdirSync(webServer.photosDir, { recursive: true });
-}
-
-mp.events.add('server:photo:save', async (player, base64Data) => {
+// 1. Initialize Upload
+mp.events.add('server:photo:initUpload', (player, totalChunks) => {
     if (!player.logged) return;
+    uploadCache.set(player.id, {
+        chunks: [],
+        total: totalChunks,
+        timestamp: Date.now()
+    });
+});
 
-    try {
-        const timestamp = Date.now();
-        const filename = `${player.data.dbId}_${timestamp}.png`;
-        const filePath = path.join(webServer.photosDir, filename);
+// 2. Receive Chunk
+mp.events.add('server:photo:receiveChunk', async (player, chunkData) => {
+    if (!uploadCache.has(player.id)) return;
 
-        // 1. Write file to disk
-        fs.writeFile(filePath, base64Data, 'base64', async (err) => {
-            if (err) {
-                console.error(`[Photo] Save Error: ${err.message}`);
-                player.notify("~r~Server failed to save photo.");
-                return;
-            }
+    const upload = uploadCache.get(player.id);
+    upload.chunks.push(chunkData);
 
-            // 2. Save Reference to Database
-            // We store the filename. The gallery will prepend the webServer URL.
-            await db.query(
-                "INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", 
-                [player.data.dbId, filename]
-            );
-
-            player.notify("~g~Photo saved to Gallery!");
-            console.log(`[Photo] Saved ${filename} for ${player.name}`);
-        });
-
-    } catch (err) {
-        console.error("[Photo] Error:", err);
+    // If all chunks received, save the file
+    if (upload.chunks.length >= upload.total) {
+        // Join all chunks back into one string
+        const fullBase64 = upload.chunks.join('');
+        uploadCache.delete(player.id); // Clear memory
+        
+        savePhotoToDisk(player, fullBase64);
     }
 });
 
-// API for Gallery App to fetch photos
+async function savePhotoToDisk(player, base64Data) {
+    try {
+        const timestamp = Date.now();
+        const userId = player.data.dbId || 0;
+        const filename = `${userId}_${timestamp}.png`;
+        const filePath = path.join(webServer.photosDir, filename);
+
+        fs.writeFile(filePath, base64Data, 'base64', async (err) => {
+            if (err) {
+                console.error(`[Photo] Write Error: ${err.message}`);
+                return;
+            }
+
+            await db.query(
+                "INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", 
+                [userId, filename]
+            );
+
+            player.notify("~g~Photo uploaded successfully!");
+            console.log(`[Photo] Saved full image: ${filename}`);
+        });
+    } catch (err) {
+        console.error("[Photo] Error:", err);
+    }
+}
+
+// Ensure you keep your existing 'server:phone:requestPhotos' event here
 mp.events.add('server:phone:requestPhotos', async (player) => {
-    if (!player.logged) return;
+    const userId = player.data.dbId || 0;
     try {
         const [rows] = await db.query(
             "SELECT id, image_path FROM player_photos WHERE user_id = ? ORDER BY id DESC LIMIT 20",
-            [player.data.dbId]
+            [userId]
         );
-
-        // Construct full URLs
         const photos = rows.map(r => ({
             id: r.id,
-            url: webServer.baseUrl + r.image_path // e.g., http://localhost:3000/photos/1_123456.png
+            url: webServer.baseUrl + r.image_path 
         }));
-
         player.call('client:phone:receivePhotos', [JSON.stringify(photos)]);
-    } catch (err) {
-        console.error(err);
-    }
+    } catch (err) { console.error(err); }
 });
 
 // 1. Open Phone & Load Data

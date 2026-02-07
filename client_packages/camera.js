@@ -9,9 +9,24 @@ mp.events.add('playerReady', () => {
     }
 });
 
+mp.events.add('client:photo:startUpload', (totalChunks, filename) => {
+    mp.gui.chat.push(`~y~[Camera] Uploading... (0/${totalChunks})`);
+    // Tell server a new upload is coming
+    mp.events.callRemote('server:photo:initUpload', totalChunks);
+});
+
+mp.events.add('client:photo:sendChunk', (chunkData) => {
+    // Send individual chunk to server
+    mp.events.callRemote('server:photo:receiveChunk', chunkData);
+});
+
 // Helper for debug logs
 mp.events.add('client:photo:log', (msg) => {
     mp.gui.chat.push(`~y~[Debug] ${msg}`);
+});
+
+mp.events.add('client:photo:error', (msg) => {
+    mp.gui.chat.push(`~r~Photo Error: ${msg}`);
 });
 
 mp.events.add("client:toggleCamera", () => {
@@ -55,29 +70,21 @@ function takePhoto() {
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
-    // Use a simpler filename to avoid special character issues
     const filename = `img_${Date.now()}.png`;
 
     setTimeout(() => {
-        // 1. Take Screenshot
         mp.gui.takeScreenshot(filename, 1, 100, 0);
         
         mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
         mp.game.ui.displayRadar(true);
         mp.game.ui.displayHud(true);
-        mp.gui.chat.push("~b~Saving to disk...");
 
-        // 2. WAIT LONGER (1.5s) to ensure file is written to HDD
         setTimeout(() => {
             if (photoProcessor) {
-                mp.gui.chat.push("~b~Processing photo...");
                 photoProcessor.execute(`processPhoto('${filename}')`);
-            } else {
-                mp.gui.chat.push("~r~Error: Photo processor not ready.");
             }
-        }, 1500); 
-
-    }, 50);
+        }, 1000); 
+    }, 100);
 }
 
 mp.events.add('client:photo:uploadData', (base64Data) => {

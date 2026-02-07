@@ -2,37 +2,45 @@
 <body>
     <script>
         function processPhoto(filename) {
-            // Tell client we started
-            mp.trigger('client:photo:log', 'Processor: Attempting to load ' + filename);
+            mp.trigger('client:photo:log', 'Processor: Loading ' + filename);
 
             const img = new Image();
-            // Important: Allow cross-origin for the local screenshot server
             img.crossOrigin = "Anonymous"; 
             
             img.onload = function() {
                 try {
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                    canvas.width = img.naturalWidth; // Use natural dimensions
+                    canvas.height = img.naturalHeight;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     
-                    // Convert to Base64
-                    const dataURL = canvas.toDataURL('image/png');
+                    const dataURL = canvas.toDataURL('image/png', 0.8); // 0.8 quality to save space
                     const base64 = dataURL.split(',')[1];
                     
-                    mp.trigger('client:photo:log', 'Processor: Image converted. Size: ' + base64.length);
-                    mp.trigger('client:photo:uploadData', base64);
+                    // --- CHUNKING LOGIC ---
+                    const CHUNK_SIZE = 50000; // 50KB chunks
+                    const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
+                    
+                    mp.trigger('client:photo:log', `Processor: Splitting image into ${totalChunks} chunks.`);
+                    mp.trigger('client:photo:startUpload', totalChunks, filename);
+
+                    for (let i = 0; i < totalChunks; i++) {
+                        const start = i * CHUNK_SIZE;
+                        const end = start + CHUNK_SIZE;
+                        const chunk = base64.substring(start, end);
+                        mp.trigger('client:photo:sendChunk', chunk);
+                    }
+                    
                 } catch (e) {
                     mp.trigger('client:photo:error', 'Canvas Error: ' + e.message);
                 }
             };
 
             img.onerror = function() {
-                mp.trigger('client:photo:error', 'Processor: Failed to load image. File may not exist yet.');
+                mp.trigger('client:photo:error', 'Failed to load screenshot from disk.');
             };
 
-            // Use the http alias for local screenshots
             img.src = 'http://screenshots/' + filename; 
         }
     </script>
