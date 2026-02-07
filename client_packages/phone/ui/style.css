@@ -84,32 +84,36 @@ body {
 
 #lock-notification-list {
     position: absolute;
-    top: 120px; /* Below the clock */
+    top: 150px; /* Moved down slightly to not overlap clock */
     left: 0;
     width: 100%;
-    max-height: 350px; /* Limit height so it doesn't cover slide-to-unlock */
-    overflow-y: auto;  /* Allow scrolling if many notifications */
+    max-height: 380px; 
+    overflow-y: auto; 
     padding: 0 15px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 101; /* Above wallpaper */
-    /* Hide scrollbar for cleaner look */
-    scrollbar-width: none; 
+    z-index: 150; /* Higher z-index to sit above wallpaper/overlays */
+    pointer-events: auto; /* Ensure clicks register */
 }
 #lock-notification-list::-webkit-scrollbar { display: none; }
 
 .lock-notif-item {
-    background: rgba(255, 255, 255, 0.85); /* High contrast background */
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.95); /* More opaque */
+    backdrop-filter: blur(15px);
     border-radius: 12px;
     padding: 12px;
     display: flex;
     align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     animation: slideIn 0.3s ease-out;
     flex-shrink: 0;
     cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.lock-notif-item:active {
+    transform: scale(0.98);
 }
 
 .lock-notif-icon {
@@ -1176,33 +1180,27 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     align-items: flex-start;
     
-    /* Lock Screen Background Style */
-    background: rgba(255, 255, 255, 0.2); 
-    backdrop-filter: blur(12px);
-    border-radius: 12px;
+    /* Glassmorphism Effect */
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 14px;
     padding: 12px;
     
-    /* Removed the border to match lock screen */
-    border: none; 
-    
-    color: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    
-    /* Match spacing of lock screen */
-    gap: 10px; 
+    color: #000; /* Dark text for contrast against light glass */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    gap: 12px; 
 }
 
 .toast-screen {
     width: 100%;
     height: 100%;
-    
-    /* Screen Corners (Must be slightly less than shell radius) */
     border-radius: 32px 32px 15px 15px; 
-    
     position: relative;
     display: flex;
-    flex-direction: column; /* Stack StatusBar and Content vertically */
+    flex-direction: column;
     overflow: hidden;
+    background-color: #222; 
 }
 
 /* 1. STATUS BAR (Fixed Height) */
@@ -1268,32 +1266,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     width: 100%;
 }
 
-#toast-sender {
-    /* Adjusted to match .lock-notif-title */
-    font-weight: bold;
-    font-size: 13px; 
-    letter-spacing: normal;
-}
+#toast-sender { color: #000; }
 
-.toast-time {
-    font-size: 11px;
-    opacity: 0.8;
-    font-weight: normal;
-}
+.toast-time { color: #666; }
 
-#toast-message {
-    /* Make it look like a Title */
-    font-size: 13px;
-    font-weight: 600; /* Bold text */
-    opacity: 1;       /* Fully visible */
-    
-    /* Limit to 1 line only */
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis; 
-    
-    margin-top: 1px; /* Slight spacing from sender name */
-}
+#toast-message { color: #333; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
