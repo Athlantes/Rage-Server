@@ -158,14 +158,38 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 });
 
-// Updated to accept photos and mediaUrl
 mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl) => {
+    // 1. Debug Log to Client Console (Press F8 to see this)
+    mp.gui.chat.push(`[Phone Debug] Init Received.`);
+    mp.gui.chat.push(`[Phone Debug] Photos JSON Length: ${photosJson ? photosJson.length : 'NULL'}`);
+    mp.gui.chat.push(`[Phone Debug] URL: ${mediaUrl}`);
+
     if(phoneBrowser) {
-        phoneBrowser.execute(`app.loadMails(${mailsJson})`);
-        // Pass photos to UI
-        if(photosJson && mediaUrl) {
-            phoneBrowser.execute(`app.loadPhotos(${photosJson}, '${mediaUrl}')`);
+        // 2. Load Mails safely
+        if(mailsJson) {
+            phoneBrowser.execute(`
+                try { 
+                    app.loadMails(${mailsJson}); 
+                } catch(e) { 
+                    console.error("Mail Load Error: " + e.message); 
+                }
+            `);
         }
+
+        // 3. Load Photos safely
+        // We check if photosJson is valid string, if not send empty array "[]"
+        const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : "[]";
+        
+        phoneBrowser.execute(`
+            try {
+                console.log("JS: Loading Photos...");
+                app.loadPhotos(${safePhotos}, '${mediaUrl}');
+            } catch(e) {
+                console.error("Photo Load Error: " + e.message);
+                // Visual feedback in browser
+                document.getElementById('gallery-grid').innerHTML = 'JS Error: ' + e.message;
+            }
+        `);
     }
 });
 
@@ -184,7 +208,7 @@ mp.events.add('client:proxyAction', (action, data) => {
         
         // --- NEW: Delete Photo ---
         case 'deletePhoto':
-            const photoData = JSON.parse(data); // Expects { id, path }
+            const photoData = JSON.parse(data); 
             mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
             break;
 

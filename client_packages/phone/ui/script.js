@@ -1,4 +1,3 @@
-// client_packages/phone/ui/script.js
 const app = {
     isLocked: true, 
     toastTimeout: null,
@@ -119,21 +118,17 @@ const app = {
     },
 
     readAllMails: () => {
-        // 1. Visually mark all items as read immediately
         const items = document.querySelectorAll('.mail-item');
         items.forEach(el => {
             el.classList.add('read');
         });
 
-        // 2. Hide the notification badge
         const badge = document.getElementById('badge-mail');
         if(badge) badge.classList.add('hidden');
 
-        // 3. Clear the lock screen notifications
         const lockContainer = document.getElementById('lock-notification-list');
         if(lockContainer) lockContainer.innerHTML = '';
 
-        // 4. Send the event to the server to save changes in the database
         if ('mp' in window) mp.trigger('client:proxyAction', 'readAllMails', 0);
     },
 
@@ -143,7 +138,6 @@ const app = {
         document.getElementById('mail-detail-title').innerText = mail.title;
         document.getElementById('mail-detail-body').innerText = mail.message;
 
-        // ONLY TRIGGER IF IT WAS UNREAD
         if (!mail.is_read) {
             if ('mp' in window) {
                 mp.trigger('client:proxyAction', 'readMail', mail.id);
@@ -151,14 +145,12 @@ const app = {
 
             mail.is_read = 1;
             
-            //Turn off the unread styling
             const listEl = document.getElementById('mail-item-' + mail.id);
             if (listEl) {
                 listEl.classList.add('read');
                 listEl.classList.remove('unread');
             }
 
-            // Update the badge count
             const badge = document.getElementById('badge-mail');
             if (badge && !badge.classList.contains('hidden')) {
                 let count = parseInt(badge.innerText) || 0;
@@ -422,7 +414,6 @@ const app = {
             
             app.scooter.state = 'scanning';
             circle.classList.add('pulsing');
-            // Make message feel like it's working
             msg.innerText = "Triangulating nearby scooters..."; 
             btn.disabled = true;
             btn.innerText = "SEARCHING...";
@@ -447,7 +438,6 @@ const app = {
                 msg.innerText = "Signal acquired.";
                 info.classList.remove('hidden');
                 
-                // UPDATE: Show the dynamic distance from server
                 const distContainer = info.querySelector('div > span:first-child');
                 if(distContainer) distContainer.innerHTML = `<i class="fas fa-walking"></i> ${data.dist || 15}m`;
                 
@@ -506,66 +496,62 @@ const app = {
             btn.innerText = "SCAN AREA";
             btn.style.background = "#32cd32";
             document.getElementById('escootr-status-msg').innerText = "Ride ended.";
-        },
-        // --- GALLERY SYSTEM ---
-        loadPhotos: (photosJson, baseUrl) => {
-            app.photos = Array.isArray(photosJson) ? photosJson : [];
-            app.mediaBaseUrl = baseUrl;
-            
-            const grid = document.getElementById('gallery-grid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-
-            if (app.photos.length === 0) {
-                grid.innerHTML = '<div style="width:100%; padding:40px; text-align:center; color:#999; grid-column: 1 / -1;">No photos yet</div>';
-                return;
-            }
-
-            app.photos.forEach(photo => {
-                const div = document.createElement('div');
-                div.className = 'gallery-item';
-                div.onclick = () => app.openPhotoDetail(photo);
-                
-                // Construct full URL
-                const fullUrl = app.mediaBaseUrl + photo.image_path;
-                
-                div.innerHTML = `<img src="${fullUrl}" loading="lazy">`;
-                grid.appendChild(div);
-            });
-        },
-
-        openPhotoDetail: (photo) => {
-            app.currentPhoto = photo;
-            app.open('photo-detail');
-            
-            const img = document.getElementById('photo-full-img');
-            img.src = app.mediaBaseUrl + photo.image_path;
-            
-            const dateEl = document.getElementById('photo-detail-date');
-            // Format date simply
-            const date = new Date(photo.created_at);
-            dateEl.innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        },
-
-        deleteCurrentPhoto: () => {
-            if (!app.currentPhoto) return;
-            
-            if (confirm("Delete this photo permanently?")) {
-                if ('mp' in window) {
-                    mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
-                        id: app.currentPhoto.id,
-                        path: app.currentPhoto.image_path
-                    }));
-                }
-                // Temporarily go back to gallery while server processes
-                app.open('gallery');
-            }
         }
     },
+
+    // --- GALLERY SYSTEM (Fixed: Moved outside 'scooter' object) ---
+    loadPhotos: (photosJson, baseUrl) => {
+        app.photos = Array.isArray(photosJson) ? photosJson : [];
+        app.mediaBaseUrl = baseUrl;
+        
+        const grid = document.getElementById('gallery-grid');
+        if (!grid) return;
+        
+        grid.innerHTML = '';
+
+        if (app.photos.length === 0) {
+            grid.innerHTML = '<div style="width:100%; padding:40px; text-align:center; color:#999; grid-column: 1 / -1;">No photos yet</div>';
+            return;
+        }
+
+        app.photos.forEach(photo => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.onclick = () => app.openPhotoDetail(photo);
+            
+            const fullUrl = app.mediaBaseUrl + photo.image_path;
+            
+            div.innerHTML = `<img src="${fullUrl}" loading="lazy">`;
+            grid.appendChild(div);
+        });
+    },
+
+    openPhotoDetail: (photo) => {
+        app.currentPhoto = photo;
+        app.open('photo-detail');
+        
+        const img = document.getElementById('photo-full-img');
+        img.src = app.mediaBaseUrl + photo.image_path;
+        
+        const dateEl = document.getElementById('photo-detail-date');
+        const date = new Date(photo.created_at);
+        dateEl.innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    },
+
+    deleteCurrentPhoto: () => {
+        if (!app.currentPhoto) return;
+        
+        if (confirm("Delete this photo permanently?")) {
+            if ('mp' in window) {
+                mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
+                    id: app.currentPhoto.id,
+                    path: app.currentPhoto.image_path
+                }));
+            }
+            app.open('gallery');
+        }
+    }
 };
-
-
 
 // --- GLOBAL APP FUNCTIONS ---
 function openPhone() {

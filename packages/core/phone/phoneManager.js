@@ -68,45 +68,41 @@ mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
 
     try {
-        // Load Mails
-        const [mails] = await db.query(
-            "SELECT id, user_id, sender, title, message, is_read, created_at FROM player_mails " +
-            "WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY) " +
-            "ORDER BY created_at DESC LIMIT 20", 
-            [player.data.dbId]
-        );
-        
-        // --- NEW: Load Photos ---
-        const [photos] = await db.query(
-            "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC",
-            [player.data.dbId]
-        );
+        console.log(`[Phone] Opening for ${player.name}`);
 
-        // Send mails, photos, and the media base URL to the client
+        // Load Mails (Safe Fallback)
+        let mails = [];
+        try {
+            const [mailRows] = await db.query(
+                "SELECT id, sender, title, message, is_read, created_at FROM player_mails WHERE user_id = ? ORDER BY created_at DESC LIMIT 20", 
+                [player.data.dbId]
+            );
+            mails = mailRows || [];
+        } catch(e) { console.error("[Phone] Mail Error:", e.message); }
+        
+        // Load Photos (Safe Fallback)
+        let photos = [];
+        try {
+            const [photoRows] = await db.query(
+                "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ?",
+                [player.data.dbId]
+            );
+            photos = photoRows || [];
+            console.log(`[Phone] Photos found in DB: ${photos.length}`);
+        } catch (e) { console.error("[Phone] Photo Error:", e.message); }
+
+        // Get URL with fallback
+        const mediaUrl = webServer.baseUrl || "http://localhost:8080/"; 
+
+        // Send to client
         player.call('client:phone:initialize', [
             JSON.stringify(mails), 
             JSON.stringify(photos), 
-            webServer.baseUrl
+            mediaUrl
         ]);
-        
-        // Load Vehicles (Existing code)
-        const cars = await vehicleManager.getPlayerVehicles(player.data.dbId);
-        const processedCars = cars.map(c => {
-            const activeVeh = vehicleManager.findActiveVehicle(c.id);
-            return {
-                id: c.id,
-                model: c.model,
-                plate: c.plate,
-                fuel: c.fuel,
-                parked: c.parked,
-                spawned: !!activeVeh 
-            };
-        });
-        
-        player.call('client:phone:updateVehicles', [JSON.stringify(processedCars)]);
 
     } catch (err) {
-        console.error("Phone Data Error:", err);
+        console.error("[Phone] Critical Error:", err);
     }
 });
 
@@ -193,6 +189,8 @@ mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) 
 
 mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => {
     if (!player.logged) return;
+    console.log(`[Phone] Deleting photo ${photoId} (${photoPath})`);
+    
     try {
         // 1. Delete from Database
         await db.query("DELETE FROM player_photos WHERE id = ? AND user_id = ?", [photoId, player.data.dbId]);
@@ -202,11 +200,13 @@ mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => 
         if (fs.existsSync(filePath)) {
             fs.unlink(filePath, (err) => {
                 if (err) console.error("Failed to delete file:", err);
+                else console.log("[Phone] File deleted from disk.");
             });
         }
 
         // 3. Notify and Refresh
-        player.call('client:photo:log', [`Deleted photo ${photoPath}`]);
+        player.call('client:photo:log', [`Deleted photo.`]);
+        // Refresh phone to update the grid
         mp.events.call('server:phone:open', player); 
 
     } catch (err) {
