@@ -136,11 +136,8 @@ mp.events.add('client:phone:findScooterSpawn', () => {
     const spawnPos = mp.game.pathfind.getClosestVehicleNode(backX, backY, pos.z, 1, 3.0, 0);
 
     if (spawnPos) {
-        // Found a valid road/sidewalk
-        // spawnPos is usually returned as a Vector3 object directly
         mp.events.callRemote('server:scooter:performRent', spawnPos);
     } else {
-        // Fallback: Just use the calculated back position if no node found
         mp.events.callRemote('server:scooter:performRent', new mp.Vector3(backX, backY, pos.z));
     }
 });
@@ -161,46 +158,39 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 });
 
+// --- OPTIMIZED INITIALIZATION ---
 mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson) => {
-
-    // 1. Debug Log to Client Console (Press F8 to see this)
-    mp.gui.chat.push(`[Phone Debug] Init Received.`);
-    mp.gui.chat.push(`[Phone Debug] Photos JSON Length: ${photosJson ? photosJson.length : 'NULL'}`);
-    mp.gui.chat.push(`[Phone Debug] URL: ${mediaUrl}`);
+    // Debug Log
+    mp.gui.chat.push(`[Phone Debug] Init Data Received.`);
 
     if(phoneBrowser) {
+        // Prepare safe strings to prevent JS errors in the browser
+        const safeMails = mailsJson || '[]';
+        // Ensure photos is a valid array string, otherwise '[]'
+        const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : '[]';
         const safeSettings = settingsJson || '{}';
+        const safeMediaUrl = mediaUrl || '';
 
+        // Execute all loads in ONE go to prevent flickering and double-loading
         phoneBrowser.execute(`
-            app.loadMails(${mailsJson});
-            app.loadPhotos(${photosJson}, '${mediaUrl}');
-            app.settings.init(${safeSettings}); 
-        `);
+            (function() {
+                try {
+                    // 1. Load Mails
+                    try { app.loadMails(${safeMails}); } 
+                    catch(e) { console.error("Mail Load Error:", e); }
 
-        // 2. Load Mails safely
-        if(mailsJson) {
-            phoneBrowser.execute(`
-                try { 
-                    app.loadMails(${mailsJson}); 
-                } catch(e) { 
-                    console.error("Mail Load Error: " + e.message); 
+                    // 2. Load Photos
+                    try { app.loadPhotos(${safePhotos}, '${safeMediaUrl}'); } 
+                    catch(e) { console.error("Photo Load Error:", e); }
+
+                    // 3. Init Settings (Wallpapers, etc.)
+                    try { app.settings.init(${safeSettings}); } 
+                    catch(e) { console.error("Settings Load Error:", e); }
+
+                } catch(err) {
+                    console.error("Critical Phone Init Error:", err);
                 }
-            `);
-        }
-
-        // 3. Load Photos safely
-        // We check if photosJson is valid string, if not send empty array "[]"
-        const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : "[]";
-        
-        phoneBrowser.execute(`
-            try {
-                console.log("JS: Loading Photos...");
-                app.loadPhotos(${safePhotos}, '${mediaUrl}');
-            } catch(e) {
-                console.error("Photo Load Error: " + e.message);
-                // Visual feedback in browser
-                document.getElementById('gallery-grid').innerHTML = 'JS Error: ' + e.message;
-            }
+            })();
         `);
     }
 });
@@ -218,7 +208,6 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
         case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
         
-        // --- NEW: Delete Photo ---
         case 'deletePhoto':
             const photoData = JSON.parse(data); 
             mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);

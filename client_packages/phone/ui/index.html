@@ -155,23 +155,19 @@
             </div>
 
             <div id="view-settings-wallpapers" class="view hidden">
-                <div class="app-header" style="background: #f2f2f7; color: #000; border-bottom: 1px solid #d1d1d6;">
-                    <button class="back-btn" onclick="app.open('settings')" style="color: #007aff;"><i class="fas fa-chevron-left"></i> Back</button>
-                    <span style="font-weight: 600;">Wallpapers</span>
+                <div class="app-header">
+                    <div class="header-left" onclick="app.open('settings')"><i class="fas fa-chevron-left"></i> Settings</div>
+                    <div class="header-title">Wallpapers</div>
+                    <div class="header-right"></div>
                 </div>
-                
-                <div class="scrollable-content" style="background: #f2f2f7; padding: 20px;">
+                <div class="content-padded">
+                    <div id="wallpaper-grid" class="wallpaper-grid"></div>
                     
-                    <div class="wallpaper-section-title">Custom Image</div>
-                    <div class="custom-wall-box">
-                        <input type="text" id="custom-wall-url" class="custom-wall-input" placeholder="Paste image URL (JPG/PNG)...">
-                        <button class="btn-apply-custom" onclick="app.settings.applyCustomWallpaper()">Apply Custom</button>
+                    <div class="input-group" style="margin-top:20px;">
+                        <label>Custom URL</label>
+                        <input type="text" id="custom-wall-url" placeholder="Imgur & Discord links allowed">
+                        <button class="btn-primary" onclick="app.settings.applyCustomWallpaper()">Apply</button>
                     </div>
-
-                    <div class="wallpaper-section-title" style="margin-top: 20px;">Presets</div>
-                    <div class="wallpaper-grid" id="wallpaper-list">
-                        </div>
-
                 </div>
             </div>
 

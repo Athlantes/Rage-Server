@@ -366,9 +366,25 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .wallpaper-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.wallpaper-item {
+    width: 100%;
+    height: 120px; /* Force a height so you can see it even if image fails */
+    background-color: #333; /* Fallback color */
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s;
+}
+
+.wallpaper-item:active {
+    transform: scale(0.95);
 }
 
 .wallpaper-section-title {

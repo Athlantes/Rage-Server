@@ -667,25 +667,39 @@ const app = {
 
         // --- CORE FUNCTION THAT WAS MISSING ---
         renderWallpapers: () => {
+            console.log("DEBUG: renderWallpapers called"); 
             const grid = document.getElementById('wallpaper-grid');
-            if (!grid) return;
+            
+            if (!grid) {
+                console.error("DEBUG: #wallpaper-grid NOT FOUND in HTML");
+                return;
+            }
+            
             grid.innerHTML = '';
+            console.log("DEBUG: Found grid, clearing...");
 
-            // Predefined Wallpapers List
             const walls = ['wall1.jpg', 'wall2.jpg', 'wall3.jpg', 'wall4.jpg', 'wall5.jpg', 'wall6.jpg'];
             
             walls.forEach(wall => {
                 const div = document.createElement('div');
                 div.className = 'wallpaper-item';
-                // Note: Ensure this path matches your folder structure exactly!
-                div.style.backgroundImage = `url('package://phone/ui/images/wallpapers/${wall}')`;
-                div.onclick = () => app.settings.setWallpaper(wall);
                 
-                // Highlight if active
+                // Construct path
+                const path = `package://phone/ui/images/wallpapers/${wall}`;
+                div.style.backgroundImage = `url('${path}')`;
+                
+                // Debug click
+                div.onclick = () => {
+                    console.log(`Clicked wallpaper: ${wall}`);
+                    app.settings.setWallpaper(wall);
+                };
+                
                 if (app.settings.data.wallpaper === wall) {
                     div.style.border = '2px solid #007aff';
                 }
+                
                 grid.appendChild(div);
+                console.log(`DEBUG: Appended ${wall} with path: ${path}`);
             });
         },
         // --------------------------------------
