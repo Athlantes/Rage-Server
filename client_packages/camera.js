@@ -1,5 +1,16 @@
+// client_packages/camera.js
+
 let isCameraActive = false;
-let isSelfieMode = false; // 1. New variable to track selfie state
+let isSelfieMode = false;
+let photoProcessor = null; // Hidden browser reference
+
+// Initialize the hidden processor
+mp.events.add('playerReady', () => {
+    if (!photoProcessor) {
+        photoProcessor = mp.browsers.new('package://utils/photoProcessor.html');
+        photoProcessor.active = false; // Keep it hidden
+    }
+});
 
 mp.events.add("client:toggleCamera", () => {
     isCameraActive = !isCameraActive;
@@ -16,10 +27,7 @@ mp.events.add("client:toggleCamera", () => {
 
 function closeCamera() {
     isCameraActive = false;
-    
-    // 2. Reset selfie mode so it doesn't stay stuck for next time
-    isSelfieMode = false; 
-    
+    isSelfieMode = false;
     mp.game.mobile.cellCamActivate(false, false);
     mp.game.invoke("0x3BC861DF703E5097", mp.players.local.handle, true); 
     mp.gui.chat.push("Camera Closed.");
@@ -35,28 +43,45 @@ mp.events.add("render", () => {
         takePhoto();
     }
 
-    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { // Right Mouse Button
-        // 3. Flip the variable (true -> false, or false -> true)
+    if (mp.game.controls.isDisabledControlJustPressed(0, 25)) { 
         isSelfieMode = !isSelfieMode;
-        
-        // 4. Pass the variable instead of "true"
         mp.game.invoke("0x015C49A93E3E086E", isSelfieMode); 
     }
 });
 
 function takePhoto() {
+    // Hide UI for clean shot
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
-    setTimeout(() => {
-        mp.gui.takeScreenshot(`photo_${Date.now()}.png`, 1, 100, 0);
-        
-        // --- ADD THIS LINE ---
-        mp.events.call('client:cameraCapture'); 
-        // ---------------------
+    const filename = `photo_${Date.now()}.png`;
 
+    setTimeout(() => {
+        // 1. Take Screenshot (Saves to client's "screenshots" folder)
+        mp.gui.takeScreenshot(filename, 1, 100, 0);
+
+        // Flash Effect
         mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
         mp.game.ui.displayRadar(true);
         mp.game.ui.displayHud(true);
+        mp.gui.chat.push("Processing photo...");
+
+        // 2. Wait 1 second for file to save, then process
+        setTimeout(() => {
+            if (photoProcessor) {
+                photoProcessor.execute(`processPhoto('${filename}')`);
+            }
+        }, 1000);
+
     }, 50);
 }
+
+// 3. Receive Data from HTML and send to Server
+mp.events.add('client:photo:uploadData', (base64Data) => {
+    mp.events.callRemote('server:photo:save', base64Data);
+    mp.gui.chat.push("~g~Uploading photo to server...");
+});
+
+mp.events.add('client:photo:error', (msg) => {
+    mp.gui.chat.push(`~r~Error: ${msg}`);
+});

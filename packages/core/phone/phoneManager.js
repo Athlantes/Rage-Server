@@ -1,5 +1,66 @@
+const fs = require('fs');
+const path = require('path');
 const db = require('../database');
 const vehicleManager = require('../vehicles/vehicleManager'); 
+const webServer = require('../../webserver');
+
+
+if (!fs.existsSync(webServer.photosDir)){
+    fs.mkdirSync(webServer.photosDir, { recursive: true });
+}
+
+mp.events.add('server:photo:save', async (player, base64Data) => {
+    if (!player.logged) return;
+
+    try {
+        const timestamp = Date.now();
+        const filename = `${player.data.dbId}_${timestamp}.png`;
+        const filePath = path.join(webServer.photosDir, filename);
+
+        // 1. Write file to disk
+        fs.writeFile(filePath, base64Data, 'base64', async (err) => {
+            if (err) {
+                console.error(`[Photo] Save Error: ${err.message}`);
+                player.notify("~r~Server failed to save photo.");
+                return;
+            }
+
+            // 2. Save Reference to Database
+            // We store the filename. The gallery will prepend the webServer URL.
+            await db.query(
+                "INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", 
+                [player.data.dbId, filename]
+            );
+
+            player.notify("~g~Photo saved to Gallery!");
+            console.log(`[Photo] Saved ${filename} for ${player.name}`);
+        });
+
+    } catch (err) {
+        console.error("[Photo] Error:", err);
+    }
+});
+
+// API for Gallery App to fetch photos
+mp.events.add('server:phone:requestPhotos', async (player) => {
+    if (!player.logged) return;
+    try {
+        const [rows] = await db.query(
+            "SELECT id, image_path FROM player_photos WHERE user_id = ? ORDER BY id DESC LIMIT 20",
+            [player.data.dbId]
+        );
+
+        // Construct full URLs
+        const photos = rows.map(r => ({
+            id: r.id,
+            url: webServer.baseUrl + r.image_path // e.g., http://localhost:3000/photos/1_123456.png
+        }));
+
+        player.call('client:phone:receivePhotos', [JSON.stringify(photos)]);
+    } catch (err) {
+        console.error(err);
+    }
+});
 
 // 1. Open Phone & Load Data
 mp.events.add('server:phone:open', async (player) => {

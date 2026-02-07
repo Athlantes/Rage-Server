@@ -1,0 +1,30 @@
+<html>
+<body>
+    <script>
+        // This function is called from camera.js
+        function processPhoto(filename) {
+            // "screenshots://" is a RAGE MP internal protocol
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Convert to Base64 string
+                const dataURL = canvas.toDataURL('image/png');
+                const base64 = dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+                
+                // Send back to client script
+                mp.trigger('client:photo:uploadData', base64);
+            };
+            img.onerror = function() {
+                mp.trigger('client:photo:error', 'Failed to load screenshot.');
+            };
+            img.src = 'screenshots://' + filename;
+        }
+    </script>
+</body>
+</html>
