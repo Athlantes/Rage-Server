@@ -365,7 +365,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     margin-top: 5px;
 }
 
-/* WALLPAPERS */
+/* Custom Wallpapers */
+.bg-wall1 { background: #333 url('images/wallpapers/wall1.jpg') center/cover no-repeat; }
+.bg-wall2 { background: #333 url('images/wallpapers/wall2.jpg') center/cover no-repeat; }
+.bg-wall3 { background: #333 url('images/wallpapers/wall3.jpg') center/cover no-repeat; }
+.bg-wall4 { background: #333 url('images/wallpapers/wall4.jpg') center/cover no-repeat; }
+.bg-wall5 { background: #333 url('images/wallpapers/wall5.jpg') center/cover no-repeat; }
+.bg-wall6 { background: #333 url('images/wallpapers/wall6.jpg') center/cover no-repeat; }
+
 .wallpaper-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

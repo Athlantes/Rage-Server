@@ -620,12 +620,12 @@ const app = {
         wallpaperClass: 'bg-default', // Default class
 
         predefinedWallpapers: [
-            { name: 'Default', class: 'bg-default' },
-            { name: 'Ocean', class: 'bg-blue' },
-            { name: 'Deep Space', class: 'bg-ocean' },
-            { name: 'Sunset', class: 'bg-sunset' },
-            { name: 'Midnight', class: 'bg-dark' },
-            { name: 'Nature', class: 'bg-green' }
+            { name: 'Blue Gem', class: 'bg-wall1' },
+            { name: 'Sweet Pink', class: 'bg-wall2' },
+            { name: 'Sweet Blue', class: 'bg-wall3' },
+            { name: 'Dark Night', class: 'bg-wall4' },
+            { name: 'Aurora Blue', class: 'bg-wall5' },
+            { name: 'Midnight Forest', class: 'bg-wall6' }
         ],
 
         init: () => {
