@@ -617,35 +617,41 @@ const app = {
         flightMode: false,
         dnd: false,
         zoom: 100,
-        wallpaperClass: 'bg-default',
+        currentWallpaper: 'wall1.jpg', // Default filename
 
+        // Make sure these filenames match your actual files EXACTLY (case-sensitive!)
         predefinedWallpapers: [
-            { name: 'Blue Gem', class: 'bg-wall1' },
-            { name: 'Sweet Pink', class: 'bg-wall2' },
-            { name: 'Sweet Blue', class: 'bg-wall3' },
-            { name: 'Dark Night', class: 'bg-wall4' },
-            { name: 'Aurora Blue', class: 'bg-wall5' },
-            { name: 'Midnight Forest', class: 'bg-wall6' }
+            { name: 'Blue Gem', file: 'wall1.jpg' },
+            { name: 'Sweet Pink', file: 'wall2.jpg' },
+            { name: 'Sweet Blue', file: 'wall3.jpg' },
+            { name: 'Dark Night', file: 'wall4.jpg' },
+            { name: 'Aurora Blue', file: 'wall5.jpg' },
+            { name: 'Midnight Forest', file: 'wall6.jpg' }
         ],
 
         init: () => {
             // Load saved settings
             const saved = localStorage.getItem('phoneSettings');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                app.settings.flightMode = parsed.flightMode || false;
-                app.settings.dnd = parsed.dnd || false;
-                app.settings.zoom = parsed.zoom || 100;
-                app.settings.wallpaperClass = parsed.wallpaperClass || 'bg-default';
+                try {
+                    const parsed = JSON.parse(saved);
+                    app.settings.flightMode = parsed.flightMode || false;
+                    app.settings.dnd = parsed.dnd || false;
+                    app.settings.zoom = parsed.zoom || 100;
+                    // Load saved wallpaper or default to wall1.jpg
+                    app.settings.currentWallpaper = parsed.currentWallpaper || 'wall1.jpg';
+                } catch (err) {
+                    localStorage.removeItem('phoneSettings');
+                }
             }
 
             // Apply Settings
             app.settings.applyAll();
             app.settings.renderWallpapers();
             
-            // Set Player ID (Visual) - In real usage, pass this from client:phone:initialize
-            // For now, we just placeholder it or parse it if you have it
-            document.getElementById('settings-my-id').innerText = "Unknown"; 
+            // Set Player ID (Visual)
+            const idEl = document.getElementById('settings-my-id');
+            if(idEl) idEl.innerText = "Unknown"; 
         },
 
         applyAll: () => {
@@ -661,77 +667,72 @@ const app = {
             const zoomVal = document.getElementById('zoom-val');
             if(zoomVal) zoomVal.innerText = app.settings.zoom + '%';
 
-            // 2. Apply Flight Mode Visuals
+            // 2. Apply Flight Mode
             const flightToggle = document.getElementById('toggle-flight-mode');
             if(flightToggle) flightToggle.checked = app.settings.flightMode;
             app.settings.updateSignalIcon();
 
-            // 3. Apply DND Visuals (Updated)
+            // 3. Apply DND
             const dndToggle = document.getElementById('toggle-dnd');
             if(dndToggle) dndToggle.checked = app.settings.dnd;
-            
-            // Check if DND is active and show/hide icon
-            const dndIcon = document.getElementById('status-dnd');
-            if (dndIcon) {
-                if (app.settings.dnd) dndIcon.classList.remove('hidden');
-                else dndIcon.classList.add('hidden');
-            }
+            app.settings.toggleDND(app.settings.dnd);
 
             // 4. Apply Wallpaper
-            app.settings.setWallpaper(app.settings.wallpaperClass, false);
+            app.settings.setWallpaper(app.settings.currentWallpaper, false);
         },
 
         toggleFlightMode: (isActive) => {
             app.settings.flightMode = isActive;
             app.settings.updateSignalIcon();
             app.settings.save();
-            
-            if (isActive) {
-                app.showToast("System", "Settings", "Airplane Mode Enabled");
-            }
+            if (isActive) app.showToast("System", "Settings", "Airplane Mode Enabled");
         },
 
         toggleDND: (isActive) => {
             app.settings.dnd = isActive;
             app.settings.save();
-            
-            // Toggle the icon visibility immediately
             const dndIcon = document.getElementById('status-dnd');
             if (dndIcon) {
-                if (isActive) dndIcon.classList.remove('hidden');
-                else dndIcon.classList.add('hidden');
+                isActive ? dndIcon.classList.remove('hidden') : dndIcon.classList.add('hidden');
             }
         },
 
         setZoom: (value) => {
             app.settings.zoom = value;
             const shell = document.getElementById('phone-shell');
-            shell.style.transform = `scale(${value / 100})`;
-            shell.style.transformOrigin = 'bottom right';
-            document.getElementById('zoom-val').innerText = value + '%';
+            if(shell) {
+                shell.style.transform = `scale(${value / 100})`;
+                shell.style.transformOrigin = 'bottom right';
+            }
+            const zVal = document.getElementById('zoom-val');
+            if(zVal) zVal.innerText = value + '%';
             app.settings.save();
         },
 
         updateSignalIcon: () => {
             const signalIcon = document.querySelector('.fa-signal');
-            if (app.settings.flightMode) {
-                signalIcon.className = "fas fa-plane";
-            } else {
-                signalIcon.className = "fas fa-signal";
+            if(signalIcon) {
+                signalIcon.className = app.settings.flightMode ? "fas fa-plane" : "fas fa-signal";
             }
         },
 
         renderWallpapers: () => {
             const container = document.getElementById('wallpaper-list');
+            if(!container) return;
+            
             container.innerHTML = '';
             
             app.settings.predefinedWallpapers.forEach(wp => {
                 const div = document.createElement('div');
-                div.className = `wall-option ${wp.class}`;
-                if (wp.class === app.settings.wallpaperClass) div.classList.add('selected');
+                div.className = 'wall-option';
+                
+                // Use package:// base so CEF resolves assets consistently
+                div.style.background = `url('package://phone/ui/images/wallpapers/${wp.file}') center/cover no-repeat`;
+                
+                if (wp.file === app.settings.currentWallpaper) div.classList.add('selected');
                 
                 div.onclick = () => {
-                    app.settings.setWallpaper(wp.class);
+                    app.settings.setWallpaper(wp.file);
                     // Update selection visual
                     document.querySelectorAll('.wall-option').forEach(el => el.classList.remove('selected'));
                     div.classList.add('selected');
@@ -741,16 +742,14 @@ const app = {
             });
         },
 
-        setWallpaper: (className, save = true) => {
+        setWallpaper: (filename, save = true) => {
             const screen = document.querySelector('.screen-content');
+            if(!screen) return;
+
+            // USE "background" NOT "backgroundImage" to forcefully overwrite the blue gradient
+            screen.style.background = `url('package://phone/ui/images/wallpapers/${filename}') center/cover no-repeat`;
             
-            // Remove old classes
-            app.settings.predefinedWallpapers.forEach(wp => screen.classList.remove(wp.class));
-            
-            // Add new class
-            screen.classList.add(className);
-            app.settings.wallpaperClass = className;
-            
+            app.settings.currentWallpaper = filename;
             if (save) app.settings.save();
         },
 
@@ -759,7 +758,7 @@ const app = {
                 flightMode: app.settings.flightMode,
                 dnd: app.settings.dnd,
                 zoom: app.settings.zoom,
-                wallpaperClass: app.settings.wallpaperClass
+                currentWallpaper: app.settings.currentWallpaper
             };
             localStorage.setItem('phoneSettings', JSON.stringify(data));
         }

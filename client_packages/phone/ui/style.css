@@ -365,45 +365,46 @@ input:checked + .slider:before { transform: translateX(20px); }
     margin-top: 5px;
 }
 
-/* Custom Wallpapers */
-.bg-wall1 { background: #333 url('images/wallpapers/wall1.jpg') center/cover no-repeat; }
-.bg-wall2 { background: #333 url('images/wallpapers/wall2.jpg') center/cover no-repeat; }
-.bg-wall3 { background: #333 url('images/wallpapers/wall3.jpg') center/cover no-repeat; }
-.bg-wall4 { background: #333 url('images/wallpapers/wall4.jpg') center/cover no-repeat; }
-.bg-wall5 { background: #333 url('images/wallpapers/wall5.jpg') center/cover no-repeat; }
-.bg-wall6 { background: #333 url('images/wallpapers/wall6.jpg') center/cover no-repeat; }
-
 .wallpaper-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
 .wall-option {
+    /* Fallback height for older CEF (no aspect-ratio support) */
+    height: 180px;
     aspect-ratio: 9 / 16;
     border-radius: 10px;
     border: 3px solid transparent;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: transform 0.1s;
+    /* Ensure preview images fit the box */
+    background-color: #333;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
+
 .wall-option:active { transform: scale(0.95); }
 .wall-option.selected { border-color: #007aff; }
 
-/* Pre-defined Backgrounds */
-.bg-default { 
-    background: #1c1c1e url('images/wallpapers/wall1.jpg') center/cover no-repeat; 
-}
-.bg-blue { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
-.bg-ocean { background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); }
-.bg-sunset { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); }
-.bg-dark { background: #000000; }
-.bg-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-
 /* Applied to Screen Content */
 .screen-content {
-    background-size: cover;
-    background-position: center;
-    transition: background 0.3s;
+    width: 100%;
+    height: 100%;
+    /* Default fallback color if image fails */
+    background-color: #1c1c1e; 
+    /* Critical: Ensures the wallpaper covers the whole screen */
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    border-radius: 35px;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    z-index: 101;
+    transition: background-image 0.3s ease-in-out;
 }
 
 /* --- GALLERY APP --- */
