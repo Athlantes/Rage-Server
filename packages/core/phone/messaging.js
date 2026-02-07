@@ -6,14 +6,12 @@ module.exports = {
 
 // --- EVENTS ---
 
-// 1. Load Conversations (The "Home Screen" of the app)
+// 1. Load Conversations
 mp.events.add('server:phone:chat:fetchChats', async (player) => {
     if (!player.logged || !player.data.phone) return;
-    const myNumber = player.data.phone; // Assuming you store this on login/phone open
+    const myNumber = player.data.phone; 
 
     try {
-        // Complex query to get the LAST message of every conversation
-        // This makes it look like WhatsApp (sorted by recent)
         const [chats] = await db.query(`
             SELECT 
                 pm.*,
@@ -48,13 +46,12 @@ mp.events.add('server:phone:chat:fetchChats', async (player) => {
     }
 });
 
-// 2. Load Messages for ONE specific conversation
+// 2. Load Messages
 mp.events.add('server:phone:chat:fetchMessages', async (player, targetNumber) => {
     if (!player.logged || !player.data.phone) return;
     const myNumber = player.data.phone;
 
     try {
-        // Fetch history
         const [msgs] = await db.query(`
             SELECT * FROM phone_messages 
             WHERE (sender_number = ? AND receiver_number = ?) 
@@ -63,7 +60,6 @@ mp.events.add('server:phone:chat:fetchMessages', async (player, targetNumber) =>
             LIMIT 50
         `, [myNumber, targetNumber, targetNumber, myNumber]);
 
-        // Mark them as read (Blue Ticks) since we opened the chat
         await db.query(`
             UPDATE phone_messages SET is_read = 1 
             WHERE sender_number = ? AND receiver_number = ?
@@ -81,7 +77,6 @@ mp.events.add('server:phone:chat:send', async (player, targetNumber, content, ty
     const myNumber = player.data.phone;
 
     try {
-        // 1. Save to DB
         const [result] = await db.query(`
             INSERT INTO phone_messages (sender_number, receiver_number, message, type)
             VALUES (?, ?, ?, ?)
@@ -90,19 +85,55 @@ mp.events.add('server:phone:chat:send', async (player, targetNumber, content, ty
         const msgId = result.insertId;
         const timestamp = new Date().toISOString();
 
-        // 2. Return to Sender (to append to UI immediately with "Sent" checkmark)
         player.call('client:phone:chat:messageSent', [targetNumber, content, type, timestamp, msgId]);
 
-        // 3. Find Receiver (Real-time Push)
-        // We need to find if the player with that number is online
         const targetPlayer = mp.players.toArray().find(p => p.data.phone === targetNumber);
         
         if (targetPlayer) {
             targetPlayer.call('client:phone:chat:receive', [myNumber, content, type, timestamp, msgId]);
-            // Optional: Play notification sound here
         }
 
     } catch (err) {
         console.error("Send Message Error:", err);
+    }
+});
+
+// --- NEW: CONTACTS SYSTEM ---
+
+// 4. Fetch Contacts
+mp.events.add('server:phone:contacts:fetch', async (player) => {
+    if (!player.logged) return;
+    
+    try {
+        const [contacts] = await db.query(`SELECT * FROM phone_contacts WHERE owner_id = ?`, [player.data.dbId]);
+        player.call('client:phone:contacts:load', [JSON.stringify(contacts)]);
+    } catch(err) {
+        console.error("Fetch Contacts Error:", err);
+    }
+});
+
+// 5. Add Contact
+mp.events.add('server:phone:contacts:add', async (player, name, number) => {
+    if (!player.logged) return;
+    if (!name || !number) return;
+
+    try {
+        // Check duplication
+        const [exists] = await db.query(`SELECT id FROM phone_contacts WHERE owner_id = ? AND contact_number = ?`, [player.data.dbId, number]);
+        
+        if (exists.length > 0) {
+            // Update name if exists
+             await db.query(`UPDATE phone_contacts SET contact_name = ? WHERE id = ?`, [name, exists[0].id]);
+        } else {
+             await db.query(`INSERT INTO phone_contacts (owner_id, contact_name, contact_number) VALUES (?, ?, ?)`, [player.data.dbId, name, number]);
+        }
+        
+        // Refresh client
+        mp.events.call('server:phone:contacts:fetch', player);
+        // Also refresh chat list names
+        mp.events.call('server:phone:chat:fetchChats', player);
+        
+    } catch(err) {
+        console.error("Add Contact Error:", err);
     }
 });

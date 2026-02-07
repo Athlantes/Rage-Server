@@ -200,9 +200,14 @@ const app = {
         const txtClock = document.getElementById('toast-clock');
         txtSender.innerText = sender;
         txtMsg.innerText = title; 
-        const now = new Date();
-        txtClock.innerText = now.getHours().toString().padStart(2, '0') + ':' + 
-                             now.getMinutes().toString().padStart(2, '0');
+        
+        // Fix for missing element
+        if(txtClock) {
+            const now = new Date();
+            txtClock.innerText = now.getHours().toString().padStart(2, '0') + ':' + 
+                                 now.getMinutes().toString().padStart(2, '0');
+        }
+        
         const phoneShell = document.getElementById('phone-shell');
         const isPhoneHidden = phoneShell.classList.contains('hidden');
         if (isPhoneHidden) {
@@ -528,7 +533,7 @@ const app = {
         }
     },
 
-    // --- GALLERY SYSTEM (Fixed: Moved outside 'scooter' object) ---
+    // --- GALLERY SYSTEM ---
     loadPhotos: (photosJson, baseUrl) => {
         app.photos = Array.isArray(photosJson) ? photosJson : [];
         app.mediaBaseUrl = baseUrl;
@@ -594,32 +599,22 @@ const app = {
         app.pendingAction = null;
     },
 
-    // --- UPDATED DELETE LOGIC ---
     deleteCurrentPhoto: () => {
         if (!app.currentPhoto) return;
         
-        // Use the new custom modal instead of the crash-prone confirm()
         app.openConfirmModal(
             "Delete Photo", 
             "Are you sure you want to permanently delete this picture?", 
             () => {
-                // This runs only if user clicks "Delete"
                 if ('mp' in window) {
                     mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
                         id: app.currentPhoto.id,
                         path: app.currentPhoto.image_path
                     }));
                 }
-
-                // 1. Remove from local array immediately (for instant feedback)
                 app.photos = app.photos.filter(p => p.id !== app.currentPhoto.id);
-                
-                // 2. Refresh the gallery grid UI
                 app.loadPhotos(app.photos, app.mediaBaseUrl);
-
-                // 3. Go back to gallery view
                 app.open('gallery');
-                
                 app.showToast("Gallery", "Deleted", "Photo removed successfully.");
             }
         );
@@ -627,7 +622,6 @@ const app = {
 
     // --- SETTINGS ---
     settings: {
-        // Default State
         data: {
             phone_number: 'Unknown',
             wallpaper: 'wall1.jpg',
@@ -637,7 +631,6 @@ const app = {
         },
 
         init: (serverData) => {
-            // Merge server data into local data
             if (serverData) {
                 app.settings.data.phone_number = serverData.phone_number || 'Unknown';
                 app.settings.data.wallpaper = serverData.wallpaper || 'wall1.jpg';
@@ -648,20 +641,15 @@ const app = {
 
             app.settings.applyAll();
 
-            // Force render the wallpaper list (with a small delay to ensure DOM is ready)
             setTimeout(() => { 
                 if(app.settings.renderWallpapers) app.settings.renderWallpapers(); 
             }, 100);
         },
 
         applyAll: () => {
-            // Apply Wallpaper to Screen
             app.settings.setWallpaperUI(app.settings.data.wallpaper);
-            
-            // Apply Zoom
             app.settings.applyZoomUI(app.settings.data.zoom_level);
 
-            // Apply Toggles (Visuals)
             const dndToggle = document.getElementById('toggle-dnd');
             if(dndToggle) dndToggle.checked = app.settings.data.is_dnd;
             app.settings.toggleDNDUI(app.settings.data.is_dnd);
@@ -674,36 +662,27 @@ const app = {
             if (numEl) numEl.innerText = app.settings.data.phone_number;
         },
 
-        // --- NEW RENDER LOGIC ---
         renderWallpapers: () => {
             const grid = document.getElementById('wallpaper-grid');
             if (!grid) return;
-            
             grid.innerHTML = '';
             
-            // Define your available local wallpapers here
             const walls = ['wall1.jpg', 'wall2.jpg', 'wall3.jpg', 'wall4.jpg', 'wall5.jpg', 'wall6.jpg'];
             
             walls.forEach(wall => {
                 const div = document.createElement('div');
                 div.className = 'wallpaper-item';
                 
-                // Construct path (adjust if your folder structure is different)
                 const path = `package://phone/ui/images/wallpapers/${wall}`; 
                 div.style.backgroundImage = `url('${path}')`;
                 
-                // Apply 'selected' class if active
                 if (app.settings.data.wallpaper === wall) {
                     div.classList.add('selected');
                 }
                 
-                // Click Handler
                 div.onclick = () => {
-                    // 1. Update Visuals Immediately (Fast UI)
                     document.querySelectorAll('.wallpaper-item').forEach(el => el.classList.remove('selected'));
                     div.classList.add('selected');
-
-                    // 2. Set Logic
                     app.settings.setWallpaper(wall);
                 };
                 
@@ -733,7 +712,6 @@ const app = {
             app.settings.data.wallpaper = source;
             app.settings.setWallpaperUI(source);
             app.settings.save('wallpaper', source);
-            // Note: We don't re-render the grid here to preserve the scroll position and animation
         },
 
         applyCustomWallpaper: () => {
@@ -743,25 +721,18 @@ const app = {
 
             if (!url) return;
 
-            // Simple validation
             if (!url.startsWith('http')) {
                 return app.showToast("Settings", "Error", "Link must start with http/s");
             }
 
-            // Optional: Filter for specific domains
             const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
-
             if (!isImage && !url.includes('imgur.com') && !url.includes('discord')) {
                 return app.showToast("Settings", "Error", "URL must end in .jpg, .png, or .webp");
             }
 
-            // Deselect grid items visually since we are using a custom one
             document.querySelectorAll('.wallpaper-item').forEach(el => el.classList.remove('selected'));
-
             app.settings.setWallpaper(url);
             app.showToast("Settings", "Updated", "Custom wallpaper applied.");
-            
-            // Optional: Clear input or leave it for editing
             input.value = ''; 
         },
 
@@ -777,15 +748,12 @@ const app = {
             
             let finalUrl = '';
             if (source.startsWith('http')) {
-                // It's a custom URL
                 finalUrl = `url('${source}')`;
             } else {
-                // It's a local file
                 finalUrl = `url('package://phone/ui/images/wallpapers/${source}')`;
             }
             
             screen.style.backgroundImage = finalUrl;
-            // Ensure these are set to handle different image sizes
             screen.style.backgroundSize = 'cover';
             screen.style.backgroundPosition = 'center';
             screen.style.backgroundRepeat = 'no-repeat';
@@ -815,6 +783,7 @@ const app = {
 
 const messenger = {
     activeChatNumber: null,
+    contacts: [],
     
     // Called when you open the app
     open: () => {
@@ -823,8 +792,90 @@ const messenger = {
         }
         // Reset UI state
         document.getElementById('msg-list-screen').classList.remove('hidden');
+        document.getElementById('msg-contacts-screen').classList.add('hidden');
         document.getElementById('msg-conversation-screen').classList.add('hidden');
     },
+
+    // --- NEW: CONTACTS & NEW CHAT FLOW ---
+    openNewChatScreen: () => {
+        document.getElementById('msg-list-screen').classList.add('hidden');
+        document.getElementById('msg-contacts-screen').classList.remove('hidden');
+        
+        // Fetch contacts
+        if ('mp' in window) {
+            mp.trigger('client:proxyAction', 'contacts:fetch');
+        }
+    },
+
+    closeContactsScreen: () => {
+        document.getElementById('msg-contacts-screen').classList.add('hidden');
+        document.getElementById('msg-list-screen').classList.remove('hidden');
+    },
+
+    loadContacts: (contactsJson) => {
+        const container = document.getElementById('msgContactsList');
+        container.innerHTML = '';
+        
+        messenger.contacts = (typeof contactsJson === 'string') ? JSON.parse(contactsJson) : contactsJson;
+        
+        if (!messenger.contacts || messenger.contacts.length === 0) {
+            // Keep the 'New Contact' header above, just show empty text
+            return;
+        }
+
+        // Sort alphabetically
+        messenger.contacts.sort((a, b) => a.contact_name.localeCompare(b.contact_name));
+
+        messenger.contacts.forEach(contact => {
+            const div = document.createElement('div');
+            div.className = 'contact-item';
+            div.onclick = () => messenger.startChatWithContact(contact);
+            
+            div.innerHTML = `
+                <div class="contact-avatar"><i class="fas fa-user"></i></div>
+                <div class="contact-info">
+                    <div class="contact-name">${contact.contact_name}</div>
+                    <div class="contact-number">${contact.contact_number}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    },
+
+    startChatWithContact: (contact) => {
+        // Close contacts screen
+        document.getElementById('msg-contacts-screen').classList.add('hidden');
+        
+        // Open Chat directly
+        messenger.openChat(contact.contact_number, contact.contact_name);
+    },
+
+    openAddContactModal: () => {
+        document.getElementById('msg-add-contact-modal').classList.remove('hidden');
+        document.getElementById('new-contact-name').value = '';
+        document.getElementById('new-contact-number').value = '';
+    },
+
+    closeAddContactModal: () => {
+        document.getElementById('msg-add-contact-modal').classList.add('hidden');
+    },
+
+    submitContact: () => {
+        const name = document.getElementById('new-contact-name').value.trim();
+        const number = document.getElementById('new-contact-number').value.trim();
+
+        if (!name || !number) {
+            return app.showToast("Contacts", "Error", "Name and Number are required");
+        }
+
+        if ('mp' in window) {
+            mp.trigger('client:proxyAction', 'contacts:add', JSON.stringify({ name, number }));
+        }
+
+        messenger.closeAddContactModal();
+    },
+
+    // --- EXISTING CHAT LOGIC ---
 
     // 1. Load the list of conversations
     loadChats: (chatsJson) => {
@@ -873,7 +924,10 @@ const messenger = {
         // UI Switching
         document.getElementById('msg-list-screen').classList.add('hidden');
         document.getElementById('msg-conversation-screen').classList.remove('hidden');
+        
         document.getElementById('chatTitle').innerText = name;
+        document.getElementById('chatNumberDisplay').innerText = number; // Show number under name
+        
         document.getElementById('msgFeed').innerHTML = '<div style="text-align:center; padding:10px; color:#666;">Loading...</div>';
 
         // Fetch History
@@ -948,7 +1002,7 @@ const messenger = {
     }
 };
 
-// --- GLOBAL APP FUNCTIONS ---
+// ... [Global Functions remain same] ...
 function openPhone() {
     document.getElementById('phone-shell').classList.remove('hidden');
     const toastShell = document.getElementById('toast-shell');

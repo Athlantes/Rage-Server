@@ -109,6 +109,10 @@ mp.events.add('client:phone:chat:messageSent', (target, content, type, timestamp
     }
 });
 
+mp.events.add('client:phone:contacts:load', (contactsJson) => {
+    if (phoneBrowser) phoneBrowser.execute(`messenger.loadContacts('${contactsJson.replace(/'/g, "\\'")}')`);
+});
+
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
 });
@@ -251,32 +255,33 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'readMail': mp.events.callRemote('server:phone:readMail', data); break;
         case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
         case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
-        
         case 'deletePhoto':
             const photoData = JSON.parse(data); 
             mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
             break;
-
         case 'saveSetting':
-            const payload = JSON.parse(data); // Expects { key: "is_dnd", val: 1 }
+            const payload = JSON.parse(data); 
             mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
             break;
-
         case 'chat:fetchChats':
             mp.events.callRemote('server:phone:chat:fetchChats');
-            break;
-            
+            break; 
         case 'chat:fetchMessages':
-            mp.events.callRemote('server:phone:chat:fetchMessages', data); // data = targetNumber
-            break;
-            
+            mp.events.callRemote('server:phone:chat:fetchMessages', data); 
+            break; 
         case 'chat:send':
             const chatData = JSON.parse(data);
             mp.events.callRemote('server:phone:chat:send', chatData.target, chatData.content);
             break;
+        case 'contacts:fetch':
+            mp.events.callRemote('server:phone:contacts:fetch');
+            break;
+        case 'contacts:add':
+            const contactData = JSON.parse(data);
+            mp.events.callRemote('server:phone:contacts:add', contactData.name, contactData.number);
+            break;
 
         default:
-            // Ensure this doesn't conflict if you have other defaults
             if (action.startsWith('server:')) break; 
             mp.events.callRemote('server:phone:vehicleAction', action, data); 
             break;

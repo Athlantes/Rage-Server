@@ -352,7 +352,11 @@ body {
 
 .msg-chat-info { flex: 1; display: flex; flex-direction: column; align-items: center; }
 .msg-contact-name { font-size: 14px; font-weight: 600; }
-.msg-contact-status { font-size: 10px; color: #8e8e93; }
+.msg-contact-status {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-top: 1px;
+}
 
 .msg-header-actions i { color: #0A84FF; font-size: 18px; margin-left: 20px; }
 
@@ -404,6 +408,113 @@ body {
 .msg-input-wrapper input { background: transparent; border: none; width: 100%; color: white; outline: none; font-size: 16px; }
 #msgSendBtn { color: #0A84FF; font-size: 28px; cursor: pointer; transition: transform 0.1s; }
 #msgSendBtn:active { transform: scale(0.9); }
+
+/* --- FAB (Floating Action Button) --- */
+.fab-btn {
+    position: absolute;
+    bottom: 30px;
+    right: 25px;
+    width: 50px;
+    height: 50px;
+    background: #0A84FF; /* iOS Blue or #25D366 WhatsApp Green */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    z-index: 100;
+}
+.fab-btn:active {
+    transform: scale(0.9);
+    background: #0071e3;
+}
+
+/* --- CONTACTS LIST SCREEN --- */
+.list-header-sm {
+    padding: 20px 20px 5px 20px;
+    font-size: 12px;
+    color: #8e8e93;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.action-row {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    background: #000;
+    border-bottom: 0.5px solid #2c2c2e;
+}
+
+.action-row span {
+    color: #0A84FF;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.action-icon-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #1c1c1e;
+    color: #0A84FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 14px;
+}
+
+/* Contact Item */
+.contact-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 0.5px solid #2c2c2e;
+    cursor: pointer;
+    background: #000;
+    transition: background 0.2s;
+}
+
+.contact-item:active {
+    background: #1c1c1e;
+}
+
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    background: #3a3a3c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: #8e8e93;
+    font-size: 16px;
+}
+
+.contact-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-name {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.contact-number {
+    color: #8e8e93;
+    font-size: 13px;
+}
 
 /* --- SETTINGS APP STYLES --- */
 .settings-group {
