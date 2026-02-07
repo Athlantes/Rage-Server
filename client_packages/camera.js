@@ -1,15 +1,17 @@
-// client_packages/camera.js
-
 let isCameraActive = false;
 let isSelfieMode = false;
-let photoProcessor = null; // Hidden browser reference
+let photoProcessor = null;
 
-// Initialize the hidden processor
 mp.events.add('playerReady', () => {
     if (!photoProcessor) {
         photoProcessor = mp.browsers.new('package://utils/photoProcessor.html');
-        photoProcessor.active = false; // Keep it hidden
+        // photoProcessor.active = true; // Uncomment if you need to debug the white screen
     }
+});
+
+// Helper for debug logs
+mp.events.add('client:photo:log', (msg) => {
+    mp.gui.chat.push(`~y~[Debug] ${msg}`);
 });
 
 mp.events.add("client:toggleCamera", () => {
@@ -50,36 +52,38 @@ mp.events.add("render", () => {
 });
 
 function takePhoto() {
-    // Hide UI for clean shot
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
-    const filename = `photo_${Date.now()}.png`;
+    // Use a simpler filename to avoid special character issues
+    const filename = `img_${Date.now()}.png`;
 
     setTimeout(() => {
-        // 1. Take Screenshot (Saves to client's "screenshots" folder)
+        // 1. Take Screenshot
         mp.gui.takeScreenshot(filename, 1, 100, 0);
-
-        // Flash Effect
+        
         mp.game.graphics.startScreenEffect("CameraFlash", 0, false);
         mp.game.ui.displayRadar(true);
         mp.game.ui.displayHud(true);
-        mp.gui.chat.push("Processing photo...");
+        mp.gui.chat.push("~b~Saving to disk...");
 
-        // 2. Wait 1 second for file to save, then process
+        // 2. WAIT LONGER (1.5s) to ensure file is written to HDD
         setTimeout(() => {
             if (photoProcessor) {
+                mp.gui.chat.push("~b~Processing photo...");
                 photoProcessor.execute(`processPhoto('${filename}')`);
+            } else {
+                mp.gui.chat.push("~r~Error: Photo processor not ready.");
             }
-        }, 1000);
+        }, 1500); 
 
     }, 50);
 }
 
-// 3. Receive Data from HTML and send to Server
 mp.events.add('client:photo:uploadData', (base64Data) => {
+    mp.gui.chat.push("~g~Uploading to server...");
+    // 3. Send to Server
     mp.events.callRemote('server:photo:save', base64Data);
-    mp.gui.chat.push("~g~Uploading photo to server...");
 });
 
 mp.events.add('client:photo:error', (msg) => {

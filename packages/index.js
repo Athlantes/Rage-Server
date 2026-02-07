@@ -1,4 +1,5 @@
-require('./webserver');
+require('./webserver');             // Starts the image hosting
+require('./core/phone/phoneManager');
 
 require('./chat');
 

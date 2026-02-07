@@ -1,29 +1,39 @@
 <html>
 <body>
     <script>
-        // This function is called from camera.js
         function processPhoto(filename) {
-            // "screenshots://" is a RAGE MP internal protocol
+            // Tell client we started
+            mp.trigger('client:photo:log', 'Processor: Attempting to load ' + filename);
+
             const img = new Image();
-            img.crossOrigin = "Anonymous";
+            // Important: Allow cross-origin for the local screenshot server
+            img.crossOrigin = "Anonymous"; 
+            
             img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                // Convert to Base64 string
-                const dataURL = canvas.toDataURL('image/png');
-                const base64 = dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
-                
-                // Send back to client script
-                mp.trigger('client:photo:uploadData', base64);
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Convert to Base64
+                    const dataURL = canvas.toDataURL('image/png');
+                    const base64 = dataURL.split(',')[1];
+                    
+                    mp.trigger('client:photo:log', 'Processor: Image converted. Size: ' + base64.length);
+                    mp.trigger('client:photo:uploadData', base64);
+                } catch (e) {
+                    mp.trigger('client:photo:error', 'Canvas Error: ' + e.message);
+                }
             };
+
             img.onerror = function() {
-                mp.trigger('client:photo:error', 'Failed to load screenshot.');
+                mp.trigger('client:photo:error', 'Processor: Failed to load image. File may not exist yet.');
             };
-            img.src = 'screenshots://' + filename;
+
+            // Use the http alias for local screenshots
+            img.src = 'http://screenshots/' + filename; 
         }
     </script>
 </body>
