@@ -38,7 +38,7 @@ const app = {
 
     open: (appName) => {
         if(app.isLocked) return; 
-        
+
         if (appName === 'camera') {
             if ('mp' in window) {
                 // Signal client to open camera mode
@@ -546,18 +546,62 @@ const app = {
         dateEl.innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     },
 
+    pendingAction: null,
+
+    openConfirmModal: (title, text, actionCallback) => {
+        document.getElementById('confirm-modal').classList.remove('hidden');
+        document.getElementById('confirm-title').innerText = title;
+        document.getElementById('confirm-text').innerText = text;
+        
+        // Store the action to run if they click Yes
+        app.pendingAction = actionCallback;
+        
+        // Bind the Yes button
+        const yesBtn = document.getElementById('btn-confirm-yes');
+        // Remove old listeners to prevent stacking
+        const newBtn = yesBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+        
+        newBtn.addEventListener('click', () => {
+            if (app.pendingAction) app.pendingAction();
+            app.closeConfirmModal();
+        });
+    },
+
+    closeConfirmModal: () => {
+        document.getElementById('confirm-modal').classList.add('hidden');
+        app.pendingAction = null;
+    },
+
+    // --- UPDATED DELETE LOGIC ---
     deleteCurrentPhoto: () => {
         if (!app.currentPhoto) return;
         
-        if (confirm("Delete this photo permanently?")) {
-            if ('mp' in window) {
-                mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
-                    id: app.currentPhoto.id,
-                    path: app.currentPhoto.image_path
-                }));
+        // Use the new custom modal instead of the crash-prone confirm()
+        app.openConfirmModal(
+            "Delete Photo", 
+            "Are you sure you want to permanently delete this picture?", 
+            () => {
+                // This runs only if user clicks "Delete"
+                if ('mp' in window) {
+                    mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
+                        id: app.currentPhoto.id,
+                        path: app.currentPhoto.image_path
+                    }));
+                }
+
+                // 1. Remove from local array immediately (for instant feedback)
+                app.photos = app.photos.filter(p => p.id !== app.currentPhoto.id);
+                
+                // 2. Refresh the gallery grid UI
+                app.loadPhotos(app.photos, app.mediaBaseUrl);
+
+                // 3. Go back to gallery view
+                app.open('gallery');
+                
+                app.showToast("Gallery", "Deleted", "Photo removed successfully.");
             }
-            app.open('gallery');
-        }
+        );
     }
 };
 

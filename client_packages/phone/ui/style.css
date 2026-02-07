@@ -295,6 +295,11 @@ body {
     transform: scale(0.98);
 }
 
+.btn-confirm-red {
+    background-color: #ff3b30 !important; 
+    color: white;
+}
+
 /* --- FULL SCREEN PHOTO VIEW --- */
 .photo-full-container {
     width: 100%;
