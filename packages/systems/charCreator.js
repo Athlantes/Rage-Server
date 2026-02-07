@@ -101,12 +101,6 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         
         mp.events.call('server:auth:finalized', player);
 
-        // --- NEW: Take Headshot to replace the default avatar ---
-        // We delay 2s to ensure the camera transitions back to the player view first
-        setTimeout(() => {
-            player.call('client:headshot:take');
-        }, 2000);
-
     } catch (err) {
         console.error("Creator Save Error:", err);
         player.outputChatBox("!{FF0000}Error saving character data.");

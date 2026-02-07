@@ -21,14 +21,13 @@ function loadRecent(jsonString) {
     if (accounts.length > 0) {
         container.classList.remove('hidden');
         accounts.forEach(acc => {
-            const imgPath = acc.avatar_url || 'images/default_avatar.png';
             const card = document.createElement('div');
             card.className = 'recent-card';
             card.onclick = () => mp.trigger('client:auth:tryAutoLogin', acc.username);
             
             card.innerHTML = `
                 <div class="avatar-circle">
-                    <img src="${imgPath}" alt="Avatar" />
+                    <i class="fas fa-user-circle"></i>
                 </div>
                 <div class="user-info">
                     <strong>${acc.username}</strong>

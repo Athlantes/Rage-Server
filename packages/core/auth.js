@@ -15,7 +15,7 @@ mp.events.add('playerJoin', async (player) => {
     try {
         // Fetch recent accounts (Only matching SCID for privacy)
         const [recentAccounts] = await db.query(
-            `SELECT username, money, level, hwid, avatar_url FROM users 
+            `SELECT username, money, level, hwid FROM users 
              WHERE social_id = ? 
              AND last_active >= NOW() - INTERVAL 3 DAY 
              ORDER BY last_active DESC 
