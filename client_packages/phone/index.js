@@ -64,18 +64,6 @@ function closePhone() {
 }
 
 // --- STANDARD APP EVENTS ---
-mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson) => {
-    if(phoneBrowser) {
-        // Pass the raw JSON string or null
-        const safeSettings = settingsJson || '{}';
-        
-        phoneBrowser.execute(`
-            app.loadMails(${mailsJson});
-            app.loadPhotos(${photosJson}, '${mediaUrl}');
-            app.settings.init(${safeSettings}); 
-        `);
-    }
-});
 
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
@@ -173,13 +161,22 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 });
 
-mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl) => {
+mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson) => {
+
     // 1. Debug Log to Client Console (Press F8 to see this)
     mp.gui.chat.push(`[Phone Debug] Init Received.`);
     mp.gui.chat.push(`[Phone Debug] Photos JSON Length: ${photosJson ? photosJson.length : 'NULL'}`);
     mp.gui.chat.push(`[Phone Debug] URL: ${mediaUrl}`);
 
     if(phoneBrowser) {
+        const safeSettings = settingsJson || '{}';
+
+        phoneBrowser.execute(`
+            app.loadMails(${mailsJson});
+            app.loadPhotos(${photosJson}, '${mediaUrl}');
+            app.settings.init(${safeSettings}); 
+        `);
+
         // 2. Load Mails safely
         if(mailsJson) {
             phoneBrowser.execute(`

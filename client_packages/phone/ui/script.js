@@ -635,17 +635,21 @@ const app = {
             // Merge server data into local data
             if (serverData) {
                 app.settings.data.wallpaper = serverData.wallpaper || 'wall1.jpg';
-                // Convert 0/1 integers from DB to booleans
                 app.settings.data.is_dnd = !!serverData.is_dnd;
                 app.settings.data.is_flight_mode = !!serverData.is_flight_mode;
                 app.settings.data.zoom_level = serverData.zoom_level || 100;
             }
 
             app.settings.applyAll();
+
+            // Force render the wallpaper list (with a small delay to ensure DOM is ready)
+            setTimeout(() => { 
+                if(app.settings.renderWallpapers) app.settings.renderWallpapers(); 
+            }, 100);
         },
 
         applyAll: () => {
-            // Apply Wallpaper
+            // Apply Wallpaper to Screen
             app.settings.setWallpaperUI(app.settings.data.wallpaper);
             
             // Apply Zoom
@@ -661,7 +665,30 @@ const app = {
             app.settings.toggleFlightUI(app.settings.data.is_flight_mode);
         },
 
-        // --- ACTIONS (Triggered by UI) ---
+        // --- CORE FUNCTION THAT WAS MISSING ---
+        renderWallpapers: () => {
+            const grid = document.getElementById('wallpaper-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            // Predefined Wallpapers List
+            const walls = ['wall1.jpg', 'wall2.jpg', 'wall3.jpg', 'wall4.jpg', 'wall5.jpg', 'wall6.jpg'];
+            
+            walls.forEach(wall => {
+                const div = document.createElement('div');
+                div.className = 'wallpaper-item';
+                // Note: Ensure this path matches your folder structure exactly!
+                div.style.backgroundImage = `url('package://phone/ui/images/wallpapers/${wall}')`;
+                div.onclick = () => app.settings.setWallpaper(wall);
+                
+                // Highlight if active
+                if (app.settings.data.wallpaper === wall) {
+                    div.style.border = '2px solid #007aff';
+                }
+                grid.appendChild(div);
+            });
+        },
+        // --------------------------------------
 
         toggleDND: (checked) => {
             app.settings.data.is_dnd = checked;
@@ -678,7 +705,6 @@ const app = {
         setZoom: (val) => {
             app.settings.data.zoom_level = parseInt(val);
             app.settings.applyZoomUI(app.settings.data.zoom_level);
-            // Debounce save (optional) or save on mouseup, for now we save directly
             app.settings.save('zoom_level', app.settings.data.zoom_level);
         },
 
@@ -686,20 +712,47 @@ const app = {
             app.settings.data.wallpaper = source;
             app.settings.setWallpaperUI(source);
             app.settings.save('wallpaper', source);
+            
+            // Re-render to update the blue border selection
+            app.settings.renderWallpapers();
         },
 
-        // --- GENERIC SAVER ---
+        applyCustomWallpaper: () => {
+            const input = document.getElementById('custom-wall-url');
+            if(!input) return;
+            const url = input.value.trim();
+
+            if (!url.startsWith('https://')) {
+                return app.showToast("Settings", "Error", "Must start with https://");
+            }
+
+            const allowed = ['imgur.com', 'discordapp.com', 'discordapp.net'];
+            const isValidDomain = allowed.some(d => url.includes(d));
+
+            if (!isValidDomain) {
+                return app.showToast("Settings", "Error", "Only Imgur or Discord links allowed.");
+            }
+
+            app.settings.setWallpaper(url);
+            input.value = '';
+        },
+
         save: (key, val) => {
             if ('mp' in window) {
                 mp.trigger('client:proxyAction', 'saveSetting', JSON.stringify({ key, val }));
             }
         },
 
-        // --- UI UPDATERS (Visuals Only) ---
         setWallpaperUI: (source) => {
             const screen = document.querySelector('.screen-content');
             if(!screen) return;
-            const finalUrl = source.startsWith('http') ? `url('${source}')` : `url('package://phone/ui/images/wallpapers/${source}')`;
+            
+            let finalUrl = '';
+            if (source.startsWith('http')) {
+                finalUrl = `url('${source}')`;
+            } else {
+                finalUrl = `url('package://phone/ui/images/wallpapers/${source}')`;
+            }
             screen.style.backgroundImage = finalUrl;
             screen.style.backgroundSize = 'cover';
             screen.style.backgroundPosition = 'center';
@@ -724,7 +777,7 @@ const app = {
             const zoomVal = document.getElementById('zoom-val');
             if(zoomVal) zoomVal.innerText = val + '%';
         }
-    }
+    },
 };
 
 // --- GLOBAL APP FUNCTIONS ---
