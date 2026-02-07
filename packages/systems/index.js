@@ -1,3 +1,4 @@
+require('./photoSystem');
 require('./inventory');
 require('./dumpster');
 require('./returo');
