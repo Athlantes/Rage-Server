@@ -39,6 +39,12 @@ const app = {
     open: (appName) => {
         if(app.isLocked) return; 
 
+        const onlineApps = ['bank', 'quickeats', 'mail', 'escootr'];
+        if (app.settings.flightMode && onlineApps.includes(appName)) {
+            app.showToast("System", "No Connection", "Turn off Airplane Mode to use this app.");
+            return;
+        }
+
         if (appName === 'camera') {
             if ('mp' in window) {
                 // Signal client to open camera mode
@@ -216,7 +222,9 @@ const app = {
                 lockContainer.prepend(notif);
              }
         }
-        app.showToast(sender, title, message);
+        if (!app.settings.dnd) {
+            app.showToast(sender, title, message);
+        }
     },
 
     // --- PLAYER VEHICLES ---
@@ -602,7 +610,160 @@ const app = {
                 app.showToast("Gallery", "Deleted", "Photo removed successfully.");
             }
         );
-    }
+    },
+
+    // --- SETTINGS ---
+    settings: {
+        flightMode: false,
+        dnd: false,
+        zoom: 100,
+        wallpaperClass: 'bg-default', // Default class
+
+        predefinedWallpapers: [
+            { name: 'Default', class: 'bg-default' },
+            { name: 'Ocean', class: 'bg-blue' },
+            { name: 'Deep Space', class: 'bg-ocean' },
+            { name: 'Sunset', class: 'bg-sunset' },
+            { name: 'Midnight', class: 'bg-dark' },
+            { name: 'Nature', class: 'bg-green' }
+        ],
+
+        init: () => {
+            // Load saved settings
+            const saved = localStorage.getItem('phoneSettings');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                app.settings.flightMode = parsed.flightMode || false;
+                app.settings.dnd = parsed.dnd || false;
+                app.settings.zoom = parsed.zoom || 100;
+                app.settings.wallpaperClass = parsed.wallpaperClass || 'bg-default';
+            }
+
+            // Apply Settings
+            app.settings.applyAll();
+            app.settings.renderWallpapers();
+            
+            // Set Player ID (Visual) - In real usage, pass this from client:phone:initialize
+            // For now, we just placeholder it or parse it if you have it
+            document.getElementById('settings-my-id').innerText = "Unknown"; 
+        },
+
+        applyAll: () => {
+            // 1. Apply Zoom
+            const shell = document.getElementById('phone-shell');
+            if (shell) {
+                shell.style.transform = `scale(${app.settings.zoom / 100})`;
+                shell.style.transformOrigin = 'bottom right'; 
+            }
+            const inputZoom = document.getElementById('input-zoom');
+            if(inputZoom) inputZoom.value = app.settings.zoom;
+            
+            const zoomVal = document.getElementById('zoom-val');
+            if(zoomVal) zoomVal.innerText = app.settings.zoom + '%';
+
+            // 2. Apply Flight Mode Visuals
+            const flightToggle = document.getElementById('toggle-flight-mode');
+            if(flightToggle) flightToggle.checked = app.settings.flightMode;
+            app.settings.updateSignalIcon();
+
+            // 3. Apply DND Visuals (Updated)
+            const dndToggle = document.getElementById('toggle-dnd');
+            if(dndToggle) dndToggle.checked = app.settings.dnd;
+            
+            // Check if DND is active and show/hide icon
+            const dndIcon = document.getElementById('status-dnd');
+            if (dndIcon) {
+                if (app.settings.dnd) dndIcon.classList.remove('hidden');
+                else dndIcon.classList.add('hidden');
+            }
+
+            // 4. Apply Wallpaper
+            app.settings.setWallpaper(app.settings.wallpaperClass, false);
+        },
+
+        toggleFlightMode: (isActive) => {
+            app.settings.flightMode = isActive;
+            app.settings.updateSignalIcon();
+            app.settings.save();
+            
+            if (isActive) {
+                app.showToast("System", "Settings", "Airplane Mode Enabled");
+            }
+        },
+
+        toggleDND: (isActive) => {
+            app.settings.dnd = isActive;
+            app.settings.save();
+            
+            // Toggle the icon visibility immediately
+            const dndIcon = document.getElementById('status-dnd');
+            if (dndIcon) {
+                if (isActive) dndIcon.classList.remove('hidden');
+                else dndIcon.classList.add('hidden');
+            }
+        },
+
+        setZoom: (value) => {
+            app.settings.zoom = value;
+            const shell = document.getElementById('phone-shell');
+            shell.style.transform = `scale(${value / 100})`;
+            shell.style.transformOrigin = 'bottom right';
+            document.getElementById('zoom-val').innerText = value + '%';
+            app.settings.save();
+        },
+
+        updateSignalIcon: () => {
+            const signalIcon = document.querySelector('.fa-signal');
+            if (app.settings.flightMode) {
+                signalIcon.className = "fas fa-plane";
+            } else {
+                signalIcon.className = "fas fa-signal";
+            }
+        },
+
+        renderWallpapers: () => {
+            const container = document.getElementById('wallpaper-list');
+            container.innerHTML = '';
+            
+            app.settings.predefinedWallpapers.forEach(wp => {
+                const div = document.createElement('div');
+                div.className = `wall-option ${wp.class}`;
+                if (wp.class === app.settings.wallpaperClass) div.classList.add('selected');
+                
+                div.onclick = () => {
+                    app.settings.setWallpaper(wp.class);
+                    // Update selection visual
+                    document.querySelectorAll('.wall-option').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                };
+                
+                container.appendChild(div);
+            });
+        },
+
+        setWallpaper: (className, save = true) => {
+            const screen = document.querySelector('.screen-content');
+            
+            // Remove old classes
+            app.settings.predefinedWallpapers.forEach(wp => screen.classList.remove(wp.class));
+            
+            // Add new class
+            screen.classList.add(className);
+            app.settings.wallpaperClass = className;
+            
+            if (save) app.settings.save();
+        },
+
+        save: () => {
+            const data = {
+                flightMode: app.settings.flightMode,
+                dnd: app.settings.dnd,
+                zoom: app.settings.zoom,
+                wallpaperClass: app.settings.wallpaperClass
+            };
+            localStorage.setItem('phoneSettings', JSON.stringify(data));
+        }
+    },
 };
 
 // --- GLOBAL APP FUNCTIONS ---
@@ -645,3 +806,4 @@ function updateClock() {
 
 setInterval(updateClock, 1000);
 updateClock();
+app.settings.init();

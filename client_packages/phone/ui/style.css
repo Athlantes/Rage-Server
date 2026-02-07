@@ -261,6 +261,144 @@ body {
     background: #fafafa;
 }
 
+/* --- SETTINGS APP STYLES --- */
+.settings-group {
+    background: white;
+    margin-bottom: 25px;
+    border-top: 1px solid #e5e5ea;
+    border-bottom: 1px solid #e5e5ea;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    height: 44px;
+    border-bottom: 1px solid #f2f2f7;
+}
+
+.settings-item-col {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f2f2f7;
+}
+
+.settings-item:last-child, .settings-item-col:last-child {
+    border-bottom: none;
+}
+
+.settings-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 12px;
+    font-size: 14px;
+}
+
+.settings-label {
+    flex: 1;
+    font-size: 16px;
+    color: #000;
+}
+
+.settings-value {
+    color: #8e8e93;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.settings-chevron {
+    color: #c7c7cc;
+    font-size: 12px;
+}
+
+.settings-avatar {
+    width: 50px;
+    height: 50px;
+    background: #e5e5ea;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #8e8e93;
+    margin-right: 15px;
+}
+
+/* TOGGLE SWITCH */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 30px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px; width: 26px;
+    left: 2px; bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+input:checked + .slider { background-color: #34c759; }
+input:checked + .slider:before { transform: translateX(20px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+/* ZOOM SLIDER */
+.zoom-slider {
+    width: 100%;
+    margin-top: 5px;
+}
+
+/* WALLPAPERS */
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+.wall-option {
+    aspect-ratio: 9 / 16;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.wall-option:active { transform: scale(0.95); }
+.wall-option.selected { border-color: #007aff; }
+
+/* Pre-defined Backgrounds */
+.bg-default { 
+    background: #1c1c1e url('images/wallpapers/wall1.jpg') center/cover no-repeat; 
+}
+.bg-blue { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
+.bg-ocean { background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); }
+.bg-sunset { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); }
+.bg-dark { background: #000000; }
+.bg-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+
+/* Applied to Screen Content */
+.screen-content {
+    background-size: cover;
+    background-position: center;
+    transition: background 0.3s;
+}
+
 /* --- GALLERY APP --- */
 .gallery-grid {
     display: grid;

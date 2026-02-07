@@ -94,6 +94,77 @@
                 </div>
             </div>
 
+            <div id="view-settings" class="view hidden">
+                <div class="app-header" style="background: #f2f2f7; color: #000; border-bottom: 1px solid #d1d1d6;">
+                    <button class="back-btn" onclick="app.goHome()" style="color: #007aff;"><i class="fas fa-chevron-left"></i></button>
+                    <span style="font-weight: 600;">Settings</span>
+                </div>
+                
+                <div class="scrollable-content" style="background: #f2f2f7; padding-top: 20px;">
+                    
+                    <div class="settings-group">
+                        <div class="settings-item" style="height: 80px;">
+                            <div class="settings-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="settings-info">
+                                <div class="settings-label" style="font-size: 18px; font-weight: 600;">My Profile</div>
+                                <div class="settings-value" style="color: #888;">ID: <span id="settings-my-id">Loading...</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="settings-item">
+                            <div class="settings-icon" style="background: #ff9500;"><i class="fas fa-plane"></i></div>
+                            <div class="settings-label">Airplane Mode</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-flight-mode" onchange="app.settings.toggleFlightMode(this.checked)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-icon" style="background: #5856d6;"><i class="fas fa-moon"></i></div>
+                            <div class="settings-label">Do Not Disturb</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-dnd" onchange="app.settings.toggleDND(this.checked)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="settings-item" onclick="app.open('settings-wallpapers')">
+                            <div class="settings-icon" style="background: #34c759;"><i class="fas fa-image"></i></div>
+                            <div class="settings-label">Wallpaper</div>
+                            <div class="settings-chevron"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                        <div class="settings-item-col">
+                            <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 5px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div class="settings-icon" style="background: #007aff;"><i class="fas fa-search-plus"></i></div>
+                                    <div class="settings-label">Zoom</div>
+                                </div>
+                                <span id="zoom-val" style="color:#888; font-size:13px;">100%</span>
+                            </div>
+                            <input type="range" min="70" max="130" value="100" class="zoom-slider" id="input-zoom" oninput="app.settings.setZoom(this.value)">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="view-settings-wallpapers" class="view hidden">
+                <div class="app-header" style="background: #f2f2f7; color: #000; border-bottom: 1px solid #d1d1d6;">
+                    <button class="back-btn" onclick="app.open('settings')" style="color: #007aff;"><i class="fas fa-chevron-left"></i> Back</button>
+                    <span style="font-weight: 600;">Wallpapers</span>
+                </div>
+                <div class="scrollable-content" style="background: #f2f2f7; padding: 20px;">
+                    <div class="wallpaper-grid" id="wallpaper-list">
+                        </div>
+                </div>
+            </div>
+
             <div id="view-gallery" class="view hidden">
                 <div class="app-header">
                     <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
@@ -387,8 +458,10 @@
     <div id="toast-shell">
         <div class="toast-screen">
             <div class="status-bar">
-                <span id="toast-clock">12:00</span>
+                <span id="clock-small">12:00</span>
                 <div class="status-icons">
+                    <i id="status-dnd" class="fas fa-moon hidden" style="font-size: 11px; margin-right: 4px;"></i>
+                    
                     <i class="fas fa-signal"></i>
                     <i class="fas fa-wifi"></i>
                     <i class="fas fa-battery-full"></i>
