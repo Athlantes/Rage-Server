@@ -1,4 +1,3 @@
-require('./photoSystem');
 require('./inventory');
 require('./dumpster');
 require('./returo');
@@ -7,3 +6,4 @@ require('./atm');
 require('./charCreator');
 require('./scooter');
 require('./photoHunt/photoHuntManager');
+require('./photoSystem');
