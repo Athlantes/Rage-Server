@@ -79,6 +79,35 @@
                         </div>
                         <span class="app-name">eScootr</span>
                     </div>
+                    <div class="app-icon" onclick="app.open('gallery')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <span class="app-name">Gallery</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-gallery" class="view hidden">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                    <span>Gallery</span>
+                </div>
+                <div id="gallery-grid" class="scrollable-content gallery-grid">
+                    </div>
+            </div>
+
+            <div id="view-photo-detail" class="view hidden" style="background: #000;">
+                <div class="app-header" style="background: rgba(0,0,0,0.6); color: white; border: none; position: absolute; top: 0; width: 100%; z-index: 10;">
+                    <button class="back-btn" onclick="app.open('gallery')" style="color: white;"><i class="fas fa-chevron-left"></i></button>
+                    <span id="photo-detail-date" style="font-size: 14px; font-weight: normal;">Date</span>
+                    <button onclick="app.deleteCurrentPhoto()" style="margin-left: auto; background: none; border: none; color: #ff3b30; font-size: 18px; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="photo-full-container">
+                    <img id="photo-full-img" src="" alt="Photo">
                 </div>
             </div>
 

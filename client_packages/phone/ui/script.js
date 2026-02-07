@@ -3,6 +3,9 @@ const app = {
     isLocked: true, 
     toastTimeout: null,
     currentVehicleId: null,
+    mediaBaseUrl: '',
+    photos: [],
+    currentPhoto: null,
 
     getRelativeTime: (dateString) => {
         if (!dateString) return 'now';
@@ -503,6 +506,61 @@ const app = {
             btn.innerText = "SCAN AREA";
             btn.style.background = "#32cd32";
             document.getElementById('escootr-status-msg').innerText = "Ride ended.";
+        },
+        // --- GALLERY SYSTEM ---
+        loadPhotos: (photosJson, baseUrl) => {
+            app.photos = Array.isArray(photosJson) ? photosJson : [];
+            app.mediaBaseUrl = baseUrl;
+            
+            const grid = document.getElementById('gallery-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+
+            if (app.photos.length === 0) {
+                grid.innerHTML = '<div style="width:100%; padding:40px; text-align:center; color:#999; grid-column: 1 / -1;">No photos yet</div>';
+                return;
+            }
+
+            app.photos.forEach(photo => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.onclick = () => app.openPhotoDetail(photo);
+                
+                // Construct full URL
+                const fullUrl = app.mediaBaseUrl + photo.image_path;
+                
+                div.innerHTML = `<img src="${fullUrl}" loading="lazy">`;
+                grid.appendChild(div);
+            });
+        },
+
+        openPhotoDetail: (photo) => {
+            app.currentPhoto = photo;
+            app.open('photo-detail');
+            
+            const img = document.getElementById('photo-full-img');
+            img.src = app.mediaBaseUrl + photo.image_path;
+            
+            const dateEl = document.getElementById('photo-detail-date');
+            // Format date simply
+            const date = new Date(photo.created_at);
+            dateEl.innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        },
+
+        deleteCurrentPhoto: () => {
+            if (!app.currentPhoto) return;
+            
+            if (confirm("Delete this photo permanently?")) {
+                if ('mp' in window) {
+                    mp.trigger('client:proxyAction', 'deletePhoto', JSON.stringify({
+                        id: app.currentPhoto.id,
+                        path: app.currentPhoto.image_path
+                    }));
+                }
+                // Temporarily go back to gallery while server processes
+                app.open('gallery');
+            }
         }
     },
 };

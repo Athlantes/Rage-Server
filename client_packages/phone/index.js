@@ -158,6 +158,17 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 });
 
+// Updated to accept photos and mediaUrl
+mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl) => {
+    if(phoneBrowser) {
+        phoneBrowser.execute(`app.loadMails(${mailsJson})`);
+        // Pass photos to UI
+        if(photosJson && mediaUrl) {
+            phoneBrowser.execute(`app.loadPhotos(${photosJson}, '${mediaUrl}')`);
+        }
+    }
+});
+
 // --- OUTGOING ACTIONS ---
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
@@ -170,6 +181,13 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'readMail': mp.events.callRemote('server:phone:readMail', data); break;
         case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
         case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
+        
+        // --- NEW: Delete Photo ---
+        case 'deletePhoto':
+            const photoData = JSON.parse(data); // Expects { id, path }
+            mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
+            break;
+
         default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }
 });
