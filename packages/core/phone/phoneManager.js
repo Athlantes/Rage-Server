@@ -82,12 +82,18 @@ async function savePhotoToDisk(player, base64Data) {
 
 async function getPhoneSettings(userId) {
     try {
+        // [FIX] db.query returns [rows, fields]. We destructure to get 'rows'.
         const [rows] = await db.query("SELECT * FROM player_phone WHERE user_id = ?", [userId]);
-        if (rows) return rows;
+        
+        // [FIX] Check if we actually found a row, and return the FIRST item (the object), not the array.
+        if (rows.length > 0) {
+            return rows[0];
+        }
 
         // If no settings exist, create default row
-        // Optional: Generate a random phone number here if needed
         await db.query("INSERT INTO player_phone (user_id) VALUES (?)", [userId]);
+        
+        // Return default structure matching DB columns
         return {
             user_id: userId,
             phone_number: null,
@@ -263,17 +269,12 @@ mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => 
 mp.events.add('server:phone:saveSetting', async (player, key, value) => {
     if (!player.logged) return;
 
-    // Security: Whitelist allowed columns to prevent SQL injection or overwriting sensitive data
     const allowedKeys = ['wallpaper', 'is_dnd', 'is_flight_mode', 'is_silent', 'zoom_level'];
     if (!allowedKeys.includes(key)) return;
 
     try {
-        // Construct query safely
-        // Note: ?? escapes column names, ? escapes values
+        // This updates the specific column in the database
         await db.query(`UPDATE player_phone SET ${key} = ? WHERE user_id = ?`, [value, player.data.dbId]);
-        
-        // Debug
-        // console.log(`[Phone] Saved ${key}: ${value} for ${player.name}`);
     } catch (err) {
         console.error(`[Phone] Save Error (${key}):`, err);
     }

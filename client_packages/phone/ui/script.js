@@ -741,11 +741,10 @@ const app = {
             }
 
             // Optional: Filter for specific domains
-            const allowed = ['imgur.com', 'discordapp.com', 'discordapp.net', 'discord.com'];
-            const isValidDomain = allowed.some(d => url.includes(d));
+            const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
 
-            if (!isValidDomain) {
-                return app.showToast("Settings", "Error", "Only Imgur or Discord links allowed.");
+            if (!isImage && !url.includes('imgur.com') && !url.includes('discord')) {
+                return app.showToast("Settings", "Error", "URL must end in .jpg, .png, or .webp");
             }
 
             // Deselect grid items visually since we are using a custom one
