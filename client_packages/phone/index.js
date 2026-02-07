@@ -156,6 +156,11 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
             phoneBrowser.execute(`if(app.scooter && app.scooter.endRide) app.scooter.endRide()`);
         }
     }
+
+    if (appName === 'camera' && funcName === 'open') {
+        closePhone(); // Close the phone UI (hide cursor/browser)
+        mp.events.call('client:toggleCamera'); // Trigger the camera script
+    }
 });
 
 mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl) => {

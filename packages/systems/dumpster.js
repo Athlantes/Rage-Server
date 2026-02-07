@@ -16,7 +16,8 @@ const LOOT_TABLE = [
     { itemId: 'broken_glass', min: 1, max: 5, weight: 30 },
     { itemId: 'old_sandwich', min: 1, max: 1, weight: 20 },
     { itemId: 'wallet_stolen', min: 1, max: 1, weight: 5 }, 
-    { itemId: 'pistol_ammo', min: 2, max: 5, weight: 2 }    
+    { itemId: 'pistol_ammo', min: 2, max: 5, weight: 2 },
+    { itemId: 'seed_pumkin', min: 1, max: 3, weight: 15 },
 ];
 
 class DumpsterSystem {

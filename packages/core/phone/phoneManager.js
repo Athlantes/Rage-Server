@@ -73,7 +73,6 @@ async function savePhotoToDisk(player, base64Data) {
                 [userId, filename]
             );
 
-            player.notify("~g~Photo uploaded successfully!");
             console.log(`[Photo] Saved full image: ${filename}`);
         });
     } catch (err) {

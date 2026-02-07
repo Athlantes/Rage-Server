@@ -38,6 +38,14 @@ const app = {
 
     open: (appName) => {
         if(app.isLocked) return; 
+        
+        if (appName === 'camera') {
+            if ('mp' in window) {
+                // Signal client to open camera mode
+                mp.trigger('client:phone:appCallback', 'camera', 'open');
+            }
+            return; // Stop here, don't change phone UI view
+        }
 
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
