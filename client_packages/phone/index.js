@@ -45,7 +45,6 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
         mp.game.graphics.notify("~y~Phone closed for safety.");
     }
     
-    // If we have a scooter marker active, clear it when we get on a vehicle
     if (scooterBlip || scooterMarker) {
         clearScooterMarkers();
     }
@@ -82,36 +81,60 @@ mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
     if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
 });
 
+// --- NEW: RECEIVE SMS EVENT (Fixed Notification) ---
+mp.events.add('client:phone:receiveSMS', (number, body) => {
+    if(phoneBrowser) {
+        const msgObj = { 
+            number: number, 
+            body: body, 
+            isMine: false, 
+            is_read: 0, // IMPORTANT: New messages are unread by default
+            time: new Date().toISOString() 
+        };
+        
+        phoneBrowser.execute(`
+            (function() {
+                if(app.phoneApp) {
+                    app.phoneApp.messages.push(${JSON.stringify(msgObj)});
+                    
+                    if(app.phoneApp.activeChatNumber == '${number}') {
+                        // If chat is open, immediately mark read and render
+                        app.phoneApp.messages[app.phoneApp.messages.length - 1].is_read = 1;
+                        mp.trigger('client:proxyAction', 'markMessagesRead', '${number}'); // Sync to DB
+                        app.phoneApp.renderChatBubbles();
+                    } else {
+                        // Else, notification
+                        app.phoneApp.renderMessageList();
+                        app.receiveNotification('${number}', 'New Message', '${body.replace(/'/g, "\\'")}', 'phone');
+                    }
+                }
+            })();
+        `);
+    }
+});
+
 // --- PROXY HANDLER (Handling Server Responses) ---
 mp.events.add('client:phone:proxyResponse', (action, data) => {
     if (phoneBrowser) {
         if (action === 'scooterAction') {
-            
-            // 1. Pass data to UI
             phoneBrowser.execute(`if(app.scooter) app.scooter.onScanResult(${JSON.stringify(data)})`);
 
-            // 2. Handle Visuals (Blip/Marker)
             if (data.status === 'started' && data.x && data.y) {
-                // Clear old ones just in case
                 clearScooterMarkers();
-
                 const targetPos = new mp.Vector3(data.x, data.y, data.z);
 
-                // Create Blip (Icon on Map)
                 scooterBlip = mp.blips.new(522, targetPos, {
                     name: "Your eScooter",
                     color: 2, 
                     scale: 1.0,
                     shortRange: false,
                 });
-                scooterBlip.setRoute(true); // Adds the yellow GPS path on minimap
+                scooterBlip.setRoute(true); 
 
-                // Create Marker (Type 1 = Vertical Cylinder)
-                // Adjusted Z - 1.0 to sit nicely on the ground
                 scooterMarker = mp.markers.new(1, new mp.Vector3(data.x, data.y, data.z - 1.0), 1.2, {
                     direction: new mp.Vector3(0, 0, 0),
                     rotation: new mp.Vector3(0, 0, 0),
-                    color: [50, 205, 50, 100], // Lime Green Transparent
+                    color: [50, 205, 50, 100], 
                     visible: true,
                     dimension: mp.players.local.dimension
                 });
@@ -124,15 +147,12 @@ mp.events.add('client:phone:findScooterSpawn', () => {
     const player = mp.players.local;
     const pos = player.position;
     const heading = player.getHeading();
-    const distance = 5.0; // Distance behind player (reduced slightly for reliability)
+    const distance = 5.0; 
 
-    // Calculate position behind the player
     const rad = heading * (Math.PI / 180);
     const backX = pos.x + (Math.sin(rad) * distance); 
     const backY = pos.y + (-Math.cos(rad) * distance);
 
-    // FIX: Correct arguments for getClosestVehicleNode
-    // Args: x, y, z, nodeType (1=roads), p5 (3.0), p6 (0)
     const spawnPos = mp.game.pathfind.getClosestVehicleNode(backX, backY, pos.z, 1, 3.0, 0);
 
     if (spawnPos) {
@@ -153,39 +173,37 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 
     if (appName === 'camera' && funcName === 'open') {
-        closePhone(); // Close the phone UI (hide cursor/browser)
-        mp.events.call('client:toggleCamera'); // Trigger the camera script
+        closePhone(); 
+        mp.events.call('client:toggleCamera'); 
     }
 });
 
-// --- OPTIMIZED INITIALIZATION ---
-mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson) => {
-    // Debug Log
+mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson, contactsJson, messagesJson) => {
     mp.gui.chat.push(`[Phone Debug] Init Data Received.`);
 
     if(phoneBrowser) {
-        // Prepare safe strings to prevent JS errors in the browser
         const safeMails = mailsJson || '[]';
-        // Ensure photos is a valid array string, otherwise '[]'
         const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : '[]';
         const safeSettings = settingsJson || '{}';
         const safeMediaUrl = mediaUrl || '';
+        const safeContacts = contactsJson || '[]';
+        const safeMessages = messagesJson || '[]';
 
-        // Execute all loads in ONE go to prevent flickering and double-loading
         phoneBrowser.execute(`
             (function() {
                 try {
-                    // 1. Load Mails
                     try { app.loadMails(${safeMails}); } 
                     catch(e) { console.error("Mail Load Error:", e); }
 
-                    // 2. Load Photos
                     try { app.loadPhotos(${safePhotos}, '${safeMediaUrl}'); } 
                     catch(e) { console.error("Photo Load Error:", e); }
 
-                    // 3. Init Settings (Wallpapers, etc.)
                     try { app.settings.init(${safeSettings}); } 
                     catch(e) { console.error("Settings Load Error:", e); }
+
+                    try { 
+                        if(app.phoneApp) app.phoneApp.init(${safeContacts}, ${safeMessages}); 
+                    } catch(e) { console.error("Phone App Init Error:", e); }
 
                 } catch(err) {
                     console.error("Critical Phone Init Error:", err);
@@ -195,7 +213,6 @@ mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, setti
     }
 });
 
-// --- OUTGOING ACTIONS ---
 mp.events.add('client:proxyAction', (action, data) => {
     switch (action) {
         case 'requestBankData': mp.events.callRemote('server:phone:bank:open'); break;
@@ -214,9 +231,27 @@ mp.events.add('client:proxyAction', (action, data) => {
             break;
 
         case 'saveSetting':
-            const payload = JSON.parse(data); // Expects { key: "is_dnd", val: 1 }
+            const payload = JSON.parse(data); 
             mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
             break;
+
+        case 'saveContact':
+            const contactData = JSON.parse(data);
+            mp.events.callRemote('server:phone:addContact', contactData.name, contactData.number);
+            break;
+
+        case 'sendSMS':
+            const smsData = JSON.parse(data);
+            mp.events.callRemote('server:phone:sendSMS', smsData.number, smsData.body);
+            break;
+
+        case 'markMessagesRead':
+            mp.events.callRemote('server:phone:markMessagesRead', data);
+            break;
+
+        case 'startCall':
+             mp.events.callRemote('server:phone:startCall', data); 
+             break;
 
         default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }

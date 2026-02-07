@@ -6,14 +6,11 @@ const webServer = require('../../webserver');
 
 const uploadCache = new Map();
 
+// --- PHOTO UPLOAD LOGIC ---
 mp.events.add('server:photo:initUpload', (player, totalChunks) => {
     if (!player.logged) return;
-    
-    // [FIX] Ensure totalChunks is a valid number
     const total = parseInt(totalChunks);
     if (isNaN(total) || total <= 0) return;
-
-    // Initialize an array with empty slots
     uploadCache.set(player.id, {
         chunks: new Array(total), 
         total: total,
@@ -24,55 +21,30 @@ mp.events.add('server:photo:initUpload', (player, totalChunks) => {
 
 mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
     if (!uploadCache.has(player.id)) return;
-
     const upload = uploadCache.get(player.id);
-    
-    // [FIX] DUPLICATE PROTECTION
-    // If we already have a chunk at this index, ignore this packet.
-    // This prevents 'upload.received' from counting the same chunk twice 
-    // and saving the file before it is actually complete.
     if (upload.chunks[index] !== undefined) return;
 
-    // Store chunk
     upload.chunks[index] = chunkData;
     upload.received++;
 
-    // Only save when we have EVERY piece
     if (upload.received >= upload.total) {
-        // Construct the full string
         const fullBase64 = upload.chunks.join('');
-        
         uploadCache.delete(player.id); 
-        
         savePhotoToDisk(player, fullBase64);
     }
 });
 
 async function savePhotoToDisk(player, base64Data) {
     try {
-        // [FIX] TYPE SAFETY CHECK
-        // If data is somehow not a string, stop here to prevent server crash.
-        if (typeof base64Data !== 'string') {
-            console.error(`[Photo] Critical Error: Received ${typeof base64Data} instead of string. Upload aborted.`);
-            return;
-        }
-
+        if (typeof base64Data !== 'string') return;
         const timestamp = Date.now();
         const userId = player.data.dbId || 0;
         const filename = `${userId}_${timestamp}.jpg`;
         const filePath = path.join(webServer.photosDir, filename);
 
         fs.writeFile(filePath, base64Data, 'base64', async (err) => {
-            if (err) {
-                console.error(`[Photo] Write Error: ${err.message}`);
-                return;
-            }
-
-            await db.query(
-                "INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", 
-                [userId, filename]
-            );
-
+            if (err) return console.error(`[Photo] Write Error: ${err.message}`);
+            await db.query("INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", [userId, filename]);
             console.log(`[Photo] Saved full image: ${filename}`);
         });
     } catch (err) {
@@ -80,20 +52,14 @@ async function savePhotoToDisk(player, base64Data) {
     }
 }
 
+// --- PHONE NUMBER LOGIC ---
 async function generatePhoneNumber() {
     let isUnique = false;
     let newNumber = '';
-    
-    // Keep generating until we find a unique one
     while (!isUnique) {
-        // Generate random 6 digits (100000 to 999999)
         newNumber = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Check database for duplicates
         const [rows] = await db.query("SELECT id FROM player_phone WHERE phone_number = ?", [newNumber]);
-        if (rows.length === 0) {
-            isUnique = true;
-        }
+        if (rows.length === 0) isUnique = true;
     }
     return newNumber;
 }
@@ -101,84 +67,82 @@ async function generatePhoneNumber() {
 async function getPhoneSettings(userId) {
     try {
         const [rows] = await db.query("SELECT * FROM player_phone WHERE user_id = ?", [userId]);
-        
         let settings;
 
-        // 1. Create row if it doesn't exist (New User)
         if (rows.length === 0) {
             await db.query("INSERT INTO player_phone (user_id) VALUES (?)", [userId]);
-            settings = {
-                user_id: userId,
-                phone_number: null,
-                wallpaper: 'wall1.jpg',
-                is_dnd: 0,
-                is_flight_mode: 0,
-                is_silent: 0,
-                zoom_level: 100
-            };
+            settings = { user_id: userId, phone_number: null, wallpaper: 'wall1.jpg', is_dnd: 0, is_flight_mode: 0, zoom_level: 100 };
         } else {
             settings = rows[0];
         }
 
-        // 2. Assign Number if Missing (Registration / First Load)
         if (!settings.phone_number) {
             const newNum = await generatePhoneNumber();
-            
             await db.query("UPDATE player_phone SET phone_number = ? WHERE user_id = ?", [newNum, userId]);
-            
-            settings.phone_number = newNum; // Update local object to send to client
-            console.log(`[Phone] Assigned new number ${newNum} to UserID ${userId}`);
+            settings.phone_number = newNum;
         }
-
         return settings;
-
     } catch (err) {
         console.error("[Phone] Get Settings Error:", err);
         return null;
     }
 }
-// 1. Open Phone & Load Data
+
+// --- MAIN PHONE OPEN EVENT ---
 mp.events.add('server:phone:open', async (player) => {
     if (!player.logged) return;
 
     try {
-        // 1. Get Phone Settings (New Table)
-        const settings = await getPhoneSettings(player.data.dbId);
-        
-        // 2. Get Mails
+        const userId = player.data.dbId;
+        const settings = await getPhoneSettings(userId);
+        const myNumber = settings.phone_number;
+
         const [mails] = await db.query(
             "SELECT id, sender, title, message, is_read, created_at FROM player_mails WHERE user_id = ? ORDER BY created_at DESC LIMIT 20", 
-            [player.data.dbId]
-        );
-        
-        // 3. Get Photos
-        const [photos] = await db.query(
-            "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC",
-            [player.data.dbId]
+            [userId]
         );
 
-        // 4. Send everything to client
-        // settings object contains: { wallpaper, is_dnd, is_flight_mode, etc }
+        const [photos] = await db.query(
+            "SELECT id, image_path, created_at FROM player_photos WHERE user_id = ? ORDER BY created_at DESC",
+            [userId]
+        );
+
+        const [contacts] = await db.query(
+            "SELECT contact_name as name, contact_number as number FROM phone_contacts WHERE owner_id = ? ORDER BY contact_name ASC",
+            [userId]
+        );
+
+        const [messagesRaw] = await db.query(
+            "SELECT sender_number, receiver_number, message, created_at, is_read FROM phone_messages WHERE sender_number = ? OR receiver_number = ? ORDER BY created_at ASC",
+            [myNumber, myNumber]
+        );
+
+        const messages = messagesRaw.map(msg => ({
+            number: (msg.sender_number === myNumber) ? msg.receiver_number : msg.sender_number, 
+            body: msg.message,
+            isMine: (msg.sender_number === myNumber),
+            is_read: msg.is_read,
+            time: msg.created_at
+        }));
+
+        // 6. Send everything to client
         player.call('client:phone:initialize', [
             JSON.stringify(mails), 
             JSON.stringify(photos), 
             webServer.baseUrl,
-            JSON.stringify(settings) 
+            JSON.stringify(settings),
+            JSON.stringify(contacts),
+            JSON.stringify(messages)
         ]);
         
-        const cars = await vehicleManager.getPlayerVehicles(player.data.dbId);
+        // 7. Load Vehicles
+        const cars = await vehicleManager.getPlayerVehicles(userId);
         const processedCars = cars.map(c => {
             const activeVeh = vehicleManager.findActiveVehicle(c.id);
             return {
-                id: c.id,
-                model: c.model,
-                plate: c.plate,
-                fuel: c.fuel,
-                parked: c.parked,
-                spawned: !!activeVeh 
+                id: c.id, model: c.model, plate: c.plate, fuel: c.fuel, parked: c.parked, spawned: !!activeVeh 
             };
         });
-        
         player.call('client:phone:updateVehicles', [JSON.stringify(processedCars)]);
 
     } catch (err) {
@@ -186,124 +150,128 @@ mp.events.add('server:phone:open', async (player) => {
     }
 });
 
-// --- NEW: Dedicated Handlers for Mail ---
+mp.events.add('server:phone:markMessagesRead', async (player, targetNumber) => {
+    if (!player.logged) return;
+    try {
+        const settings = await getPhoneSettings(player.data.dbId);
+        const myNumber = settings.phone_number;
+
+        // Mark all messages FROM this contact TO me as read
+        await db.query(
+            "UPDATE phone_messages SET is_read = 1 WHERE sender_number = ? AND receiver_number = ?",
+            [targetNumber, myNumber]
+        );
+    } catch (err) {
+        console.error("Mark Read Error:", err);
+    }
+});
+
+// --- CONTACTS & SMS HANDLERS ---
+
+mp.events.add('server:phone:addContact', async (player, name, number) => {
+    if (!player.logged) return;
+    try {
+        // Updated INSERT for phone_contacts
+        await db.query("INSERT INTO phone_contacts (owner_id, contact_name, contact_number) VALUES (?, ?, ?)", 
+            [player.data.dbId, name, number]);
+    } catch (err) {
+        console.error("Add Contact Error:", err);
+    }
+});
+
+mp.events.add('server:phone:sendSMS', async (player, targetNumber, body) => {
+    if (!player.logged) return;
+    try {
+        const settings = await getPhoneSettings(player.data.dbId);
+        const myNumber = settings.phone_number;
+
+        // 1. Save to DB (Updated INSERT for phone_messages)
+        await db.query(
+            "INSERT INTO phone_messages (sender_number, receiver_number, message) VALUES (?, ?, ?)",
+            [myNumber, targetNumber, body]
+        );
+
+        // 2. Find target player online
+        // Look up who owns the 'targetNumber' in 'player_phone'
+        const [rows] = await db.query("SELECT user_id FROM player_phone WHERE phone_number = ?", [targetNumber]);
+        
+        if (rows.length > 0) {
+            const targetUserId = rows[0].user_id;
+            const targetPlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === targetUserId);
+
+            if (targetPlayer) {
+                // Send event to receiver
+                targetPlayer.call('client:phone:receiveSMS', [myNumber, body]);
+            }
+        }
+    } catch (err) {
+        console.error("Send SMS Error:", err);
+    }
+});
+
+mp.events.add('server:phone:startCall', (player, targetNumber) => {
+    // Placeholder for future VoIP implementation
+    player.call('showNotification', ['Phone', 'Calling functionality coming soon...']);
+});
+
+// --- EXISTING HANDLERS (Mail, Vehicles, etc) ---
 
 mp.events.add('server:phone:readAllMails', async (player) => {
     if (!player.logged) return;
     try {
-        // Update all unread mails for this specific player
         await db.query("UPDATE player_mails SET is_read = 1 WHERE user_id = ? AND is_read = 0", [player.data.dbId]);
-        
-        // Refresh the phone data logic (Optional since client is optimistic, but good for sync)
         mp.events.call('server:phone:open', player);
-    } catch (err) {
-        console.error("Read All Mails Error:", err);
-    }
+    } catch (err) { console.error("Read All Mails Error:", err); }
 });
 
 mp.events.add('server:phone:readMail', async (player, id) => {
     if (!player.logged) return;
     try {
-        const mailId = parseInt(id);
-        await db.query(
-            "UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", 
-            [mailId, player.data.dbId]
-        );
-        // Silent update; no need to refresh entire phone for one read mail if UI handles it
-    } catch (err) {
-        console.error("Read Mail Error:", err);
-    }
+        await db.query("UPDATE player_mails SET is_read = 1 WHERE id = ? AND user_id = ?", [parseInt(id), player.data.dbId]);
+    } catch (err) { console.error("Read Mail Error:", err); }
 });
 
-// 2. Handle Vehicle Actions
 mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
     if (!player.logged) return;
-
     try {
         const vehDbId = parseInt(id);
-
         if (action === 'spawn') {
             const veh = await vehicleManager.unparkVehicle(player, vehDbId);
             if (veh) {
-                player.call('showNotification', ['Fleet', 'Vehicle spawned at parked location.']);
+                player.call('showNotification', ['Fleet', 'Vehicle spawned.']);
                 player.call('client:setWaypoint', [veh.position.x, veh.position.y]);
             }
-        } 
-        else if (action === 'despawn') {
+        } else if (action === 'despawn') {
             const veh = vehicleManager.findActiveVehicle(vehDbId);
             if (!veh) return player.call('showNotification', ['Fleet', 'Vehicle not found.']);
-            
             vehicleManager.despawnVehicle(veh);
-            player.call('showNotification', ['Fleet', 'Vehicle towed to garage.']);
+            player.call('showNotification', ['Fleet', 'Vehicle towed.']);
             mp.events.call('server:phone:open', player); 
-        }
-        else if (action === 'locate') {
+        } else if (action === 'locate') {
             const veh = vehicleManager.findActiveVehicle(vehDbId);
-            if (!veh) return player.call('showNotification', ['Fleet', 'Vehicle is in the garage.']);
-            
+            if (!veh) return player.call('showNotification', ['Fleet', 'Vehicle is in garage.']);
             player.call('client:setWaypoint', [veh.position.x, veh.position.y]);
-            player.call('showNotification', ['GPS', 'Vehicle location marked.']);
+            player.call('showNotification', ['GPS', 'Location marked.']);
         }
-    } catch (err) {
-        console.error("Phone Action Error:", err);
-    }
-});
-
-// API to send a mail
-mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) => {
-    try {
-        await db.query(
-            "INSERT INTO player_mails (user_id, sender, title, message, is_read) VALUES (?, ?, ?, ?, 0)",
-            [targetId, sender, title, message]
-        );
-
-        const target = mp.players.toArray().find(p => p.data.dbId === targetId);
-        if (target) {
-            mp.events.call('server:phone:open', target);
-            target.call('client:phone:receiveMail', [sender, title, message]);
-        }
-    } catch (err) {
-        console.error("Mail Send Error:", err);
-    }
+    } catch (err) { console.error("Phone Action Error:", err); }
 });
 
 mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => {
     if (!player.logged) return;
-    console.log(`[Phone] Deleting photo ${photoId} (${photoPath})`);
-    
     try {
-        // 1. Delete from Database
         await db.query("DELETE FROM player_photos WHERE id = ? AND user_id = ?", [photoId, player.data.dbId]);
-
-        // 2. Delete from Disk
         const filePath = path.join(webServer.photosDir, photoPath);
-        if (fs.existsSync(filePath)) {
-            fs.unlink(filePath, (err) => {
-                if (err) console.error("Failed to delete file:", err);
-                else console.log("[Phone] File deleted from disk.");
-            });
-        }
-
-        // 3. Notify and Refresh
+        if (fs.existsSync(filePath)) fs.unlink(filePath, () => {});
         player.call('client:photo:log', [`Deleted photo.`]);
-        // Refresh phone to update the grid
         mp.events.call('server:phone:open', player); 
-
-    } catch (err) {
-        console.error("Delete Photo Error:", err);
-    }
+    } catch (err) { console.error("Delete Photo Error:", err); }
 });
 
 mp.events.add('server:phone:saveSetting', async (player, key, value) => {
     if (!player.logged) return;
-
     const allowedKeys = ['wallpaper', 'is_dnd', 'is_flight_mode', 'is_silent', 'zoom_level'];
     if (!allowedKeys.includes(key)) return;
-
     try {
-        // This updates the specific column in the database
         await db.query(`UPDATE player_phone SET ${key} = ? WHERE user_id = ?`, [value, player.data.dbId]);
-    } catch (err) {
-        console.error(`[Phone] Save Error (${key}):`, err);
-    }
+    } catch (err) { console.error(`[Phone] Save Error (${key}):`, err); }
 });

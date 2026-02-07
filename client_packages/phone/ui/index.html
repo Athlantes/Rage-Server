@@ -91,6 +91,105 @@
                         </div>
                         <span class="app-name">Camera</span>
                     </div>
+                    <div class="app-icon" onclick="app.open('phone-app')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #4cd964, #2ecc71);">
+                            <i class="fas fa-phone-alt"></i>
+                            <div id="badge-phone" class="app-badge hidden">!</div>
+                        </div>
+                        <span class="app-name">Phone</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-phone-app" class="view hidden" style="background: #fff;">
+                <div id="tab-content-keypad" class="phone-tab-content">
+                    <div class="keypad-display">
+                        <div id="keypad-number" class="keypad-input"></div>
+                        <div id="keypad-action-sub" class="keypad-sub hidden" onclick="app.phoneApp.addCurrentNumber()">+ Add to Contacts</div>
+                    </div>
+                    <div class="keypad-grid">
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('1')">1</div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('2')">2<span>ABC</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('3')">3<span>DEF</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('4')">4<span>GHI</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('5')">5<span>JKL</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('6')">6<span>MNO</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('7')">7<span>PQRS</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('8')">8<span>TUV</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('9')">9<span>WXYZ</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('*')">*</div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('0')">0<span>+</span></div>
+                        <div class="key-btn" onclick="app.phoneApp.pressKey('#')">#</div>
+                    </div>
+                    <div class="keypad-actions">
+                         <button class="btn-call" onclick="app.phoneApp.startCall()"><i class="fas fa-phone-alt"></i></button>
+                         <button id="btn-keypad-del" class="btn-del hidden" onclick="app.phoneApp.pressDel()"><i class="fas fa-backspace"></i></button>
+                    </div>
+                </div>
+
+                <div id="tab-content-recent" class="phone-tab-content hidden">
+                    <div class="app-header">
+                        <span>Messages</span>
+                        <i class="fas fa-edit" style="color:#007aff; margin-left:auto; cursor:pointer;" onclick="app.phoneApp.openNewMessage()"></i>
+                    </div>
+                    <div id="msg-conversation-list" class="scrollable-content">
+                        </div>
+                </div>
+
+                <div id="tab-content-contacts" class="phone-tab-content hidden">
+                    <div class="app-header">
+                        <span>Contacts</span>
+                        <i class="fas fa-plus" style="color:#007aff; margin-left:auto; cursor:pointer;" onclick="app.phoneApp.openContactEdit()"></i>
+                    </div>
+                    <div class="search-bar-container">
+                        <input type="text" placeholder="Search" onkeyup="app.phoneApp.filterContacts(this.value)">
+                    </div>
+                    <div id="contact-list-real" class="scrollable-content contact-list-group">
+                        </div>
+                </div>
+
+                <div class="phone-tab-bar">
+                    <div class="tab-item active" onclick="app.phoneApp.switchTab('keypad', this)">
+                        <i class="fas fa-th"></i>
+                        <span>Keypad</span>
+                    </div>
+                    <div class="tab-item" onclick="app.phoneApp.switchTab('recent', this)">
+                        <i class="fas fa-comment"></i>
+                        <span>Messages</span>
+                    </div>
+                    <div class="tab-item" onclick="app.phoneApp.switchTab('contacts', this)">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Contacts</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-chat-thread" class="view hidden" style="background: white;">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.phoneApp.closeChat()"><i class="fas fa-chevron-left"></i></button>
+                    <span id="chat-thread-name">John Doe</span>
+                </div>
+                <div id="chat-bubbles" class="scrollable-content chat-container">
+                    </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input-text" placeholder="iMessage">
+                    <button onclick="app.phoneApp.sendSMS()"><i class="fas fa-arrow-up"></i></button>
+                </div>
+            </div>
+
+            <div id="view-contact-edit" class="view hidden" style="background: #f2f2f7;">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.phoneApp.closeContactEdit()">Cancel</button>
+                    <span style="font-weight:600;">New Contact</span>
+                    <button class="text-btn" style="color:#007aff; border:none; background:none; font-weight:bold; margin-left:auto;" onclick="app.phoneApp.saveContact()">Done</button>
+                </div>
+                <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center;">
+                    <div class="contact-avatar-large"><i class="fas fa-user"></i></div>
+                    <div class="edit-group">
+                        <input type="text" id="contact-edit-name" placeholder="First Name">
+                        <div class="divider"></div>
+                        <input type="text" id="contact-edit-number" placeholder="Phone Number">
+                    </div>
                 </div>
             </div>
 

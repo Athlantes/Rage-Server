@@ -189,18 +189,31 @@ const app = {
     },
 
     // --- NOTIFICATIONS ---
-    showToast: (sender, title, message) => {
+    showToast: (sender, title, message, appType = 'mail') => {
         const shell = document.getElementById('toast-shell');
         const txtSender = document.getElementById('toast-sender');
         const txtMsg = document.getElementById('toast-message');
-        const txtClock = document.getElementById('toast-clock');
+        const iconBox = document.querySelector('.toast-icon-box');
+        
         txtSender.innerText = sender;
         txtMsg.innerText = title; 
-        const now = new Date();
-        txtClock.innerText = now.getHours().toString().padStart(2, '0') + ':' + 
-                             now.getMinutes().toString().padStart(2, '0');
+
+        // Update Icon based on App Type
+        if (iconBox) {
+            if (appType === 'phone') {
+                iconBox.innerHTML = '<i class="fas fa-comment"></i>';
+                iconBox.style.background = '#34c759'; // Green for SMS
+            } else {
+                iconBox.innerHTML = '<i class="fas fa-envelope"></i>';
+                iconBox.style.background = '#007aff'; // Blue for Mail
+            }
+        }
+
+        // Check if the actual phone is hidden (closed)
         const phoneShell = document.getElementById('phone-shell');
         const isPhoneHidden = phoneShell.classList.contains('hidden');
+        
+        // Only show the phantom toast if the phone is closed
         if (isPhoneHidden) {
             shell.classList.add('active');
             if (app.toastTimeout) clearTimeout(app.toastTimeout);
@@ -210,29 +223,41 @@ const app = {
         }
     },
 
-    receiveNotification: (sender, title, message) => {
-        const badge = document.getElementById('badge-mail');
+    receiveNotification: (sender, title, message, appType = 'mail') => {
+        // 1. Update Badge
+        let badgeId = 'badge-mail';
+        if (appType === 'phone') badgeId = 'badge-phone';
+        
+        const badge = document.getElementById(badgeId);
         if(badge) {
             badge.classList.remove('hidden');
             badge.innerText = "!";
         }
+
+        // 2. Add to Lock Screen (If locked)
+        // This ensures unread messages appear on the lockscreen
         if (app.isLocked) {
              const lockContainer = document.getElementById('lock-notification-list');
              if(lockContainer) {
                  const notif = document.createElement('div');
                  notif.className = 'lock-notif-item';
+                 const iconClass = (appType === 'phone') ? 'fas fa-comment' : 'fas fa-envelope';
                  notif.innerHTML = `
-                    <div class="lock-notif-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="lock-notif-icon"><i class="${iconClass}"></i></div>
                     <div class="lock-notif-content">
                         <div class="lock-notif-title">${sender}</div>
                         <div class="lock-notif-msg">${title}</div>
                     </div>
                 `;
+                // Prepend so the newest is at the top
                 lockContainer.prepend(notif);
              }
         }
+
+        // 3. Show Toast (Phantom Phone Popup)
+        // Only if DND is off
         if (!app.settings.dnd) {
-            app.showToast(sender, title, message);
+            app.showToast(sender, title, message, appType);
         }
     },
 
@@ -416,6 +441,258 @@ const app = {
         document.getElementById('bank-target').value = '';
         document.getElementById('bank-amount').value = '';
         app.showToast('Fleeca', 'Processing', 'Sending transaction...');
+    },
+
+    phoneApp: {
+        currentTab: 'keypad',
+        dialBuffer: '',
+        contacts: [], 
+        messages: [], 
+        activeChatNumber: null,
+
+        init: (contactsJson, messagesJson) => {
+            if (contactsJson) app.phoneApp.contacts = contactsJson;
+            if (messagesJson) app.phoneApp.messages = messagesJson;
+            
+            app.phoneApp.renderContacts();
+            app.phoneApp.updateBadge(); // Initial Badge Check
+        },
+
+        // New function to handle the badge logic centrally
+        updateBadge: () => {
+            // Count unread messages (Not mine, and is_read == 0)
+            const unreadCount = app.phoneApp.messages.filter(m => !m.isMine && !m.is_read).length;
+            const badge = document.getElementById('badge-phone');
+            
+            if (unreadCount > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+            } else {
+                badge.classList.add('hidden');
+            }
+        },
+
+        // --- NAVIGATION ---
+        switchTab: (tabName, btnEl) => {
+            app.phoneApp.currentTab = tabName;
+            
+            document.querySelectorAll('.phone-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            if(btnEl) btnEl.classList.add('active');
+
+            if (tabName === 'recent') {
+                app.phoneApp.renderMessageList();
+            }
+        },
+
+        // ... [Keypad Logic remains the same] ...
+        pressKey: (key) => { /*...*/ if (app.phoneApp.dialBuffer.length < 12) { app.phoneApp.dialBuffer += key; app.phoneApp.updateDisplay(); } },
+        pressDel: () => { /*...*/ app.phoneApp.dialBuffer = app.phoneApp.dialBuffer.slice(0, -1); app.phoneApp.updateDisplay(); },
+        updateDisplay: () => { /*...*/ 
+            const display = document.getElementById('keypad-number');
+            const sub = document.getElementById('keypad-action-sub');
+            const delBtn = document.getElementById('btn-keypad-del');
+            display.innerText = app.phoneApp.dialBuffer;
+            if (app.phoneApp.dialBuffer.length > 0) { sub.classList.remove('hidden'); delBtn.classList.remove('hidden'); } 
+            else { sub.classList.add('hidden'); delBtn.classList.add('hidden'); }
+        },
+        addCurrentNumber: () => { app.phoneApp.openContactEdit(app.phoneApp.dialBuffer); },
+        startCall: () => { /*...*/ const num = app.phoneApp.dialBuffer; if(!num) return; app.showToast("Phone", "Calling...", "Calling " + num); if('mp' in window) mp.trigger('client:proxyAction', 'startCall', num); },
+
+        // ... [Contacts Logic remains the same] ...
+        renderContacts: (filter = "") => { /*...*/ 
+            const container = document.getElementById('contact-list-real'); container.innerHTML = '';
+            const sorted = app.phoneApp.contacts.sort((a,b) => a.name.localeCompare(b.name));
+            sorted.forEach(c => {
+                if (filter && !c.name.toLowerCase().includes(filter.toLowerCase())) return;
+                const div = document.createElement('div'); div.className = 'contact-row';
+                const initial = c.name[0] || "#"; const colorHex = '#' + Math.floor(c.name.charCodeAt(0)*123456).toString(16).slice(0,6);
+                div.innerHTML = `<div class="contact-avatar" style="background:${colorHex}">${initial}</div><div class="contact-name">${c.name}</div><div class="contact-actions"><div class="c-act-btn" onclick="app.phoneApp.openChat('${c.number}', '${c.name}')"><i class="fas fa-comment"></i></div><div class="c-act-btn" onclick="app.phoneApp.dialBuffer='${c.number}'; app.phoneApp.startCall(); event.stopPropagation();"><i class="fas fa-phone"></i></div></div>`;
+                div.onclick = (e) => { if(e.target.closest('.c-act-btn')) return; app.phoneApp.dialBuffer = c.number; app.phoneApp.updateDisplay(); const tabs = document.querySelectorAll('.tab-item'); app.phoneApp.switchTab('keypad', tabs[0]); };
+                container.appendChild(div);
+            });
+        },
+        filterContacts: (val) => { app.phoneApp.renderContacts(val); },
+        openContactEdit: (prefillNumber = "") => { document.getElementById('view-phone-app').classList.add('hidden'); document.getElementById('view-contact-edit').classList.remove('hidden'); document.getElementById('contact-edit-name').value = ""; document.getElementById('contact-edit-number').value = prefillNumber; },
+        closeContactEdit: () => { document.getElementById('view-contact-edit').classList.add('hidden'); document.getElementById('view-phone-app').classList.remove('hidden'); },
+        saveContact: () => { const name = document.getElementById('contact-edit-name').value; const number = document.getElementById('contact-edit-number').value; if(!name || !number) return app.showToast("Contacts", "Error", "Name and Number required."); app.phoneApp.contacts.push({ name, number }); app.phoneApp.renderContacts(); if('mp' in window) mp.trigger('client:proxyAction', 'saveContact', JSON.stringify({ name, number })); app.phoneApp.closeContactEdit(); },
+
+        // --- MESSAGES LOGIC (Updated for is_read) ---
+        renderMessageList: () => {
+            const container = document.getElementById('msg-conversation-list');
+            container.innerHTML = '';
+            
+            const groups = {};
+            app.phoneApp.messages.forEach(msg => {
+                if(!groups[msg.number]) groups[msg.number] = [];
+                groups[msg.number].push(msg);
+            });
+
+            const keys = Object.keys(groups);
+            if (keys.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; color:#aaa; font-size:14px;">No messages</div>';
+                return;
+            }
+
+            keys.sort((a, b) => {
+                const lastA = groups[a][groups[a].length - 1];
+                const lastB = groups[b][groups[b].length - 1];
+                return new Date(lastB.time) - new Date(lastA.time);
+            });
+
+            keys.forEach(num => {
+                const thread = groups[num];
+                const lastMsg = thread[thread.length - 1];
+                const contact = app.phoneApp.contacts.find(c => c.number == num);
+                const displayName = contact ? contact.name : num;
+
+                // Check if thread has unread messages
+                const hasUnread = thread.some(m => !m.isMine && !m.is_read);
+
+                const div = document.createElement('div');
+                div.className = 'msg-row';
+                if(hasUnread) div.style.backgroundColor = "#f0f8ff"; // Highlight unread rows lightly
+                
+                div.onclick = () => app.phoneApp.openChat(num, displayName);
+                
+                const prefix = lastMsg.isMine ? "You: " : "";
+                
+                div.innerHTML = `
+                    <div class="msg-header">
+                        <span class="msg-sender" style="${hasUnread ? 'font-weight:800; color:#007aff;' : ''}">${displayName} ${hasUnread ? '●' : ''}</span>
+                        <span class="msg-date">${app.getRelativeTime(lastMsg.time)}</span>
+                    </div>
+                    <div class="msg-preview" style="${hasUnread ? 'font-weight:600; color:#000;' : ''}">${prefix}${lastMsg.body}</div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        openNewMessage: () => {
+            const target = prompt("Enter phone number:");
+            if(target) app.phoneApp.openChat(target, target);
+        },
+
+        openChat: (number, displayName) => {
+            app.phoneApp.activeChatNumber = number;
+            document.getElementById('view-phone-app').classList.add('hidden');
+            document.getElementById('view-chat-thread').classList.remove('hidden');
+            document.getElementById('chat-thread-name').innerText = displayName;
+            
+            // --- NEW: Mark as read logic ---
+            let changed = false;
+            app.phoneApp.messages.forEach(m => {
+                if(m.number == number && !m.isMine && !m.is_read) {
+                    m.is_read = 1; // Mark locally
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                app.phoneApp.updateBadge(); // Update UI Badge immediately
+                // Notify server to update DB
+                if('mp' in window) mp.trigger('client:proxyAction', 'markMessagesRead', number);
+            }
+            // -------------------------------
+
+            app.phoneApp.renderChatBubbles();
+        },
+
+        closeChat: () => {
+            app.phoneApp.activeChatNumber = null;
+            document.getElementById('view-chat-thread').classList.add('hidden');
+            document.getElementById('view-phone-app').classList.remove('hidden');
+            app.phoneApp.renderMessageList();
+        },
+
+        renderChatBubbles: () => {
+            const container = document.getElementById('chat-bubbles');
+            container.innerHTML = '';
+            const thread = app.phoneApp.messages.filter(m => m.number == app.phoneApp.activeChatNumber);
+            thread.sort((a,b) => new Date(a.time) - new Date(b.time));
+            thread.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `chat-bubble ${msg.isMine ? 'mine' : 'theirs'}`;
+                div.innerText = msg.body;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        },
+
+        sendSMS: () => {
+            const input = document.getElementById('chat-input-text');
+            const text = input.value.trim();
+            if(!text || !app.phoneApp.activeChatNumber) return;
+
+            app.phoneApp.messages.push({
+                number: app.phoneApp.activeChatNumber,
+                body: text,
+                isMine: true,
+                is_read: 1, // My messages are always read
+                time: new Date().toISOString()
+            });
+            
+            app.phoneApp.renderChatBubbles();
+            input.value = '';
+
+            if('mp' in window) {
+                mp.trigger('client:proxyAction', 'sendSMS', JSON.stringify({ number: app.phoneApp.activeChatNumber, body: text }));
+            }
+        }
+    },
+
+// --- UPDATE receiveNotification TO FIX LOCKSCREEN ---
+    receiveNotification: (sender, title, message, appType = 'mail') => {
+        // 1. Update Badge (Visual red dot on app icon)
+        if (appType === 'phone') {
+            app.phoneApp.updateBadge(); 
+        } else {
+             const badge = document.getElementById('badge-mail');
+             if(badge) { badge.classList.remove('hidden'); badge.innerText = "!"; }
+        }
+
+        // 2. Add to Lock Screen List
+        // We ALWAYS add to this list. If the phone is unlocked, the user just won't see it 
+        // until they lock it again, OR we clear this list on unlock.
+        const lockContainer = document.getElementById('lock-notification-list');
+        if(lockContainer) {
+             const notif = document.createElement('div');
+             notif.className = 'lock-notif-item';
+             
+             const iconClass = (appType === 'phone') ? 'fas fa-comment' : 'fas fa-envelope';
+             const color = (appType === 'phone') ? '#34c759' : '#007aff';
+             
+             notif.innerHTML = `
+                <div class="lock-notif-icon" style="background:${color}"><i class="${iconClass}"></i></div>
+                <div class="lock-notif-content">
+                    <div class="lock-notif-title">${sender}</div>
+                    <div class="lock-notif-msg">${message}</div>
+                </div>
+            `;
+            
+            // Allow clicking notification to go straight to app (Optional QoL)
+            notif.onclick = () => {
+                if(app.isLocked) {
+                    // Unlock phone and open app
+                    app.unlockPhone(); // You must have this function or similar logic
+                    if(appType === 'phone') app.open('phone-app');
+                    else app.open('mail');
+                }
+            };
+
+            lockContainer.prepend(notif);
+        }
+
+        // 3. Show "Phantom" Toast if phone is closed (in pocket)
+        // We check if the phone-shell is hidden. 
+        const phoneShell = document.getElementById('phone-shell');
+        if (phoneShell && phoneShell.classList.contains('hidden')) {
+            if (!app.settings.dnd) {
+                app.showToast(sender, title, message, appType);
+            }
+        }
     },
 
     // --- eSCOOTR APP ---
