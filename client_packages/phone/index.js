@@ -65,54 +65,6 @@ function closePhone() {
 
 // --- STANDARD APP EVENTS ---
 
-mp.events.add('client:phone:chat:loadChats', (chatsJson) => {
-    if (phoneBrowser) phoneBrowser.execute(`messenger.loadChats('${chatsJson.replace(/'/g, "\\'")}')`);
-});
-
-mp.events.add('client:phone:chat:loadHistory', (targetNumber, msgsJson) => {
-    if (phoneBrowser) phoneBrowser.execute(`messenger.loadHistory('${targetNumber}', '${msgsJson.replace(/'/g, "\\'")}')`);
-});
-
-// Real-time receive
-mp.events.add('client:phone:chat:receive', (sender, content, type, timestamp, msgId) => {
-    if (phoneBrowser) {
-        // Create a temporary object to pass to appendMessage
-        const msgObj = JSON.stringify({
-            sender_number: sender,
-            message: content,
-            created_at: timestamp
-        });
-        
-        phoneBrowser.execute(`
-            if (messenger.activeChatNumber === '${sender}') {
-                messenger.appendMessage(${msgObj});
-            } else {
-                app.showToast('${sender}', 'New Message', '${content}');
-                // Optional: refresh list if they are on the list screen
-                if(!document.getElementById('msg-list-screen').classList.contains('hidden')) {
-                     mp.trigger('client:proxyAction', 'chat:fetchChats');
-                }
-            }
-        `);
-    }
-});
-
-// Real-time sent (Echo back)
-mp.events.add('client:phone:chat:messageSent', (target, content, type, timestamp, msgId) => {
-    if (phoneBrowser) {
-         const msgObj = JSON.stringify({
-            sender_number: 'me', // distinct from target
-            message: content,
-            created_at: timestamp
-        });
-        phoneBrowser.execute(`if(messenger.activeChatNumber === '${target}') messenger.appendMessage(${msgObj});`);
-    }
-});
-
-mp.events.add('client:phone:contacts:load', (contactsJson) => {
-    if (phoneBrowser) phoneBrowser.execute(`messenger.loadContacts('${contactsJson.replace(/'/g, "\\'")}')`);
-});
-
 mp.events.add('client:phone:receiveMail', (sender, title, message) => {
     if(phoneBrowser) phoneBrowser.execute(`app.receiveNotification('${sender}', '${title}', '${message}')`);
 });
@@ -255,36 +207,18 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'readMail': mp.events.callRemote('server:phone:readMail', data); break;
         case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
         case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
+        
         case 'deletePhoto':
             const photoData = JSON.parse(data); 
             mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
             break;
+
         case 'saveSetting':
-            const payload = JSON.parse(data); 
+            const payload = JSON.parse(data); // Expects { key: "is_dnd", val: 1 }
             mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
             break;
-        case 'chat:fetchChats':
-            mp.events.callRemote('server:phone:chat:fetchChats');
-            break; 
-        case 'chat:fetchMessages':
-            mp.events.callRemote('server:phone:chat:fetchMessages', data); 
-            break; 
-        case 'chat:send':
-            const chatData = JSON.parse(data);
-            mp.events.callRemote('server:phone:chat:send', chatData.target, chatData.content);
-            break;
-        case 'contacts:fetch':
-            mp.events.callRemote('server:phone:contacts:fetch');
-            break;
-        case 'contacts:add':
-            const contactData = JSON.parse(data);
-            mp.events.callRemote('server:phone:contacts:add', contactData.name, contactData.number);
-            break;
 
-        default:
-            if (action.startsWith('server:')) break; 
-            mp.events.callRemote('server:phone:vehicleAction', action, data); 
-            break;
+        default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }
 });
 
