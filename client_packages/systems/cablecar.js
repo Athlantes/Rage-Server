@@ -1,6 +1,11 @@
-// client_packages/cablecar/index.js
+// client_packages/systems/cablecar.js
+
+const MODEL_CABIN = "p_cablecar_s";
+const MODEL_DOOR_L = "p_cablecar_s_door_l";
+const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
 // --- CONFIGURATION ---
+const INTERACTION_DIST = 8.0; // Increased distance
 const TRACKS = [
     // TRACK 0: Bottom -> Top
     [
@@ -38,7 +43,6 @@ const TRACKS = [
     ]
 ];
 
-// Pre-calculate track lengths
 const TRACK_LENGTHS = [0, 0];
 TRACKS.forEach((track, idx) => {
     let dist = 0;
@@ -50,99 +54,105 @@ TRACKS.forEach((track, idx) => {
 
 // State
 let currentState = 0; 
-let startTimestamp = 0;
+let startTimestamp = Date.now();
 let stateDuration = 10000;
-let cabins = [
+let showingPrompt = false;
+
+// Local Entities
+const cabins = [
     { id: 0, obj: null, doors: [] },
     { id: 1, obj: null, doors: [] }
 ];
-let showingPrompt = false;
+
+function init() {
+    cabins[0].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[0][0], {
+        dimension: 0,
+        rotation: new mp.Vector3(0, 0, 270)
+    });
+    
+    cabins[1].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[1][0], {
+        dimension: 0,
+        rotation: new mp.Vector3(0, 0, 90)
+    });
+
+    cabins.forEach((c, idx) => createDoorsFor(idx));
+    
+    mp.console.logInfo("[CableCar] Client Init Complete");
+}
+
+function createDoorsFor(index) {
+    const c = cabins[index];
+    const dL = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
+    const dR = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
+    
+    c.doors = [dL, dR];
+    dL.attachTo(c.obj.handle, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
+    dR.attachTo(c.obj.handle, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
+}
 
 // --- SYNC EVENT ---
-mp.events.add("CableCar:Sync", (state, startTime, duration) => {
-    mp.console.logInfo(`[CableCar] Received Sync. State: ${state}, Duration: ${duration}`);
+// Recieves: state, timePassed (how long since state started), duration (total length)
+mp.events.add("CableCar:Sync", (state, timePassed, duration) => {
     currentState = state;
-    startTimestamp = startTime;
+    // Calculate when this state started according to OUR client clock
+    startTimestamp = Date.now() - timePassed;
     stateDuration = duration;
 });
 
 // --- RENDER LOOP ---
 mp.events.add("render", () => {
-    // 1. Find Objects (Run every frame until found, then lightweight check)
-    ensureAssets();
-
-    // 2. Calculate Progress
     const now = Date.now();
     let progress = (now - startTimestamp) / stateDuration;
+    
+    // Clamp progress
     if (progress > 1) progress = 1;
     if (progress < 0) progress = 0;
 
-    // Easing for smoother start/stop
     const easedProgress = -(Math.cos(Math.PI * progress) - 1) / 2;
 
-    // 3. Move Logic
+    // Move Logic
     if (currentState === 0) { // Waiting Start
         updateCabinPos(0, 0.0);
         updateCabinPos(1, 0.0);
+        setDoorState(true); 
     } 
     else if (currentState === 1) { // Moving Forward
         updateCabinPos(0, easedProgress);
         updateCabinPos(1, easedProgress);
+        setDoorState(false); 
     } 
     else if (currentState === 2) { // Waiting End
         updateCabinPos(0, 1.0);
         updateCabinPos(1, 1.0);
+        setDoorState(true); 
     } 
     else if (currentState === 3) { // Moving Backward
         updateCabinPos(0, 1.0 - easedProgress);
         updateCabinPos(1, 1.0 - easedProgress);
+        setDoorState(false); 
     }
 
-    // 4. Attachments & UI
     syncAttachments();
     handleInteraction();
+    drawDebug();
 });
 
-// --- HELPERS ---
-
-function ensureAssets() {
-    // Try to find the SERVER objects
-    mp.objects.forEach(obj => {
-        if (!obj.getVariable) return; // Safety check
-        const id = obj.getVariable('cableCarId');
-        
-        if (id === 0 || id === 1) {
-            if (cabins[id].obj !== obj) {
-                mp.console.logInfo(`[CableCar] Found Cabin ${id} (RemoteID: ${obj.remoteId})`);
-                cabins[id].obj = obj;
-                obj.freezePosition(true); // Stop gravity
-                obj.setAlpha(255);
-                createDoorsFor(id);
-            }
+function drawDebug() {
+    cabins.forEach(c => {
+        if(c.obj) {
+            mp.game.graphics.drawText(`Cabin ${c.id}\nState: ${currentState}`, [c.obj.position.x, c.obj.position.y, c.obj.position.z + 2.0], { 
+                font: 0, 
+                color: [255, 255, 0, 255], 
+                scale: [0.3, 0.3], 
+                outline: true
+            });
         }
     });
 }
 
-function createDoorsFor(index) {
-    const c = cabins[index];
-    if (c.doors.length > 0) return; // Already created
-
-    // Local client-side doors
-    const dL = mp.objects.new(mp.game.joaat("p_cablecar_s_door_l"), c.obj.position, { dimension: 0 });
-    const dR = mp.objects.new(mp.game.joaat("p_cablecar_s_door_r"), c.obj.position, { dimension: 0 });
-    c.doors = [dL, dR];
-    
-    // Attach immediately
-    const doorOpen = (currentState === 0 || currentState === 2);
-    const offset = doorOpen ? 0.95 : 0.0;
-    
-    dL.attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
-    dR.attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
-}
-
 function updateCabinPos(index, progress) {
     const c = cabins[index];
-    if (!c.obj || !mp.objects.exists(c.obj)) return;
+    if (!c.obj) return;
 
     const track = TRACKS[index];
     const totalLen = TRACK_LENGTHS[index];
@@ -155,22 +165,28 @@ function updateCabinPos(index, progress) {
         const segLen = mp.game.system.vdist(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
 
         if (currentDist + segLen >= targetDist) {
-            // Found segment
             const segProg = (targetDist - currentDist) / segLen;
             const newPos = lerpVector(p1, p2, segProg);
             
-            // 1. Move
             c.obj.setCoords(newPos.x, newPos.y, newPos.z, false, false, false, false);
             
-            // 2. Rotate (Face direction of travel)
-            // Calculate heading from p1 to p2
+            // Rotation
             const heading = (Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI) - 90;
             c.obj.setRotation(0, 0, heading, 2, true);
-            
             break;
         }
         currentDist += segLen;
     }
+}
+
+function setDoorState(isOpen) {
+    const offset = isOpen ? 0.95 : 0.0;
+    cabins.forEach(c => {
+        if (c.doors.length === 2) {
+            c.doors[0].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
+            c.doors[1].attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
+        }
+    });
 }
 
 function syncAttachments() {
@@ -178,9 +194,34 @@ function syncAttachments() {
         const cabinId = p.getVariable('attachedCableCar');
         if (cabinId !== undefined && cabinId !== null) {
             const c = cabins[cabinId];
-            if (c && c.obj && mp.objects.exists(c.obj)) {
+            if (c && c.obj) {
                 if (!p.isAttached() || p.getAttachedTo() !== c.obj.handle) {
-                    p.attachTo(c.obj.handle, 0, 0, 0, 0, 0, 0, 0, false, false, false, false, 2, true);
+                    
+                    const randomX = (Math.random() - 0.5) * 0.5; // +/- 0.25
+                    const randomY = (Math.random() - 0.5) * 0.5; // +/- 0.25
+                    
+                    p.attachTo(
+                        c.obj.handle, // Entity to attach to
+                        0,            // Bone Index (0 = Root)
+                        randomX,      // X Offset 
+                        randomY,      // Y Offset
+                        -5.35,         // Z Offset (NEGATIVE to go down)
+                        0, 0, 0,      // Rotation (Rx, Ry, Rz)
+                        false,        // p9
+                        false,        // useSoftPinning
+                        false,        // collision (Keep FALSE to prevent physics explosion)
+                        false,        // isPed
+                        2,            // vertexIndex
+                        true          // fixedRot
+                    );
+                }
+            }
+        } else {
+             // Detach if attached to our cabin but variable is null
+             if (p.isAttached()) {
+                const attachedHandle = p.getAttachedTo();
+                if (attachedHandle === cabins[0].obj.handle || attachedHandle === cabins[1].obj.handle) {
+                    p.detach(true, false);
                 }
             }
         }
@@ -190,18 +231,16 @@ function syncAttachments() {
 function handleInteraction() {
     const localPlayer = mp.players.local;
     let nearCabin = null;
-    
-    // Don't show prompts if already riding
+
     if (localPlayer.getVariable('attachedCableCar') != null) {
         if (showingPrompt) { mp.events.call('hideInteraction'); showingPrompt = false; }
         return;
     }
 
-    // Check distance to moving cabins
     cabins.forEach(c => {
-        if (c.obj && mp.objects.exists(c.obj)) {
+        if (c.obj) {
             const dist = mp.game.system.vdist(localPlayer.position.x, localPlayer.position.y, localPlayer.position.z, c.obj.position.x, c.obj.position.y, c.obj.position.z);
-            if (dist < 4.0) nearCabin = c;
+            if (dist < INTERACTION_DIST) nearCabin = c;
         }
     });
 
@@ -213,11 +252,9 @@ function handleInteraction() {
             showingPrompt = true;
         }
 
-        if (mp.keys.isDown(69)) { // E Key
-             // Debounce
+        if (mp.keys.isDown(69)) { 
              if (global.lastCableInteract && Date.now() - global.lastCableInteract < 1000) return;
              global.lastCableInteract = Date.now();
-             
              mp.events.callRemote("CableCar:RequestEntry", nearCabin.id);
         }
     } else {
@@ -235,3 +272,5 @@ function lerpVector(v1, v2, t) {
         v1.z + (v2.z - v1.z) * t
     );
 }
+
+init();
