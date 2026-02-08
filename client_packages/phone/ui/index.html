@@ -169,8 +169,27 @@
                     <span id="chat-thread-name">John Doe</span>
                 </div>
                 <div id="chat-bubbles" class="scrollable-content chat-container">
+                </div>
+                
+                <div id="chat-attachment-menu" class="attachment-menu hidden">
+                    <div class="attach-item" onclick="app.phoneApp.reqLocationShare()">
+                        <div class="attach-icon color-red"><i class="fas fa-map-marker-alt"></i></div>
+                        <span>Location</span>
                     </div>
+                    <div class="attach-item" onclick="app.phoneApp.reqPhotoShare()">
+                        <div class="attach-icon color-yellow"><i class="fas fa-image"></i></div>
+                        <span>Photo</span>
+                    </div>
+                     <div class="attach-item" onclick="app.phoneApp.reqCamera()">
+                        <div class="attach-icon color-gray"><i class="fas fa-camera"></i></div>
+                        <span>Camera</span>
+                    </div>
+                </div>
+
                 <div class="chat-input-area">
+                    <button class="btn-attach" onclick="app.phoneApp.toggleAttachMenu()">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     <input type="text" id="chat-input-text" placeholder="iMessage">
                     <button onclick="app.phoneApp.sendSMS()"><i class="fas fa-arrow-up"></i></button>
                 </div>
@@ -277,8 +296,7 @@
                                 Set Wallpaper
                             </button>
                         </div>
-                        <div class="custom-wall-hint">Supported links:</div>
-                        <div class="custom-wall-hint">Imgur, Discord, Direct Links</div>
+                        <div class="custom-wall-hint">Supported links: Imgur, Discord, Direct Links</div>
                     </div>
 
                     <div style="height: 40px;"></div> </div>
@@ -286,8 +304,8 @@
 
             <div id="view-gallery" class="view hidden">
                 <div class="app-header">
-                    <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
-                    <span>Gallery</span>
+                    <button class="back-btn" onclick="app.goHome()" id="btn-gallery-back"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gallery-title">Gallery</span>
                 </div>
                 <div id="gallery-grid" class="scrollable-content gallery-grid">
                 </div>
@@ -312,16 +330,10 @@
                     <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
                     <span>QuickEats Driver</span>
                 </div>
-                
                 <div class="app-content" style="padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100%; background: #f0fff4;">
-                    
-                    <div id="qe-status-circle" class="status-circle offline">
-                        <i id="qe-icon" class="fas fa-power-off"></i>
-                    </div>
-                    
+                    <div id="qe-status-circle" class="status-circle offline"><i id="qe-icon" class="fas fa-power-off"></i></div>
                     <h2 id="qe-status-text" style="margin: 20px 0 5px 0; color: #333;">Offline</h2>
                     <p id="qe-subtext" style="color: #666; font-size: 13px; text-align: center;">Go online to start receiving delivery orders.</p>
-
                     <div id="qe-order-card" class="hidden" style="width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 20px;">
                         <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">Current Task</div>
                         <div id="qe-task-name" style="font-size: 16px; font-weight: bold; color: #00b09b; margin-bottom: 5px;">Pickup</div>
@@ -331,9 +343,7 @@
                             <span id="qe-location" style="font-size: 14px; color: #333;">Burger Shot</span>
                         </div>
                     </div>
-
                     <div style="flex: 1;"></div>
-
                     <button id="btn-qe-toggle" onclick="app.toggleQuickEats()" class="btn-qe-action">GO ONLINE</button>
                 </div>
             </div>
@@ -343,17 +353,10 @@
                     <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
                     <span style="color: #32cd32; letter-spacing: 1px;">eScootr</span>
                 </div>
-                
                 <div class="app-content" style="background: #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 20px; height: 100%;">
-                    
                     <div id="escootr-scan-ui" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
-                        <div class="radar-circle">
-                            <i class="fas fa-search-location"></i>
-                            <div class="radar-pulse"></div>
-                        </div>
-                        
+                        <div class="radar-circle"><i class="fas fa-search-location"></i><div class="radar-pulse"></div></div>
                         <div id="escootr-status-msg" style="color: #888; margin-top: 30px; font-size: 14px;">Tap below to find a ride</div>
-                        
                         <div id="escootr-found-info" class="hidden" style="background: #222; padding: 15px; border-radius: 10px; width: 100%; margin-top: 20px; border-left: 3px solid #32cd32;">
                             <div style="color: white; font-weight: bold; margin-bottom: 5px;">Scooter Nearby</div>
                             <div style="color: #888; font-size: 12px; display: flex; justify-content: space-between;">
@@ -361,33 +364,18 @@
                                 <span style="color: #32cd32;"><i class="fas fa-battery-three-quarters"></i> <span id="escootr-found-batt">--</span>%</span>
                             </div>
                         </div>
-
-                        <button id="btn-escootr-main" class="btn-green-glow" onclick="app.scooter.scan()" style="margin-top: 40px;">
-                            SCAN AREA
-                        </button>
+                        <button id="btn-escootr-main" class="btn-green-glow" onclick="app.scooter.scan()" style="margin-top: 40px;">SCAN AREA</button>
                         <div style="margin-top: 15px; font-size: 11px; color: #555;">$5.00 Unlock • $1.00/min</div>
                     </div>
-
                     <div id="escootr-active-ui" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
                         <div style="font-size: 60px; font-weight: 200; color: white;" id="escootr-timer">00:00</div>
                         <div style="color: #32cd32; font-size: 18px; margin-bottom: 30px;">ACTIVE RIDE</div>
-
                         <div class="stat-box" style="background: #222; color: white; width: 100%;">
-                            <div class="stat-row">
-                                <span>Cost</span>
-                                <span id="escootr-cost" style="color: white;">$5.00</span>
-                            </div>
-                            <div class="stat-row">
-                                <span>Battery</span>
-                                <span id="escootr-batt-live" style="color: #32cd32;">--%</span>
-                            </div>
+                            <div class="stat-row"><span>Cost</span><span id="escootr-cost" style="color: white;">$5.00</span></div>
+                            <div class="stat-row"><span>Battery</span><span id="escootr-batt-live" style="color: #32cd32;">--%</span></div>
                         </div>
-
-                        <button class="btn-red-glow" onclick="app.scooter.endRide()" style="margin-top: auto; margin-bottom: 30px;">
-                            END RIDE & LOCK
-                        </button>
+                        <button class="btn-red-glow" onclick="app.scooter.endRide()" style="margin-top: auto; margin-bottom: 30px;">END RIDE & LOCK</button>
                     </div>
-
                 </div>
             </div>
 
@@ -397,87 +385,37 @@
                     <span style="font-weight: 800; font-size: 18px;">Fleeca</span>
                     <div style="width:20px;"></div>
                 </div>
-
                 <div class="app-content bank-content">
-                    
                     <div class="bank-fixed-top">
                         <div class="bank-card">
-                            <div class="card-top">
-                                <div class="card-chip"></div>
-                                <i class="fas fa-wifi card-contactless"></i>
-                            </div>
-                            <div class="card-balance-group">
-                                <span class="currency">$</span>
-                                <span id="bank-balance">0</span>
-                            </div>
-                            <div class="card-details">
-                                <div class="card-holder">PERSONAL ACCOUNT</div>
-                                <div class="card-logo">FLEECA</div>
-                            </div>
+                            <div class="card-top"><div class="card-chip"></div><i class="fas fa-wifi card-contactless"></i></div>
+                            <div class="card-balance-group"><span class="currency">$</span><span id="bank-balance">0</span></div>
+                            <div class="card-details"><div class="card-holder">PERSONAL ACCOUNT</div><div class="card-logo">FLEECA</div></div>
                         </div>
-
                         <div class="bank-actions-grid">
-                            <div class="bank-action-btn" onclick="app.openTransferModal()">
-                                <div class="action-icon-box" style="background: #007aff;">
-                                    <i class="fas fa-paper-plane"></i>
-                                </div>
-                                <span>Transfer</span>
-                            </div>
-                            <div class="bank-action-btn">
-                                <div class="action-icon-box" style="background: #ff9500;">
-                                    <i class="fas fa-file-invoice-dollar"></i>
-                                </div>
-                                <span>Bills</span>
-                            </div>
-                            <div class="bank-action-btn">
-                                <div class="action-icon-box" style="background: #34c759;">
-                                    <i class="fas fa-arrow-down"></i>
-                                </div>
-                                <span>Request</span>
-                            </div>
-                            <div class="bank-action-btn">
-                                <div class="action-icon-box" style="background: #8e8e93;">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </div>
-                                <span>More</span>
-                            </div>
+                            <div class="bank-action-btn" onclick="app.openTransferModal()"><div class="action-icon-box" style="background: #007aff;"><i class="fas fa-paper-plane"></i></div><span>Transfer</span></div>
+                            <div class="bank-action-btn"><div class="action-icon-box" style="background: #ff9500;"><i class="fas fa-file-invoice-dollar"></i></div><span>Bills</span></div>
+                            <div class="bank-action-btn"><div class="action-icon-box" style="background: #34c759;"><i class="fas fa-arrow-down"></i></div><span>Request</span></div>
+                            <div class="bank-action-btn"><div class="action-icon-box" style="background: #8e8e93;"><i class="fas fa-ellipsis-h"></i></div><span>More</span></div>
                         </div>
                     </div>
-
                     <div class="bank-section-title">
                         <span style="font-weight: bold; font-size: 16px;">Recent Activity</span>
                         <span style="font-size: 12px; color: #888;">Last 48h</span>
                     </div>
-
-                    <div id="bank-history" class="bank-history-list">
-                        </div>
+                    <div id="bank-history" class="bank-history-list"></div>
                 </div>
-
                 <div id="transfer-modal" class="modal-overlay hidden">
                     <div class="modal-box">
                         <h3 id="modal-title">Send Money</h3>
-                        
                         <div id="transfer-step-1">
-                            <div class="input-group">
-                                <label>Recipient Name or ID</label>
-                                <input id="bank-target" type="text" placeholder="John Doe">
-                            </div>
-                            <div class="input-group">
-                                <label>Amount</label>
-                                <input id="bank-amount" type="number" placeholder="0">
-                            </div>
-                            <div class="modal-buttons">
-                                <button class="btn-cancel" onclick="app.closeTransferModal()">Cancel</button>
-                                <button class="btn-confirm" onclick="app.verifyTransfer()">Next</button>
-                            </div>
+                            <div class="input-group"><label>Recipient Name or ID</label><input id="bank-target" type="text" placeholder="John Doe"></div>
+                            <div class="input-group"><label>Amount</label><input id="bank-amount" type="number" placeholder="0"></div>
+                            <div class="modal-buttons"><button class="btn-cancel" onclick="app.closeTransferModal()">Cancel</button><button class="btn-confirm" onclick="app.verifyTransfer()">Next</button></div>
                         </div>
-
                         <div id="transfer-step-2" class="hidden">
                             <p style="color: #666; margin-bottom: 20px;">Are you sure you want to send <strong id="confirm-amount">$0</strong> to <strong id="confirm-target">Target</strong>?</p>
-                            <div class="modal-buttons">
-                                <button class="btn-cancel" onclick="app.resetTransferModal()">Back</button>
-                                <button class="btn-confirm" onclick="app.submitTransfer()">Confirm</button>
-                            </div>
+                            <div class="modal-buttons"><button class="btn-cancel" onclick="app.resetTransferModal()">Back</button><button class="btn-confirm" onclick="app.submitTransfer()">Confirm</button></div>
                         </div>
                     </div>
                 </div>
@@ -489,9 +427,7 @@
                         <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
                         <span>Inbox</span>
                     </div>
-                    <button onclick="app.readAllMails()" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer;">
-                        Read All
-                    </button>
+                    <button onclick="app.readAllMails()" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer;">Read All</button>
                 </div>
                 <div id="mail-list" class="scrollable-content"></div>
             </div>
@@ -522,35 +458,18 @@
                     <button class="back-btn" onclick="app.open('vehicles')"><i class="fas fa-chevron-left"></i></button>
                     <span id="detail-title">Vehicle</span>
                 </div>
-                
                 <div class="detail-container">
-                    <div class="car-icon-large">
-                        <i class="fas fa-car"></i>
-                    </div>
+                    <div class="car-icon-large"><i class="fas fa-car"></i></div>
                     <h2 id="detail-model">Model Name</h2>
                     <p id="detail-plate">AAA-111</p>
-
                     <div class="stat-box">
-                        <div class="stat-row">
-                            <span>Status</span>
-                            <span id="detail-status" class="status-tag">In Garage</span>
-                        </div>
-                        <div class="stat-row">
-                            <span>Fuel</span>
-                            <span id="detail-fuel">100%</span>
-                        </div>
+                        <div class="stat-row"><span>Status</span><span id="detail-status" class="status-tag">In Garage</span></div>
+                        <div class="stat-row"><span>Fuel</span><span id="detail-fuel">100%</span></div>
                     </div>
-
                     <div class="action-buttons">
-                        <button id="btn-spawn" class="action-btn btn-green" onclick="app.doVehicleAction('spawn')">
-                            <i class="fas fa-key"></i> Spawn
-                        </button>
-                        <button id="btn-locate" class="action-btn btn-blue" onclick="app.doVehicleAction('locate')">
-                            <i class="fas fa-map-marker-alt"></i> Locate
-                        </button>
-                        <button id="btn-tow" class="action-btn btn-red" onclick="app.doVehicleAction('despawn')">
-                            <i class="fas fa-warehouse"></i> Park (Tow)
-                        </button>
+                        <button id="btn-spawn" class="action-btn btn-green" onclick="app.doVehicleAction('spawn')"><i class="fas fa-key"></i> Spawn</button>
+                        <button id="btn-locate" class="action-btn btn-blue" onclick="app.doVehicleAction('locate')"><i class="fas fa-map-marker-alt"></i> Locate</button>
+                        <button id="btn-tow" class="action-btn btn-red" onclick="app.doVehicleAction('despawn')"><i class="fas fa-warehouse"></i> Park (Tow)</button>
                     </div>
                 </div>
             </div>
@@ -580,7 +499,6 @@
                 <span id="clock-small">12:00</span>
                 <div class="status-icons">
                     <i id="status-dnd" class="fas fa-moon hidden" style="font-size: 11px; margin-right: 4px;"></i>
-                    
                     <i class="fas fa-signal"></i>
                     <i class="fas fa-wifi"></i>
                     <i class="fas fa-battery-full"></i>

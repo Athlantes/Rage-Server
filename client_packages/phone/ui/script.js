@@ -16,6 +16,7 @@ const app = {
     mediaBaseUrl: '',
     photos: [],
     currentPhoto: null,
+    galleryMode: 'view', // 'view' or 'pick'
 
     getRelativeTime: (dateString) => {
         if (!dateString) return 'now';
@@ -36,8 +37,6 @@ const app = {
         app.isLocked = false;
         document.getElementById('view-lock').classList.add('hidden');
         document.getElementById('view-home').classList.remove('hidden');
-        // Optional: Clear lockscreen notifications on unlock
-        // document.getElementById('lock-notification-list').innerHTML = '';
     },
 
     lock: () => {
@@ -85,6 +84,12 @@ const app = {
     
     goHome: () => {
         if(app.isLocked) return;
+        
+        // Reset Gallery Mode when going home
+        app.galleryMode = 'view';
+        const galTitle = document.getElementById('gallery-title');
+        if(galTitle) galTitle.innerText = "Gallery";
+        
         document.querySelectorAll('.view').forEach(el => {
             if(el.id !== 'view-home' && el.id !== 'view-lock') el.classList.add('hidden');
         });
@@ -106,7 +111,7 @@ const app = {
         if(lockContainer) {
             const notif = document.createElement('div');
             notif.className = 'lock-notif-item';
-            notif.setAttribute('data-sender', title); // <--- ADD THIS LINE (Tags the element)
+            notif.setAttribute('data-sender', title); 
 
             notif.innerHTML = `
             <div class="lock-notif-icon" style="background:${config.color}">
@@ -118,37 +123,30 @@ const app = {
             </div>
             `;
             
-            // Interaction: Click notification to unlock and go to app
             notif.onclick = () => {
                 if(app.isLocked) {
                     app.unlock(); 
-                    // Map generic IDs to specific view IDs if needed
                     let targetView = appId;
                     if(appId === 'phone') targetView = 'phone-app';
-                    
                     app.open(targetView);
                 }
             };
 
             lockContainer.prepend(notif);
             
-            // Optional: Limit to last 5 notifications to prevent overflow
             if(lockContainer.children.length > 5) {
                 lockContainer.removeChild(lockContainer.lastChild);
             }
         }
 
-        // 4. Show "Phantom" Toast if phone is closed/hidden
         const phoneShell = document.getElementById('phone-shell');
         const isPhoneHidden = phoneShell.classList.contains('hidden');
         
-        // Only show toast if phone is closed and DND is OFF
         if (isPhoneHidden && !app.settings.data.is_dnd) {
             app.showToast(config, title, message);
         }
     },
 
-    // Internal function to animate the toast
     showToast: (config, title, message) => {
         const shell = document.getElementById('toast-shell');
         const txtSender = document.getElementById('toast-sender');
@@ -157,8 +155,8 @@ const app = {
         
         if(!shell) return;
 
-        txtSender.innerText = config.title; // Use App Name as sender title usually
-        txtMsg.innerText = `${title}: ${message}`; // Combine for preview
+        txtSender.innerText = config.title; 
+        txtMsg.innerText = `${title}: ${message}`; 
 
         if (iconBox) {
             iconBox.innerHTML = `<i class="${config.icon}"></i>`;
@@ -173,14 +171,10 @@ const app = {
         }, 5000);
     },
 
-    // Backwards compatibility wrapper if server calls these directly
     receiveNotification: (sender, title, message, appType = 'mail') => {
-        // Map old appTypes to new IDs
         let appId = 'system';
         if(appType === 'mail') appId = 'mail';
         if(appType === 'phone') appId = 'phone';
-        
-        // For old calls, 'sender' was the title
         app.notify(appId, sender, title || message); 
     },
     
@@ -238,11 +232,8 @@ const app = {
     openMailDetail: (mail) => {
         app.open('mail-detail');
         
-        // --- ADD THIS TO REMOVE NOTIFICATION ---
-        // Finds notifications from this sender and removes them
         const notifs = document.querySelectorAll(`.lock-notif-item[data-sender="${mail.sender}"]`);
         notifs.forEach(el => el.remove());
-        // ---------------------------------------
 
         document.getElementById('mail-detail-sender').innerText = `From: ${mail.sender}`;
         document.getElementById('mail-detail-title').innerText = mail.title;
@@ -254,10 +245,8 @@ const app = {
             const listEl = document.getElementById('mail-item-' + mail.id);
             if (listEl) {
                 listEl.classList.add('read');
-                // listEl.classList.remove('unread'); // Optional depending on your CSS
             }
             
-            // Update badge
             const badge = document.getElementById('badge-mail');
             if (badge && !badge.classList.contains('hidden')) {
                 let count = parseInt(badge.innerText) || 0;
@@ -269,13 +258,10 @@ const app = {
     },
 
     receiveMail: (id, sender, title, message) => {
-        // 1. Show Notification (Toast/Lockscreen)
         app.notify('mail', sender, title);
 
-        // 2. Add to Mail List if it exists in DOM
         const container = document.getElementById('mail-list');
         if (container) {
-            // Construct object matching DB structure
             const mail = { 
                 id: id, 
                 sender: sender, 
@@ -285,13 +271,12 @@ const app = {
                 is_read: 0 
             };
             
-            // Remove "No Mail" text if it's there
             if (container.innerHTML.includes('No Mail')) container.innerHTML = '';
 
             const timeAgo = app.getRelativeTime(mail.created_at);
             const div = document.createElement('div');
             div.id = 'mail-item-' + mail.id;
-            div.className = `mail-item`; // No 'read' class = Unread style
+            div.className = `mail-item`; 
             div.onclick = () => app.openMailDetail(mail);
             
             div.innerHTML = `
@@ -303,10 +288,8 @@ const app = {
                 <div class="mail-msg">${mail.message}</div>
             `;
             
-            // Prepend to top of list
             container.prepend(div);
 
-            // Update Badge Count
             const badge = document.getElementById('badge-mail');
             if(badge) {
                 let count = parseInt(badge.innerText) || 0;
@@ -532,6 +515,52 @@ const app = {
             if (tabName === 'recent') app.phoneApp.renderMessageList();
         },
 
+        // --- ATTACHMENT LOGIC ---
+        toggleAttachMenu: () => {
+            const menu = document.getElementById('chat-attachment-menu');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+            }
+        },
+
+        reqLocationShare: () => {
+            app.phoneApp.toggleAttachMenu();
+            app.openConfirmModal("Share Location", "Share your current location?", () => {
+                const target = app.phoneApp.activeChatNumber;
+                if('mp' in window) mp.trigger('client:proxyAction', 'shareLocation', target);
+                // The server will handle sending the message via sendSMSInternal equivalent
+            });
+        },
+
+        reqPhotoShare: () => {
+             app.phoneApp.toggleAttachMenu();
+             app.galleryMode = 'pick';
+             app.open('gallery');
+             const galTitle = document.getElementById('gallery-title');
+             galTitle.innerText = "Select Photo";
+             const backBtn = document.getElementById('btn-gallery-back');
+             backBtn.onclick = () => {
+                 // Cancel pick
+                 app.galleryMode = 'view';
+                 app.phoneApp.openChat(app.phoneApp.activeChatNumber, app.phoneApp.getContactName(app.phoneApp.activeChatNumber));
+                 galTitle.innerText = "Gallery";
+                 backBtn.onclick = app.goHome; 
+             };
+        },
+
+        reqCamera: () => {
+            app.phoneApp.toggleAttachMenu();
+            if('mp' in window) mp.trigger('client:proxyAction', 'camera', 'open');
+        },
+
+        getContactName: (number) => {
+            const c = app.phoneApp.contacts.find(x => x.number == number);
+            return c ? c.name : number;
+        },
+
+        // --- KEYPAD ---
         pressKey: (key) => { if (app.phoneApp.dialBuffer.length < 12) { app.phoneApp.dialBuffer += key; app.phoneApp.updateDisplay(); } },
         pressDel: () => { app.phoneApp.dialBuffer = app.phoneApp.dialBuffer.slice(0, -1); app.phoneApp.updateDisplay(); },
         updateDisplay: () => { 
@@ -577,12 +606,18 @@ const app = {
                 const contact = app.phoneApp.contacts.find(c => c.number == num);
                 const displayName = contact ? contact.name : num;
                 const hasUnread = thread.some(m => !m.isMine && !m.is_read);
+                
+                // PREVIEW LOGIC
+                let preview = lastMsg.body;
+                if (lastMsg.type === 'location') preview = "📍 Location Shared";
+                else if (lastMsg.type === 'photo') preview = "📷 Photo Sent";
+                
                 const div = document.createElement('div');
                 div.className = 'msg-row';
                 if(hasUnread) div.style.backgroundColor = "#f0f8ff"; 
                 div.onclick = () => app.phoneApp.openChat(num, displayName);
                 const prefix = lastMsg.isMine ? "You: " : "";
-                div.innerHTML = `<div class="msg-header"><span class="msg-sender" style="${hasUnread ? 'font-weight:800; color:#007aff;' : ''}">${displayName} ${hasUnread ? '●' : ''}</span><span class="msg-date">${app.getRelativeTime(lastMsg.time)}</span></div><div class="msg-preview" style="${hasUnread ? 'font-weight:600; color:#000;' : ''}">${prefix}${lastMsg.body}</div>`;
+                div.innerHTML = `<div class="msg-header"><span class="msg-sender" style="${hasUnread ? 'font-weight:800; color:#007aff;' : ''}">${displayName} ${hasUnread ? '●' : ''}</span><span class="msg-date">${app.getRelativeTime(lastMsg.time)}</span></div><div class="msg-preview" style="${hasUnread ? 'font-weight:600; color:#000;' : ''}">${prefix}${preview}</div>`;
                 container.appendChild(div);
             });
         },
@@ -599,16 +634,57 @@ const app = {
             app.phoneApp.messages.forEach(m => { if(m.number == number && !m.isMine && !m.is_read) { m.is_read = 1; changed = true; } });
             if (changed) { app.phoneApp.updateBadge(); if('mp' in window) mp.trigger('client:proxyAction', 'markMessagesRead', number); }
             app.phoneApp.renderChatBubbles();
+            
+            // Hide menu if open
+            document.getElementById('chat-attachment-menu').classList.add('hidden');
         },
 
-        closeChat: () => { app.phoneApp.activeChatNumber = null; document.getElementById('view-chat-thread').classList.add('hidden'); document.getElementById('view-phone-app').classList.remove('hidden'); app.phoneApp.renderMessageList(); },
+        closeChat: () => { 
+            app.phoneApp.activeChatNumber = null; 
+            document.getElementById('view-chat-thread').classList.add('hidden'); 
+            document.getElementById('view-phone-app').classList.remove('hidden'); 
+            app.phoneApp.renderMessageList(); 
+        },
 
         renderChatBubbles: () => {
             const container = document.getElementById('chat-bubbles');
             container.innerHTML = '';
             const thread = app.phoneApp.messages.filter(m => m.number == app.phoneApp.activeChatNumber);
             thread.sort((a,b) => new Date(a.time) - new Date(b.time));
-            thread.forEach(msg => { const div = document.createElement('div'); div.className = `chat-bubble ${msg.isMine ? 'mine' : 'theirs'}`; div.innerText = msg.body; container.appendChild(div); });
+            
+            thread.forEach(msg => { 
+                const div = document.createElement('div'); 
+                const isMine = msg.isMine;
+                div.className = `chat-bubble ${isMine ? 'mine' : 'theirs'}`; 
+
+                if (msg.type === 'location') {
+                    div.classList.add('location-bubble');
+                    div.innerHTML = `
+                        <div class="loc-map-preview"><i class="fas fa-map-marked-alt"></i></div>
+                        <div class="loc-info">
+                            <div class="loc-title">Current Location</div>
+                            <div class="loc-desc">Tap to view route</div>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                         // Send coordinates to client (body contains "x,y")
+                         if('mp' in window) mp.trigger('client:proxyAction', 'setWaypoint', msg.body); 
+                    };
+                } 
+                else if (msg.type === 'photo') {
+                    div.classList.add('photo-bubble');
+                    const fullUrl = app.mediaBaseUrl + msg.body; 
+                    div.innerHTML = `<img src="${fullUrl}" alt="Photo">`;
+                    div.onclick = () => {
+                         app.openPhotoDetail({ image_path: msg.body, created_at: msg.time });
+                    };
+                }
+                else {
+                    div.innerText = msg.body; 
+                }
+                
+                container.appendChild(div); 
+            });
             container.scrollTop = container.scrollHeight;
         },
 
@@ -616,11 +692,50 @@ const app = {
             const input = document.getElementById('chat-input-text');
             const text = input.value.trim();
             if(!text || !app.phoneApp.activeChatNumber) return;
-            app.phoneApp.messages.push({ number: app.phoneApp.activeChatNumber, body: text, isMine: true, is_read: 1, time: new Date().toISOString() });
-            app.phoneApp.renderChatBubbles();
+            
+            app.phoneApp.sendSMSInternal(app.phoneApp.activeChatNumber, text, 'text');
             input.value = '';
-            if('mp' in window) mp.trigger('client:proxyAction', 'sendSMS', JSON.stringify({ number: app.phoneApp.activeChatNumber, body: text }));
+        },
+
+        sendSMSInternal: (number, body, type) => {
+             app.phoneApp.messages.push({ 
+                 number: number, 
+                 body: body, 
+                 type: type, 
+                 isMine: true, 
+                 is_read: 1, 
+                 time: new Date().toISOString() 
+             });
+             app.phoneApp.renderChatBubbles();
+             
+             if('mp' in window) mp.trigger('client:proxyAction', 'sendSMS', JSON.stringify({ number, body, type }));
+        },
+        
+        receiveMessageRaw: (number, body, type) => {
+            app.phoneApp.messages.push({
+                number: number,
+                body: body,
+                type: type || 'text',
+                isMine: false,
+                is_read: 0,
+                time: new Date().toISOString()
+            });
+            
+            if (app.phoneApp.activeChatNumber == number) {
+                app.phoneApp.renderChatBubbles();
+            } else {
+                app.phoneApp.updateBadge();
+                let notifyMsg = body;
+                if(type === 'photo') notifyMsg = "Sent a photo";
+                if(type === 'location') notifyMsg = "Shared location";
+                app.notify('phone', number, notifyMsg);
+            }
         }
+    },
+    
+    // Global wrapper
+    receiveSMS: (senderNumber, body, type) => {
+        app.phoneApp.receiveMessageRaw(senderNumber, body, type);
     },
 
     scooter: {
@@ -711,12 +826,37 @@ const app = {
         if (!grid) return;
         grid.innerHTML = '';
         if (app.photos.length === 0) { grid.innerHTML = '<div style="width:100%; padding:40px; text-align:center; color:#999; grid-column: 1 / -1;">No photos yet</div>'; return; }
+        
         app.photos.forEach(photo => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
-            div.onclick = () => app.openPhotoDetail(photo);
             const fullUrl = app.mediaBaseUrl + photo.image_path;
             div.innerHTML = `<img src="${fullUrl}" loading="lazy">`;
+            
+            div.onclick = () => {
+                if (app.galleryMode === 'pick') {
+                    // --- PICK MODE ---
+                    app.openConfirmModal("Send Photo", "Send this photo?", () => {
+                         const target = app.phoneApp.activeChatNumber;
+                         // Send via proxy
+                         if('mp' in window) mp.trigger('client:proxyAction', 'sharePhoto', JSON.stringify({ target: target, image: photo.image_path }));
+                         
+                         // Return to chat
+                         app.galleryMode = 'view';
+                         app.phoneApp.openChat(target, app.phoneApp.getContactName(target));
+                         document.getElementById('gallery-title').innerText = "Gallery";
+                         
+                         // Reset back button
+                         document.getElementById('btn-gallery-back').onclick = app.goHome;
+
+                         // Hide menu
+                         document.getElementById('chat-attachment-menu').classList.add('hidden');
+                    });
+                } else {
+                    // --- VIEW MODE ---
+                    app.openPhotoDetail(photo);
+                }
+            };
             grid.appendChild(div);
         });
     },
@@ -741,6 +881,10 @@ const app = {
         const yesBtn = document.getElementById('btn-confirm-yes');
         const newBtn = yesBtn.cloneNode(true);
         yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+        newBtn.innerText = "Confirm"; // Default text
+        newBtn.style.background = "#007aff";
+        if(title.includes("Delete")) newBtn.style.background = "#ff3b30";
+        
         newBtn.addEventListener('click', () => { if (app.pendingAction) app.pendingAction(); app.closeConfirmModal(); });
     },
 
@@ -837,7 +981,6 @@ const app = {
         setWallpaperUI: (source) => {
             let finalUrl = source.startsWith('http') ? `url('${source}')` : `url('package://phone/ui/images/wallpapers/${source}')`;
             
-            // Apply to Main Screen
             const screen = document.querySelector('.screen-content');
             if(screen) {
                 screen.style.backgroundImage = finalUrl;
@@ -845,7 +988,6 @@ const app = {
                 screen.style.backgroundPosition = 'center';
             }
 
-            // Apply to Phantom Toast Screen (Fix for background visibility)
             const toastScreen = document.querySelector('.toast-screen');
             if(toastScreen) {
                 toastScreen.style.backgroundImage = finalUrl;

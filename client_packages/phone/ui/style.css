@@ -2,16 +2,16 @@
 
 ::-webkit-scrollbar {
     width: 0px;
-    background: transparent; /* Optional: just make scrollbar invisible */
+    background: transparent;
 }
 
 .scrollable-content {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 * {
-    box-sizing: border-box; /* Fixes sizing issues */
+    box-sizing: border-box; 
 }
 
 body {
@@ -26,22 +26,22 @@ body {
 
 .hidden { display: none !important; }
 
-/* PHONE SHELL (The Physical Device) */
+/* PHONE SHELL */
 #phone-shell {
     position: absolute;
     bottom: 30px;
     right: 30px;
     width: 320px;
     height: 640px;
-    background: #000000; /* Black Bezel */
+    background: #000000;
     border-radius: 45px;
-    padding: 12px; /* This creates the bezel thickness */
+    padding: 12px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
     z-index: 100;
 }
 
-/* SCREEN (The Lit Up Part) */
+/* SCREEN */
 .screen-content {
     width: 100%;
     height: 100%;
@@ -49,13 +49,13 @@ body {
     position: relative;
     overflow: hidden;
     color: white;
-    z-index: 101; /* Ensure screen is above the shell background */
+    z-index: 101; 
 }
 
 /* --- LOCK SCREEN --- */
 #view-lock {
     z-index: 100; 
-    background: rgba(0,0,0,0.1); /* Very slight tint */
+    background: rgba(0,0,0,0.1); 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -84,7 +84,7 @@ body {
 
 #lock-notification-list {
     position: absolute;
-    top: 180px; /* Moved down slightly to not overlap clock */
+    top: 180px; 
     left: 0;
     width: 100%;
     max-height: 350px; 
@@ -93,13 +93,13 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 150; /* Higher z-index to sit above wallpaper/overlays */
-    pointer-events: auto; /* Ensure clicks register */
+    z-index: 150; 
+    pointer-events: auto; 
 }
 #lock-notification-list::-webkit-scrollbar { display: none; }
 
 .lock-notif-item {
-    background: rgba(255, 255, 255, 0.95); /* More opaque */
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(15px);
     border-radius: 12px;
     padding: 12px;
@@ -239,16 +239,16 @@ body {
 /* Mail App */
 
 #mail-list {
-    background: #f2f2f7; /* Light gray background for the list */
+    background: #f2f2f7; 
     padding: 10px;
 }
 
 .mail-item {
     background: white;
-    margin-bottom: 8px; /* Space between mails */
+    margin-bottom: 8px; 
     padding: 15px;
-    border-radius: 12px; /* Rounded corners for each mail */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Subtle shadow */
+    border-radius: 12px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
     cursor: pointer;
     transition: transform 0.1s, background 0.2s;
     border: 1px solid transparent;
@@ -280,12 +280,12 @@ body {
 
 .mail-item.read {
     background: #ffffff;
-    opacity: 0.7; /* Make read mails look "faded" */
+    opacity: 0.7; 
 }
 
 .mail-item.read .mail-sender, 
 .mail-item.read .mail-title {
-    color: #8e8e93; /* iOS Gray */
+    color: #8e8e93; 
     font-weight: 500;
 }
 
@@ -294,12 +294,10 @@ body {
     background: #fafafa;
 }
 
-/* --- PHONE APP SUPER STYLES --- */
+/* --- PHONE APP --- */
 
-/* Tabs */
 .phone-tab-bar {
     position: absolute;
-    /* Lifted up to avoid the Home Bar (20px + padding) */
     bottom: 20px; 
     left: 0; 
     width: 100%;
@@ -310,7 +308,7 @@ body {
     display: flex;
     justify-content: space-around;
     padding-bottom: 5px; 
-    z-index: 170; /* Ensure it's above other content but below status bar if needed */
+    z-index: 170; 
 }
 
 .tab-item {
@@ -332,22 +330,22 @@ body {
 .phone-tab-content {
     position: absolute;
     top: 0; left: 0; right: 0; 
-    bottom: 80px; /* Increased bottom spacing so content doesn't hide behind the raised tab bar */
+    bottom: 80px; 
     display: flex;
     flex-direction: column;
     background: white;
 }
 .phone-tab-content.hidden { display: none; }
 
-/* Keypad Tab - Centered & Smaller */
+/* Keypad */
 .keypad-display {
-    height: 20%; /* Reduced height slightly */
+    height: 20%; 
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
     padding-bottom: 15px;
-    margin-top: 40px; /* Push down from status bar */
+    margin-top: 40px; 
 }
 .keypad-input { font-size: 30px; font-weight: 400; color: black; letter-spacing: 2px; }
 .keypad-sub { font-size: 13px; color: #007aff; margin-top: 5px; font-weight: 600; cursor: pointer; }
@@ -355,17 +353,15 @@ body {
 .keypad-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    /* Smaller gap and centered width */
     gap: 12px 20px; 
     width: 75%; 
-    margin: 0 auto; /* Center horizontally */
+    margin: 0 auto; 
     justify-items: center;
     align-content: center;
-    flex: 1; /* Take up remaining space to center vertically */
+    flex: 1; 
 }
 
 .key-btn {
-    /* Smaller buttons (was 65px) */
     width: 55px; height: 55px;
     background: #e5e5ea;
     border-radius: 50%;
@@ -383,7 +379,7 @@ body {
 .key-btn span { font-size: 8px; font-weight: 700; margin-top: -2px; letter-spacing: 1px; color: #333; }
 
 .keypad-actions {
-    margin-bottom: 20px; /* Space from tab bar */
+    margin-bottom: 20px; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -392,7 +388,7 @@ body {
     width: 100%;
 }
 .btn-call {
-    width: 60px; height: 60px; /* Slightly smaller call button */
+    width: 60px; height: 60px;
     border-radius: 50%;
     background: #34c759;
     color: white;
@@ -406,7 +402,7 @@ body {
 
 .btn-del {
     position: absolute;
-    right: 50px; /* Position relative to the container */
+    right: 50px; 
     background: none; border: none;
     color: #d1d1d6;
     font-size: 20px;
@@ -478,7 +474,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-bottom: 60px; /* Space for input */
+    padding-bottom: 60px; 
 }
 .chat-bubble {
     max-width: 75%;
@@ -520,7 +516,122 @@ body {
     font-size: 14px;
 }
 
-/* --- SETTINGS APP STYLES --- */
+/* --- ATTACHMENT MENU & SPECIAL BUBBLES --- */
+
+.btn-attach {
+    background: #e5e5ea !important; /* Overwrite blue default */
+    color: #007aff !important;
+    border: none;
+    border-radius: 50%;
+    width: 32px !important;
+    height: 32px !important;
+    margin-right: 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.btn-attach:active { transform: scale(0.9); background: #d1d1d6 !important; }
+
+.attachment-menu {
+    position: absolute;
+    bottom: 60px; /* Above input bar */
+    left: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    padding: 15px 20px;
+    display: flex;
+    gap: 20px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    z-index: 200;
+    animation: popUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popUp {
+    from { transform: scale(0.8) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.attach-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.attach-item:active { opacity: 0.7; }
+
+.attach-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.attach-item span {
+    font-size: 11px;
+    color: #666;
+    font-weight: 500;
+}
+
+.color-red { background: linear-gradient(135deg, #ff3b30, #ff9500); }
+.color-yellow { background: linear-gradient(135deg, #ffcc00, #f0a500); }
+.color-gray { background: linear-gradient(135deg, #8e8e93, #636366); }
+
+/* SPECIAL BUBBLES */
+.chat-bubble.location-bubble {
+    background: #f9f9f9;
+    border: 1px solid #e5e5ea;
+    padding: 0;
+    overflow: hidden;
+    width: 200px;
+    cursor: pointer;
+}
+.chat-bubble.location-bubble.mine { border-color: #0062cc; }
+
+.loc-map-preview {
+    height: 90px;
+    background: #e5e5ea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff3b30;
+    font-size: 32px;
+    background-image: radial-gradient(#d1d1d6 1px, transparent 1px);
+    background-size: 10px 10px;
+}
+
+.loc-info {
+    padding: 10px;
+    background: white;
+}
+.loc-title { font-weight: 700; font-size: 13px; color: #000; }
+.loc-desc { font-size: 11px; color: #888; margin-top: 2px; }
+
+.chat-bubble.photo-bubble {
+    padding: 2px;
+    background: transparent;
+    max-width: 70%;
+}
+.chat-bubble.photo-bubble img {
+    border-radius: 14px;
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* --- SETTINGS APP --- */
 .settings-group {
     background: white;
     margin-bottom: 25px;
@@ -637,12 +748,12 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* Grid Layout */
 .wallpaper-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 Columns for better visibility */
+    grid-template-columns: repeat(2, 1fr); 
     gap: 15px;
     padding: 0 20px 20px 20px;
 }
 
-/* Individual Wallpaper Card */
+/* Wallpaper Card */
 .wallpaper-item {
     position: relative;
     width: 100%;
@@ -658,29 +769,21 @@ input:checked + .slider:before { transform: translateX(20px); }
     overflow: hidden;
 }
 
-/* Hover Effect */
 .wallpaper-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 15px rgba(0,0,0,0.15);
 }
 
-/* Active / Click Effect */
 .wallpaper-item:active {
     transform: scale(0.96);
 }
 
-/* Selected State */
 .wallpaper-item.selected {
-    /* REMOVED: border-color: #007aff; */
-    /* REMOVED: box-shadow ring */
-    
-    /* Optional: Add a subtle shadow glow instead of a solid border */
     box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3);
 }
 
-/* Ensure the Checkmark Badge is still visible */
 .wallpaper-item.selected::after {
-    content: '\f00c'; /* FontAwesome Check */
+    content: '\f00c'; 
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
     position: absolute;
@@ -700,7 +803,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 /* --- CUSTOM WALLPAPER CARD --- */
-
 .custom-wall-card {
     background: white;
     margin: 0 20px;
@@ -777,56 +879,30 @@ input:checked + .slider:before { transform: translateX(20px); }
     text-align: center;
 }
 
-/* Animation for Checkmark */
 @keyframes popIn {
     0% { transform: scale(0); opacity: 0; }
     80% { transform: scale(1.2); opacity: 1; }
     100% { transform: scale(1); }
 }
 
-.btn-apply-custom {
-    width: 100%;
-    background: #007aff;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-apply-custom:active { opacity: 0.8; }
-
-/* Applied to Screen Content */
 .screen-content {
-    width: 100%;
-    height: 100%;
-    background-color: #222; /* Fallback color */
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    border-radius: 35px;
-    position: relative;
-    overflow: hidden;
-    color: white;
-    z-index: 101;
     transition: background-image 0.3s ease-in-out;
 }
 
 /* --- GALLERY APP --- */
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 images per row */
+    grid-template-columns: repeat(3, 1fr); 
     gap: 2px;
     padding: 2px;
     align-content: start;
-    overflow-y: auto; /* Allow scrolling inside the grid */
+    overflow-y: auto; 
 }
 
 .gallery-item {
     position: relative;
     width: 100%;
-    padding-bottom: 100%; /* TRICK: This makes the height equal to the width (Square) */
+    padding-bottom: 100%; 
     background: #eee;
     overflow: hidden;
     cursor: pointer;
@@ -838,7 +914,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* CRITICAL: This crops the image instead of squashing it */
+    object-fit: cover; 
     transition: transform 0.2s;
 }
 
@@ -867,10 +943,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 .photo-full-container img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain; /* Shows full image without cropping */
+    object-fit: contain; 
 }
 
-/* QuickEats App Styles */
+/* QuickEats App */
 .status-circle {
     width: 100px;
     height: 100px;
@@ -913,7 +989,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 .btn-qe-action.active {
-    background: #ff3b30; /* Red for 'Stop' */
+    background: #ff3b30; 
 }
 
 @keyframes pulse-green {
@@ -922,7 +998,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     100% { box-shadow: 0 0 0 0 rgba(150, 201, 61, 0); }
 }
 
-/* eScootr Styles */
+/* eScootr */
 .radar-circle {
     width: 120px; height: 120px;
     border-radius: 50%;
@@ -965,9 +1041,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 /* Banking App */
-
 .bank-content {
-    /* Ocupă tot spațiul rămas sub header */
     flex: 1; 
     display: flex;
     flex-direction: column;
@@ -977,11 +1051,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 .bank-fixed-top {
-    padding: 20px 20px 10px 20px; /* Padding-ul mutat aici */
-    flex-shrink: 0; /* Această zonă nu se micșorează */
+    padding: 20px 20px 10px 20px; 
+    flex-shrink: 0; 
 }
 
-/* Card Styling */
 .bank-card {
     background: linear-gradient(135deg, #1e1e1e 0%, #3a3a3a 100%);
     border-radius: 16px;
@@ -1004,7 +1077,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     flex-shrink: 0;
 }
 
-/* Abstract circles on card */
 .bank-card::before {
     content: '';
     position: absolute;
@@ -1030,7 +1102,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .card-holder { font-size: 10px; opacity: 0.6; letter-spacing: 2px; }
 .card-logo { font-weight: bold; font-style: italic; letter-spacing: 1px; }
 
-/* Action Buttons */
 .bank-actions-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1054,12 +1125,11 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .bank-action-btn span { font-size: 11px; color: #555; font-weight: 500; }
 
-/* History List */
 .bank-history-list {
     flex: 1;
     overflow-y: auto;
-    padding: 0 20px 20px 20px; /* Padding normal */
-    margin-bottom: 20px; /* Ridică tot containerul listei cu 30px mai sus de baza telefonului */
+    padding: 0 20px 20px 20px; 
+    margin-bottom: 20px; 
     
     scrollbar-width: none; 
 }
@@ -1079,6 +1149,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     gap: 4px;
 }
 
+/* Modals */
 .modal-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1128,7 +1199,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .veh-status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
 .status-active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
 
-/* Details */
 .detail-container { padding: 20px; display: flex; flex-direction: column; align-items: center; }
 .car-icon-large { width: 80px; height: 80px; background: #eef2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; color: #333; margin-bottom: 15px; }
 #detail-model { margin: 0; font-size: 22px; text-transform: capitalize; }
@@ -1144,34 +1214,26 @@ input:checked + .slider:before { transform: translateX(20px); }
 .btn-red { background: #e74c3c; }
 .btn-disabled { background: #ccc; pointer-events: none; opacity: 0.5; }
 
-/* Animations */
 @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
 
-/* --- PHANTOM PHONE NOTIFICATION --- */
+/* PHANTOM TOAST */
 #toast-shell {
     position: absolute;
     bottom: -25px; 
     right: 40px;
-    width: 320px; /* Slightly wider for better spacing */
-    height: 170px; /* Taller to fit content comfortably */
-    
-    /* THE PHONE FRAME (Bezel) */
+    width: 320px; 
+    height: 170px; 
     background: #000000; 
-    border-radius: 45px 45px 25px 25px; /* Round top corners, softer bottom corners */
-    padding: 12px; /* This creates the Thickness of the black bezel */
-    
-    /* Fix for "Strange Frame" - ensure corners are cut */
+    border-radius: 45px 45px 25px 25px; 
+    padding: 12px; 
     overflow: hidden; 
     box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-    
-    /* Animation */
     z-index: 90; 
     transform: translateY(150%);
     transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-/* Slide up when active */
 #toast-shell.active {
     transform: translateY(0);
 }
@@ -1179,15 +1241,12 @@ input:checked + .slider:before { transform: translateX(20px); }
 .toast-card {
     display: flex;
     align-items: flex-start;
-    
-    /* Glassmorphism Effect */
     background: rgba(255, 255, 255, 0.85); 
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 14px;
     padding: 12px;
-    
-    color: #000; /* Dark text for contrast against light glass */
+    color: #000; 
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     gap: 12px; 
 }
@@ -1203,49 +1262,39 @@ input:checked + .slider:before { transform: translateX(20px); }
     background-color: #222; 
 }
 
-/* 1. STATUS BAR (Fixed Height) */
 .toast-screen .status-bar {
-    height: 30px; /* Reserve top 30px for clock/wifi */
+    height: 30px; 
     width: 100%;
-    padding: 0 15px; /* Side spacing for clock */
+    padding: 0 15px; 
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 11px;
     font-weight: 600;
     color: white;
-    z-index: 2; /* On top of content */
-    margin-top: 2px; /* Slight nudge from top bezel */
+    z-index: 2; 
+    margin-top: 2px; 
 }
 
 #toast-content-area {
     flex: 1; 
-    /* This moves the notification down (Top Padding) */
     padding: 45px 15px 0 15px; 
-    
     display: flex;
     flex-direction: column;
-    align-items: stretch; /* Make the card stretch to fill width */
-    
-    /* REMOVED: Border, Gap, Color (Moved to .toast-card) */
+    align-items: stretch; 
 }
 
-/* Icon Box */
 .toast-icon-box {
-    /* Smaller size (30px instead of 42px) */
     width: 30px;
     height: 30px;
-    
-    /* Apple Blue Background */
     background: #007aff; 
-    border-radius: 6px; /* Squarer corners */
-    
+    border-radius: 6px; 
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px; /* Smaller icon size */
+    font-size: 14px; 
     flex-shrink: 0; 
-    margin-top: 0; /* Reset alignment */
+    margin-top: 0; 
 }
 
 .toast-text-group {
@@ -1254,10 +1303,8 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* Removed min-height constraint */
 }
 
-/* Headers */
 .toast-header {
     display: flex;
     justify-content: space-between;
@@ -1267,9 +1314,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 #toast-sender { color: #000; }
-
 .toast-time { color: #666; }
-
 #toast-message { color: #333; }
 
 @keyframes fadeIn {

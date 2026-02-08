@@ -112,20 +112,21 @@ mp.events.add('server:phone:open', async (player) => {
             [userId]
         );
 
+        // MODIFIED: Select 'type' column
         const [messagesRaw] = await db.query(
-            "SELECT sender_number, receiver_number, message, created_at, is_read FROM phone_messages WHERE sender_number = ? OR receiver_number = ? ORDER BY created_at ASC",
+            "SELECT sender_number, receiver_number, message, type, created_at, is_read FROM phone_messages WHERE sender_number = ? OR receiver_number = ? ORDER BY created_at ASC",
             [myNumber, myNumber]
         );
 
         const messages = messagesRaw.map(msg => ({
             number: (msg.sender_number === myNumber) ? msg.receiver_number : msg.sender_number, 
             body: msg.message,
+            type: msg.type || 'text', // Default to text
             isMine: (msg.sender_number === myNumber),
             is_read: Number(msg.is_read),
             time: msg.created_at
         }));
 
-        // 6. Send everything to client
         player.call('client:phone:initialize', [
             JSON.stringify(mails), 
             JSON.stringify(photos), 
@@ -135,7 +136,6 @@ mp.events.add('server:phone:open', async (player) => {
             JSON.stringify(messages)
         ]);
         
-        // 7. Load Vehicles
         const cars = await vehicleManager.getPlayerVehicles(userId);
         const processedCars = cars.map(c => {
             const activeVeh = vehicleManager.findActiveVehicle(c.id);
@@ -156,7 +156,6 @@ mp.events.add('server:phone:markMessagesRead', async (player, targetNumber) => {
         const settings = await getPhoneSettings(player.data.dbId);
         const myNumber = settings.phone_number;
 
-        // Mark all messages FROM this contact TO me as read
         await db.query(
             "UPDATE phone_messages SET is_read = 1 WHERE sender_number = ? AND receiver_number = ?",
             [targetNumber, myNumber]
@@ -171,7 +170,6 @@ mp.events.add('server:phone:markMessagesRead', async (player, targetNumber) => {
 mp.events.add('server:phone:addContact', async (player, name, number) => {
     if (!player.logged) return;
     try {
-        // Updated INSERT for phone_contacts
         await db.query("INSERT INTO phone_contacts (owner_id, contact_name, contact_number) VALUES (?, ?, ?)", 
             [player.data.dbId, name, number]);
     } catch (err) {
@@ -181,16 +179,13 @@ mp.events.add('server:phone:addContact', async (player, name, number) => {
 
 mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) => {
     try {
-        // 1. Insert and get Result to have the ID
         const [result] = await db.query(
             "INSERT INTO player_mails (user_id, sender, title, message, created_at, is_read) VALUES (?, ?, ?, ?, NOW(), 0)",
             [targetId, sender, title, message]
         );
 
-        // 2. Send Notification with ID
         const targetPlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === targetId);
         if (targetPlayer) {
-            // PASS THE ID (result.insertId) so the client can reference it
             targetPlayer.call('client:phone:receiveMail', [result.insertId, sender, title, message]);
         }
     } catch (err) {
@@ -198,20 +193,19 @@ mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) 
     }
 });
 
-mp.events.add('server:phone:sendSMS', async (player, targetNumber, body) => {
+// MODIFIED: Accept 'type' param
+mp.events.add('server:phone:sendSMS', async (player, targetNumber, body, type = 'text') => {
     if (!player.logged) return;
     try {
         const settings = await getPhoneSettings(player.data.dbId);
         const myNumber = settings.phone_number;
 
-        // 1. Save to DB (Updated INSERT for phone_messages)
+        // Save to DB with TYPE
         await db.query(
-            "INSERT INTO phone_messages (sender_number, receiver_number, message) VALUES (?, ?, ?)",
-            [myNumber, targetNumber, body]
+            "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
+            [myNumber, targetNumber, body, type]
         );
 
-        // 2. Find target player online
-        // Look up who owns the 'targetNumber' in 'player_phone'
         const [rows] = await db.query("SELECT user_id FROM player_phone WHERE phone_number = ?", [targetNumber]);
         
         if (rows.length > 0) {
@@ -219,8 +213,8 @@ mp.events.add('server:phone:sendSMS', async (player, targetNumber, body) => {
             const targetPlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === targetUserId);
 
             if (targetPlayer) {
-                // Send event to receiver
-                targetPlayer.call('client:phone:receiveSMS', [myNumber, body]);
+                // Pass TYPE to receiver
+                targetPlayer.call('client:phone:receiveSMS', [myNumber, body, type]);
             }
         }
     } catch (err) {
@@ -229,11 +223,10 @@ mp.events.add('server:phone:sendSMS', async (player, targetNumber, body) => {
 });
 
 mp.events.add('server:phone:startCall', (player, targetNumber) => {
-    // Placeholder for future VoIP implementation
     player.call('showNotification', ['Phone', 'Calling functionality coming soon...']);
 });
 
-// --- EXISTING HANDLERS (Mail, Vehicles, etc) ---
+// --- EXISTING HANDLERS ---
 
 mp.events.add('server:phone:readAllMails', async (player) => {
     if (!player.logged) return;
