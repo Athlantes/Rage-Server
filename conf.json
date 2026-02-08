@@ -4,6 +4,8 @@
 	"language" : "ro",
 	"gamemode" : "RPG-RP", 
 	"stream-distance" : 300.0,
+	"voice-chat": true,
+	"voice-chat-sample-rate": 48000,
 	"announce" : true,
 	"csharp" : "disabled",
 	"port": 22005

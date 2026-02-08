@@ -1,13 +1,13 @@
 require('./auth/index.js');
 require('./chat/index.js');
 require('./ui/spawn/index.js');
-
+require('./core/voice.js');
 
 require('./camera.js');
 
 require('./core/cayo/heistisland.js');
 // 1. Core Utilities & Managers
-require('./core/pauseMenu.js');
+require('./core/playerMenu.js');
 require('./core/disableDefaults.js');
 require('./core/interaction.js');
 require('./core/keys.js');

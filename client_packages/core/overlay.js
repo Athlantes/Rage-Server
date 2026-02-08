@@ -24,6 +24,12 @@ if (mp.players.local) {
     createOverlay();
 }
 
+mp.events.add('client:ui:toggleMic', (state) => {
+    if (overlayBrowser) {
+        overlayBrowser.execute(`toggleMic(${state});`);
+    }
+});
+
 // --- 2. SPEEDOMETER & HUD LOOP ---
 mp.events.add('render', () => {
     if (!overlayBrowser) return;

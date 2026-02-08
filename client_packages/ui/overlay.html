@@ -24,6 +24,35 @@
             width: 100vw; height: 100vh;
         }
 
+        /* --- MIC STATUS --- */
+        .mic-status {
+            position: fixed; 
+            bottom: 40px; 
+            left: 330px; /* Positioned to the right of the standard Minimap */
+            color: rgba(255, 255, 255, 0.4); /* Dimmed by default */
+            font-size: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease-in-out;
+        }
+
+        /* Active State (Talking) */
+        .mic-status.active {
+            color: #fff;
+            background: var(--success); /* Green background */
+            box-shadow: 0 0 10px var(--success);
+            transform: scale(1.1);
+        }
+
+        /* Optional: Radio State (If you want to add this later) */
+        .mic-status.radio {
+            background: var(--primary); /* Blue for radio */
+            box-shadow: 0 0 10px var(--primary);
+            color: #fff;
+        }
+
         /* --- TOP RIGHT: MONEY & INFO --- */
         .hud-container {
             position: fixed; top: 30px; right: 35px;
@@ -219,6 +248,10 @@
         </div>
     </div>
 
+    <div class="mic-status" id="mic-icon">
+        <i class="fas fa-microphone"></i>
+    </div>
+
     <div class="speedo-container" id="speedo">
         <div class="speed-val" id="speed">0</div>
         <div class="speed-unit">KM/H</div>
@@ -268,6 +301,16 @@
 
 
     <script>
+
+        function toggleMic(isActive) {
+            const el = document.getElementById('mic-icon');
+            if (isActive) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        }
+        
         // --- HUD STATS ---
         function updateInfoHud(name, money, bank, dateStr) {
             document.getElementById('hud-name').innerText = name;
