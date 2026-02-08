@@ -2,7 +2,6 @@ require('./auth/index.js');
 require('./chat/index.js');
 require('./ui/spawn/index.js');
 require('./core/voice.js');
-
 require('./camera.js');
 
 require('./core/cayo/heistisland.js');
@@ -27,7 +26,6 @@ require('./systems/dumpster.js');
 require('./systems/returo.js');
 require('./systems/atm.js');
 require('./systems/photoHunt');
-require('./systems/cablecar.js');
 
 // 4. Jobs
 require('./jobs/manager.js');
