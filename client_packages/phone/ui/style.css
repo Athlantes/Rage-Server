@@ -590,15 +590,24 @@ body {
 
 /* SPECIAL BUBBLES */
 .chat-bubble.location-bubble {
-    background: #f9f9f9;
-    border: 1px solid #e5e5ea;
-    padding: 0;
-    overflow: hidden;
-    width: 200px;
+    width: auto !important;
+    padding: 10px 18px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
+    background: #f2f2f7; /* Default gray */
+    color: #000;
+    border: 1px solid #d1d1d6;
+    font-weight: 500;
 }
-.chat-bubble.location-bubble.mine { border-color: #0062cc; }
 
+/* Color for my sent location */
+.chat-bubble.location-bubble.mine { 
+    background: #007aff;
+    color: white;
+    border: none;
+}
 .loc-map-preview {
     height: 90px;
     background: #e5e5ea;
@@ -607,22 +616,28 @@ body {
     justify-content: center;
     color: #ff3b30;
     font-size: 32px;
+    /* Little grid pattern to look like a map */
     background-image: radial-gradient(#d1d1d6 1px, transparent 1px);
     background-size: 10px 10px;
 }
 
-.loc-info {
-    padding: 10px;
-    background: white;
+.chat-bubble.location-bubble i {
+    font-size: 16px;
+    /* Pin color red when received, white when sent */
+    color: #ff3b30; 
 }
-.loc-title { font-weight: 700; font-size: 13px; color: #000; }
-.loc-desc { font-size: 11px; color: #888; margin-top: 2px; }
+
+.chat-bubble.location-bubble.mine i {
+    color: white;
+}
 
 .chat-bubble.photo-bubble {
-    padding: 2px;
+    padding: 4px;
     background: transparent;
     max-width: 70%;
+    border: none;
 }
+
 .chat-bubble.photo-bubble img {
     border-radius: 14px;
     width: 100%;

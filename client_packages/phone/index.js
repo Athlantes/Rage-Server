@@ -7,6 +7,10 @@ let isPhoneOpen = false;
 let scooterBlip = null;
 let scooterMarker = null;
 
+// --- SHARED LOCATION VARIABLES ---
+let locationBlip = null;
+let locationColshape = null; 
+
 mp.events.add('playerReady', () => {
     if (!phoneBrowser) {
         phoneBrowser = mp.browsers.new('package://phone/ui/index.html');
@@ -42,7 +46,8 @@ mp.keys.bind(0x28, true, () => { // Down Arrow
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     if (isPhoneOpen) {
         closePhone();
-        mp.game.graphics.notify("~y~Phone closed for safety.");
+        // CUSTOM NOTIFICATION: Phone Closed
+        mp.events.call('showNotification', 'System', 'Phone closed for safety.');
     }
     
     if (scooterBlip || scooterMarker) {
@@ -53,6 +58,18 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
 function clearScooterMarkers() {
     if (scooterBlip) { scooterBlip.destroy(); scooterBlip = null; }
     if (scooterMarker) { scooterMarker.destroy(); scooterMarker = null; }
+}
+
+// --- CLEAR FUNCTION ---
+function clearLocationBlip() {
+    if (locationBlip) {
+        if(mp.blips.exists(locationBlip)) locationBlip.destroy();
+        locationBlip = null;
+    }
+    if (locationColshape) {
+        if(mp.colshapes.exists(locationColshape)) locationColshape.destroy();
+        locationColshape = null;
+    }
 }
 
 function closePhone() {
@@ -66,17 +83,14 @@ function closePhone() {
 
 mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
     if(phoneBrowser) {
-        // Escape strings to prevent JS errors
         const safeBody = message.replace(/'/g, "\\'");
         const safeTitle = title.replace(/'/g, "\\'");
         const safeSender = sender.replace(/'/g, "\\'");
         
-        // Call a dedicated function in UI
         phoneBrowser.execute(`
             if(typeof app.receiveMail === 'function') {
                 app.receiveMail(${id}, '${safeSender}', '${safeTitle}', '${safeBody}');
             } else {
-                // Fallback for older UI versions
                 app.receiveNotification('${safeSender}', '${safeTitle}', '${safeBody}');
             }
         `);
@@ -97,38 +111,37 @@ mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
     if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
 });
 
-// --- NEW: RECEIVE SMS EVENT (Fixed Notification) ---
-mp.events.add('client:phone:receiveSMS', (number, body) => {
+// --- RECEIVE SMS EVENT ---
+mp.events.add('client:phone:receiveSMS', (number, body, type) => {
     if(phoneBrowser) {
         const msgObj = { 
             number: number, 
-            body: body, 
+            body: body,
+            type: type || 'text',
             isMine: false, 
             is_read: 0, 
             time: new Date().toISOString() 
         };
         
-        // We pass the global 'isPhoneOpen' variable into the browser check
         phoneBrowser.execute(`
             (function() {
                 if(app.phoneApp) {
                     app.phoneApp.messages.push(${JSON.stringify(msgObj)});
                     
-                    // CHECK: Is the user actually LOOKING at this chat?
-                    // Must be: Active Chat matches AND Phone is NOT locked AND Phone Shell is visible
                     const isChatting = (app.phoneApp.activeChatNumber == '${number}') && 
                                        (!app.isLocked) && 
                                        (!document.getElementById('phone-shell').classList.contains('hidden'));
 
                     if(isChatting) {
-                        // Mark read immediately only if looking at it
                         app.phoneApp.messages[app.phoneApp.messages.length - 1].is_read = 1;
                         mp.trigger('client:proxyAction', 'markMessagesRead', '${number}');
                         app.phoneApp.renderChatBubbles();
                     } else {
-                        // Otherwise show notification
                         app.phoneApp.renderMessageList();
-                        app.receiveNotification('${number}', 'New Message', '${body.replace(/'/g, "\\'")}', 'phone');
+                        let notifyMsg = '${body.replace(/'/g, "\\'")}';
+                        if('${type}' === 'photo') notifyMsg = 'Sent a photo';
+                        if('${type}' === 'location') notifyMsg = 'Shared location';
+                        app.receiveNotification('${number}', 'New Message', notifyMsg, 'phone');
                     }
                 }
             })();
@@ -136,7 +149,16 @@ mp.events.add('client:phone:receiveSMS', (number, body) => {
     }
 });
 
-// --- PROXY HANDLER (Handling Server Responses) ---
+// --- COLSHAPE ENTER EVENT ---
+mp.events.add("playerEnterColshape", (shape) => {
+    if (shape === locationColshape) {
+        // CUSTOM NOTIFICATION: Arrived
+        mp.events.call('showNotification', 'GPS', 'You have arrived at the location.');
+        clearLocationBlip(); 
+    }
+});
+
+// --- PROXY HANDLER ---
 mp.events.add('client:phone:proxyResponse', (action, data) => {
     if (phoneBrowser) {
         if (action === 'scooterAction') {
@@ -275,6 +297,93 @@ mp.events.add('client:proxyAction', (action, data) => {
         case 'startCall':
              mp.events.callRemote('server:phone:startCall', data); 
              break;
+
+        case 'shareLocation':
+            const player = mp.players.local;
+            const pos = player.position;
+            const locBody = `${pos.x.toFixed(2)},${pos.y.toFixed(2)}`;
+            
+            mp.events.callRemote('server:phone:sendSMS', data, locBody, 'location');
+            
+            if(phoneBrowser) {
+                const echoScript = `
+                    (function() {
+                        if(app.phoneApp) {
+                            app.phoneApp.messages.push({
+                                number: '${data}',
+                                body: '${locBody}',
+                                type: 'location',
+                                isMine: true,
+                                is_read: 1,
+                                time: new Date().toISOString()
+                            });
+                            app.phoneApp.renderChatBubbles();
+                            app.phoneApp.renderMessageList();
+                        }
+                    })();
+                `;
+                phoneBrowser.execute(echoScript);
+            }
+            break;
+
+        case 'sharePhoto':
+            const pData = JSON.parse(data);
+            mp.events.callRemote('server:phone:sendSMS', pData.target, pData.image, 'photo');
+
+            if(phoneBrowser) {
+                const echoScript = `
+                    (function() {
+                        if(app.phoneApp) {
+                            app.phoneApp.messages.push({
+                                number: '${pData.target}',
+                                body: '${pData.image}',
+                                type: 'photo',
+                                isMine: true,
+                                is_read: 1,
+                                time: new Date().toISOString()
+                            });
+                            app.phoneApp.renderChatBubbles();
+                            app.phoneApp.renderMessageList();
+                        }
+                    })();
+                `;
+                phoneBrowser.execute(echoScript);
+            }
+            break;
+
+        case 'camera':
+            if (data === 'open') {
+                closePhone(); 
+                mp.events.call('client:toggleCamera'); 
+            }
+            break;
+
+        case 'setWaypoint':
+            // 1. Clear previous
+            clearLocationBlip();
+
+            // 2. Parse coordinates
+            const coords = data.split(',');
+            if (coords.length >= 2) {
+                const x = parseFloat(coords[0]);
+                const y = parseFloat(coords[1]);
+                
+                // 3. Create Blip
+                locationBlip = mp.blips.new(1, new mp.Vector3(x, y, 0), {
+                    name: "Shared Location",
+                    color: 5, 
+                    shortRange: false, 
+                    scale: 1.0
+                });
+                locationBlip.setRoute(true);
+
+                // 4. Create Colshape (Trigger)
+                locationColshape = mp.colshapes.newCircle(x, y, 15.0);
+
+                // CUSTOM NOTIFICATION: Route Set
+                mp.events.call('showNotification', 'GPS', 'Route set to location.');
+            }
+            break;
 
         default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }

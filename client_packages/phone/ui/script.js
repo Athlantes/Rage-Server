@@ -649,39 +649,41 @@ const app = {
         renderChatBubbles: () => {
             const container = document.getElementById('chat-bubbles');
             container.innerHTML = '';
+            
+            // Get messages for active chat
             const thread = app.phoneApp.messages.filter(m => m.number == app.phoneApp.activeChatNumber);
             thread.sort((a,b) => new Date(a.time) - new Date(b.time));
             
             thread.forEach(msg => { 
                 const div = document.createElement('div'); 
                 const isMine = msg.isMine;
+                // Base classes
                 div.className = `chat-bubble ${isMine ? 'mine' : 'theirs'}`; 
 
+                // --- RENDERING LOGIC ---
                 if (msg.type === 'location') {
                     div.classList.add('location-bubble');
-                    div.innerHTML = `
-                        <div class="loc-map-preview"><i class="fas fa-map-marked-alt"></i></div>
-                        <div class="loc-info">
-                            <div class="loc-title">Current Location</div>
-                            <div class="loc-desc">Tap to view route</div>
-                        </div>
-                    `;
+                    // Simplified HTML: Just Icon + Text
+                    div.innerHTML = `<i class="fas fa-map-marker-alt"></i> <span>Location</span>`;
+                    
                     div.onclick = () => {
-                         // Send coordinates to client (body contains "x,y")
-                         if('mp' in window) mp.trigger('client:proxyAction', 'setWaypoint', msg.body); 
+                         if('mp' in window) mp.trigger('client:proxyAction', 'setWaypoint', msg.body);
                     };
-                } 
+                }
                 else if (msg.type === 'photo') {
                     div.classList.add('photo-bubble');
                     const fullUrl = app.mediaBaseUrl + msg.body; 
                     div.innerHTML = `<img src="${fullUrl}" alt="Photo">`;
+                    // Add Click Event to view full screen
                     div.onclick = () => {
                          app.openPhotoDetail({ image_path: msg.body, created_at: msg.time });
                     };
                 }
                 else {
+                    // Default Text Message
                     div.innerText = msg.body; 
                 }
+                // -----------------------
                 
                 container.appendChild(div); 
             });
