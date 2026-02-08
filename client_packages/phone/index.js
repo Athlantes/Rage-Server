@@ -11,6 +11,8 @@ let scooterMarker = null;
 let locationBlip = null;
 let locationColshape = null; 
 
+let chatPhotoTarget = null;
+
 mp.events.add('playerReady', () => {
     if (!phoneBrowser) {
         phoneBrowser = mp.browsers.new('package://phone/ui/index.html');
@@ -80,6 +82,49 @@ function closePhone() {
 }
 
 // --- STANDARD APP EVENTS ---
+
+mp.events.add('client:camera:photoSaved', (filename) => {
+    // If we have a target waiting for a photo
+    if (chatPhotoTarget) {
+        
+        // 1. Close Camera
+        mp.events.call('client:forceCloseCamera');
+
+        // 2. Send SMS via Server
+        const body = filename; // The filename from camera.js
+        mp.events.callRemote('server:phone:sendSMS', chatPhotoTarget, body, 'photo');
+
+        // 3. Re-open Phone
+        isPhoneOpen = true;
+        mp.gui.cursor.show(true, true);
+        mp.gui.chat.activate(false); 
+        phoneBrowser.execute(`openPhone()`);
+
+        // 4. Force UI to open the specific chat thread and "echo" the message
+        phoneBrowser.execute(`
+            (function() {
+                // Open Chat UI
+                app.open('phone-app');
+                const name = app.phoneApp.getContactName('${chatPhotoTarget}');
+                app.phoneApp.openChat('${chatPhotoTarget}', name);
+
+                // Echo message to UI immediately
+                app.phoneApp.messages.push({
+                    number: '${chatPhotoTarget}',
+                    body: '${body}',
+                    type: 'photo',
+                    isMine: true,
+                    is_read: 1,
+                    time: new Date().toISOString()
+                });
+                app.phoneApp.renderChatBubbles();
+            })();
+        `);
+
+        // 5. Reset target
+        chatPhotoTarget = null;
+    }
+});
 
 mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
     if(phoneBrowser) {
@@ -353,9 +398,17 @@ mp.events.add('client:proxyAction', (action, data) => {
 
         case 'camera':
             if (data === 'open') {
-                closePhone(); 
+                closePhone();
+                chatPhotoTarget = null; // Ensure we don't auto-send
                 mp.events.call('client:toggleCamera'); 
             }
+            break;
+
+        case 'cameraForChat':
+            // data is the phone number of the person we are chatting with
+            chatPhotoTarget = data; 
+            closePhone();
+            mp.events.call('client:toggleCamera');
             break;
 
         case 'setWaypoint':

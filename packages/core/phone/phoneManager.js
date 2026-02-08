@@ -7,14 +7,22 @@ const webServer = require('../../webserver');
 const uploadCache = new Map();
 
 // --- PHOTO UPLOAD LOGIC ---
-mp.events.add('server:photo:initUpload', (player, totalChunks) => {
+// Updated: Accepts 'filename' from client to ensure sync
+mp.events.add('server:photo:initUpload', (player, totalChunks, filename) => {
     if (!player.logged) return;
     const total = parseInt(totalChunks);
     if (isNaN(total) || total <= 0) return;
+    
+    // Ensure DB ID is synced to client for future photos
+    if (player.data.dbId && !player.getVariable('dbId')) {
+        player.setVariable('dbId', player.data.dbId);
+    }
+
     uploadCache.set(player.id, {
         chunks: new Array(total), 
         total: total,
         received: 0,
+        filename: filename || `${player.data.dbId}_${Date.now()}.jpg`, 
         timestamp: Date.now()
     });
 });
@@ -29,23 +37,30 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
 
     if (upload.received >= upload.total) {
         const fullBase64 = upload.chunks.join('');
+        const finalName = upload.filename; 
         uploadCache.delete(player.id); 
-        savePhotoToDisk(player, fullBase64);
+        savePhotoToDisk(player, fullBase64, finalName);
     }
 });
 
-async function savePhotoToDisk(player, base64Data) {
+async function savePhotoToDisk(player, base64Data, filename) {
     try {
         if (typeof base64Data !== 'string') return;
-        const timestamp = Date.now();
+        
+        const safeFilename = path.basename(filename);
         const userId = player.data.dbId || 0;
-        const filename = `${userId}_${timestamp}.jpg`;
-        const filePath = path.join(webServer.photosDir, filename);
+        const filePath = path.join(webServer.photosDir, safeFilename);
 
         fs.writeFile(filePath, base64Data, 'base64', async (err) => {
             if (err) return console.error(`[Photo] Write Error: ${err.message}`);
-            await db.query("INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", [userId, filename]);
-            console.log(`[Photo] Saved full image: ${filename}`);
+            
+            await db.query("INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", [userId, safeFilename]);
+            console.log(`[Photo] Saved: ${safeFilename}`);
+
+            // --- CRITICAL FIX: Tell Client the file is ready ---
+            if (mp.players.exists(player)) {
+                player.call('client:camera:uploadSuccess', [safeFilename]);
+            }
         });
     } catch (err) {
         console.error("[Photo] Error:", err);
@@ -94,6 +109,10 @@ mp.events.add('server:phone:open', async (player) => {
 
     try {
         const userId = player.data.dbId;
+        
+        // Sync DB ID to client if not already there (helper for camera)
+        if (!player.getVariable('dbId')) player.setVariable('dbId', userId);
+
         const settings = await getPhoneSettings(userId);
         const myNumber = settings.phone_number;
 
@@ -112,7 +131,6 @@ mp.events.add('server:phone:open', async (player) => {
             [userId]
         );
 
-        // MODIFIED: Select 'type' column
         const [messagesRaw] = await db.query(
             "SELECT sender_number, receiver_number, message, type, created_at, is_read FROM phone_messages WHERE sender_number = ? OR receiver_number = ? ORDER BY created_at ASC",
             [myNumber, myNumber]
@@ -121,7 +139,7 @@ mp.events.add('server:phone:open', async (player) => {
         const messages = messagesRaw.map(msg => ({
             number: (msg.sender_number === myNumber) ? msg.receiver_number : msg.sender_number, 
             body: msg.message,
-            type: msg.type || 'text', // Default to text
+            type: msg.type || 'text',
             isMine: (msg.sender_number === myNumber),
             is_read: Number(msg.is_read),
             time: msg.created_at
@@ -193,14 +211,12 @@ mp.events.add('server:phone:sendMail', async (targetId, sender, title, message) 
     }
 });
 
-// MODIFIED: Accept 'type' param
 mp.events.add('server:phone:sendSMS', async (player, targetNumber, body, type = 'text') => {
     if (!player.logged) return;
     try {
         const settings = await getPhoneSettings(player.data.dbId);
         const myNumber = settings.phone_number;
 
-        // Save to DB with TYPE
         await db.query(
             "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
             [myNumber, targetNumber, body, type]
@@ -213,7 +229,6 @@ mp.events.add('server:phone:sendSMS', async (player, targetNumber, body, type = 
             const targetPlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === targetUserId);
 
             if (targetPlayer) {
-                // Pass TYPE to receiver
                 targetPlayer.call('client:phone:receiveSMS', [myNumber, body, type]);
             }
         }
@@ -272,8 +287,8 @@ mp.events.add('server:phone:deletePhoto', async (player, photoId, photoPath) => 
     if (!player.logged) return;
     try {
         await db.query("DELETE FROM player_photos WHERE id = ? AND user_id = ?", [photoId, player.data.dbId]);
-        const filePath = path.join(webServer.photosDir, photoPath);
-        if (fs.existsSync(filePath)) fs.unlink(filePath, () => {});
+        /*const filePath = path.join(webServer.photosDir, photoPath);
+        if (fs.existsSync(filePath)) fs.unlink(filePath, () => {});*/
         player.call('client:photo:log', [`Deleted photo.`]);
         mp.events.call('server:phone:open', player); 
     } catch (err) { console.error("Delete Photo Error:", err); }

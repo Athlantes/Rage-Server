@@ -537,22 +537,37 @@ const app = {
         reqPhotoShare: () => {
              app.phoneApp.toggleAttachMenu();
              app.galleryMode = 'pick';
-             app.open('gallery');
+             
+             // Open Gallery View
+             app.open('gallery'); 
+             
              const galTitle = document.getElementById('gallery-title');
              galTitle.innerText = "Select Photo";
+             
              const backBtn = document.getElementById('btn-gallery-back');
+             
+             // OVERRIDE BACK BUTTON
              backBtn.onclick = () => {
-                 // Cancel pick
                  app.galleryMode = 'view';
-                 app.phoneApp.openChat(app.phoneApp.activeChatNumber, app.phoneApp.getContactName(app.phoneApp.activeChatNumber));
                  galTitle.innerText = "Gallery";
+                 
+                 // 1. Switch back to Phone App View (Hides Gallery)
+                 app.open('phone-app'); 
+                 
+                 // 2. Re-open the specific chat
+                 if(app.phoneApp.activeChatNumber) {
+                     const name = app.phoneApp.getContactName(app.phoneApp.activeChatNumber);
+                     app.phoneApp.openChat(app.phoneApp.activeChatNumber, name);
+                 }
+                 
+                 // 3. Reset Back Button to Default
                  backBtn.onclick = app.goHome; 
              };
         },
 
         reqCamera: () => {
             app.phoneApp.toggleAttachMenu();
-            if('mp' in window) mp.trigger('client:proxyAction', 'camera', 'open');
+            if('mp' in window) mp.trigger('client:proxyAction', 'cameraForChat', app.phoneApp.activeChatNumber);
         },
 
         getContactName: (number) => {
@@ -843,13 +858,19 @@ const app = {
                          // Send via proxy
                          if('mp' in window) mp.trigger('client:proxyAction', 'sharePhoto', JSON.stringify({ target: target, image: photo.image_path }));
                          
-                         // Return to chat
+                         // --- FIX: RETURN TO CHAT CORRECTLY ---
                          app.galleryMode = 'view';
-                         app.phoneApp.openChat(target, app.phoneApp.getContactName(target));
                          document.getElementById('gallery-title').innerText = "Gallery";
-                         
-                         // Reset back button
                          document.getElementById('btn-gallery-back').onclick = app.goHome;
+
+                         // 1. Switch View
+                         app.open('phone-app');
+                         
+                         // 2. Open Chat
+                         if(target) {
+                             const name = app.phoneApp.getContactName(target);
+                             app.phoneApp.openChat(target, name);
+                         }
 
                          // Hide menu
                          document.getElementById('chat-attachment-menu').classList.add('hidden');
@@ -902,7 +923,7 @@ const app = {
                 app.photos = app.photos.filter(p => p.id !== app.currentPhoto.id);
                 app.loadPhotos(app.photos, app.mediaBaseUrl);
                 app.open('gallery');
-                app.notify("gallery", "Deleted", "Photo removed successfully.");
+                player.call('showNotification', ['System', 'Photo deleted successfully.']);
             }
         );
     },
