@@ -6,3 +6,4 @@ require('./inventory.js');
 require('./zones.js');
 require('./questTracker.js');
 require('./atm.js');
+require('./cablecar.js');
