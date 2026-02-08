@@ -12,11 +12,6 @@ const MODEL_CABIN = "p_cablecar_s";
 const START_POS_0 = new mp.Vector3(-740.911, 5599.341, 47.25);
 const START_POS_1 = new mp.Vector3(446.291, 5566.377, 786.75);
 
-// State Management
-// 0: WAITING_AT_START (Cabin 0 Bottom, Cabin 1 Top)
-// 1: MOVING_FORWARD  (Cabin 0 -> Up, Cabin 1 -> Down)
-// 2: WAITING_AT_END  (Cabin 0 Top, Cabin 1 Bottom)
-// 3: MOVING_BACKWARD (Cabin 0 -> Down, Cabin 1 -> Up)
 let currentState = 0; 
 let nextStateTime = Date.now() + WAIT_TIME;
 
