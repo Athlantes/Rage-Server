@@ -5,9 +5,12 @@ const MODEL_DOOR_L = "p_cablecar_s_door_l";
 const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
 // --- CONFIGURATION ---
-const INTERACTION_DIST = 20.0; 
+// Distance of 13.0 is optimized to reach the cabin from the platform 
+// but avoids detecting the cabin on the other track (which is ~15m away).
+const INTERACTION_DIST = 7.0; 
+
 const TRACKS = [
-    // TRACK 0: Bottom -> Top
+    // TRACK 0: Bottom -> Top (Arrives at North Platform)
     [
         new mp.Vector3(-740.911, 5599.341, 47.25),
         new mp.Vector3(-739.557, 5599.346, 46.997),
@@ -24,7 +27,7 @@ const TRACKS = [
         new mp.Vector3(444.93, 5577.589, 786.535),
         new mp.Vector3(446.288, 5577.59, 786.75)
     ],
-    // TRACK 1: Top -> Bottom
+    // TRACK 1: Top -> Bottom (Departs from South Platform)
     [
         new mp.Vector3(446.291, 5566.377, 786.75),
         new mp.Vector3(444.937, 5566.383, 786.551),
@@ -54,7 +57,7 @@ TRACKS.forEach((track, idx) => {
 
 // State
 let currentState = -1; 
-let lastProcessedState = -2; // Used to detect state changes
+let lastProcessedState = -2; 
 let startTimestamp = Date.now();
 let stateDuration = 10000;
 let showingPrompt = false;
@@ -66,29 +69,37 @@ const cabins = [
 ];
 
 function init() {
-    cabins[0].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[0][0], {
-        dimension: 0,
-        rotation: new mp.Vector3(0, 0, 270)
-    });
-    
-    cabins[1].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[1][0], {
-        dimension: 0,
-        rotation: new mp.Vector3(0, 0, 90)
-    });
+    try {
+        // Create Cabin 0 (Bottom Station Start)
+        cabins[0].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[0][0], {
+            dimension: 0,
+            rotation: new mp.Vector3(0, 0, 270)
+        });
+        
+        // Create Cabin 1 (Top Station Start)
+        cabins[1].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[1][0], {
+            dimension: 0,
+            rotation: new mp.Vector3(0, 0, 90)
+        });
 
-    cabins.forEach((c, idx) => createDoorsFor(idx));
-    
-    mp.console.logInfo("[CableCar] Client Init Complete");
+        // Create Doors
+        cabins.forEach((c, idx) => createDoorsFor(idx));
+        
+        mp.console.logInfo("[CableCar] initialized successfully. You should see 1 cabin at start positions.");
+    } catch (e) {
+        mp.console.logError("[CableCar] Init failed: " + e.toString());
+    }
 }
 
 function createDoorsFor(index) {
     const c = cabins[index];
+    if (!c.obj) return;
     
     // Front pair
     const dL = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
     const dR = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
 
-    // Back pair (duplicate models)
+    // Back pair (duplicate models, rotated later)
     const dL_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
     const dR_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
     
@@ -117,15 +128,15 @@ mp.events.add("render", () => {
         updateCabinPos(0, 0.0);
         updateCabinPos(1, 0.0);
     } 
-    else if (currentState === 1) { // Moving Forward
+    else if (currentState === 1) { // Moving Forward (Bottom->Top, Top->Bottom)
         updateCabinPos(0, easedProgress);
         updateCabinPos(1, easedProgress);
     } 
-    else if (currentState === 2) { // Waiting End
+    else if (currentState === 2) { // Waiting End (Docked)
         updateCabinPos(0, 1.0);
         updateCabinPos(1, 1.0);
     } 
-    else if (currentState === 3) { // Moving Backward
+    else if (currentState === 3) { // Moving Backward (Top->Bottom, Bottom->Top)
         updateCabinPos(0, 1.0 - easedProgress);
         updateCabinPos(1, 1.0 - easedProgress);
     }
@@ -138,11 +149,11 @@ mp.events.add("render", () => {
 
     // 3. Attachments & Interaction
     syncAttachments();
-    // Pass current progress to handleInteraction to fix "missing prompt" during sync lag
     handleInteraction(progress);
 });
 
 function processStateChange(newState) {
+    // State 0 (Wait Start) & State 2 (Wait End) = DOORS OPEN
     const shouldOpen = (newState === 0 || newState === 2);
     setDoorState(shouldOpen);
 }
@@ -151,7 +162,7 @@ function setDoorState(isOpen) {
     const offset = isOpen ? 0.95 : 0.0;
     
     cabins.forEach(c => {
-        if (c.doors.length === 4) {
+        if (c.obj && c.doors.length === 4) {
             c.doors[0].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
             c.doors[1].attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
             c.doors[2].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
@@ -180,6 +191,7 @@ function updateCabinPos(index, progress) {
             
             c.obj.setCoords(newPos.x, newPos.y, newPos.z, false, false, false, false);
             
+            // Calculate Heading
             const heading = (Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI) - 90;
             c.obj.setRotation(0, 0, heading, 2, true);
             break;
@@ -215,35 +227,30 @@ function syncAttachments() {
     });
 }
 
-// Updated handleInteraction with Fixes for Logic A and B
 function handleInteraction(progress) {
     const localPlayer = mp.players.local;
     let nearCabin = null;
+    let closestDist = INTERACTION_DIST; 
 
-    // If attached, ensure prompt is hidden and return
     if (localPlayer.getVariable('attachedCableCar') != null) {
-        if (showingPrompt) { 
-            mp.events.call('hideInteraction'); 
-            showingPrompt = false; 
-        }
+        if (showingPrompt) { mp.events.call('hideInteraction'); showingPrompt = false; }
         return;
     }
 
-    // FIX B: Find the CLOSEST cabin within range, not just the last one iterated.
-    let closestDist = INTERACTION_DIST;
-
+    // Find closest cabin
     cabins.forEach(c => {
         if (c.obj) {
             const dist = mp.game.system.vdist(localPlayer.position.x, localPlayer.position.y, localPlayer.position.z, c.obj.position.x, c.obj.position.y, c.obj.position.z);
-            if (dist < closestDist) {
+            if (dist < INTERACTION_DIST && dist < closestDist) {
                 closestDist = dist;
                 nearCabin = c;
             }
         }
     });
 
-    // FIX A: Consider docked if state says so OR if animation has finished (progress >= 1.0)
-    // This covers packet loss/latency where visual position is correct but state var hasn't updated yet.
+    // Consider Docked if:
+    // 1. State is Waiting (0 or 2)
+    // 2. OR State is Moving but animation is practically finished (>= 0.99) - handles sync lag
     const isDocked = (currentState === 0 || currentState === 2) || (progress >= 0.99);
 
     if (nearCabin && isDocked) {
