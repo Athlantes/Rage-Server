@@ -2,158 +2,127 @@
 const playerManager = require('../core/playerManager');
 
 // --- CONFIGURATION ---
-const TRAVEL_TIME = 45000; // 45 Seconds
-const WAIT_TIME = 15000;   // 15 Seconds
 const RIDE_COST = 100;
-const MAX_PASSENGERS = 4;
+const WAIT_TIME = 15000;    // 15 seconds at station
+const TRAVEL_TIME = 55000;  // 55 seconds travel time
+const MODEL_CABIN = "p_cablecar_s";
 
-// Coordinates (Exact cable line for Chiliad)
-const POS_BOTTOM = new mp.Vector3(-740.92, 5593.18, 41.65);
-const POS_TOP = new mp.Vector3(446.12, 5576.77, 781.18);
+// Initial Positions (Used for spawning the entities)
+// Cabin 0 starts at Bottom, Cabin 1 starts at Top
+const START_POS_0 = new mp.Vector3(-740.911, 5599.341, 47.25);
+const START_POS_1 = new mp.Vector3(446.291, 5566.377, 786.75);
 
-// Offsets for dropping players off safely
-const EXIT_OFFSET_BOTTOM = new mp.Vector3(-743.0, 5595.0, 41.65);
-const EXIT_OFFSET_TOP = new mp.Vector3(448.0, 5574.0, 781.18);
-
-// State
-let currentState = "WAITING"; // WAITING or MOVING
+// State Management
+// 0: WAITING_AT_START (Cabin 0 Bottom, Cabin 1 Top)
+// 1: MOVING_FORWARD  (Cabin 0 -> Up, Cabin 1 -> Down)
+// 2: WAITING_AT_END  (Cabin 0 Top, Cabin 1 Bottom)
+// 3: MOVING_BACKWARD (Cabin 0 -> Down, Cabin 1 -> Up)
+let currentState = 0; 
 let nextStateTime = Date.now() + WAIT_TIME;
 
-// Cabins
 const cabins = [
-    { id: 0, obj: null, start: POS_BOTTOM, end: POS_TOP, name: "Cabin A" },
-    { id: 1, obj: null, start: POS_TOP, end: POS_BOTTOM, name: "Cabin B" }
+    { id: 0, entity: null },
+    { id: 1, entity: null }
 ];
 
-// --- INITIALIZATION ---
 function init() {
-    // Create Cabin Objects
-    cabins.forEach(c => {
-        c.obj = mp.objects.new(mp.joaat("prop_cable_car_body"), c.start, {
-            dimension: 0,
-            alpha: 255
-        });
-        c.obj.setVariable('cableCarId', c.id); // Tag for client finder
+    // 1. Spawn Cabin 0 (Bottom Station)
+    cabins[0].entity = mp.objects.new(mp.joaat(MODEL_CABIN), START_POS_0, {
+        dimension: 0,
+        rotation: new mp.Vector3(0, 0, 270) // Initial rotation
     });
+    cabins[0].entity.setVariable('cableCarId', 0);
+    cabins[0].entity.streamDistance = 1500; // Ensure visible from far away
 
-    console.log("[CableCar] System started. Fare: $" + RIDE_COST);
-    
-    // Start Loop
+    // 2. Spawn Cabin 1 (Top Station)
+    cabins[1].entity = mp.objects.new(mp.joaat(MODEL_CABIN), START_POS_1, {
+        dimension: 0,
+        rotation: new mp.Vector3(0, 0, 90)
+    });
+    cabins[1].entity.setVariable('cableCarId', 1);
+    cabins[1].entity.streamDistance = 1500;
+
+    console.log(`[CableCar] Service started. Fare: $${RIDE_COST}`);
     setInterval(gameLoop, 1000);
 }
 
-// --- GAME LOOP ---
 function gameLoop() {
     const now = Date.now();
     if (now >= nextStateTime) {
-        if (currentState === "WAITING") {
-            // START MOVING
-            currentState = "MOVING";
-            nextStateTime = now + TRAVEL_TIME;
-            
-            // Sync to clients
-            mp.players.call("CableCar:Sync", [currentState, now, TRAVEL_TIME]);
-            console.log("[CableCar] Departed.");
-        } else {
-            // ARRIVED (WAITING)
-            currentState = "WAITING";
-            nextStateTime = now + WAIT_TIME;
-
-            // Force Ejection of all passengers
-            ejectPassengers();
-
-            // Swap positions logically for the next run
-            cabins.forEach(c => {
-                // Swap start and end vectors
-                let temp = c.start;
-                c.start = c.end;
-                c.end = temp;
-                
-                // Snap object to new start (which is the destination)
-                c.obj.position = c.start;
-            });
-
-            mp.players.call("CableCar:Sync", [currentState, now, WAIT_TIME]);
-            console.log("[CableCar] Arrived. Waiting.");
+        
+        // State Machine Transition
+        switch (currentState) {
+            case 0: // Was WAITING_AT_START -> Start MOVING_FORWARD
+                currentState = 1;
+                nextStateTime = now + TRAVEL_TIME;
+                break;
+            case 1: // Was MOVING_FORWARD -> Start WAITING_AT_END
+                currentState = 2;
+                nextStateTime = now + WAIT_TIME;
+                ejectPassengers(); // Kick players out at destination
+                break;
+            case 2: // Was WAITING_AT_END -> Start MOVING_BACKWARD
+                currentState = 3;
+                nextStateTime = now + TRAVEL_TIME;
+                break;
+            case 3: // Was MOVING_BACKWARD -> Start WAITING_AT_START
+                currentState = 0;
+                nextStateTime = now + WAIT_TIME;
+                ejectPassengers(); // Kick players out at destination
+                break;
         }
+
+        // Sync new state to all players
+        mp.players.call("CableCar:Sync", [currentState, now, (currentState % 2 !== 0 ? TRAVEL_TIME : WAIT_TIME)]);
+        console.log(`[CableCar] State updated to: ${currentState}`);
     }
 }
 
 // --- PASSENGER LOGIC ---
 
-// Helper: Get passengers for a specific cabin
-function getPassengers(cabinId) {
-    return mp.players.toArray().filter(p => p.getVariable('attachedCableCar') === cabinId);
-}
-
 function ejectPassengers() {
     mp.players.forEach(p => {
         const cabinId = p.getVariable('attachedCableCar');
         if (cabinId !== undefined && cabinId !== null) {
-            exitCableCar(p);
+            p.setVariable('attachedCableCar', null);
+            p.notify("~g~We have arrived. Please exit.");
         }
     });
 }
 
-function exitCableCar(player) {
-    const cabinId = player.getVariable('attachedCableCar');
-    if (cabinId === null || cabinId === undefined) return;
-
-    // Determine exit location based on where the cabin ended up
-    // If we just finished moving, the cabin is at its 'end' point
-    const cabin = cabins.find(c => c.id === cabinId);
-    
-    // Simple logic: teleport to the platform closest to the cabin
-    const distToTop = player.dist(POS_TOP);
-    const exitPos = (distToTop < 500) ? EXIT_OFFSET_TOP : EXIT_OFFSET_BOTTOM;
-
-    player.setVariable('attachedCableCar', null); // Client will detach
-    player.position = exitPos;
-    player.notify("~g~Arrival!~w~ Please step off.");
-}
-
-// --- EVENTS ---
-
 mp.events.add('CableCar:RequestEntry', async (player, cabinId) => {
-    // 1. Validation
-    if (currentState !== "WAITING") return player.notify("~r~The cable car is moving!");
+    // Can only enter if state is WAITING (0 or 2)
+    const canEnter = (currentState === 0 || currentState === 2);
+    
+    if (!canEnter) return player.notify("~r~The cable car is moving!");
     if (player.vehicle) return player.notify("~r~You cannot enter with a vehicle.");
     
-    const cabin = cabins.find(c => c.id === cabinId);
-    if (!cabin) return;
-
-    // 2. Capacity Check
-    const currentPassengers = getPassengers(cabinId);
-    if (currentPassengers.length >= MAX_PASSENGERS) {
-        return player.notify("~r~This cabin is full (Max 4).");
-    }
-
-    // 3. Money Check & Transaction
-    // using user's database wrapper
+    // Check wallet using your playerManager
     if (player.data.money < RIDE_COST) {
         return player.notify(`~r~You need $${RIDE_COST} to ride.`);
     }
 
-    const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car Ride");
+    // Process Transaction
+    const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car Ticket");
     
     if (success) {
-        // 4. Attach Player
         player.setVariable('attachedCableCar', cabinId);
         player.notify(`~g~Ticket purchased ($${RIDE_COST}).~w~ Enjoy the ride!`);
-        console.log(`[CableCar] ${player.name} entered cabin ${cabinId}.`);
     } else {
         player.notify("~r~Transaction failed.");
     }
 });
 
-// Handle player quit to cleanup variables (optional, RAGE handles this mostly)
-mp.events.add('playerQuit', (player) => {
-    // Variable cleans up automatically
-});
-
-// Sync for new players
+// Sync for players joining late
 mp.events.add("playerReady", (player) => {
-    player.call("CableCar:Sync", [currentState, Date.now() - (nextStateTime - (currentState === "MOVING" ? TRAVEL_TIME : WAIT_TIME)), (currentState === "MOVING" ? TRAVEL_TIME : WAIT_TIME)]);
+    let timeRemaining = nextStateTime - Date.now();
+    if (timeRemaining < 0) timeRemaining = 0;
+    
+    // Calculate total duration of current state to help client interpolate
+    const duration = (currentState % 2 !== 0) ? TRAVEL_TIME : WAIT_TIME;
+    
+    // Send: State, StartTime (derived), Duration
+    player.call("CableCar:Sync", [currentState, Date.now() - (duration - timeRemaining), duration]);
 });
 
 init();
