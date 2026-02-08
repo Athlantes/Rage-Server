@@ -148,7 +148,6 @@ mp.events.add('client:farmer:syncCrops', (json) => {
             if (!cropColshapes[crop.id]) {
                 const col = mp.colshapes.newSphere(crop.x, crop.y, crop.z, 1.5, 0); // 1.5m radius
                 
-                // Assign LOCAL interaction data (supported by updated interaction.js)
                 col.interaction = {
                     title: 'Harvest Crop',
                     text: 'Press E to harvest',
@@ -220,6 +219,18 @@ mp.events.add('render', () => {
                 0, 255, 0, 100,          
                 true, false, 2, false, null, null, false
              );
+
+            if (!cropColshapes[crop.id]) {
+                const col = mp.colshapes.newSphere(crop.x, crop.y, crop.z, 1.5, 0);
+                col.interaction = {
+                    title: 'Harvest Crop',
+                    text: 'Press E to harvest',
+                    event: 'server:farmer:harvestCrop',
+                    data: crop.id,
+                    requireOnFoot: true
+                };
+                cropColshapes[crop.id] = col;
+             }
         }
     });
 });

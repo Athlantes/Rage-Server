@@ -145,3 +145,9 @@ mp.events.add('showNotification', (title, message) => {
         invBrowser.execute(`showNotification(${JSON.stringify(title)}, ${JSON.stringify(message)})`);
     }
 });
+
+mp.events.add('client:inventory:forceClose', () => {
+    if (global.isInventoryOpen) {
+        toggleInventory(false);
+    }
+});

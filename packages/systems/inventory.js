@@ -400,6 +400,7 @@ class InventorySystem {
         if (!def) return;
 
         if (def.type === 'seed') {
+            player.call('client:inventory:forceClose');
             mp.events.call('server:farmer:tryPlant', player, item.itemId, item.slot);
             return;
         }
