@@ -12,21 +12,6 @@ let nextStateTime = Date.now() + WAIT_TIME;
 function init() {
     console.log(`[CableCar] Service started. Fare: $${RIDE_COST}`);
 
-    mp.blips.new(36, new mp.Vector3(-740.911, 5599.341, 47.25), {
-        name: "Cable Car",
-        color: 4, // 4 is standard grey/white. Use 0 for white, 1 for red, etc.
-        shortRange: true,
-        scale: 1.0
-    });
-
-    // Top Station Blip
-    mp.blips.new(36, new mp.Vector3(446.291, 5566.377, 786.75), {
-        name: "Cable Car",
-        color: 4,
-        shortRange: true,
-        scale: 1.0
-    });
-
     setInterval(gameLoop, 1000);
 }
 

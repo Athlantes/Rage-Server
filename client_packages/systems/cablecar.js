@@ -4,13 +4,10 @@ const MODEL_CABIN = "p_cablecar_s";
 const MODEL_DOOR_L = "p_cablecar_s_door_l";
 const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
-// --- CONFIGURATION ---
-// Distance of 13.0 is optimized to reach the cabin from the platform 
-// but avoids detecting the cabin on the other track (which is ~15m away).
-const INTERACTION_DIST = 7.0; 
+const INTERACTION_DIST = 13.0; 
 
 const TRACKS = [
-    // TRACK 0: Bottom -> Top (Arrives at North Platform)
+    // TRACK 0: Bottom -> Top
     [
         new mp.Vector3(-740.911, 5599.341, 47.25),
         new mp.Vector3(-739.557, 5599.346, 46.997),
@@ -27,7 +24,7 @@ const TRACKS = [
         new mp.Vector3(444.93, 5577.589, 786.535),
         new mp.Vector3(446.288, 5577.59, 786.75)
     ],
-    // TRACK 1: Top -> Bottom (Departs from South Platform)
+    // TRACK 1: Top -> Bottom
     [
         new mp.Vector3(446.291, 5566.377, 786.75),
         new mp.Vector3(444.937, 5566.383, 786.551),
@@ -64,28 +61,43 @@ let showingPrompt = false;
 
 // Local Entities
 const cabins = [
-    { id: 0, obj: null, doors: [] },
-    { id: 1, obj: null, doors: [] }
+    { id: 0, obj: null, doors: [], blip: null },
+    { id: 1, obj: null, doors: [], blip: null }
 ];
 
 function init() {
     try {
-        // Create Cabin 0 (Bottom Station Start)
+        // Create Cabin 0 (Bottom)
         cabins[0].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[0][0], {
             dimension: 0,
             rotation: new mp.Vector3(0, 0, 270)
         });
         
-        // Create Cabin 1 (Top Station Start)
+        // Create Cabin 1 (Top)
         cabins[1].obj = mp.objects.new(mp.game.joaat(MODEL_CABIN), TRACKS[1][0], {
             dimension: 0,
             rotation: new mp.Vector3(0, 0, 90)
         });
 
-        // Create Doors
-        cabins.forEach((c, idx) => createDoorsFor(idx));
+        // Setup Cabins and Blips
+        cabins.forEach((c, idx) => {
+            if(c.obj) {
+                // FORCE HIGH LOD DISTANCE (Fixes disappearing when far away)
+                c.obj.setLodDist(4000); 
+
+                createDoorsFor(idx);
+
+                // Create Map Blip
+                c.blip = mp.blips.new(36, c.obj.position, {
+                    name: `Cable Car ${idx + 1}`,
+                    color: 1, // Red
+                    shortRange: false, // Visible on global map
+                    scale: 0.6
+                });
+            }
+        });
         
-        mp.console.logInfo("[CableCar] initialized successfully. You should see 1 cabin at start positions.");
+        mp.console.logInfo("[CableCar] Init Complete. Check map for 2 red blips.");
     } catch (e) {
         mp.console.logError("[CableCar] Init failed: " + e.toString());
     }
@@ -95,28 +107,24 @@ function createDoorsFor(index) {
     const c = cabins[index];
     if (!c.obj) return;
     
-    // Front pair
     const dL = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
     const dR = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
-
-    // Back pair (duplicate models, rotated later)
     const dL_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
     const dR_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
     
-    // Store in specific order: 0=FL, 1=FR, 2=BL, 3=BR
     c.doors = [dL, dR, dL_back, dR_back];
+    
+    // Set LOD for doors too
+    c.doors.forEach(d => d.setLodDist(4000));
 }
 
-// --- SYNC EVENT ---
 mp.events.add("CableCar:Sync", (state, timePassed, duration) => {
     currentState = state;
     startTimestamp = Date.now() - timePassed;
     stateDuration = duration;
 });
 
-// --- RENDER LOOP ---
 mp.events.add("render", () => {
-    // 1. Process Movement
     const now = Date.now();
     let progress = (now - startTimestamp) / stateDuration;
     if (progress > 1) progress = 1;
@@ -128,32 +136,29 @@ mp.events.add("render", () => {
         updateCabinPos(0, 0.0);
         updateCabinPos(1, 0.0);
     } 
-    else if (currentState === 1) { // Moving Forward (Bottom->Top, Top->Bottom)
+    else if (currentState === 1) { // Moving Forward
         updateCabinPos(0, easedProgress);
         updateCabinPos(1, easedProgress);
     } 
-    else if (currentState === 2) { // Waiting End (Docked)
+    else if (currentState === 2) { // Waiting End
         updateCabinPos(0, 1.0);
         updateCabinPos(1, 1.0);
     } 
-    else if (currentState === 3) { // Moving Backward (Top->Bottom, Bottom->Top)
+    else if (currentState === 3) { // Moving Backward
         updateCabinPos(0, 1.0 - easedProgress);
         updateCabinPos(1, 1.0 - easedProgress);
     }
 
-    // 2. Process Door State Changes
     if (currentState !== lastProcessedState) {
         processStateChange(currentState);
         lastProcessedState = currentState;
     }
 
-    // 3. Attachments & Interaction
     syncAttachments();
     handleInteraction(progress);
 });
 
 function processStateChange(newState) {
-    // State 0 (Wait Start) & State 2 (Wait End) = DOORS OPEN
     const shouldOpen = (newState === 0 || newState === 2);
     setDoorState(shouldOpen);
 }
@@ -179,6 +184,18 @@ function updateCabinPos(index, progress) {
     const totalLen = TRACK_LENGTHS[index];
     const targetDist = totalLen * progress;
 
+    // Safety: If progress is 1, force last position to avoid floating point errors
+    if (progress >= 0.9999) {
+        const lastP = track[track.length - 1];
+        c.obj.setCoords(lastP.x, lastP.y, lastP.z, false, false, false, false);
+        // Default rotations
+        const rot = (index === 0) ? 270 : 90; 
+        c.obj.setRotation(0, 0, rot, 2, true);
+        
+        if (c.blip) c.blip.setCoords(c.obj.position);
+        return;
+    }
+
     let currentDist = 0;
     for (let i = 0; i < track.length - 1; i++) {
         const p1 = track[i];
@@ -191,9 +208,11 @@ function updateCabinPos(index, progress) {
             
             c.obj.setCoords(newPos.x, newPos.y, newPos.z, false, false, false, false);
             
-            // Calculate Heading
             const heading = (Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI) - 90;
             c.obj.setRotation(0, 0, heading, 2, true);
+
+            // Update Blip Position
+            if (c.blip) c.blip.setCoords(newPos);
             break;
         }
         currentDist += segLen;
@@ -209,11 +228,7 @@ function syncAttachments() {
                 if (!p.isAttached() || p.getAttachedTo() !== c.obj.handle) {
                     const randomX = (Math.random() - 0.5) * 0.5;
                     const randomY = (Math.random() - 0.5) * 0.5;
-                    
-                    p.attachTo(
-                        c.obj.handle, 0, randomX, randomY, -5.35, 0, 0, 0, 
-                        false, false, false, false, 2, true
-                    );
+                    p.attachTo(c.obj.handle, 0, randomX, randomY, -5.35, 0, 0, 0, false, false, false, false, 2, true);
                 }
             }
         } else {
@@ -237,7 +252,6 @@ function handleInteraction(progress) {
         return;
     }
 
-    // Find closest cabin
     cabins.forEach(c => {
         if (c.obj) {
             const dist = mp.game.system.vdist(localPlayer.position.x, localPlayer.position.y, localPlayer.position.z, c.obj.position.x, c.obj.position.y, c.obj.position.z);
@@ -248,9 +262,6 @@ function handleInteraction(progress) {
         }
     });
 
-    // Consider Docked if:
-    // 1. State is Waiting (0 or 2)
-    // 2. OR State is Moving but animation is practically finished (>= 0.99) - handles sync lag
     const isDocked = (currentState === 0 || currentState === 2) || (progress >= 0.99);
 
     if (nearCabin && isDocked) {
@@ -273,11 +284,7 @@ function handleInteraction(progress) {
 }
 
 function lerpVector(v1, v2, t) {
-    return new mp.Vector3(
-        v1.x + (v2.x - v1.x) * t,
-        v1.y + (v2.y - v1.y) * t,
-        v1.z + (v2.z - v1.z) * t
-    );
+    return new mp.Vector3(v1.x + (v2.x - v1.x) * t, v1.y + (v2.y - v1.y) * t, v1.z + (v2.z - v1.z) * t);
 }
 
 init();
