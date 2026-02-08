@@ -45,7 +45,7 @@ module.exports = {
         {
             id: 'farm_field_1',
             type: 'SAFE_ZONE', 
-            maxCapacity: 50,
+            maxCapacity: 5,
             shape: 'polygon',
             minZ: 30.0, maxZ: 80.0,
             vertices: [

@@ -4,7 +4,7 @@ let fieldBlips = [];
 let sellerBlip = null;
 let sellerMenu = null;
 let cropObjects = {}; 
-let cropColshapes = {}; // Store colshapes for interactions
+let cropColshapes = {}; 
 let cropData = []; 
 
 const CROP_MODELS = {
@@ -51,7 +51,7 @@ mp.events.add('client:farmer:toggleSeller', (state) => {
     if (state) {
         if (!sellerBlip) {
             sellerBlip = mp.blips.new(500, new mp.Vector3(1960.07, 3739.94, 32.34), {
-                name: 'Apple Seller', color: 2, shortRange: true, scale: 0.8
+                name: 'Crop Wholesaler', color: 2, shortRange: true, scale: 0.8
             });
         }
     } else {
@@ -61,10 +61,19 @@ mp.events.add('client:farmer:toggleSeller', (state) => {
 
 // --- MENU & UI ---
 
-mp.events.add('client:farmer:openMenu', (count, price) => {
-    if (sellerMenu) return;
+mp.events.add('client:farmer:openMenu', (itemsJson) => {
+    if (sellerMenu) {
+        // If already open, just update data
+        sellerMenu.execute(`loadItems('${itemsJson}')`);
+        return;
+    }
     sellerMenu = mp.browsers.new('package://ui/appleSeller.html');
-    sellerMenu.execute(`setup(${count}, ${price})`);
+    
+    // Wait for browser to be ready
+    mp.events.add('client:farmer:browserReady', () => {
+         if(sellerMenu) sellerMenu.execute(`loadItems('${itemsJson}')`);
+    });
+    
     mp.gui.cursor.show(true, true);
 });
 
@@ -76,10 +85,8 @@ mp.events.add('client:farmer:closeMenu', () => {
     }
 });
 
-mp.events.add('client:farmer:sellAction', (amount) => {
-    mp.events.callRemote('server:farmer:sell', amount);
-    if (sellerMenu) { sellerMenu.destroy(); sellerMenu = null; }
-    mp.gui.cursor.show(false, false);
+mp.events.add('client:farmer:sellAction', (itemId, amount) => {
+    mp.events.callRemote('server:farmer:sell', itemId, amount);
 });
 
 mp.events.add('client:freezePlayer', (state) => {
@@ -99,7 +106,7 @@ mp.events.add('client:farmer:syncCrops', (json) => {
 
     const newIds = new Set(newCrops.map(c => c.id));
 
-    // 1. Remove old objects & colshapes
+    // Remove old
     Object.keys(cropObjects).forEach(k => {
         const id = parseInt(k);
         if (!newIds.has(id)) {
@@ -116,7 +123,7 @@ mp.events.add('client:farmer:syncCrops', (json) => {
         }
     });
 
-    // 2. Add/Update objects
+    // Add/Update
     newCrops.forEach(crop => {
         const def = CROP_MODELS[crop.item];
         if (!def) return;
@@ -124,7 +131,6 @@ mp.events.add('client:farmer:syncCrops', (json) => {
         const isReady = Date.now() >= crop.ready;
         const model = isReady ? def.end : def.start;
 
-        // --- Object Management ---
         if (!cropObjects[crop.id]) {
             cropObjects[crop.id] = mp.objects.new(mp.game.joaat(model), new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
                 rotation: new mp.Vector3(0, 0, crop.h),
@@ -133,21 +139,14 @@ mp.events.add('client:farmer:syncCrops', (json) => {
             const obj = cropObjects[crop.id];
             obj.freezePosition(true);  
             obj.setInvincible(true);
-            obj.setProofs(true, true, true, true, true, true, true, true); 
         } else {
-            // Re-enforce state just in case
-            const obj = cropObjects[crop.id];
-            if(mp.objects.exists(obj)) {
-                 obj.freezePosition(true);
-            }
+             const obj = cropObjects[crop.id];
+             if(mp.objects.exists(obj)) obj.freezePosition(true);
         }
 
-        // --- ColShape Interaction Management ---
-        // Only create an interaction prompt if the crop is READY
         if (isReady) {
             if (!cropColshapes[crop.id]) {
-                const col = mp.colshapes.newSphere(crop.x, crop.y, crop.z, 1.5, 0); // 1.5m radius
-                
+                const col = mp.colshapes.newSphere(crop.x, crop.y, crop.z, 1.5, 0);
                 col.interaction = {
                     title: 'Harvest Crop',
                     text: 'Press E to harvest',
@@ -155,7 +154,6 @@ mp.events.add('client:farmer:syncCrops', (json) => {
                     data: crop.id,
                     requireOnFoot: true
                 };
-                
                 cropColshapes[crop.id] = col;
             }
         }
@@ -184,14 +182,12 @@ mp.events.add('render', () => {
             const totalTime = crop.ready - crop.planted;
             const elapsed = now - crop.planted;
             
-            // Calculate progress (0.0 to 1.0)
             let progress = 0;
             if (totalTime > 0) progress = elapsed / totalTime;
             if (progress < 0) progress = 0;
             if (progress > 1) progress = 1;
 
             if (progress < 1.0) {
-                // Growing: ensure leaf model and lerp Z
                 if (obj.model !== mp.game.joaat(def.start)) {
                     obj.model = mp.game.joaat(def.start);
                 }
@@ -201,7 +197,6 @@ mp.events.add('render', () => {
                 obj.position = new mp.Vector3(crop.x, crop.y, currentZ);
 
             } else {
-                // Ready: ensure pumpkin model and fixed Z
                 if (obj.model !== mp.game.joaat(def.end)) {
                     obj.model = mp.game.joaat(def.end);
                 }
@@ -209,7 +204,6 @@ mp.events.add('render', () => {
             }
         }
         
-        // Draw marker if ready (visual aid only, interaction is handled by ColShape)
         if (now >= crop.ready) {
              mp.game.graphics.drawMarker(
                 1,                       

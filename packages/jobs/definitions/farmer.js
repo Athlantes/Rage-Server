@@ -9,12 +9,19 @@ const ItemRegistry = require('../../data/items');
 // --- CONFIGURATION ---
 const JOB_KEY = 'farmer';
 const JOB_REQUIREMENT_LEVEL = 1; 
-const APPLE_PRICE = 2; 
 const RECOVERY_TIME_MS = 30 * 60 * 1000; 
+const PLANT_RADIUS = 2.5; // Increased radius to prevent overlapping
 
-// Crop Settings - Dynamic Limits
-const CROP_LIMIT_MIN = 50;   // Level 1
-const CROP_LIMIT_MAX = 100;  // Level 100
+// Wholesaler Configuration
+const SELLABLE_ITEMS = {
+    'apple': { price: 2, label: "Fresh Apple" },
+    'pumpkin': { price: 15, label: "Giant Pumpkin" },
+    'orange': { price: 3, label: "Orange" }
+};
+
+// Crop Settings
+const CROP_LIMIT_MIN = 50;   
+const CROP_LIMIT_MAX = 100;  
 
 const JOB_NPC = { x: 2434.66, y: 4976.76, z: 46.57, h: 43.95 };
 const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
@@ -57,7 +64,7 @@ async function loadCrops() {
     try {
         const [rows] = await db.query('SELECT * FROM character_farm_crops');
         rows.forEach(row => {
-            const charId = row.character_id;
+            const charId = parseInt(row.character_id); // Ensure ID is number
             if (!activeCropsByPlayer.has(charId)) activeCropsByPlayer.set(charId, []);
             activeCropsByPlayer.get(charId).push(formatCropRow(row));
         });
@@ -76,7 +83,7 @@ function formatCropRow(row) {
 
 const getRandomHarvests = () => Math.floor(Math.random() * 6) + 1;
 
-// --- POLYGON HELPER ---
+// --- UTILS ---
 function isPointInPolygon(p, vertices) {
     let inside = false;
     for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
@@ -86,6 +93,14 @@ function isPointInPolygon(p, vertices) {
         if (intersect) inside = !inside;
     }
     return inside;
+}
+
+// Safer distance check that doesn't rely on Rage API quirks
+function getDistance(v1, v2) {
+    const dx = v1.x - v2.x;
+    const dy = v1.y - v2.y;
+    const dz = v1.z - v2.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 const logic = {
@@ -125,6 +140,7 @@ async function startCropJob(player) {
     jobManager.startJobSession(player, JOB_KEY);
     activeJobs.set(player.id, { vehicle: null }); 
     syncCropsToPlayer(player);
+    player.call('client:farmer:toggleSeller', [true]); 
 
     const farmFields = zones.Zones.filter(z => z.id && z.id.startsWith('farm_field_')).map(z => {
         let sumX = 0, sumY = 0;
@@ -142,6 +158,9 @@ async function startCropJob(player) {
 mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'Start the job first.']);
     
+    // [FIX] Anti-Spam Lock
+    if (player.data.isPlanting) return;
+
     const pPos = player.position;
     const fields = zones.Zones.filter(z => z.id.startsWith('farm_field_'));
     const inField = fields.find(z => {
@@ -159,12 +178,26 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     const variableAmount = Math.floor((Math.min(level, 100) / 100) * (CROP_LIMIT_MAX - CROP_LIMIT_MIN));
     const allowed = CROP_LIMIT_MIN + variableAmount;
     
-    const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+    // Ensure we use the correct Key type (integer)
+    const charId = parseInt(player.data.dbId);
+    const myCrops = activeCropsByPlayer.get(charId) || [];
+    
     if (myCrops.length >= allowed) return player.call('showNotification', ['Farmer', `Limit Reached! (Max: ${allowed})`]);
-    if (myCrops.some(crop => player.dist(new mp.Vector3(crop.x, crop.y, crop.z)) < 1.0)) return player.call('showNotification', ['Farmer', 'Too close to another crop.']);
+    
+    // [FIX] Explicit distance check with larger radius
+    const tooClose = myCrops.some(crop => {
+        const d = getDistance(pPos, {x: crop.x, y: crop.y, z: crop.z});
+        return d < PLANT_RADIUS;
+    });
+
+    if (tooClose) {
+        return player.call('showNotification', ['Farmer', 'Too close to your other crops.']);
+    }
 
     const itemObj = player.inventory.find(i => i.slot === slot);
     if (!itemObj) return;
+
+    // Remove item early to prevent duping
     if (itemObj.count > 1) {
         itemObj.count--;
         await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [itemObj.count, itemObj.id]);
@@ -173,22 +206,31 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     }
     inventory.syncClient(player);
 
+    // [FIX] Lock planting
+    player.data.isPlanting = true;
+    
     const groundZ = player.position.z - 1.0; 
     player.playAnimation('amb@world_human_gardener_plant@male@base', 'base', 1, 33);
     player.call('client:freezePlayer', [true]);
 
     setTimeout(async () => {
+        // [FIX] Unlock planting
+        player.data.isPlanting = false;
+
         if (!mp.players.exists(player)) return;
         player.stopAnimation();
         player.call('client:freezePlayer', [false]);
+        
         const now = Date.now();
         const readyAt = now + (seedDef.data.growTime || 60000);
         
         const [res] = await db.query('INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [player.data.dbId, inField.id, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]);
 
         const newCrop = { id: res.insertId, owner: player.data.dbId, item: seedId, x: player.position.x, y: player.position.y, z: groundZ, h: player.heading, planted: now, ready: readyAt };
-        if (!activeCropsByPlayer.has(player.data.dbId)) activeCropsByPlayer.set(player.data.dbId, []);
-        activeCropsByPlayer.get(player.data.dbId).push(newCrop);
+        
+        if (!activeCropsByPlayer.has(charId)) activeCropsByPlayer.set(charId, []);
+        activeCropsByPlayer.get(charId).push(newCrop);
+        
         syncCropsToPlayer(player);
         player.call('showNotification', ['Farmer', 'Seed planted!']);
     }, 4000);
@@ -196,7 +238,8 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
 
 mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
     if (player.data.isHarvesting) return;
-    const myCrops = activeCropsByPlayer.get(player.data.dbId) || [];
+    const charId = parseInt(player.data.dbId);
+    const myCrops = activeCropsByPlayer.get(charId) || [];
     const foundCrop = myCrops.find(x => x.id === cropId);
 
     if (!foundCrop) return player.call('showNotification', ['Farmer', 'Crop error.']);
@@ -229,7 +272,8 @@ mp.events.add('server:farmer:harvestCrop', async (player, cropId) => {
 });
 
 function syncCropsToPlayer(player) {
-    const crops = activeCropsByPlayer.get(player.data.dbId) || [];
+    const charId = parseInt(player.data.dbId);
+    const crops = activeCropsByPlayer.get(charId) || [];
     player.call('client:farmer:syncCrops', [JSON.stringify(crops)]);
 }
 
@@ -251,6 +295,8 @@ function syncTreeMarkers(player) {
 
 mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You are not on the clock.']);
+    if (player.data.isCollecting) return;
+
     const data = activeJobs.get(player.id);
     if (!data || !data.treeStates) return;
     const treeInfo = TREES[treeIndex];
@@ -272,9 +318,13 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
         state.cooldown_expiry = 0;
         requiresSync = true; 
     }
+
+    player.data.isCollecting = true;
     player.call('client:freezePlayer', [true]);
     player.playAnimation('amb@prop_human_movie_bulb@idle_a', 'idle_a', 1, 47);
+    
     setTimeout(async () => {
+        player.data.isCollecting = false;
         if (!mp.players.exists(player)) return;
         player.stopAnimation();
         player.call('client:freezePlayer', [false]);
@@ -302,25 +352,47 @@ mp.events.add('server:farmer:collect', async (player, treeIndex) => {
     }, 4000);
 });
 
+// --- WHOLESALER SYSTEM ---
 mp.events.add('server:farmer:openSeller', (player) => {
-    if (player.activeJobId !== JOB_KEY) return;
-    let appleCount = 0;
-    if (player.inventory) player.inventory.forEach(item => { if (item.itemId === 'apple') appleCount += item.count; });
-    if (appleCount === 0) return player.call('showNotification', ['Seller', "You don't have any apples."]);
+    if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You need to be on duty (Farmer).']);
+    
+    // Build list of sellable items
+    const clientItems = [];
+    const inv = player.inventory;
+
+    Object.keys(SELLABLE_ITEMS).forEach(itemId => {
+        const config = SELLABLE_ITEMS[itemId];
+        let count = 0;
+        inv.forEach(i => { if(i.itemId === itemId) count += i.count; });
+
+        clientItems.push({
+            id: itemId,
+            label: config.label,
+            price: config.price,
+            count: count
+        });
+    });
+
     jobManager.clearObjective(player);
-    player.call('client:farmer:openMenu', [appleCount, APPLE_PRICE]);
+    player.call('client:farmer:openMenu', [JSON.stringify(clientItems)]);
 });
 
-mp.events.add('server:farmer:sell', async (player, amount) => {
+mp.events.add('server:farmer:sell', async (player, itemId, amount) => {
     if (player.activeJobId !== JOB_KEY) return;
     amount = parseInt(amount);
     if (amount <= 0) return;
-    const appleItems = player.inventory.filter(i => i.itemId === 'apple');
-    let totalApples = appleItems.reduce((acc, i) => acc + i.count, 0);
-    if (totalApples < amount) return;
+
+    const config = SELLABLE_ITEMS[itemId];
+    if (!config) return player.call('showNotification', ['Seller', 'We do not buy this item.']);
+
+    const items = player.inventory.filter(i => i.itemId === itemId);
+    let totalCount = items.reduce((acc, i) => acc + i.count, 0);
+
+    if (totalCount < amount) return player.call('showNotification', ['Seller', `You don't have enough ${config.label}.`]);
+    
     let remaining = amount;
     const removalPromises = [];
-    for (const item of appleItems) {
+    for (const item of items) {
         if (remaining <= 0) break;
         if (item.count <= remaining) {
             remaining -= item.count;
@@ -332,12 +404,16 @@ mp.events.add('server:farmer:sell', async (player, amount) => {
         }
     }
     await Promise.all(removalPromises);
-    const money = amount * APPLE_PRICE;
+    
+    const money = amount * config.price;
     const xp = Math.ceil(amount * 0.5); 
-    await playerManager.addMoneyAndSave(player, money, 'Apple Sales');
+    
+    await playerManager.addMoneyAndSave(player, money, 'Farm Sales');
     await jobManager.addJobXp(player, JOB_KEY, xp);
-    player.call('showNotification', ['Seller', `Sold ${amount} apples for $${money}.`]);
+    
+    player.call('showNotification', ['Seller', `Sold ${amount} ${config.label} for $${money}.`]);
     inventory.syncClient(player);
+    mp.events.call('server:farmer:openSeller', player);
 });
 
 jobManager.register(JOB_KEY, {
@@ -345,6 +421,15 @@ jobManager.register(JOB_KEY, {
     previewButtons: [ { label: "Apple Collector", action: "apple" }, { label: "Crop Planter", action: "crop" }, { label: "Animal Keeper", action: "animal" } ],
     pedModel: 'a_m_m_farmer_01', pos: JOB_NPC, blipSprite: 846, blipColor: 25,
 }, logic);
+
+mp.peds.new(mp.joaat('s_m_m_migrant_01'), new mp.Vector3(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z), {
+    heading: SELLER_NPC.h, dynamic: false, invincible: true, frozen: true
+});
+
+const sellerCol = mp.colshapes.newSphere(SELLER_NPC.x, SELLER_NPC.y, SELLER_NPC.z, 2.0);
+sellerCol.setVariable('interaction', {
+    title: 'Farm Wholesaler', text: 'Sell Crops', event: 'server:farmer:openSeller', requireOnFoot: true
+});
 
 TREES.forEach((tree, index) => {
     const col = mp.colshapes.newSphere(tree.x, tree.y, tree.z, 2.0);

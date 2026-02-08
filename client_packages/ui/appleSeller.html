@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         body {
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.8);
             font-family: 'Segoe UI', sans-serif;
             display: flex;
             justify-content: center;
@@ -16,58 +16,97 @@
         }
 
         .container {
-            background: #1a0f0f;
-            border-top: 4px solid #ff4d4d;
-            padding: 30px;
-            width: 380px;
+            background: #2b1d1d;
+            border-top: 5px solid #6b8c42; /* Green for farming */
+            padding: 0;
+            width: 500px;
             border-radius: 8px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
             text-align: center;
         }
+        .header h2 { margin: 0; color: #8fbc5a; text-transform: uppercase; letter-spacing: 2px; }
+        .header .subtitle { font-size: 12px; color: #aaaaaa; text-transform: uppercase; margin-top: 5px; }
 
-        h2 { color: #ff4d4d; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 2px; }
-        .subtitle { font-size: 11px; color: #aaaaaa; text-transform: uppercase; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
-
-        .stats { display: flex; justify-content: space-between; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 4px; font-size: 13px; }
-        .highlight { color: #ff4d4d; font-weight: bold; }
-
-        input {
-            width: 100%; box-sizing: border-box; padding: 15px;
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-            color: white; font-size: 24px; font-weight: bold; text-align: center;
-            margin-bottom: 20px; outline: none; border-radius: 4px;
+        .item-list {
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        input:focus { border-color: #ff4d4d; }
 
-        .btn-confirm {
-            width: 100%; background: #ff4d4d; color: white; border: none;
-            padding: 14px; font-size: 14px; font-weight: 800; text-transform: uppercase;
-            border-radius: 4px; cursor: pointer; transition: 0.2s;
+        .item-row {
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 8px;
+            padding: 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
         }
-        .btn-confirm:hover { background: #ff6666; }
+        .item-row:hover { background: rgba(255,255,255,0.08); }
+
+        .item-info { display: flex; flex-direction: column; }
+        .item-name { font-weight: bold; font-size: 16px; color: #eee; }
+        .item-stock { font-size: 12px; color: #888; }
         
+        .item-price { color: #8fbc5a; font-weight: bold; margin-right: 15px; }
+
+        .actions { display: flex; gap: 5px; }
+        
+        input {
+            width: 60px; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #444;
+            color: white; text-align: center; border-radius: 4px; outline: none;
+        }
+        
+        button {
+            border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px;
+            font-weight: bold; text-transform: uppercase; font-size: 11px;
+        }
+
+        .btn-sell { background: #6b8c42; color: white; }
+        .btn-sell:hover { background: #7ca34c; }
+        .btn-sell:active { transform: scale(0.98); }
+
+        .btn-all { background: #444; color: #ccc; }
+        .btn-all:hover { background: #555; color: white; }
+
+        .footer {
+            padding: 15px;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+        }
         .btn-close {
-            background: transparent; color: #aaaaaa; border: none;
-            margin-top: 15px; font-size: 11px; text-transform: uppercase; cursor: pointer;
+            background: transparent; color: #888; border: none; font-size: 12px;
         }
         .btn-close:hover { color: white; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div style="font-size: 32px; margin-bottom: 10px;">🍎</div>
-        <h2>Orchard Wholesaler</h2>
-        <div class="subtitle">Sell your fresh harvest</div>
-
-        <div class="stats">
-            <div>Inventory: <span id="max-count" class="highlight">0</span></div>
-            <div>Price: <span class="highlight">$<span id="price">0</span></span></div>
+        <div class="header">
+            <h2>Farm Wholesaler</h2>
+            <div class="subtitle">Fresh Produce Market</div>
         </div>
 
-        <input type="number" id="amount" placeholder="0" min="1">
+        <div class="item-list" id="list">
+            <div style="text-align:center; padding: 20px; color:#666;">Loading items...</div>
+        </div>
 
-        <button class="btn-confirm" onclick="submit()">SELL APPLES</button>
-        <button class="btn-close" onclick="closeUI()">Cancel</button>
+        <div class="footer">
+            <button class="btn-close" onclick="closeUI()">Close Market</button>
+        </div>
     </div>
 
     <script>
@@ -75,34 +114,69 @@
             if (window.mp) {
                 mp.trigger("client:farmer:browserReady");
             } else {
-                // If RAGE isn't injected yet, try again in 20ms
-                setTimeout(notifyReady, 20);
+                setTimeout(notifyReady, 50);
             }
         }
-    
-        // Start checking as soon as the page loads
         document.addEventListener("DOMContentLoaded", notifyReady);
-        
-        function updateInfo(max, price) {
-            document.getElementById('max-count').innerText = max;
-            document.getElementById('price').innerText = price;
-            document.getElementById('amount').value = max; // Auto-fill max
-            document.getElementById('amount').focus();
+
+        function loadItems(jsonString) {
+            const list = document.getElementById('list');
+            list.innerHTML = '';
+
+            try {
+                const items = JSON.parse(jsonString);
+
+                if(items.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding: 20px; color:#666;">We are not buying anything right now.</div>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'item-row';
+                    
+                    div.innerHTML = `
+                        <div class="item-info">
+                            <span class="item-name">${item.label}</span>
+                            <span class="item-stock">Available: ${item.count}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span class="item-price">$${item.price}</span>
+                            <div class="actions">
+                                <input type="number" id="inp-${item.id}" value="1" min="1" max="${item.count}">
+                                <button class="btn-sell" onclick="sell('${item.id}')">Sell</button>
+                                <button class="btn-all" onclick="sellAll('${item.id}', ${item.count})">All</button>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+
+            } catch(e) {
+                console.error("Error parsing items", e);
+                list.innerHTML = '<div style="color:red; text-align:center;">Error loading market data.</div>';
+            }
         }
 
-        function submit() {
-            const val = document.getElementById('amount').value;
+        function sell(id) {
+            const inp = document.getElementById('inp-' + id);
+            const val = parseInt(inp.value);
             if(val > 0 && 'mp' in window) {
-                mp.trigger('client:submitAppleSale', val);
+                mp.trigger('client:farmer:sellAction', id, val);
+            }
+        }
+
+        function sellAll(id, max) {
+            if(max > 0 && 'mp' in window) {
+                mp.trigger('client:farmer:sellAction', id, max);
             }
         }
 
         function closeUI() {
-            if('mp' in window) mp.trigger('client:closeAppleBrowser');
+            if('mp' in window) mp.trigger('client:farmer:closeMenu');
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') submit();
             if (e.key === 'Escape') closeUI();
         });
     </script>
