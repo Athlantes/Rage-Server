@@ -5,7 +5,7 @@ const MODEL_DOOR_L = "p_cablecar_s_door_l";
 const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
 // --- CONFIGURATION ---
-const INTERACTION_DIST = 8.0; // Increased distance
+const INTERACTION_DIST = 20.0; // Increased to 20.0 to account for roof-to-platform height diff
 const TRACKS = [
     // TRACK 0: Bottom -> Top
     [
@@ -53,7 +53,8 @@ TRACKS.forEach((track, idx) => {
 });
 
 // State
-let currentState = 0; 
+let currentState = -1; 
+let lastProcessedState = -2; // Used to detect state changes
 let startTimestamp = Date.now();
 let stateDuration = 10000;
 let showingPrompt = false;
@@ -82,70 +83,94 @@ function init() {
 
 function createDoorsFor(index) {
     const c = cabins[index];
+    
+    // Front pair
     const dL = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
     const dR = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
+
+    // Back pair (duplicate models)
+    const dL_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_L), c.obj.position, { dimension: 0 });
+    const dR_back = mp.objects.new(mp.game.joaat(MODEL_DOOR_R), c.obj.position, { dimension: 0 });
     
-    c.doors = [dL, dR];
-    dL.attachTo(c.obj.handle, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
-    dR.attachTo(c.obj.handle, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
+    // Store in specific order: 0=FL, 1=FR, 2=BL, 3=BR
+    c.doors = [dL, dR, dL_back, dR_back];
+
+    // Initial Attach (Closed)
+    // We attach immediately so they don't float at 0,0,0
+    // The Render loop will update them correctly on the first frame via processStateChange
 }
 
 // --- SYNC EVENT ---
-// Recieves: state, timePassed (how long since state started), duration (total length)
 mp.events.add("CableCar:Sync", (state, timePassed, duration) => {
     currentState = state;
-    // Calculate when this state started according to OUR client clock
     startTimestamp = Date.now() - timePassed;
     stateDuration = duration;
 });
 
 // --- RENDER LOOP ---
 mp.events.add("render", () => {
+    // 1. Process Movement
     const now = Date.now();
     let progress = (now - startTimestamp) / stateDuration;
-    
-    // Clamp progress
     if (progress > 1) progress = 1;
     if (progress < 0) progress = 0;
 
     const easedProgress = -(Math.cos(Math.PI * progress) - 1) / 2;
 
-    // Move Logic
     if (currentState === 0) { // Waiting Start
         updateCabinPos(0, 0.0);
         updateCabinPos(1, 0.0);
-        setDoorState(true); 
     } 
     else if (currentState === 1) { // Moving Forward
         updateCabinPos(0, easedProgress);
         updateCabinPos(1, easedProgress);
-        setDoorState(false); 
     } 
     else if (currentState === 2) { // Waiting End
         updateCabinPos(0, 1.0);
         updateCabinPos(1, 1.0);
-        setDoorState(true); 
     } 
     else if (currentState === 3) { // Moving Backward
         updateCabinPos(0, 1.0 - easedProgress);
         updateCabinPos(1, 1.0 - easedProgress);
-        setDoorState(false); 
     }
 
+    // 2. Process Door State Changes (Only when state actually changes)
+    // This prevents "spamming" attachTo which breaks physics/animation
+    if (currentState !== lastProcessedState) {
+        processStateChange(currentState);
+        lastProcessedState = currentState;
+    }
+
+    // 3. Attachments & Interaction
     syncAttachments();
     handleInteraction();
-    drawDebug();
 });
 
-function drawDebug() {
+function processStateChange(newState) {
+    // State 0 (Wait Start) & State 2 (Wait End) = DOORS OPEN
+    // State 1 (Move Fwd) & State 3 (Move Back) = DOORS CLOSED
+    const shouldOpen = (newState === 0 || newState === 2);
+    setDoorState(shouldOpen);
+}
+
+function setDoorState(isOpen) {
+    const offset = isOpen ? 0.95 : 0.0;
+    
     cabins.forEach(c => {
-        if(c.obj) {
-            mp.game.graphics.drawText(`Cabin ${c.id}\nState: ${currentState}`, [c.obj.position.x, c.obj.position.y, c.obj.position.z + 2.0], { 
-                font: 0, 
-                color: [255, 255, 0, 255], 
-                scale: [0.3, 0.3], 
-                outline: true
-            });
+        if (c.doors.length === 4) {
+            // NOTE: collision (11th arg) is set to TRUE.
+            // Front Left: slides -Y
+            c.doors[0].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
+            // Front Right: slides +Y
+            c.doors[1].attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
+            
+            // Back Doors (Rotated 180).
+            // Since they are rotated 180, Local -Y is Global +Y.
+            // We want them to slide "Outwards". Relative to themselves, that is still Left (-offset) and Right (+offset).
+            // Back Left: slides Left relative to itself
+            c.doors[2].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
+            // Back Right: slides Right relative to itself
+            c.doors[3].attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
         }
     });
 }
@@ -170,23 +195,13 @@ function updateCabinPos(index, progress) {
             
             c.obj.setCoords(newPos.x, newPos.y, newPos.z, false, false, false, false);
             
-            // Rotation
+            // Calculate Heading
             const heading = (Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI) - 90;
             c.obj.setRotation(0, 0, heading, 2, true);
             break;
         }
         currentDist += segLen;
     }
-}
-
-function setDoorState(isOpen) {
-    const offset = isOpen ? 0.95 : 0.0;
-    cabins.forEach(c => {
-        if (c.doors.length === 2) {
-            c.doors[0].attachTo(c.obj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
-            c.doors[1].attachTo(c.obj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true);
-        }
-    });
 }
 
 function syncAttachments() {
@@ -196,28 +211,16 @@ function syncAttachments() {
             const c = cabins[cabinId];
             if (c && c.obj) {
                 if (!p.isAttached() || p.getAttachedTo() !== c.obj.handle) {
-                    
-                    const randomX = (Math.random() - 0.5) * 0.5; // +/- 0.25
-                    const randomY = (Math.random() - 0.5) * 0.5; // +/- 0.25
+                    const randomX = (Math.random() - 0.5) * 0.5;
+                    const randomY = (Math.random() - 0.5) * 0.5;
                     
                     p.attachTo(
-                        c.obj.handle, // Entity to attach to
-                        0,            // Bone Index (0 = Root)
-                        randomX,      // X Offset 
-                        randomY,      // Y Offset
-                        -5.35,         // Z Offset (NEGATIVE to go down)
-                        0, 0, 0,      // Rotation (Rx, Ry, Rz)
-                        false,        // p9
-                        false,        // useSoftPinning
-                        false,        // collision (Keep FALSE to prevent physics explosion)
-                        false,        // isPed
-                        2,            // vertexIndex
-                        true          // fixedRot
+                        c.obj.handle, 0, randomX, randomY, -5.35, 0, 0, 0, 
+                        false, false, false, false, 2, true
                     );
                 }
             }
         } else {
-             // Detach if attached to our cabin but variable is null
              if (p.isAttached()) {
                 const attachedHandle = p.getAttachedTo();
                 if (attachedHandle === cabins[0].obj.handle || attachedHandle === cabins[1].obj.handle) {
@@ -239,16 +242,17 @@ function handleInteraction() {
 
     cabins.forEach(c => {
         if (c.obj) {
+            // Using a simple 3D distance check with a large radius to catch the top station platform
             const dist = mp.game.system.vdist(localPlayer.position.x, localPlayer.position.y, localPlayer.position.z, c.obj.position.x, c.obj.position.y, c.obj.position.z);
             if (dist < INTERACTION_DIST) nearCabin = c;
         }
     });
 
-    if (nearCabin) {
+    const isDocked = (currentState === 0 || currentState === 2);
+
+    if (nearCabin && isDocked) {
         if (!showingPrompt) {
-            const canEnter = (currentState === 0 || currentState === 2);
-            const msg = canEnter ? "Press E to ride ($100)" : "Waiting for arrival...";
-            mp.events.call('showInteraction', 'Cable Car', msg);
+            mp.events.call('showInteraction', 'Cable Car', "Press E to ride ($100)");
             showingPrompt = true;
         }
 
