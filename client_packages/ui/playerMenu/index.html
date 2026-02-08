@@ -119,6 +119,13 @@
         /* --- SETTINGS TAB --- */
         .settings-placeholder { text-align: center; color: #555; margin-top: 15vh; font-size: 2rem; }
 
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00a2ff; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
         /* Close Button (Top Right) */
         .close-btn { 
             position: absolute; 
@@ -199,14 +206,61 @@
         </div>
 
         <div id="settings" class="content">
-            <div class="settings-placeholder">
-                <i class="fas fa-tools" style="font-size: 4rem; margin-bottom: 30px; opacity: 0.5;"></i><br>
-                Settings Panel Under Construction
+            <div class="quest-container-limit">
+                <div class="quest-title">Audio Settings</div>
+                
+                <div class="stat-card" style="border-color: #00a2ff; padding: 25px;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+                        <div>
+                            <h3 style="margin: 0; color: white; font-size: 1.1rem;">Enable Voice Chat</h3>
+                            <div style="color: #777; font-size: 0.85rem; margin-top: 5px;">Turn off to mute everyone and disable your mic.</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="voice-toggle" checked onchange="toggleVoice(this.checked)">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: white; font-size: 1.1rem;">Master Volume</h3>
+                        <span id="vol-display" style="font-size: 1.2rem; font-weight: bold; color: #00a2ff;">100%</span>
+                    </div>
+
+                    <input type="range" id="vol-slider" min="0" max="100" value="100" style="width: 100%; cursor: pointer;" oninput="updateVolume(this.value)">
+                </div>
+
+                <div class="stat-card" style="border-color: #666; margin-top: 20px;">
+                    <h3 style="color: #ccc;">Controls</h3>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
+                        <div style="background: #333; padding: 5px 12px; border-radius: 4px; font-weight: bold; border: 1px solid #555;">N</div>
+                        <span style="color: #aaa;">Hold to Talk (Push-to-Talk)</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        function updateVolume(val) {
+            document.getElementById('vol-display').innerText = val + '%';
+            // Send the volume percentage (0-100) to the client script
+            mp.trigger('client:voice:setVolume', parseInt(val));
+        }
+
+        function toggleVoice(isChecked) {
+            mp.trigger('client:voice:toggleSystem', isChecked);
+            
+            const volSlider = document.getElementById('vol-slider');
+            if (isChecked) {
+                volSlider.style.opacity = "1";
+                volSlider.style.pointerEvents = "auto";
+            } else {
+                volSlider.style.opacity = "0.5";
+                volSlider.style.pointerEvents = "none";
+            }
+        }
+
         function setTab(id) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));

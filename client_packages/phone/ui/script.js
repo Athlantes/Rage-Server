@@ -904,7 +904,7 @@ const app = {
         const yesBtn = document.getElementById('btn-confirm-yes');
         const newBtn = yesBtn.cloneNode(true);
         yesBtn.parentNode.replaceChild(newBtn, yesBtn);
-        newBtn.innerText = "Confirm"; // Default text
+        newBtn.innerText = "Confirm";
         newBtn.style.background = "#007aff";
         if(title.includes("Delete")) newBtn.style.background = "#ff3b30";
         
