@@ -3,7 +3,7 @@ const playerManager = require('../core/playerManager');
 
 // --- CONFIGURATION ---
 const RIDE_COST = 100;
-const WAIT_TIME = 15000;    // 15 seconds at station
+const WAIT_TIME = 30000;    // 30 seconds at station
 const TRAVEL_TIME = 55000;  // 55 seconds travel time
 
 let currentState = 0; 
@@ -26,7 +26,7 @@ function init() {
         shortRange: true,
         scale: 1.0
     });
-    
+
     setInterval(gameLoop, 1000);
 }
 
