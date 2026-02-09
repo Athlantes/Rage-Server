@@ -124,14 +124,19 @@ function gameLoop() {
         const isMoving = (systemState.status === 1 || systemState.status === 3);
         systemState.duration = isMoving ? TRAVEL_TIME : WAIT_TIME;
 
+        // --- FIX IS HERE ---
         if (!isMoving) {
             mp.players.forEach(p => {
-                if (p.getVariable('cableCarSeat') !== undefined) {
+                const seat = p.getVariable('cableCarSeat');
+                // Check if seat is strictly not null AND not undefined.
+                // Or simply check if it is a number (since seat IDs are 0 or 1).
+                if (seat !== null && seat !== undefined) { 
                     p.setVariable('cableCarSeat', null);
-                    p.notify("~g~You have arrived.");
+                    p.call('showNotification', ['Cable Car', 'You have arrived at your destination.']);
                 }
             });
         }
+        // -------------------
     }
 
     let timeProgress = (now - systemState.startTime) / systemState.duration;
@@ -189,49 +194,52 @@ function getPosOnTrack(trackIdx, progress) {
 }
 
 mp.events.add('CableCar:Interact', async (player, data) => {
-    if (player.vehicle) return player.notify("~r~Leave vehicle first.");
-    if (player.getVariable('cableCarSeat') != null) return player.notify("~r~Already boarded.");
-
-    // 1. Get Interaction Station Index (Optional logging)
-    let reqStation = data;
-    if (typeof data === 'object' && data.stationIndex !== undefined) {
-        reqStation = data.stationIndex;
-    }
+    // NEW: Use 'showNotification' for vehicle/boarded checks
+    if (player.vehicle) return player.call('showNotification', ['Cable Car', 'Please leave your vehicle first.']);
     
-    // 2. FOOLPROOF LOGIC: Distance Check
-    // Instead of guessing based on status, just check which cabin is close to the player.
-    const maxBoardingDistance = 15.0; // Generous radius to account for height/lag
+    // Check if they are already riding (not null AND not undefined)
+    const currentSeat = player.getVariable('cableCarSeat');
+    if (currentSeat !== null && currentSeat !== undefined) {
+        return player.call('showNotification', ['Cable Car', 'You are already boarded.']);
+    }
+
+    // 1. STATE CHECK
+    if (systemState.status === 1 || systemState.status === 3) {
+        return player.call('showNotification', ['Cable Car', 'Please wait for the doors to open.']);
+    }
+
+    // 2. DISTANCE CHECK
+    const maxBoardingDistance = 15.0; 
     let assignedCabin = -1;
 
-    // Check distance to Cabin 0
+    // Check Cabin 0
     if (cabin0 && mp.objects.exists(cabin0)) {
-        const dist0 = player.dist(cabin0.position);
-        if (dist0 < maxBoardingDistance) {
+        if (player.dist(cabin0.position) < maxBoardingDistance) {
             assignedCabin = 0;
         }
     }
 
-    // Check distance to Cabin 1
+    // Check Cabin 1
     if (assignedCabin === -1 && cabin1 && mp.objects.exists(cabin1)) {
-        const dist1 = player.dist(cabin1.position);
-        if (dist1 < maxBoardingDistance) {
+        if (player.dist(cabin1.position) < maxBoardingDistance) {
             assignedCabin = 1;
         }
     }
 
-    // 3. Validation
+    // Safety Block
     if (assignedCabin === -1) {
-        // If neither is close, it means the cabins are moving or desynced
-        return player.notify("~o~Cable car is not here.");
+        return player.call('showNotification', ['Cable Car', 'The cabin is not close enough.']);
     }
 
-    // 4. Payment & Boarding
-    if (player.data.money < RIDE_COST) return player.notify("~r~Cannot afford.");
+    // 3. PAYMENT & BOARDING
+    if (player.data.money < RIDE_COST) {
+        return player.call('showNotification', ['Cable Car', `You cannot afford the ride ($${RIDE_COST}).`]);
+    }
 
     const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car");
     if (success) {
         player.setVariable('cableCarSeat', assignedCabin);
-        player.notify("~g~Boarded.");
+        player.call('showNotification', ['Cable Car', 'Ticket purchased. Boarding now.']);
     }
 });
 

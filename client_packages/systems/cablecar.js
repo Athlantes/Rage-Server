@@ -39,7 +39,6 @@ const TRACKS = [
     ]
 ];
 
-// Pre-calculate lengths
 let TRACK_LENGTHS = [0, 0];
 let SEGMENT_LENGTHS = [[], []];
 
@@ -74,6 +73,13 @@ mp.events.add("CableCar:Sync", (dataStr) => {
 
     if (data.cabinIds) {
         remoteIds = data.cabinIds;
+    }
+
+    // DYNAMIC UI UPDATE
+    // If we are currently standing in a station, refresh the text
+    // (e.g., if cabin just arrived, change "Wait" to "Press E")
+    if (currentStationIndex !== -1) {
+        updateInteractionUI();
     }
 });
 
@@ -214,7 +220,7 @@ function getPosOnTrack(trackIdx, progress) {
 }
 
 // =========================================================
-// --- NEW: CLIENT-SIDE INTERACTIONS ---
+// --- CLIENT-SIDE INTERACTIONS & DYNAMIC UI ---
 // =========================================================
 
 const STATION_POSITIONS = [
@@ -224,51 +230,74 @@ const STATION_POSITIONS = [
 
 let cableCarShapes = [];
 let currentStationIndex = -1; 
+let currentDisplayedText = ""; // To prevent spamming the UI event
 
 function setupInteractions() {
     STATION_POSITIONS.forEach((pos, index) => {
-        // Visual Marker
-        mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 2.0, {
+        mp.markers.new(25, new mp.Vector3(pos.x, pos.y, pos.z - 0.8), 2.0, {
             color: [255, 255, 0, 100],
             visible: true,
             dimension: 0
         });
 
-        // ColShape
         const shape = mp.colshapes.newCircle(pos.x, pos.y, 2.0);
-        shape.cableCarStationIndex = index; // Store index for backup
+        shape.cableCarStationIndex = index; 
         cableCarShapes.push(shape);
     });
 }
 setupInteractions();
 
+// --- DYNAMIC UI LOGIC ---
+function updateInteractionUI() {
+    if (currentStationIndex === -1) return;
+
+    let newText = "";
+    
+    // Status 0 & 2 = Stopped (Doors Open)
+    // Status 1 & 3 = Moving (Doors Closed)
+    if (serverState.status === 0 || serverState.status === 2) {
+        newText = "Press E to ride ($100)";
+    } else {
+        newText = "Wait for Cabin Arrival";
+    }
+
+    // Only update if the text has changed to avoid UI flickering
+    if (newText !== currentDisplayedText) {
+        currentDisplayedText = newText;
+        mp.events.call('showInteraction', 'Cable Car', newText);
+    }
+}
+
 // --- EVENTS ---
-
 mp.events.add("playerEnterColshape", (shape) => {
-    // FIX: Find the shape in our local array by handle to ensure we get the correct index
-    // This protects against RAGE losing custom properties on wrapper objects
     const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
-
     if (foundShape) {
         currentStationIndex = foundShape.cableCarStationIndex;
-        mp.events.call('showInteraction', 'Cable Car', 'Press E to ride ($100)');
+        // Reset text so it forces a show
+        currentDisplayedText = ""; 
+        updateInteractionUI();
     }
 });
 
 mp.events.add("playerExitColshape", (shape) => {
-    // Check by handle again
     const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
-    
     if (foundShape) {
         currentStationIndex = -1;
+        currentDisplayedText = "";
         mp.events.call('hideInteraction'); 
     }
 });
 
-// --- INPUT HANDLING ---
+// --- INPUT ---
 mp.keys.bind(0x45, true, () => { // E
     if (currentStationIndex !== -1 && !mp.gui.cursor.visible) {
-        // FIX: Send ONLY the number, not an object. Safer for network calls.
-        mp.events.callRemote("CableCar:Interact", currentStationIndex);
+        // Only allow sending request if the UI says "Press E" (Cabin is stopped)
+        // (This is a client-side prediction check, server has the final say)
+        if (serverState.status === 0 || serverState.status === 2) {
+            mp.events.callRemote("CableCar:Interact", currentStationIndex);
+        } else {
+            // Optional: Notification if they spam E while waiting
+            // mp.game.ui.notifications.show("Wait for the cabin!"); 
+        }
     }
 });
