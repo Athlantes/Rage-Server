@@ -67,8 +67,6 @@ mp.events.add('render', () => {
             
             // Check '!isCamShaking' to ensure we only trigger the start ONCE
             if (!isCamShaking) {
-                // "HAND_SHAKE" loops continuously. 
-                // Intensity 4.0 is very strong (standard is usually 1.0).
                 mp.game.cam.shakeGameplayCam("HAND_SHAKE", 2.0); 
                 isCamShaking = true;
             }
@@ -82,7 +80,7 @@ mp.events.add('render', () => {
                 mp.game.cam.stopGameplayCamShaking(true);
                 isCamShaking = false;
             }
-        }
+        } 
     } else {
         // Safety: Stop shake if player leaves vehicle/seat while aiming
         if (isCamShaking) {

@@ -74,6 +74,54 @@
         /* New ID Color style */
         .id-val { color: var(--primary); }
 
+        /* --- WEAPON HUD (NEW) --- */
+        .weapon-hud {
+            position: fixed;
+            top: 130px; /* Positioned under the Money HUD */
+            right: 35px;
+            text-align: right;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .weapon-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .weapon-ammo-box {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            color: white;
+            font-weight: 700;
+        }
+
+        .ammo-clip {
+            font-size: 28px;
+            line-height: 1;
+        }
+        
+        .ammo-clip.low { color: var(--danger); animation: pulse 1s infinite; }
+
+        .ammo-sep {
+            font-size: 18px;
+            color: #888;
+        }
+
+        .ammo-total {
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
         /* --- BOTTOM RIGHT: SPEEDOMETER --- */
         .speedo-container {
             position: fixed; bottom: 35px; right: 35px;
@@ -233,6 +281,15 @@
             <span id="hud-date">00:00</span>
         </div>
     </div>
+    
+    <div class="weapon-hud" id="weapon-hud">
+        <div class="weapon-name" id="weapon-name">PISTOL</div>
+        <div class="weapon-ammo-box">
+            <span class="ammo-clip" id="weapon-clip">0</span>
+            <span class="ammo-sep">/</span>
+            <span class="ammo-total" id="weapon-total">0</span>
+        </div>
+    </div>
 
     <div class="mic-status" id="mic-icon">
         <i class="fas fa-microphone"></i>
@@ -304,6 +361,27 @@
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
             document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
             document.getElementById('hud-date').innerText = dateStr;
+        }
+
+        // --- NEW WEAPON HUD ---
+        function updateWeaponStats(visible, name, clip, total) {
+            const el = document.getElementById('weapon-hud');
+            if (!visible) {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = 'flex';
+            
+            document.getElementById('weapon-name').innerText = name;
+            
+            const clipEl = document.getElementById('weapon-clip');
+            clipEl.innerText = clip;
+            
+            // Red alert for low ammo
+            if(clip <= 3 && clip >= 0) clipEl.classList.add('low');
+            else clipEl.classList.remove('low');
+
+            document.getElementById('weapon-total').innerText = total;
         }
 
         // --- SPEEDOMETER ---
@@ -396,7 +474,7 @@
 
         // --- VISIBILITY ---
         function setGameHUD(visible) {
-            const ids = ['hud-container', 'speedo', 'job-hud', 'interaction'];
+            const ids = ['hud-container', 'speedo', 'job-hud', 'interaction', 'weapon-hud'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
