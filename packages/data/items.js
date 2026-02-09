@@ -37,7 +37,7 @@ module.exports = {
         maxStack: 20,
         icon: "seed_pumpkin.png",
         data: {
-            propStart: 'prop_veg_crop_03_cab', // Small plant
+            propStart: 'prop_saplin_002_c', // Small plant
             propEnd: 'prop_veg_crop_03_pump',  // Ready plant
             growTime: 60000 * 10,               // 10 Minutes
             reward: 'pumpkin',
@@ -59,7 +59,7 @@ module.exports = {
         maxStack: 20,
         icon: "seed_cabbage.png",
         data: {
-            propStart: 'vb_35b_coral_fan_p_l2', // Small plant
+            propStart: 'prop_veg_crop_04_leaf', // Small plant
             propEnd: 'prop_veg_crop_03_cab',     // Ready plant
             growTime: 60000 * 5,                 // 5 Minutes
             reward: 'cabbage',

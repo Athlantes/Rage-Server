@@ -8,8 +8,8 @@ let cropColshapes = {};
 let cropData = []; 
 
 const CROP_MODELS = {
-    'seed_pumpkin': { start: 'prop_saplin_002_c', end: 'prop_veg_crop_03_pump', zOff: -0.5 },
-    'seed_cabbage': { start: 'vb_35b_coral_fan_p_l2', end: 'prop_veg_crop_03_cab', zOff: -0.5 }
+    'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 },
+    'seed_cabbage': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_cab', zOff: -0.05 }
 };
 
 // --- MARKERS & BLIPS ---
@@ -102,16 +102,24 @@ mp.events.add('client:warpIntoVehicle', (vehId, seat) => {
 // --- CROP SYSTEM ---
 
 mp.events.add('client:farmer:syncCrops', (json) => {
-    const newCrops = JSON.parse(json);
+    let newCrops;
+    try {
+        newCrops = JSON.parse(json);
+    } catch (e) {
+        mp.gui.chat.push(`[FARMER] Error parsing JSON: ${e.message}`);
+        return;
+    }
+    
     cropData = newCrops;
-
     const newIds = new Set(newCrops.map(c => c.id));
 
-    // Remove old
+    // 1. CLEANUP: Remove old crops that are no longer in the server data
     Object.keys(cropObjects).forEach(k => {
         const id = parseInt(k);
         if (!newIds.has(id)) {
-            if (mp.objects.exists(cropObjects[id])) cropObjects[id].destroy();
+            if (cropObjects[id] && mp.objects.exists(cropObjects[id])) {
+                cropObjects[id].destroy();
+            }
             delete cropObjects[id];
         }
     });
@@ -119,34 +127,49 @@ mp.events.add('client:farmer:syncCrops', (json) => {
     Object.keys(cropColshapes).forEach(k => {
         const id = parseInt(k);
         if (!newIds.has(id)) {
-            if (mp.colshapes.exists(cropColshapes[id])) cropColshapes[id].destroy();
+            if (cropColshapes[id] && mp.colshapes.exists(cropColshapes[id])) {
+                cropColshapes[id].destroy();
+            }
             delete cropColshapes[id];
         }
     });
 
-    // Add/Update
+    // 2. SPAWN/UPDATE: Handle new crops
     newCrops.forEach(crop => {
         const def = CROP_MODELS[crop.item];
-        if (!def) return;
+        if (!def) return; // specific crop type not defined in CROP_MODELS
 
         const isReady = Date.now() >= crop.ready;
-        const model = isReady ? def.end : def.start;
+        const modelName = isReady ? def.end : def.start;
+        const modelHash = mp.game.joaat(modelName);
 
-        if (!cropObjects[crop.id]) {
-            cropObjects[crop.id] = mp.objects.new(mp.game.joaat(model), new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
+        // --- OBJECT CREATION ---
+        if (!cropObjects[crop.id] || !mp.objects.exists(cropObjects[crop.id])) {
+            
+            // Create the object
+            cropObjects[crop.id] = mp.objects.new(modelHash, new mp.Vector3(crop.x, crop.y, crop.z + def.zOff), {
                 rotation: new mp.Vector3(0, 0, crop.h),
                 dimension: 0
             });
+
+            // SAFETY CHECK: Wait for entity to exist before freezing
             const obj = cropObjects[crop.id];
-            obj.freezePosition(true);  
-            obj.setInvincible(true);
+            if (obj) {
+                // We use a small timeout or check existence to prevent crashes on immediate property access
+                obj.setInvincible(true);
+                obj.freezePosition(true); 
+            }
         } else {
-             const obj = cropObjects[crop.id];
-             if(mp.objects.exists(obj)) obj.freezePosition(true);
+            // Object already exists, ensure it's the right model
+            const obj = cropObjects[crop.id];
+            if (obj.model !== modelHash) {
+                obj.model = modelHash; // Update model if stage changed (growth)
+            }
         }
 
+        // --- INTERACTION COLSHAPE ---
         if (isReady) {
-            if (!cropColshapes[crop.id]) {
+            if (!cropColshapes[crop.id] || !mp.colshapes.exists(cropColshapes[crop.id])) {
                 const col = mp.colshapes.newSphere(crop.x, crop.y, crop.z, 1.5, 0);
                 col.interaction = {
                     title: 'Harvest Crop',
