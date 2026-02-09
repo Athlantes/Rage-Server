@@ -59,7 +59,7 @@ setupTracks();
 
 // --- STATE MANAGEMENT ---
 let serverState = { status: 0, startTime: Date.now(), duration: 10000 };
-let remoteIds = { 0: null, 1: null }; // Store remote IDs from server
+let remoteIds = { 0: null, 1: null }; // IDs from server
 let cachedCabins = { 0: null, 1: null }; 
 let localDoors = { 0: [], 1: [] };       
 
@@ -69,12 +69,12 @@ mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_R));
 mp.events.add("CableCar:Sync", (dataStr) => {
     const data = JSON.parse(dataStr);
     
-    // 1. Time Sync
+    // Time Sync
     const elapsedOnServer = data.serverNow - data.startTime;
     serverState = data;
     serverState.startTime = Date.now() - elapsedOnServer;
 
-    // 2. ID Sync (Save the Remote IDs)
+    // ID Sync
     if (data.cabinIds) {
         remoteIds = data.cabinIds;
     }
@@ -83,7 +83,6 @@ mp.events.add("CableCar:Sync", (dataStr) => {
 mp.events.add("render", () => {
     if (!serverState) return;
 
-    // Calculate Global Time Progress
     const now = Date.now();
     let timeProgress = (now - serverState.startTime) / serverState.duration;
     timeProgress = Math.max(0, Math.min(1, timeProgress));
@@ -103,13 +102,10 @@ mp.events.add("render", () => {
 });
 
 function updateCabin(id, progress) {
-    // A. Attempt to find the object if lost
+    // 1. Find Object
     if (!cachedCabins[id] || !mp.objects.exists(cachedCabins[id])) {
         cachedCabins[id] = null; 
-        
-        // DIRECT LOOKUP BY REMOTE ID
         if (remoteIds[id] !== null) {
-            // This works even if the object is far away
             const obj = mp.objects.atRemoteId(remoteIds[id]);
             if (obj && mp.objects.exists(obj)) {
                 cachedCabins[id] = obj;
@@ -118,17 +114,16 @@ function updateCabin(id, progress) {
     }
 
     const cabinObj = cachedCabins[id];
-    // We check .handle !== 0 to ensure the game engine actually has it loaded
+    // Ensure the object has a valid handle (is actually streamed in)
     if (!cabinObj || cabinObj.handle === 0) return; 
 
-    // B. Calculate Position
+    // 2. Position
     const trackId = (id === 0) ? 0 : 1; 
     const pos = getPosOnTrack(trackId, progress);
     
-    // C. Move
     cabinObj.setCoords(pos.x, pos.y, pos.z, false, false, false, false);
     
-    // D. Rotate
+    // 3. Rotation
     const lookAtPos = getPosOnTrack(trackId, progress + 0.01 <= 1.0 ? progress + 0.01 : progress - 0.01);
     const dx = lookAtPos.x - pos.x;
     const dy = lookAtPos.y - pos.y;
@@ -137,30 +132,60 @@ function updateCabin(id, progress) {
 
     cabinObj.setRotation(0.0, 0.0, heading, 2, true);
 
-    // E. Doors
+    // 4. Manage Doors
     manageLocalDoors(cabinObj, id);
 }
 
 function manageLocalDoors(cabinObj, id) {
+    // --- FIX: VALIDATION CHECK ---
+    // If we have doors in the list, check if they are still valid in the game engine.
+    // If the cabin streamed out, the game might have deleted the doors automatically.
+    if (localDoors[id].length > 0) {
+        let allValid = true;
+        for (let d of localDoors[id]) {
+            if (!d || !mp.objects.exists(d) || d.handle === 0) {
+                allValid = false;
+                break;
+            }
+        }
+        
+        // If any door is broken/missing, destroy them all and reset
+        if (!allValid) {
+            localDoors[id].forEach(d => {
+                if (d && mp.objects.exists(d)) d.destroy();
+            });
+            localDoors[id] = [];
+        }
+    }
+
+    // Create doors if missing
     if (localDoors[id].length === 0) {
         if (!mp.game.streaming.hasModelLoaded(mp.game.joaat(MODEL_DOOR_L))) return;
         
         for(let i=0; i<4; i++) {
             let m = (i % 2 === 0) ? MODEL_DOOR_L : MODEL_DOOR_R;
+            // Create at cabin position, dimension 0
             let d = mp.objects.new(mp.game.joaat(m), cabinObj.position, { dimension: 0 });
             localDoors[id].push(d);
         }
     }
 
+    // Update Attachments
     const isMoving = (serverState.status === 1 || serverState.status === 3);
     const offset = isMoving ? 0.0 : 0.95; 
 
     const doors = localDoors[id];
     
-    if (doors.length === 4) {
+    // Only attach if we have 4 valid doors AND the cabin is valid
+    if (doors.length === 4 && cabinObj.handle !== 0) {
+        // We re-attach every frame to ensure they don't drift
+        // Door 0 (Left Front)
         doors[0].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
+        // Door 1 (Right Front)
         doors[1].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
+        // Door 2 (Left Back - Rotated 180)
         doors[2].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
+        // Door 3 (Right Back - Rotated 180)
         doors[3].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
     }
 }

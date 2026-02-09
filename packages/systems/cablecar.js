@@ -109,14 +109,14 @@ function init() {
         dimension: 0,
         alpha: 255
     });
-    cabin0.streamDistance = 5000.0;
+    cabin0.streamDistance = 10000.0;
     cabin0.setVariable('cableCarId', 0);
 
     cabin1 = mp.objects.new(mp.joaat(MODEL_CABIN), new mp.Vector3(STATIONS[1].x, STATIONS[1].y, STATIONS[1].z), {
         dimension: 0,
         alpha: 255
     });
-    cabin1.streamDistance = 5000.0;
+    cabin1.streamDistance = 10000.0;
     cabin1.setVariable('cableCarId', 1);
 
     // 3. Start Loop
