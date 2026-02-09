@@ -121,6 +121,7 @@ module.exports = {
         weight: 1.5,
         isEquippable: true, // <--- ALLOW
         maxStack: 1,
+        ammoItem: "pistol_ammo",
         data: { hash: "WEAPON_PISTOL50" }
     },
     "pistol_ammo": {

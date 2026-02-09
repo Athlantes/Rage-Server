@@ -520,9 +520,17 @@
     function createItemDiv(item, slotId) {
         let itemDiv = document.createElement('div');
         itemDiv.className = 'item-inner';
+        
+        let countDisplay = '';
+        if (item.type === 'weapon' && item.data && item.data.ammo > 0) {
+            countDisplay = `<span class="item-count" style="color:#0084ff;">${item.data.ammo}</span>`;
+        } else if (item.count > 1) {
+            countDisplay = `<span class="item-count">x${item.count}</span>`;
+        }
+
         itemDiv.innerHTML = `
             <img src="items/${item.itemId}.png" class="item-img" onerror="this.src='items/default.png'">
-            <span class="item-count">${item.count > 1 ? 'x'+item.count : ''}</span>
+            ${countDisplay}
         `;
         itemDiv.draggable = true;
         itemDiv.ondragstart = (e) => {
@@ -555,6 +563,26 @@
                 if (action === 'equip') mp.trigger('client:equipItem', item.slot);
                 else mp.trigger('client:useItem', item.slot);
             });
+            
+            // --- NEW: Weapon Logic ---
+            if (item.type === 'weapon') {
+                // UNLOAD
+                if (item.data && item.data.ammo > 0) {
+                    addMenuOption("Unload Ammo", () => {
+                        mp.trigger('server:unloadWeapon', item.slot);
+                    });
+                }
+                
+                // LOAD (Check if we have ammo)
+                if (item.ammoItem) {
+                    const hasAmmo = globalInventoryData.find(i => i.itemId === item.ammoItem);
+                    if (hasAmmo) {
+                        addMenuOption("Load Ammo", () => {
+                             mp.trigger('server:loadWeapon', item.slot);
+                        });
+                    }
+                }
+            }
         }
 
         if (item.maxStack > 1 && item.count < item.maxStack) {

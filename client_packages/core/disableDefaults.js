@@ -21,7 +21,7 @@ mp.events.add('render', () => {
     
     // [MODIFIED] Removed Pause Menu & ESC Disabling to restore native menu
     
-    const hudComponents = [3, 4, 19, 20, 6, 7, 9];
+    const hudComponents = [1, 2, 3, 4, 19, 20, 6, 7, 8, 9];
     hudComponents.forEach(id => mp.game.ui.hideHudComponentThisFrame(id));
 
     // 2. Disable Specific Default Inputs
