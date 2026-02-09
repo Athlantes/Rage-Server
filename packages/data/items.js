@@ -26,39 +26,6 @@ module.exports = {
     },
 
     // --- FARMING ITEMS ---
-    "feed_sack": {
-        name: "Feed Sack",
-        type: "misc",
-        weight: 5.0,
-        isEquippable: true,
-        maxStack: 1,
-        icon: "feed_sack.png", // Make sure to add this icon
-        data: { prop: 'prop_cs_sack_01', bone: 28422, offset: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } }
-    },
-    "bucket_empty": {
-        name: "Empty Bucket",
-        type: "misc",
-        weight: 1.0,
-        isEquippable: true,
-        maxStack: 1,
-        icon: "bucket_empty.png",
-        data: { prop: 'prop_bucket_02a', bone: 28422, offset: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } }
-    },
-    "bucket_milk": {
-        name: "Fresh Milk",
-        type: "food", // Recover hunger?
-        weight: 2.0,
-        maxStack: 5,
-        icon: "bucket_milk.png"
-    },
-    "egg": {
-        name: "Chicken Egg",
-        type: "food",
-        weight: 0.1,
-        maxStack: 20,
-        icon: "egg.png"
-    },
-    
     "pumpkin": {
         name: "Pumpkin", type: "food", weight: 2.0, maxStack: 10,
         icon: "pumpkin.png" 
