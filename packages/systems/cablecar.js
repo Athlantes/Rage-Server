@@ -7,7 +7,7 @@ const WAIT_TIME = 30000;
 const TRAVEL_TIME = 55000;
 const MODEL_CABIN = "p_cablecar_s";
 
-// --- TRACK DATA (Copied from Client for Server-Side Physics) ---
+// --- TRACK DATA ---
 const TRACKS = [
     [
         new mp.Vector3(-740.911, 5599.341, 47.25),
@@ -43,7 +43,6 @@ const TRACKS = [
     ]
 ];
 
-// Pre-calculate lengths for server math
 let TRACK_LENGTHS = [0, 0];
 let SEGMENT_LENGTHS = [[], []];
 
@@ -52,7 +51,6 @@ function setupTracks() {
         let total = 0;
         SEGMENT_LENGTHS[tIdx] = [];
         for (let i = 0; i < track.length - 1; i++) {
-            // Simple Euclidean distance for server side is enough
             let dist = Math.sqrt(
                 Math.pow(track[i].x - track[i+1].x, 2) +
                 Math.pow(track[i].y - track[i+1].y, 2) +
@@ -85,7 +83,7 @@ let cabin1 = null;
 function init() {
     console.log(`[CableCar] Server Conductor Started.`);
 
-    // 1. Create Blips & Interactions
+    // 1. Create Blips (Keep these on server)
     STATIONS.forEach((station, index) => {
         mp.blips.new(36, new mp.Vector3(station.x, station.y, station.z), {
             name: "Cable Car",
@@ -93,30 +91,23 @@ function init() {
             shortRange: true,
             scale: 0.8
         });
-
-        const shape = mp.colshapes.newSphere(station.x, station.y, station.z, 5.0);
-        shape.setVariable('interaction', {
-            title: "Cable Car",
-            text: `Press E to ride ($${RIDE_COST})`,
-            event: "CableCar:Interact",
-            requireOnFoot: true,
-            data: { stationIndex: index }
-        });
     });
+
+    // NOTE: Interaction Markers/Colshapes moved to Client-Side script!
 
     // 2. SPAWN CABINS ON SERVER
     cabin0 = mp.objects.new(mp.joaat(MODEL_CABIN), new mp.Vector3(STATIONS[0].x, STATIONS[0].y, STATIONS[0].z), {
         dimension: 0,
         alpha: 255
     });
-    cabin0.streamDistance = 10000.0;
+    cabin0.streamDistance = 5000.0;
     cabin0.setVariable('cableCarId', 0);
 
     cabin1 = mp.objects.new(mp.joaat(MODEL_CABIN), new mp.Vector3(STATIONS[1].x, STATIONS[1].y, STATIONS[1].z), {
         dimension: 0,
         alpha: 255
     });
-    cabin1.streamDistance = 10000.0;
+    cabin1.streamDistance = 5000.0;
     cabin1.setVariable('cableCarId', 1);
 
     // 3. Start Loop
@@ -127,7 +118,6 @@ function gameLoop() {
     const now = Date.now();
     const timeElapsed = now - systemState.startTime;
 
-    // A. Handle Status Switching
     if (timeElapsed >= systemState.duration) {
         systemState.status++;
         if (systemState.status > 3) systemState.status = 0;
@@ -146,12 +136,9 @@ function gameLoop() {
         }
     }
 
-    // B. MOVE SERVER OBJECTS (THE FIX)
-    // We update the server-side position so it "travels" into player stream range
     let timeProgress = (now - systemState.startTime) / systemState.duration;
     timeProgress = Math.max(0, Math.min(1, timeProgress));
     
-    // Smooth Sine Easing (Match Client)
     const eased = -(Math.cos(Math.PI * timeProgress) - 1) / 2;
 
     let trackProgress = 0.0;
@@ -169,7 +156,6 @@ function gameLoop() {
         cabin1.position = pos1;
     }
 
-    // C. Sync to clients
     const stateToSend = { 
         ...systemState, 
         serverNow: Date.now(),
@@ -178,7 +164,6 @@ function gameLoop() {
     mp.players.call("CableCar:Sync", [JSON.stringify(stateToSend)]);
 }
 
-// Math Helper (Server Version)
 function getPosOnTrack(trackIdx, progress) {
     progress = Math.max(0, Math.min(1, progress));
     
@@ -225,7 +210,6 @@ mp.events.add('CableCar:Interact', async (player, data) => {
     }
 
     if (assignedCabin === -1) return player.notify("~r~No cabin here.");
-
     if (player.data.money < RIDE_COST) return player.notify("~r~Cannot afford.");
 
     const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car");

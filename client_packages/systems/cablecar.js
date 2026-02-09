@@ -59,7 +59,7 @@ setupTracks();
 
 // --- STATE MANAGEMENT ---
 let serverState = { status: 0, startTime: Date.now(), duration: 10000 };
-let remoteIds = { 0: null, 1: null }; // IDs from server
+let remoteIds = { 0: null, 1: null }; 
 let cachedCabins = { 0: null, 1: null }; 
 let localDoors = { 0: [], 1: [] };       
 
@@ -68,13 +68,10 @@ mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_R));
 
 mp.events.add("CableCar:Sync", (dataStr) => {
     const data = JSON.parse(dataStr);
-    
-    // Time Sync
     const elapsedOnServer = data.serverNow - data.startTime;
     serverState = data;
     serverState.startTime = Date.now() - elapsedOnServer;
 
-    // ID Sync
     if (data.cabinIds) {
         remoteIds = data.cabinIds;
     }
@@ -102,7 +99,6 @@ mp.events.add("render", () => {
 });
 
 function updateCabin(id, progress) {
-    // 1. Find Object
     if (!cachedCabins[id] || !mp.objects.exists(cachedCabins[id])) {
         cachedCabins[id] = null; 
         if (remoteIds[id] !== null) {
@@ -114,16 +110,13 @@ function updateCabin(id, progress) {
     }
 
     const cabinObj = cachedCabins[id];
-    // Ensure the object has a valid handle (is actually streamed in)
     if (!cabinObj || cabinObj.handle === 0) return; 
 
-    // 2. Position
     const trackId = (id === 0) ? 0 : 1; 
     const pos = getPosOnTrack(trackId, progress);
     
     cabinObj.setCoords(pos.x, pos.y, pos.z, false, false, false, false);
     
-    // 3. Rotation
     const lookAtPos = getPosOnTrack(trackId, progress + 0.01 <= 1.0 ? progress + 0.01 : progress - 0.01);
     const dx = lookAtPos.x - pos.x;
     const dy = lookAtPos.y - pos.y;
@@ -132,14 +125,10 @@ function updateCabin(id, progress) {
 
     cabinObj.setRotation(0.0, 0.0, heading, 2, true);
 
-    // 4. Manage Doors
     manageLocalDoors(cabinObj, id);
 }
 
 function manageLocalDoors(cabinObj, id) {
-    // --- FIX: VALIDATION CHECK ---
-    // If we have doors in the list, check if they are still valid in the game engine.
-    // If the cabin streamed out, the game might have deleted the doors automatically.
     if (localDoors[id].length > 0) {
         let allValid = true;
         for (let d of localDoors[id]) {
@@ -148,44 +137,30 @@ function manageLocalDoors(cabinObj, id) {
                 break;
             }
         }
-        
-        // If any door is broken/missing, destroy them all and reset
         if (!allValid) {
-            localDoors[id].forEach(d => {
-                if (d && mp.objects.exists(d)) d.destroy();
-            });
+            localDoors[id].forEach(d => { if (d && mp.objects.exists(d)) d.destroy(); });
             localDoors[id] = [];
         }
     }
 
-    // Create doors if missing
     if (localDoors[id].length === 0) {
         if (!mp.game.streaming.hasModelLoaded(mp.game.joaat(MODEL_DOOR_L))) return;
         
         for(let i=0; i<4; i++) {
             let m = (i % 2 === 0) ? MODEL_DOOR_L : MODEL_DOOR_R;
-            // Create at cabin position, dimension 0
             let d = mp.objects.new(mp.game.joaat(m), cabinObj.position, { dimension: 0 });
             localDoors[id].push(d);
         }
     }
 
-    // Update Attachments
     const isMoving = (serverState.status === 1 || serverState.status === 3);
     const offset = isMoving ? 0.0 : 0.95; 
-
     const doors = localDoors[id];
     
-    // Only attach if we have 4 valid doors AND the cabin is valid
     if (doors.length === 4 && cabinObj.handle !== 0) {
-        // We re-attach every frame to ensure they don't drift
-        // Door 0 (Left Front)
         doors[0].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
-        // Door 1 (Right Front)
         doors[1].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
-        // Door 2 (Left Back - Rotated 180)
         doors[2].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
-        // Door 3 (Right Back - Rotated 180)
         doors[3].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
     }
 }
@@ -220,7 +195,6 @@ function getPosOnTrack(trackIdx, progress) {
     const targetDist = TRACK_LENGTHS[trackIdx] * progress;
     const track = TRACKS[trackIdx];
     const segs = SEGMENT_LENGTHS[trackIdx];
-    
     let currentDist = 0;
     
     for(let i=0; i<segs.length; i++) {
@@ -238,3 +212,44 @@ function getPosOnTrack(trackIdx, progress) {
     }
     return track[track.length-1];
 }
+
+// =========================================================
+// --- NEW: CLIENT-SIDE INTERACTIONS & MARKERS ---
+// =========================================================
+
+const STATION_POSITIONS = [
+    { x: -741.03, y: 5594.96, z: 41.65 },  // Bottom
+    { x: 446.44, y: 5572.03, z: 781.19 }   // Top
+];
+
+function setupInteractions() {
+    STATION_POSITIONS.forEach((pos, index) => {
+        // 1. Visual Marker (Yellow Cylinder)
+        mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 2.0, {
+            color: [255, 255, 0, 100],
+            visible: true,
+            dimension: 0
+        });
+
+        // 2. Client-Side ColShape
+        // Using "newCircle" creates an infinite vertical cylinder 
+        // which ensures detection even if Z coord is slightly off.
+        const shape = mp.colshapes.newCircle(pos.x, pos.y, 2.0);
+        
+        // This 'interaction' variable is what your core/interaction.js listens for
+        shape.setVariable('interaction', {
+            title: "Cable Car",
+            text: `Press E to ride ($100)`,
+            event: "CableCar:Interact", 
+            requireOnFoot: true,
+            data: { stationIndex: index }
+        });
+    });
+}
+setupInteractions();
+
+// Relay Event: If interactions call this locally, send it to server
+mp.events.add("CableCar:Interact", (data) => {
+    // Forward the interaction data to the server
+    mp.events.callRemote("CableCar:Interact", data);
+});

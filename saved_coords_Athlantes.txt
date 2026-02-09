@@ -10,3 +10,7 @@
 { , z: 37.91, h: -76.35 },
 // FarmerJobLocation
 {  },
+// topstation
+{ x: 446.44, y: 5572.03, z: 781.19, h: 85.11 },
+// bottomstation
+{ x: -741.03, y: 5594.96, z: 41.65, h: -94.86 },
