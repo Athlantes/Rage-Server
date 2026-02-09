@@ -19,7 +19,7 @@ class BankingService {
         if (isNaN(amount) || amount <= 0) return { success: false, message: "Invalid amount." };
         if (player.data.money < amount) return { success: false, message: "Not enough cash." };
 
-        if (!playerManager.removeMoney(player, amount, reason)) {
+        if (!playerManager.removeMoneyAndSave(player, amount, reason)) {
             return { success: false, message: "Transaction failed." };
         }
 

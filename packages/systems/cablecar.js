@@ -6,6 +6,7 @@ const RIDE_COST = 100;
 const WAIT_TIME = 30000;    
 const TRAVEL_TIME = 55000;
 const MODEL_CABIN = "p_cablecar_s";
+const MAX_CAPACITY = 6; // Max players per cabin
 
 // --- TRACK DATA ---
 const TRACKS = [
@@ -83,7 +84,6 @@ let cabin1 = null;
 function init() {
     console.log(`[CableCar] Server Conductor Started.`);
 
-    // 1. Create Blips (Keep these on server)
     STATIONS.forEach((station, index) => {
         mp.blips.new(36, new mp.Vector3(station.x, station.y, station.z), {
             name: "Cable Car",
@@ -93,7 +93,6 @@ function init() {
         });
     });
 
-    // 2. SPAWN CABINS ON SERVER
     cabin0 = mp.objects.new(mp.joaat(MODEL_CABIN), new mp.Vector3(STATIONS[0].x, STATIONS[0].y, STATIONS[0].z), {
         dimension: 0,
         alpha: 255
@@ -108,7 +107,6 @@ function init() {
     cabin1.streamDistance = 5000.0;
     cabin1.setVariable('cableCarId', 1);
 
-    // 3. Start Loop
     setInterval(gameLoop, 1000);
 }
 
@@ -124,19 +122,17 @@ function gameLoop() {
         const isMoving = (systemState.status === 1 || systemState.status === 3);
         systemState.duration = isMoving ? TRAVEL_TIME : WAIT_TIME;
 
-        // --- FIX IS HERE ---
         if (!isMoving) {
             mp.players.forEach(p => {
                 const seat = p.getVariable('cableCarSeat');
-                // Check if seat is strictly not null AND not undefined.
-                // Or simply check if it is a number (since seat IDs are 0 or 1).
+                // CLEANUP: If ride finished, remove both Ticket and Spot variables
                 if (seat !== null && seat !== undefined) { 
                     p.setVariable('cableCarSeat', null);
+                    p.setVariable('cableCarSpot', null); // Free up the seat
                     p.call('showNotification', ['Cable Car', 'You have arrived at your destination.']);
                 }
             });
         }
-        // -------------------
     }
 
     let timeProgress = (now - systemState.startTime) / systemState.duration;
@@ -193,11 +189,28 @@ function getPosOnTrack(trackIdx, progress) {
     return track[track.length-1];
 }
 
+// HELPER: Find the first available seat (0-5) in a specific cabin
+function getFreeSeat(cabinId) {
+    const occupiedSeats = new Set();
+    
+    mp.players.forEach(p => {
+        if (p.getVariable('cableCarSeat') === cabinId) {
+            const spot = p.getVariable('cableCarSpot');
+            if (spot !== undefined && spot !== null) {
+                occupiedSeats.add(spot);
+            }
+        }
+    });
+
+    for (let i = 0; i < MAX_CAPACITY; i++) {
+        if (!occupiedSeats.has(i)) return i;
+    }
+    return -1; // Full
+}
+
 mp.events.add('CableCar:Interact', async (player, data) => {
-    // NEW: Use 'showNotification' for vehicle/boarded checks
     if (player.vehicle) return player.call('showNotification', ['Cable Car', 'Please leave your vehicle first.']);
     
-    // Check if they are already riding (not null AND not undefined)
     const currentSeat = player.getVariable('cableCarSeat');
     if (currentSeat !== null && currentSeat !== undefined) {
         return player.call('showNotification', ['Cable Car', 'You are already boarded.']);
@@ -212,26 +225,24 @@ mp.events.add('CableCar:Interact', async (player, data) => {
     const maxBoardingDistance = 15.0; 
     let assignedCabin = -1;
 
-    // Check Cabin 0
     if (cabin0 && mp.objects.exists(cabin0)) {
-        if (player.dist(cabin0.position) < maxBoardingDistance) {
-            assignedCabin = 0;
-        }
+        if (player.dist(cabin0.position) < maxBoardingDistance) assignedCabin = 0;
     }
-
-    // Check Cabin 1
     if (assignedCabin === -1 && cabin1 && mp.objects.exists(cabin1)) {
-        if (player.dist(cabin1.position) < maxBoardingDistance) {
-            assignedCabin = 1;
-        }
+        if (player.dist(cabin1.position) < maxBoardingDistance) assignedCabin = 1;
     }
 
-    // Safety Block
     if (assignedCabin === -1) {
         return player.call('showNotification', ['Cable Car', 'The cabin is not close enough.']);
     }
 
-    // 3. PAYMENT & BOARDING
+    // 3. CAPACITY CHECK (The Fix)
+    const freeSpot = getFreeSeat(assignedCabin);
+    if (freeSpot === -1) {
+        return player.call('showNotification', ['Cable Car', 'This cabin is full (6/6).']);
+    }
+
+    // 4. PAYMENT & BOARDING
     if (player.data.money < RIDE_COST) {
         return player.call('showNotification', ['Cable Car', `You cannot afford the ride ($${RIDE_COST}).`]);
     }
@@ -239,6 +250,7 @@ mp.events.add('CableCar:Interact', async (player, data) => {
     const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car");
     if (success) {
         player.setVariable('cableCarSeat', assignedCabin);
+        player.setVariable('cableCarSpot', freeSpot); // Assign specific seat
         player.call('showNotification', ['Cable Car', 'Ticket purchased. Boarding now.']);
     }
 });

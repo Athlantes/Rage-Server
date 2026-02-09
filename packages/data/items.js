@@ -39,8 +39,30 @@ module.exports = {
         data: {
             propStart: 'prop_veg_crop_03_cab', // Small plant
             propEnd: 'prop_veg_crop_03_pump',  // Ready plant
-            growTime: 60000 * 5,               // 5 Minutes
+            growTime: 60000 * 10,               // 10 Minutes
             reward: 'pumpkin',
+            rewardCount: 1,
+            zOffset: -0.05
+        }
+    },
+    "cabbage": {
+        name: "Cabbage",
+        type: "food",
+        weight: 0.5,
+        maxStack: 10,
+        icon: "cabbage.png"
+    },
+    "seed_cabbage": {
+        name: "Cabbage Seed",
+        type: "seed", // Special type for Inventory logic
+        weight: 0.1,
+        maxStack: 20,
+        icon: "seed_cabbage.png",
+        data: {
+            propStart: 'vb_35b_coral_fan_p_l2', // Small plant
+            propEnd: 'prop_veg_crop_03_cab',     // Ready plant
+            growTime: 60000 * 5,                 // 5 Minutes
+            reward: 'cabbage',
             rewardCount: 1,
             zOffset: -0.05
         }

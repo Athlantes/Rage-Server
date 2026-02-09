@@ -16,7 +16,7 @@ const PLANT_RADIUS = 2.5;
 const SELLABLE_ITEMS = {
     'apple': { price: 2, label: "Fresh Apple" },
     'pumpkin': { price: 15, label: "Giant Pumpkin" },
-    'orange': { price: 3, label: "Orange" }
+    'cabbage': { price: 10, label: "Green Cabbage" },
 };
 
 // Crop Settings
@@ -464,7 +464,7 @@ mp.events.add('server:farmer:spawnTractor', (player) => {
     if (!data) return;
     if (data.vehicle && mp.vehicles.exists(data.vehicle)) data.vehicle.destroy();
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    const model = level > 20 ? 'bodhi2' : 'warrener2'; 
+    const model = level > 20 ? 'warrener2' : 'tractor2'; 
     data.vehicle = mp.vehicles.new(mp.joaat(model), new mp.Vector3(VEHICLE_SPAWN.x, VEHICLE_SPAWN.y, VEHICLE_SPAWN.z), {
         heading: VEHICLE_SPAWN.h, numberPlate: 'FARMER', dimension: player.dimension, locked: false, engine: false
     });

@@ -62,7 +62,7 @@ mp.events.add('server:processRefuel', async (player, litersToFill) => {
         return player.call('showNotification', ['Gas Station', 'Tank overflows!']);
     }
 
-    const success = await PlayerManager.removeMoney(player, cost, "Fuel Station");
+    const success = await PlayerManager.removeMoneyAndSave(player, cost, "Fuel Station");
     
     if (success) {
         const newFuel = currentFuel + litersToFill;

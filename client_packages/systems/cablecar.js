@@ -3,6 +3,17 @@
 const MODEL_DOOR_L = "p_cablecar_s_door_l";
 const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
+// --- SEAT CONFIGURATION (Offsets relative to Cabin Center) ---
+const Z_OFFSET = -5.35; // Vertical floor level
+const SEAT_OFFSETS = [
+    new mp.Vector3(-0.6, -0.8, Z_OFFSET), // Seat 0
+    new mp.Vector3( 0.6, -0.8, Z_OFFSET), // Seat 1
+    new mp.Vector3(-0.6,  0.0, Z_OFFSET), // Seat 2
+    new mp.Vector3( 0.6,  0.0, Z_OFFSET), // Seat 3
+    new mp.Vector3(-0.6,  0.8, Z_OFFSET), // Seat 4
+    new mp.Vector3( 0.6,  0.8, Z_OFFSET)  // Seat 5
+];
+
 // --- TRACK CONFIGURATION ---
 const TRACKS = [
     [
@@ -39,6 +50,7 @@ const TRACKS = [
     ]
 ];
 
+// Pre-calculate lengths
 let TRACK_LENGTHS = [0, 0];
 let SEGMENT_LENGTHS = [[], []];
 
@@ -60,7 +72,9 @@ setupTracks();
 let serverState = { status: 0, startTime: Date.now(), duration: 10000 };
 let remoteIds = { 0: null, 1: null }; 
 let cachedCabins = { 0: null, 1: null }; 
-let localDoors = { 0: [], 1: [] };       
+let localDoors = { 0: [], 1: [] };
+
+const attachedPlayers = new Set();
 
 mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_L));
 mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_R));
@@ -75,9 +89,7 @@ mp.events.add("CableCar:Sync", (dataStr) => {
         remoteIds = data.cabinIds;
     }
 
-    // DYNAMIC UI UPDATE
-    // If we are currently standing in a station, refresh the text
-    // (e.g., if cabin just arrived, change "Wait" to "Press E")
+    // Force UI refresh if we are waiting at a station
     if (currentStationIndex !== -1) {
         updateInteractionUI();
     }
@@ -101,8 +113,56 @@ mp.events.add("render", () => {
     updateCabin(0, trackProgress);
     updateCabin(1, trackProgress);
 
-    manageAttachment();
+    manageAllAttachments();
 });
+
+function manageAllAttachments() {
+    const playersToCheck = [...mp.players.streamed, mp.players.local];
+
+    playersToCheck.forEach((player) => {
+        if (!player || player.handle === 0) return;
+
+        const seatId = player.getVariable('cableCarSeat');
+        const spotId = player.getVariable('cableCarSpot');
+
+        if (seatId !== undefined && seatId !== null) {
+            const cabinObj = cachedCabins[seatId];
+
+            if (cabinObj && mp.objects.exists(cabinObj) && cabinObj.handle !== 0) {
+                if (!attachedPlayers.has(player.remoteId)) {
+                    
+                    player.freezePosition(true);
+                    player.setCollision(false, false); 
+                    
+                    let offset = new mp.Vector3(0, 0, Z_OFFSET); 
+                    
+                    if (spotId !== undefined && spotId !== null && SEAT_OFFSETS[spotId]) {
+                        offset = SEAT_OFFSETS[spotId];
+                    }
+
+                    player.attachTo(cabinObj.handle, 0, offset.x, offset.y, offset.z, 0, 0, 0, false, false, false, false, 2, true);
+                    attachedPlayers.add(player.remoteId);
+                }
+            }
+        } 
+        else {
+            if (attachedPlayers.has(player.remoteId)) {
+                player.detach(true, false);
+                player.freezePosition(false);
+                player.setCollision(true, true); 
+                attachedPlayers.delete(player.remoteId);
+            }
+        }
+    });
+}
+
+mp.events.add("entityStreamOut", (entity) => {
+    if (entity.type === "player" && attachedPlayers.has(entity.remoteId)) {
+        attachedPlayers.delete(entity.remoteId);
+    }
+});
+
+// ... (Physics Code - No Changes) ...
 
 function updateCabin(id, progress) {
     if (!cachedCabins[id] || !mp.objects.exists(cachedCabins[id])) {
@@ -171,31 +231,6 @@ function manageLocalDoors(cabinObj, id) {
     }
 }
 
-function manageAttachment() {
-    const seatId = mp.players.local.getVariable('cableCarSeat');
-    
-    if (seatId !== undefined && seatId !== null) {
-        const cabinObj = cachedCabins[seatId];
-        if (cabinObj && mp.objects.exists(cabinObj) && cabinObj.handle !== 0) {
-            mp.players.local.freezePosition(true);
-            if (mp.players.local.getAttachedTo() !== cabinObj.handle) {
-                mp.players.local.attachTo(cabinObj.handle, 0, 0, 0, -5.35, 0, 0, 0, false, false, false, false, 2, true);
-            }
-        }
-    } 
-    else {
-        if (mp.players.local.isAttached()) {
-             const handle = mp.players.local.getAttachedTo();
-             const isAttachedToCabin = (cachedCabins[0] && cachedCabins[0].handle === handle) || 
-                                       (cachedCabins[1] && cachedCabins[1].handle === handle);
-             if (isAttachedToCabin) {
-                mp.players.local.detach(true, false);
-                mp.players.local.freezePosition(false);
-            }
-        }
-    }
-}
-
 function getPosOnTrack(trackIdx, progress) {
     progress = Math.max(0, Math.min(1, progress));
     const targetDist = TRACK_LENGTHS[trackIdx] * progress;
@@ -220,7 +255,7 @@ function getPosOnTrack(trackIdx, progress) {
 }
 
 // =========================================================
-// --- CLIENT-SIDE INTERACTIONS & DYNAMIC UI ---
+// --- CLIENT-SIDE INTERACTIONS (DISTANCE CHECK) ---
 // =========================================================
 
 const STATION_POSITIONS = [
@@ -228,7 +263,6 @@ const STATION_POSITIONS = [
     { x: 446.44, y: 5572.03, z: 781.19 }   // Top
 ];
 
-let cableCarShapes = [];
 let currentStationIndex = -1; 
 let currentDisplayedText = ""; // To prevent spamming the UI event
 
@@ -239,65 +273,61 @@ function setupInteractions() {
             visible: true,
             dimension: 0
         });
-
-        const shape = mp.colshapes.newCircle(pos.x, pos.y, 2.0);
-        shape.cableCarStationIndex = index; 
-        cableCarShapes.push(shape);
     });
 }
 setupInteractions();
 
-// --- DYNAMIC UI LOGIC ---
+// --- THE FIX: INTERVAL CHECK INSTEAD OF COLSHAPES ---
+// Checks every 250ms if we are near a station.
+// This prevents the UI from getting "stuck" when you go to other locations.
+setInterval(() => {
+    let newStationIndex = -1;
+    const myPos = mp.players.local.position;
+
+    STATION_POSITIONS.forEach((pos, index) => {
+        const dist = mp.game.system.vdist(myPos.x, myPos.y, myPos.z, pos.x, pos.y, pos.z);
+        if (dist < 3.0) { // 3 meters range
+            newStationIndex = index;
+        }
+    });
+
+    if (newStationIndex !== currentStationIndex) {
+        currentStationIndex = newStationIndex;
+        
+        if (currentStationIndex !== -1) {
+            // Entered Station
+            currentDisplayedText = ""; // Reset to force update
+            updateInteractionUI();
+        } else {
+            // Left Station - Clear UI immediately
+            currentDisplayedText = "";
+            mp.events.call('hideInteraction');
+        }
+    }
+}, 250);
+
 function updateInteractionUI() {
     if (currentStationIndex === -1) return;
 
     let newText = "";
-    
-    // Status 0 & 2 = Stopped (Doors Open)
-    // Status 1 & 3 = Moving (Doors Closed)
+    // 0 & 2 = Stopped (Doors Open)
     if (serverState.status === 0 || serverState.status === 2) {
         newText = "Press E to ride ($100)";
     } else {
         newText = "Wait for Cabin Arrival";
     }
 
-    // Only update if the text has changed to avoid UI flickering
     if (newText !== currentDisplayedText) {
         currentDisplayedText = newText;
         mp.events.call('showInteraction', 'Cable Car', newText);
     }
 }
 
-// --- EVENTS ---
-mp.events.add("playerEnterColshape", (shape) => {
-    const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
-    if (foundShape) {
-        currentStationIndex = foundShape.cableCarStationIndex;
-        // Reset text so it forces a show
-        currentDisplayedText = ""; 
-        updateInteractionUI();
-    }
-});
-
-mp.events.add("playerExitColshape", (shape) => {
-    const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
-    if (foundShape) {
-        currentStationIndex = -1;
-        currentDisplayedText = "";
-        mp.events.call('hideInteraction'); 
-    }
-});
-
 // --- INPUT ---
 mp.keys.bind(0x45, true, () => { // E
     if (currentStationIndex !== -1 && !mp.gui.cursor.visible) {
-        // Only allow sending request if the UI says "Press E" (Cabin is stopped)
-        // (This is a client-side prediction check, server has the final say)
         if (serverState.status === 0 || serverState.status === 2) {
             mp.events.callRemote("CableCar:Interact", currentStationIndex);
-        } else {
-            // Optional: Notification if they spam E while waiting
-            // mp.game.ui.notifications.show("Wait for the cabin!"); 
         }
     }
 });

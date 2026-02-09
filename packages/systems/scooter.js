@@ -21,7 +21,7 @@ async function endRental(scooter, reason = "Ride ended") {
     scooter.destroy();
 
     if (player && mp.players.exists(player)) {
-        await PlayerManager.removeMoney(player, cost, "eScootr Ride");
+        await PlayerManager.removeMoneyAndSave(player, cost, "eScootr Ride");
         player.call('showNotification', ['eScootr', `${reason}. Charged: $${cost}`]);
         // Calls the wrapper in client index.js, which must now notify the Browser UI
         player.call('client:phone:appCallback', ['scooter', 'endRide']);
@@ -77,7 +77,7 @@ mp.events.add('server:scooter:performRent', async (player, spawnPoint) => {
     // Re-check funds just in case
     if (player.data.money < CONFIG.unlockCost) return;
 
-    const paid = await PlayerManager.removeMoney(player, CONFIG.unlockCost, "eScootr Unlock");
+    const paid = await PlayerManager.removeMoneyAndSave(player, CONFIG.unlockCost, "eScootr Unlock");
     if (!paid) return;
 
     // Use found point or fallback to player pos if client failed

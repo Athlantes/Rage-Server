@@ -118,7 +118,7 @@ mp.events.addCommand('refuel', async (player) => {
     player.call('showNotification', ['Fuel', 'Refueling...']);
     setTimeout(async () => {
         if (mp.vehicles.exists(veh)) {
-            const success = await playerManager.removeMoney(player, 50, "Refuel");
+            const success = await PlayerManager.removeMoneyAndSave(player, 50, "Refuel");
             if (success) {
                 veh.setVariable('fuel', 100.0);
                 player.call('showNotification', ['Fuel', 'Tank Full ($50).']);

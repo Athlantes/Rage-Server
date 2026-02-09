@@ -8,7 +8,8 @@ let cropColshapes = {};
 let cropData = []; 
 
 const CROP_MODELS = {
-    'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 },
+    'seed_pumpkin': { start: 'prop_saplin_002_c', end: 'prop_veg_crop_03_pump', zOff: -0.5 },
+    'seed_cabbage': { start: 'vb_35b_coral_fan_p_l2', end: 'prop_veg_crop_03_cab', zOff: -0.5 }
 };
 
 // --- MARKERS & BLIPS ---
