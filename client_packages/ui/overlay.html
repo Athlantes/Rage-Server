@@ -47,8 +47,27 @@
         /* --- TOP RIGHT: MONEY & INFO --- */
         .hud-container {
             position: fixed; top: 30px; right: 35px;
+            /* UPDATED: Changed to row to allow logo on the right */
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            gap: 15px; 
+        }
+
+        /* NEW: Wrapper for the text stats so they stack vertically */
+        .hud-text-col {
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px;
             text-align: right;
-            display: flex; flex-direction: column; gap: 2px;
+        }
+
+        /* NEW: Logo styling */
+        .server-logo {
+            width: 90px; /* Adjust size as needed */
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
 
         .hud-row {
@@ -267,18 +286,24 @@
 <body>
 
     <div class="hud-container" id="hud-container">
-        <div class="hud-row">
-            <span class="money-sym">$</span><span class="money-val" id="hud-cash">0</span>
+        <div class="hud-text-col">
+            <div class="hud-row">
+                <span class="money-sym">$</span><span class="money-val" id="hud-cash">0</span>
+            </div>
+            <div class="hud-row">
+                <span class="bank-sym">$</span><span class="bank-val" id="hud-bank-val">0</span>
+            </div>
+            <div class="meta-row">
+                <span class="id-val">ID: <span id="hud-id">0</span></span>
+                <span class="meta-sep">|</span>
+                <span id="hud-name">PLAYER</span>
+                <span class="meta-sep">|</span>
+                <span id="hud-date">00:00</span>
+            </div>
         </div>
-        <div class="hud-row">
-            <span class="bank-sym">$</span><span class="bank-val" id="hud-bank-val">0</span>
-        </div>
-        <div class="meta-row">
-            <span class="id-val">ID: <span id="hud-id">0</span></span>
-            <span class="meta-sep">|</span>
-            <span id="hud-name">PLAYER</span>
-            <span class="meta-sep">|</span>
-            <span id="hud-date">00:00</span>
+
+        <div class="hud-logo-col">
+            <img src="items/server_logo.png" class="server-logo" alt="Server Logo">
         </div>
     </div>
     
