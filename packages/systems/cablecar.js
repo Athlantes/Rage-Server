@@ -93,8 +93,6 @@ function init() {
         });
     });
 
-    // NOTE: Interaction Markers/Colshapes moved to Client-Side script!
-
     // 2. SPAWN CABINS ON SERVER
     cabin0 = mp.objects.new(mp.joaat(MODEL_CABIN), new mp.Vector3(STATIONS[0].x, STATIONS[0].y, STATIONS[0].z), {
         dimension: 0,
@@ -194,22 +192,40 @@ mp.events.add('CableCar:Interact', async (player, data) => {
     if (player.vehicle) return player.notify("~r~Leave vehicle first.");
     if (player.getVariable('cableCarSeat') != null) return player.notify("~r~Already boarded.");
 
-    const reqStation = data.stationIndex;
+    // 1. Get Interaction Station Index (Optional logging)
+    let reqStation = data;
+    if (typeof data === 'object' && data.stationIndex !== undefined) {
+        reqStation = data.stationIndex;
+    }
+    
+    // 2. FOOLPROOF LOGIC: Distance Check
+    // Instead of guessing based on status, just check which cabin is close to the player.
+    const maxBoardingDistance = 15.0; // Generous radius to account for height/lag
     let assignedCabin = -1;
 
-    if (systemState.status === 0) { 
-        if (reqStation === 0) assignedCabin = 0;
-        if (reqStation === 1) assignedCabin = 1;
-    } 
-    else if (systemState.status === 2) { 
-        if (reqStation === 0) assignedCabin = 1;
-        if (reqStation === 1) assignedCabin = 0;
-    }
-    else {
-        return player.notify("~o~Cable car is moving.");
+    // Check distance to Cabin 0
+    if (cabin0 && mp.objects.exists(cabin0)) {
+        const dist0 = player.dist(cabin0.position);
+        if (dist0 < maxBoardingDistance) {
+            assignedCabin = 0;
+        }
     }
 
-    if (assignedCabin === -1) return player.notify("~r~No cabin here.");
+    // Check distance to Cabin 1
+    if (assignedCabin === -1 && cabin1 && mp.objects.exists(cabin1)) {
+        const dist1 = player.dist(cabin1.position);
+        if (dist1 < maxBoardingDistance) {
+            assignedCabin = 1;
+        }
+    }
+
+    // 3. Validation
+    if (assignedCabin === -1) {
+        // If neither is close, it means the cabins are moving or desynced
+        return player.notify("~o~Cable car is not here.");
+    }
+
+    // 4. Payment & Boarding
     if (player.data.money < RIDE_COST) return player.notify("~r~Cannot afford.");
 
     const success = await playerManager.removeMoneyAndSave(player, RIDE_COST, "Cable Car");

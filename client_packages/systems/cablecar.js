@@ -214,7 +214,7 @@ function getPosOnTrack(trackIdx, progress) {
 }
 
 // =========================================================
-// --- NEW: CLIENT-SIDE INTERACTIONS WITH "showInteraction" ---
+// --- NEW: CLIENT-SIDE INTERACTIONS ---
 // =========================================================
 
 const STATION_POSITIONS = [
@@ -223,20 +223,20 @@ const STATION_POSITIONS = [
 ];
 
 let cableCarShapes = [];
-let currentStationIndex = -1; // -1 means not in any station
+let currentStationIndex = -1; 
 
 function setupInteractions() {
     STATION_POSITIONS.forEach((pos, index) => {
-        // 1. Visual Marker
+        // Visual Marker
         mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 2.0, {
             color: [255, 255, 0, 100],
             visible: true,
             dimension: 0
         });
 
-        // 2. Client-Side ColShape
+        // ColShape
         const shape = mp.colshapes.newCircle(pos.x, pos.y, 2.0);
-        shape.cableCarStationIndex = index; // Tag the shape so we know it's ours
+        shape.cableCarStationIndex = index; // Store index for backup
         cableCarShapes.push(shape);
     });
 }
@@ -245,29 +245,30 @@ setupInteractions();
 // --- EVENTS ---
 
 mp.events.add("playerEnterColshape", (shape) => {
-    // Check if this shape is one of our cable car stations
-    if (shape.cableCarStationIndex !== undefined) {
-        currentStationIndex = shape.cableCarStationIndex;
-        
-        // TRIGGER YOUR UI
+    // FIX: Find the shape in our local array by handle to ensure we get the correct index
+    // This protects against RAGE losing custom properties on wrapper objects
+    const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
+
+    if (foundShape) {
+        currentStationIndex = foundShape.cableCarStationIndex;
         mp.events.call('showInteraction', 'Cable Car', 'Press E to ride ($100)');
     }
 });
 
 mp.events.add("playerExitColshape", (shape) => {
-    if (shape.cableCarStationIndex !== undefined) {
+    // Check by handle again
+    const foundShape = cableCarShapes.find(s => s.handle === shape.handle);
+    
+    if (foundShape) {
         currentStationIndex = -1;
-        
-        // HIDE YOUR UI
-        // Assuming 'hideInteraction' is the counterpart, or pass null/false
         mp.events.call('hideInteraction'); 
     }
 });
 
-// --- INPUT HANDLING (KEY 'E') ---
-mp.keys.bind(0x45, true, () => { // 0x45 is 'E'
+// --- INPUT HANDLING ---
+mp.keys.bind(0x45, true, () => { // E
     if (currentStationIndex !== -1 && !mp.gui.cursor.visible) {
-        // Send interaction to server
-        mp.events.callRemote("CableCar:Interact", { stationIndex: currentStationIndex });
+        // FIX: Send ONLY the number, not an object. Safer for network calls.
+        mp.events.callRemote("CableCar:Interact", currentStationIndex);
     }
 });
