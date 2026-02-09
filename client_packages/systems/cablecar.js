@@ -4,8 +4,6 @@ const MODEL_DOOR_L = "p_cablecar_s_door_l";
 const MODEL_DOOR_R = "p_cablecar_s_door_r";
 
 // --- TRACK CONFIGURATION ---
-// Track 0: Bottom -> Top
-// Track 1: Top -> Bottom
 const TRACKS = [
     [
         new mp.Vector3(-740.911, 5599.341, 47.25),
@@ -41,7 +39,7 @@ const TRACKS = [
     ]
 ];
 
-// Pre-calculate lengths for smooth speed
+// Pre-calculate lengths
 let TRACK_LENGTHS = [0, 0];
 let SEGMENT_LENGTHS = [[], []];
 
@@ -61,34 +59,36 @@ setupTracks();
 
 // --- STATE MANAGEMENT ---
 let serverState = { status: 0, startTime: Date.now(), duration: 10000 };
-let cachedCabins = { 0: null, 1: null }; // Cache remote objects to avoid scanning every frame
-let localDoors = { 0: [], 1: [] };       // Local door objects
+let remoteIds = { 0: null, 1: null }; // Store remote IDs from server
+let cachedCabins = { 0: null, 1: null }; 
+let localDoors = { 0: [], 1: [] };       
 
-// Request Models
 mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_L));
 mp.game.streaming.requestModel(mp.game.joaat(MODEL_DOOR_R));
 
 mp.events.add("CableCar:Sync", (dataStr) => {
-    serverState = JSON.parse(dataStr);
+    const data = JSON.parse(dataStr);
+    
+    // 1. Time Sync
+    const elapsedOnServer = data.serverNow - data.startTime;
+    serverState = data;
+    serverState.startTime = Date.now() - elapsedOnServer;
+
+    // 2. ID Sync (Save the Remote IDs)
+    if (data.cabinIds) {
+        remoteIds = data.cabinIds;
+    }
 });
 
-// --- MAIN RENDER LOOP ---
 mp.events.add("render", () => {
     if (!serverState) return;
 
-    // 1. Calculate Global Time Progress
+    // Calculate Global Time Progress
     const now = Date.now();
     let timeProgress = (now - serverState.startTime) / serverState.duration;
     timeProgress = Math.max(0, Math.min(1, timeProgress));
     
-    // Smooth Sine Easing
     const eased = -(Math.cos(Math.PI * timeProgress) - 1) / 2;
-
-    // 2. Determine Track Progress based on Status
-    // 0: Waiting (Cab 0 Bottom, Cab 1 Top)
-    // 1: Moving Forward (0 -> Top, 1 -> Bottom)
-    // 2: Waiting (Cab 0 Top, Cab 1 Bottom)
-    // 3: Moving Back (0 -> Bottom, 1 -> Top)
 
     let trackProgress = 0.0;
     if (serverState.status === 0) trackProgress = 0.0;
@@ -96,54 +96,53 @@ mp.events.add("render", () => {
     else if (serverState.status === 2) trackProgress = 1.0;
     else if (serverState.status === 3) trackProgress = 1.0 - eased; 
 
-    // 3. Find and Update Cabins
-    // We check both ID 0 and ID 1
     updateCabin(0, trackProgress);
     updateCabin(1, trackProgress);
 
-    // 4. Manage Player Attachment
     manageAttachment();
 });
 
 function updateCabin(id, progress) {
-    // A. Find the object if not cached or invalid
+    // A. Attempt to find the object if lost
     if (!cachedCabins[id] || !mp.objects.exists(cachedCabins[id])) {
-        cachedCabins[id] = null; // Reset
-        mp.objects.forEachInStreamRange(obj => {
-            // Check the variable set by the server
-            if (obj.getVariable('cableCarId') === id) {
+        cachedCabins[id] = null; 
+        
+        // DIRECT LOOKUP BY REMOTE ID
+        if (remoteIds[id] !== null) {
+            // This works even if the object is far away
+            const obj = mp.objects.atRemoteId(remoteIds[id]);
+            if (obj && mp.objects.exists(obj)) {
                 cachedCabins[id] = obj;
             }
-        });
+        }
     }
 
     const cabinObj = cachedCabins[id];
-    if (!cabinObj) return; // Not streamed in yet, skip
+    // We check .handle !== 0 to ensure the game engine actually has it loaded
+    if (!cabinObj || cabinObj.handle === 0) return; 
 
-    // B. Calculate Physics
-    const trackId = (id === 0) ? 0 : 1; // Cab 0 uses Track 0, Cab 1 uses Track 1
+    // B. Calculate Position
+    const trackId = (id === 0) ? 0 : 1; 
     const pos = getPosOnTrack(trackId, progress);
     
-    // C. Override Position (The "Conductor" logic)
+    // C. Move
     cabinObj.setCoords(pos.x, pos.y, pos.z, false, false, false, false);
     
-    // D. Calculate Rotation (Look Ahead)
+    // D. Rotate
     const lookAtPos = getPosOnTrack(trackId, progress + 0.01 <= 1.0 ? progress + 0.01 : progress - 0.01);
     const dx = lookAtPos.x - pos.x;
     const dy = lookAtPos.y - pos.y;
     let heading = (Math.atan2(dy, dx) * 180 / Math.PI) - 90;
-    if (progress + 0.01 > 1.0) heading += 180; // Fix snap at end of track
+    if (progress + 0.01 > 1.0) heading += 180; 
 
     cabinObj.setRotation(0.0, 0.0, heading, 2, true);
 
-    // E. Handle Doors
+    // E. Doors
     manageLocalDoors(cabinObj, id);
 }
 
 function manageLocalDoors(cabinObj, id) {
-    // 1. Create doors if missing
     if (localDoors[id].length === 0) {
-        // Ensure models are loaded
         if (!mp.game.streaming.hasModelLoaded(mp.game.joaat(MODEL_DOOR_L))) return;
         
         for(let i=0; i<4; i++) {
@@ -153,22 +152,15 @@ function manageLocalDoors(cabinObj, id) {
         }
     }
 
-    // 2. Calculate Offset (Open or Closed)
     const isMoving = (serverState.status === 1 || serverState.status === 3);
-    const offset = isMoving ? 0.0 : 0.95; // 0.0 = Closed, 0.95 = Open
+    const offset = isMoving ? 0.0 : 0.95; 
 
-    // 3. Attach Doors to Cabin
-    // We strictly enforce attachment every frame to prevent desync jitter
     const doors = localDoors[id];
     
     if (doors.length === 4) {
-        // Door 0 (Left Front)
         doors[0].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
-        // Door 1 (Right Front)
         doors[1].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 0.0, false, false, true, false, 2, true);
-        // Door 2 (Left Back - Rotated 180)
         doors[2].attachTo(cabinObj.handle, 0, 0.0, -offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
-        // Door 3 (Right Back - Rotated 180)
         doors[3].attachTo(cabinObj.handle, 0, 0.0, offset, 0.0, 0.0, 0.0, 180.0, false, false, true, false, 2, true);
     }
 }
@@ -176,30 +168,20 @@ function manageLocalDoors(cabinObj, id) {
 function manageAttachment() {
     const seatId = mp.players.local.getVariable('cableCarSeat');
     
-    // A. Player wants to be attached
     if (seatId !== undefined && seatId !== null) {
         const cabinObj = cachedCabins[seatId];
-
-        if (cabinObj && mp.objects.exists(cabinObj)) {
-            // 1. Freeze player physics to prevent falling
+        if (cabinObj && mp.objects.exists(cabinObj) && cabinObj.handle !== 0) {
             mp.players.local.freezePosition(true);
-
-            // 2. Attach if not already
             if (mp.players.local.getAttachedTo() !== cabinObj.handle) {
-                // Offset: Z = -5.35 puts player on the floor of this specific model
                 mp.players.local.attachTo(cabinObj.handle, 0, 0, 0, -5.35, 0, 0, 0, false, false, false, false, 2, true);
             }
         }
     } 
-    // B. Player should be free
     else {
         if (mp.players.local.isAttached()) {
              const handle = mp.players.local.getAttachedTo();
-             
-             // Check if we are attached to a known cabin
              const isAttachedToCabin = (cachedCabins[0] && cachedCabins[0].handle === handle) || 
                                        (cachedCabins[1] && cachedCabins[1].handle === handle);
-             
              if (isAttachedToCabin) {
                 mp.players.local.detach(true, false);
                 mp.players.local.freezePosition(false);
@@ -208,10 +190,8 @@ function manageAttachment() {
     }
 }
 
-// Math Helper: Interpolate position along the track segments
 function getPosOnTrack(trackIdx, progress) {
     progress = Math.max(0, Math.min(1, progress));
-    
     const targetDist = TRACK_LENGTHS[trackIdx] * progress;
     const track = TRACKS[trackIdx];
     const segs = SEGMENT_LENGTHS[trackIdx];
@@ -223,7 +203,6 @@ function getPosOnTrack(trackIdx, progress) {
             const segProg = (targetDist - currentDist) / segs[i];
             const p1 = track[i];
             const p2 = track[i+1];
-            
             return new mp.Vector3(
                 p1.x + (p2.x - p1.x) * segProg,
                 p1.y + (p2.y - p1.y) * segProg,
