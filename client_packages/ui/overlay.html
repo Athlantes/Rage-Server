@@ -12,7 +12,6 @@
             --primary: #00a8ff; 
             --danger: #ff4757;
             --success: #2ecc71;
-            /* Strong Shadow for readability on transparent bg */
         }
 
         body {
@@ -28,8 +27,8 @@
         .mic-status {
             position: fixed; 
             bottom: 40px; 
-            left: 330px; /* Positioned to the right of the standard Minimap */
-            color: rgba(255, 255, 255, 0.4); /* Dimmed by default */
+            left: 330px; 
+            color: rgba(255, 255, 255, 0.4); 
             font-size: 20px;
             background: rgba(0, 0, 0, 0.3);
             width: 35px; height: 35px;
@@ -38,19 +37,11 @@
             transition: all 0.15s ease-in-out;
         }
 
-        /* Active State (Talking) */
         .mic-status.active {
             color: #fff;
-            background: var(--success); /* Green background */
+            background: var(--success); 
             box-shadow: 0 0 10px var(--success);
             transform: scale(1.1);
-        }
-
-        /* Optional: Radio State (If you want to add this later) */
-        .mic-status.radio {
-            background: var(--primary); /* Blue for radio */
-            box-shadow: 0 0 10px var(--primary);
-            color: #fff;
         }
 
         /* --- TOP RIGHT: MONEY & INFO --- */
@@ -58,7 +49,6 @@
             position: fixed; top: 30px; right: 35px;
             text-align: right;
             display: flex; flex-direction: column; gap: 2px;
-            /* NO BACKGROUND */
         }
 
         .hud-row {
@@ -66,15 +56,12 @@
             line-height: 1;
         }
 
-        /* Money */
         .money-val { font-size: 32px; font-weight: 700; color: #fff; letter-spacing: -1px; }
         .money-sym { color: var(--success); font-size: 22px; margin-right: 2px; font-weight: 800; }
 
-        /* Bank */
         .bank-val { font-size: 22px; font-weight: 600; color: #dcdcdc; letter-spacing: -0.5px; }
         .bank-sym { color: var(--primary); font-size: 18px; margin-right: 4px; }
 
-        /* Meta (Date/ID) */
         .meta-row {
             margin-top: 8px;
             font-size: 12px; font-weight: 700; color: #eee;
@@ -82,12 +69,15 @@
             opacity: 0.9;
         }
         .meta-sep { color: var(--primary); margin: 0 6px; }
+        
+        /* New ID Color style */
+        .id-val { color: var(--primary); }
 
         /* --- BOTTOM RIGHT: SPEEDOMETER --- */
         .speedo-container {
             position: fixed; bottom: 35px; right: 35px;
             text-align: right;
-            display: none; /* Toggled by JS */
+            display: none; 
             flex-direction: column; align-items: flex-end;
         }
 
@@ -101,10 +91,8 @@
             margin-bottom: 5px;
         }
 
-        /* Fuel Bar (Floating Line) */
         .fuel-track {
             width: 180px; height: 6px;
-            /* Semi-transparent track, not a black box */
             background: rgba(255, 255, 255, 0.2);
             border-radius: 3px;
             margin-top: 5px;
@@ -133,7 +121,6 @@
             width: 300px;
             display: none;
             text-align: right;
-            /* NO BACKGROUND */
         }
 
         .job-label {
@@ -158,7 +145,6 @@
         .jd-val { font-size: 14px; color: white; font-weight: 700; }
         .jd-val.green { color: var(--success); }
 
-        /* Progress Line (Floating) */
         .job-prog-track {
             width: 100%; height: 4px;
             background: rgba(255,255,255,0.2);
@@ -177,7 +163,6 @@
             display: flex; flex-direction: column-reverse; pointer-events: none;
         }
         .notif-card {
-            /* Very minimal transparent bg just for text contrast if needed, or purely text */
             background: rgba(0, 0, 0, 0.4); 
             border-left: 3px solid var(--primary);
             padding: 10px 15px; margin-top: 10px; border-radius: 4px;
@@ -191,7 +176,6 @@
         .inter-box {
             position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
             display: none; align-items: center; gap: 10px;
-            /* Floating text/icon only */
         }
         .inter-key {
             width: 30px; height: 30px; background: white; color: #000;
@@ -211,7 +195,6 @@
         }
         .hb-slot {
             width: 45px; height: 45px;
-            /* Slight darkness for items, but mostly transparent */
             background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; display: flex; justify-content: center; align-items: center;
             position: relative;
@@ -242,6 +225,8 @@
             <span class="bank-sym">$</span><span class="bank-val" id="hud-bank-val">0</span>
         </div>
         <div class="meta-row">
+            <span class="id-val">ID: <span id="hud-id">0</span></span>
+            <span class="meta-sep">|</span>
             <span id="hud-name">PLAYER</span>
             <span class="meta-sep">|</span>
             <span id="hud-date">00:00</span>
@@ -311,8 +296,9 @@
             }
         }
         
-        // --- HUD STATS ---
-        function updateInfoHud(name, money, bank, dateStr) {
+        // --- HUD STATS (Updated with ID) ---
+        function updateInfoHud(id, name, money, bank, dateStr) {
+            document.getElementById('hud-id').innerText = id;
             document.getElementById('hud-name').innerText = name;
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
             document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
@@ -327,20 +313,17 @@
             const fVal = Math.floor(fuel);
             const bar = document.getElementById('fuel-fill');
             
-            // Width
             bar.style.width = fVal + '%';
             
-            // Color Logic
             bar.className = 'fuel-fill'; 
             if(fVal < 20) bar.classList.add('crit');
             else if(fVal < 40) bar.classList.add('low');
 
             document.getElementById('fuel-text').innerText = fVal + '%';
-            document.getElementById('fuel').innerText = fVal + '%'; // legacy
+            document.getElementById('fuel').innerText = fVal + '%'; 
 
-            // Lock Logic
             const lIcon = document.getElementById('lock-icon');
-            const lTxt = document.getElementById('lock'); // legacy
+            const lTxt = document.getElementById('lock'); 
 
             if(isLocked) {
                 lIcon.innerHTML = '<i class="fas fa-lock"></i> LOCKED';
@@ -369,11 +352,9 @@
             document.getElementById('job-text').innerText = text || "Loading...";
             document.getElementById('job-cash').innerText = '$' + new Intl.NumberFormat().format(earned || 0);
 
-            // Distance
             let distStr = (dist >= 1000) ? (dist / 1000).toFixed(2) + " km" : Math.floor(dist) + " m";
             document.getElementById('job-dist').innerText = distStr;
 
-            // Progress
             const pct = max > 0 ? (current / max) * 100 : 0;
             document.getElementById('job-bar').style.width = pct + '%';
             document.getElementById('job-count').innerText = `${current} / ${max}`;

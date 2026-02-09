@@ -11,8 +11,6 @@ const playerManager = {
         return true;
     },
 
-    
-
     /**
      * SECURE PAYOUT: Updates memory AND immediately persists to DB.
      * Essential for Job Rewards to prevent loss on server crash.
@@ -96,6 +94,7 @@ const playerManager = {
 
 module.exports = playerManager;
 
+// --- SPAWN POINTS ---
 const spawnPoints = [
     { x: 206.56, y: -909.89, z: 30.29 },
     { x: 384.62, y: 260.67, z: 91.00 },
@@ -103,6 +102,31 @@ const spawnPoints = [
     { x: -113.84, y: 6445.62, z: 31.40 },
     { x: -1037.76, y: -2737.67, z: 20.16 }
 ];
+
+// --- EVENTS ---
+
+// 1. Assign Online ID on Join
+mp.events.add('playerJoin', (player) => {
+    // Gather all currently used IDs
+    const usedIds = new Set();
+    mp.players.forEach(p => {
+        if (p !== player && p.data.onlineId !== undefined) {
+            usedIds.add(p.data.onlineId);
+        }
+    });
+
+    // Find lowest available ID
+    let newId = 0;
+    while (usedIds.has(newId)) {
+        newId++;
+    }
+
+    // Assign
+    player.data.onlineId = newId;
+    player.setVariable('onlineId', newId);
+    
+    console.log(`[Connection] ${player.name} joined. Assigned ID: ${newId}`);
+});
 
 mp.events.add('server:spawn:player', (player, index) => {
     let pos;

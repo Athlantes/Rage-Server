@@ -54,16 +54,20 @@ setInterval(() => {
     if(overlayBrowser) {
         const player = mp.players.local;
         
-        // A. Update Clock & Money
+        // A. Update Clock & Money & ID
         const money = player.getVariable('money') || 0;
         const bank = player.getVariable('bank') || 0;
+        const onlineId = player.getVariable('onlineId');
+        const displayId = (onlineId !== undefined) ? onlineId : '-';
+        
         const now = new Date();
         const fullDate = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} | ${now.getDate()}/${now.getMonth() + 1}`;
         
-        // FIX: Escape the name to prevent syntax errors if name contains quotes (e.g. O'Neil)
+        // FIX: Escape the name to prevent syntax errors
         const safeName = player.name.replace(/'/g, "\\'");
         
-        overlayBrowser.execute(`updateInfoHud('${safeName}', ${money}, ${bank}, '${fullDate}');`);
+        // Update UI with new ID parameter
+        overlayBrowser.execute(`updateInfoHud('${displayId}', '${safeName}', ${money}, ${bank}, '${fullDate}');`);
 
         // B. Update Job Distance Live
         if (currentJobLocation) {

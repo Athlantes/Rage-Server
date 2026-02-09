@@ -24,12 +24,18 @@ const COLORS = {
 
 // --- UTILS ---
 function getPlayer(targetIdOrName) {
-    if (!targetIdOrName) return null;
-    let target = mp.players.at(parseInt(targetIdOrName));
-    if (!target) {
-        target = mp.players.toArray().find(p => p.name.toLowerCase().includes(targetIdOrName.toLowerCase()));
+    if (targetIdOrName === null || targetIdOrName === undefined) return null;
+
+    // 1. Try to find by custom Online ID (Numeric)
+    const id = parseInt(targetIdOrName);
+    if (!isNaN(id)) {
+        const found = mp.players.toArray().find(p => p.data.onlineId === id);
+        if (found) return found;
     }
-    return target;
+
+    // 2. Fallback: Search by Name (Partial)
+    const lowerName = targetIdOrName.toString().toLowerCase();
+    return mp.players.toArray().find(p => p.name.toLowerCase().includes(lowerName));
 }
 
 function checkRank(player, minRank) {
@@ -53,11 +59,12 @@ mp.events.addCommand('help', (player) => {
 mp.events.addCommand('stats', (player) => {
     if (!player.data) return;
     const money = player.data.money || 0;
-    const bank = player.data.bank_money || 0; // Fixed variable name based on auth.js
+    const bank = player.data.bank_money || 0; 
     const level = player.data.level || 0;
+    const onlineId = player.data.onlineId !== undefined ? player.data.onlineId : "-";
     const job = player.activeJobId ? player.activeJobId.toUpperCase() : "None";
     
-    player.outputChatBox(`${COLORS.SUCCESS}[Stats] !{FFFFFF}Money: $${money} | Bank: $${bank} | Level: ${level} | Job: ${job}`);
+    player.outputChatBox(`${COLORS.SUCCESS}[Stats] !{FFFFFF}ID: ${onlineId} | Money: $${money} | Bank: $${bank} | Level: ${level} | Job: ${job}`);
 });
 
 mp.events.addCommand('me', (player, fullText) => {
@@ -95,7 +102,7 @@ mp.events.addCommand('w', (player, fullText) => {
 mp.events.addCommand('buycar', (player, model) => {
     if (!player.logged) return player.outputChatBox("Login first!");
     if (!model) return player.outputChatBox("Usage: /buycar [modelname]");
-    vehicleManager.create(player, model); // Integrated with your vehicleManager
+    vehicleManager.create(player, model); 
 });
 
 mp.events.addCommand('parkcar', (player) => {
@@ -103,7 +110,7 @@ mp.events.addCommand('parkcar', (player) => {
     if (!veh) return player.call('showNotification', ['Garage', 'You must be in a vehicle.']);
     if (veh.ownerId !== player.data.dbId) return player.call('showNotification', ['Garage', 'You do not own this vehicle.']);
     
-    vehicleManager.savePosition(veh); // Updates DB position
+    vehicleManager.savePosition(veh); 
     player.call('client:leaveVehicle');
     player.call('showNotification', ['Garage', 'Vehicle parked here.']);
 });
@@ -149,14 +156,12 @@ mp.events.addCommand('aduty', (player) => {
     player.data.adminDuty = !player.data.adminDuty;
     
     if (player.data.adminDuty) {
-        // Enable Godmode & Visuals
-        player.setVariable('isAdminDuty', true); // Use this client-side for nametags
+        player.setVariable('isAdminDuty', true); 
         player.health = 100;
         player.armour = 100;
-        player.call('client:setGodmode', [true]); // Assuming you have a client event for this
+        player.call('client:setGodmode', [true]); 
         mp.players.broadcast(`${COLORS.ADMIN}[ADMIN] ${player.name} is now on duty.`);
     } else {
-        // Disable
         player.setVariable('isAdminDuty', false);
         player.call('client:setGodmode', [false]);
         mp.players.broadcast(`${COLORS.INFO}[ADMIN] ${player.name} is now off duty.`);
@@ -181,7 +186,6 @@ mp.events.addCommand('a', (player, fullText) => {
 mp.events.addCommand('savelandmark', (player, fullText) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
 
-    // Parse arguments: First arg is reward, rest is the name
     const args = fullText.split(' ');
     const reward = parseInt(args[0]);
     const name = args.slice(1).join(' ');
@@ -191,9 +195,7 @@ mp.events.addCommand('savelandmark', (player, fullText) => {
     }
 
     const pos = player.position;
-
     const outputString = `\n    { id: 0, name: "${name}", pos: { x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)} }, reward: ${reward} },`;
-
     const filePath = path.join(__dirname, '../../saved_landmarks.txt');
 
     fs.appendFile(filePath, outputString, (err) => {
@@ -202,7 +204,6 @@ mp.events.addCommand('savelandmark', (player, fullText) => {
             player.outputChatBox(`${COLORS.ERROR}Failed to save landmark.`);
         } else {
             player.outputChatBox(`${COLORS.SUCCESS}Saved landmark "${name}" with reward $${reward}.`);
-            player.outputChatBox(`${COLORS.INFO}Check root folder for saved_landmarks.txt`);
         }
     });
 });
@@ -252,8 +253,7 @@ mp.events.addCommand('kick', (player, fullText) => {
 });
 
 mp.events.addCommand('ban', async (player, fullText) => {
-    if (!checkRank(player, RANKS.ADMIN)) return; // Recommend Rank 3 (Admin) for Perm Bans
-
+    if (!checkRank(player, RANKS.ADMIN)) return; 
     const args = fullText.split(' ');
     const targetName = args[0];
     const reason = args.slice(1).join(' ') || "Breach of rules";
@@ -267,32 +267,26 @@ mp.events.addCommand('ban', async (player, fullText) => {
         const targetDbId = rows[0].id;
         const targetUsername = rows[0].username;
 
-        // INSERT as Permanent (expire_time is omitted, so it defaults to NULL)
         await db.query(
             "INSERT INTO user_bans (user_id, admin_name, reason, active, expire_time) VALUES (?, ?, ?, 1, NULL)",
             [targetDbId, player.name, reason]
         );
 
-        // Kick if online
         const targetPlayer = mp.players.toArray().find(p => p.name === targetUsername);
         if (targetPlayer) {
             targetPlayer.outputChatBox(`!{FF0000}You have been PERMANENTLY BANNED by ${player.name}.`);
             targetPlayer.outputChatBox(`!{FF0000}Reason: ${reason}`);
             targetPlayer.kick(`Permanent Ban: ${reason}`);
         }
-
         mp.players.broadcast(`!{FF0000}[ADMIN] ${targetUsername} was PERMANENTLY banned by ${player.name}. (${reason})`);
-
     } catch (err) {
         console.error(err);
         player.outputChatBox("!{FF0000}Database Error.");
     }
 });
 
-// 2. TEMPORARY BAN COMMAND
 mp.events.addCommand('tempban', async (player, fullText) => {
-    if (!checkRank(player, RANKS.MODERATOR)) return; // Moderators can usually tempban
-
+    if (!checkRank(player, RANKS.MODERATOR)) return; 
     const args = fullText.split(' ');
     const targetName = args[0];
     const minutes = parseInt(args[1]);
@@ -307,7 +301,6 @@ mp.events.addCommand('tempban', async (player, fullText) => {
         const targetDbId = rows[0].id;
         const targetUsername = rows[0].username;
 
-        // INSERT with Expiration Date
         await db.query(
             `INSERT INTO user_bans (user_id, admin_name, reason, active, expire_time) 
              VALUES (?, ?, ?, 1, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
@@ -317,12 +310,9 @@ mp.events.addCommand('tempban', async (player, fullText) => {
         const targetPlayer = mp.players.toArray().find(p => p.name === targetUsername);
         if (targetPlayer) {
             targetPlayer.outputChatBox(`!{FF0000}You have been BANNED for ${minutes} minutes.`);
-            targetPlayer.outputChatBox(`!{FF0000}Reason: ${reason}`);
             targetPlayer.kick(`Temp Ban (${minutes}m): ${reason}`);
         }
-
         mp.players.broadcast(`!{FF0000}[ADMIN] ${targetUsername} was banned for ${minutes} mins by ${player.name}.`);
-
     } catch (err) {
         console.error(err);
         player.outputChatBox("!{FF0000}Database Error.");
@@ -334,13 +324,10 @@ mp.events.addCommand('unban', async (player, targetName) => {
     if (!targetName) return player.outputChatBox("Usage: /unban [username]");
 
     try {
-        // Find the user ID
         const [users] = await db.query("SELECT id FROM users WHERE username = ?", [targetName]);
         if (users.length === 0) return player.outputChatBox(`${COLORS.ERROR}User not found.`);
         
         const targetId = users[0].id;
-
-        // Set all active bans to inactive
         const [result] = await db.query(
             "UPDATE user_bans SET active = 0 WHERE user_id = ? AND active = 1", 
             [targetId]
@@ -351,7 +338,6 @@ mp.events.addCommand('unban', async (player, targetName) => {
         } else {
             player.outputChatBox(`${COLORS.INFO}${targetName} is not currently banned.`);
         }
-
     } catch (err) {
         console.error(err);
         player.outputChatBox(`${COLORS.ERROR}Database error.`);
@@ -363,7 +349,7 @@ mp.events.addCommand('freeze', (player, targetName) => {
     const target = getPlayer(targetName);
     if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
 
-    target.call('client:freezePlayer', [true]); // Needs client event
+    target.call('client:freezePlayer', [true]); 
     target.outputChatBox(`${COLORS.ADMIN}You have been frozen.`);
     player.outputChatBox(`${COLORS.SUCCESS}Frozen ${target.name}.`);
 });
@@ -384,14 +370,11 @@ mp.events.addCommand('revive', (player, targetName) => {
 
     target.health = 100;
     target.armour = 0;
-    // If you have a death system, emit the revive event here:
-    // mp.events.call('server:player:revive', target); 
     player.outputChatBox(`${COLORS.SUCCESS}Revived ${target.name}.`);
 });
 
 // --- VEHICLE MANAGEMENT ---
 
-// Temporary Admin Vehicle
 mp.events.addCommand('veh', (player, model) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
     if (!model) return player.outputChatBox("Usage: /veh [model]");
@@ -416,7 +399,6 @@ mp.events.addCommand('veh', (player, model) => {
     player.outputChatBox(`${COLORS.SUCCESS}Spawned temporary ${model}.`);
 });
 
-// Permanent Database Vehicle (Uses vehicleManager)
 mp.events.addCommand('giveveh', async (player, fullText) => {
     if (!checkRank(player, RANKS.OWNER)) return;
     const args = fullText.split(' ');
@@ -432,15 +414,13 @@ mp.events.addCommand('giveveh', async (player, fullText) => {
 mp.events.addCommand('dv', (player) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
     
-    // Check if in vehicle
     if (player.vehicle) {
         const veh = player.vehicle;
-        vehicleManager.despawnVehicle(veh); // Updates DB to parked=1 if it's a saved car
+        vehicleManager.despawnVehicle(veh); 
         player.outputChatBox(`${COLORS.SUCCESS}Vehicle deleted.`);
         return;
     }
 
-    // Check nearest vehicle
     let nearestVeh = null;
     let minDist = 5.0;
 
@@ -462,19 +442,15 @@ mp.events.addCommand('dv', (player) => {
 
 mp.events.addCommand('fix', (player) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
-    
     if (player.vehicle) {
-        // 1. Repair Body & Engine
         player.vehicle.repair();
-        
-        // 2. Set Fuel to 100%
         player.vehicle.setVariable('fuel', 100.0);
-        
         player.outputChatBox(`${COLORS.SUCCESS}Vehicle repaired and refueled.`);
     } else {
         player.outputChatBox(`${COLORS.ERROR}You must be in a vehicle.`);
     }
 });
+
 // --- ECONOMY & INVENTORY INTEGRATION ---
 
 mp.events.addCommand('setmoney', async (player, fullText) => {
@@ -486,7 +462,6 @@ mp.events.addCommand('setmoney', async (player, fullText) => {
     if (!target || isNaN(amount)) return player.outputChatBox("Usage: /setmoney [player] [amount]");
 
     target.data.money = amount;
-    // We update the DB manually here to override the additive logic in playerManager
     target.setVariable('money', amount);
     await db.query("UPDATE users SET money = ? WHERE id = ?", [amount, target.data.dbId]);
     
@@ -512,9 +487,8 @@ mp.events.addCommand('giveitem', async (player, fullText) => {
     const item = args[1];
     const amount = parseInt(args[2]) || 1;
 
-    if (!target || !item) return player.outputChatBox("Usage: /giveitem [player] [itemId] [amount]");
+    if (!target || !item) return player.outputChatBox("Usage: /giveitem [id/name] [itemId] [amount]");
 
-    // INTEGRATION: Use Inventory System
     const success = await Inventory.addItem(target, item, amount);
     
     if (success) {
@@ -533,7 +507,7 @@ mp.events.addCommand('makeadmin', async (player, fullText) => {
     const target = getPlayer(args[0]);
     const level = parseInt(args[1]);
 
-    if (!target || isNaN(level)) return player.outputChatBox("Usage: /makeadmin [player] [level (0-4)]");
+    if (!target || isNaN(level)) return player.outputChatBox("Usage: /makeadmin [id/name] [level (0-4)]");
 
     target.data.adminLevel = level;
     await db.query("UPDATE users SET admin_level = ? WHERE id = ?", [level, target.data.dbId]);
@@ -549,7 +523,6 @@ mp.events.addCommand('savecoords', (player, fullText) => {
     const name = fullText || "Location";
     
     const coordString = `\n// ${name}\n{ x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)}, h: ${heading.toFixed(2)} },`;
-
     const filePath = path.join(__dirname, `../../saved_coords_${player.name}.txt`);
     
     fs.appendFile(filePath, coordString, (err) => {
@@ -559,16 +532,10 @@ mp.events.addCommand('savecoords', (player, fullText) => {
 });
 
 mp.events.addCommand('currentzone', (player) => {
-    // Debug for development
     if (player.data.adminLevel < 1) return;
     
     const broadZones = ZoneManager.getBroadPhaseZones(player);
     const preciseZones = broadZones.filter(id => ZoneManager.isPlayerInZone(player, id));
     
     player.outputChatBox(`${COLORS.INFO}Zones: ${preciseZones.join(', ') || 'None'}`);
-});
-
-mp.events.addCommand("camera", (player) => {
-    // Call the client-side event 'toggleCamera' for the player who typed the command
-    player.call("client:toggleCamera");
 });
