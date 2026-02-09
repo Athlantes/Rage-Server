@@ -4,6 +4,7 @@
 // 1. CONSTANTS & STATE
 // --------------------------------------------------------------------
 const player = mp.players.local;
+let isCamShaking = false;
 
 // --------------------------------------------------------------------
 // 3. CORE EVENTS
@@ -40,6 +41,55 @@ mp.events.add('render', () => {
         const disabledControls = [22, 24, 257, 25, 140, 141, 142, 143, 23, 75];
         disabledControls.forEach(ctrl => mp.game.controls.disableControlAction(0, ctrl, true));
     }
+
+    // --------------------------------------------------------------------
+    // 5. DRIVER SHOOTING RESTRICTIONS
+    // --------------------------------------------------------------------
+    if (player.vehicle && player.vehicle.getPedInSeat(-1) === player.handle) {
+        const vehicle = player.vehicle;
+        const speed = vehicle.getSpeed() * 3.6; // km/h
+        const weaponHash = player.weapon;
+        const weaponGroup = mp.game.weapon.getWeapontypeGroup(weaponHash);
+        const PISTOL_GROUP = 416676503;
+
+        // 1. RESTRICT: Disable controls if Speed > 50 OR Weapon is NOT a Pistol
+        if (speed > 50 || weaponGroup !== PISTOL_GROUP) {
+            mp.game.controls.disableControlAction(0, 68, true); // Aim
+            mp.game.controls.disableControlAction(0, 69, true); // Attack
+            mp.game.controls.disableControlAction(0, 70, true); // Attack 2
+        }
+
+        // 2. EFFECT: Apply Shake & Handling Difficulty while Aiming
+        const isAiming = mp.game.controls.isControlPressed(0, 68);
+        
+        // Only apply if they are allowed to shoot (Pistol & < 50km/h) AND are aiming
+        if (isAiming && speed <= 50 && weaponGroup === PISTOL_GROUP) {
+            
+            // Check '!isCamShaking' to ensure we only trigger the start ONCE
+            if (!isCamShaking) {
+                // "HAND_SHAKE" loops continuously. 
+                // Intensity 4.0 is very strong (standard is usually 1.0).
+                mp.game.cam.shakeGameplayCam("HAND_SHAKE", 2.0); 
+                isCamShaking = true;
+            }
+
+            // Disable Handbrake to make driving harder (no drifting/sharp turns)
+            mp.game.controls.disableControlAction(0, 76, true); 
+
+        } else {
+            // Stop shake ONLY if it is currently active
+            if (isCamShaking) {
+                mp.game.cam.stopGameplayCamShaking(true);
+                isCamShaking = false;
+            }
+        }
+    } else {
+        // Safety: Stop shake if player leaves vehicle/seat while aiming
+        if (isCamShaking) {
+            mp.game.cam.stopGameplayCamShaking(true);
+            isCamShaking = false;
+        }
+    }
 });
 
 // --------------------------------------------------------------------
@@ -60,3 +110,4 @@ setInterval(() => {
     mp.game.invoke('0xF4F2C0D4EE209E20'); 
     mp.game.invoke('0x9E4CFFF989258472'); 
 }, 25000);
+
