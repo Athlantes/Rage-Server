@@ -6,6 +6,7 @@ let sellerMenu = null;
 let cropObjects = {}; 
 let cropColshapes = {}; 
 let cropData = []; 
+let animalBlips = [];
 
 const CROP_MODELS = {
     'seed_pumpkin': { start: 'prop_veg_crop_04_leaf', end: 'prop_veg_crop_03_pump', zOff: -0.05 },
@@ -13,6 +14,29 @@ const CROP_MODELS = {
 };
 
 // --- MARKERS & BLIPS ---
+
+mp.events.add('client:farmer:createAnimalBlips', (json) => {
+    // 1. Clear existing
+    animalBlips.forEach(b => b.destroy());
+    animalBlips = [];
+
+    // 2. Create new blips from server data
+    const zones = JSON.parse(json);
+    zones.forEach(zone => {
+        const blip = mp.blips.new(zone.sprite, new mp.Vector3(zone.x, zone.y, zone.z), {
+            name: zone.name,
+            color: 31, // Beige/Brown (Farm color)
+            shortRange: true,
+            scale: 0.9
+        });
+        animalBlips.push(blip);
+    });
+});
+
+mp.events.add('client:farmer:clearAnimalBlips', () => {
+    animalBlips.forEach(b => b.destroy());
+    animalBlips = [];
+});
 
 mp.events.add('client:farmer:updateMarkers', (json) => {
     markers.forEach(m => m.destroy());

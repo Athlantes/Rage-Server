@@ -28,6 +28,58 @@ const SELLER_NPC = { x: 1960.07, y: 3739.94, z: 32.34, h: -50.14 };
 const VEHICLE_SPAWN = { x: 2411.58, y: 4988.95, z: 45.43, h: 133.84 };
 const GARAGE_POS = { x: 2415.52, y: 4993.02, z: 46.22, h: 134.69 }; 
 
+// --- ANIMAL KEEPER CONFIG ---
+const ANIMAL_PAYOUTS = {
+    'feed': 10,   // Pay for feeding
+    'milk': 15,   // Pay for milking
+    'collect': 5 // Pay for collecting eggs/wool
+};
+
+const ANIMAL_COOLDOWN_MS = 120000; // 120 seconds wait per animal
+
+const ANIMAL_ZONES = [
+    { 
+        name: "Chicken Coop", 
+        x: 2378.54, y: 5053.44, z: 46.44, 
+        sprite: 256 // "Hen House" sprite (or use 442)
+    }, 
+    { 
+        name: "Livestock Barn", 
+        x: 2170.00, y: 4990.00, z: 41.30, // Centered between cows and pigs
+        sprite: 442 // "Animal/Paw" sprite
+    }
+];
+
+// Animal Data (Compiled from your coords)
+const ANIMALS = [
+    // --- CHICKENS ---
+    { id: 100, type: 'hen', model: 'a_c_hen', x: 2378.54, y: 5053.44, z: 46.14, h: -37.47 },
+    { id: 101, type: 'hen', model: 'a_c_hen', x: 2380.00, y: 5054.50, z: 46.14, h: 45.00 },
+    { id: 102, type: 'hen', model: 'a_c_hen', x: 2377.00, y: 5055.00, z: 46.14, h: 90.00 },
+    { id: 103, type: 'hen', model: 'a_c_hen', x: 2379.50, y: 5052.00, z: 46.14, h: 180.00 },
+    { id: 104, type: 'hen', model: 'a_c_hen', x: 2376.50, y: 5052.50, z: 46.14, h: 270.00 },
+
+    // --- COWS ---
+    { id: 200, type: 'cow', model: 'a_c_cow', x: 2176.41, y: 4986.26, z: 41.01, h: -139.70 },
+    { id: 201, type: 'cow', model: 'a_c_cow', x: 2168.50, y: 4979.81, z: 41.00, h: -139.97 },
+    { id: 202, type: 'cow', model: 'a_c_cow', x: 2161.93, y: 4972.65, z: 41.06, h: -140.70 },
+    { id: 203, type: 'cow', model: 'a_c_cow', x: 2154.46, y: 4965.56, z: 41.20, h: -136.00 },
+    { id: 204, type: 'cow', model: 'a_c_cow', x: 2196.79, y: 4968.49, z: 41.08, h: 42.74 },
+    { id: 205, type: 'cow', model: 'a_c_cow', x: 2188.92, y: 4961.02, z: 40.98, h: 48.98 },
+    { id: 206, type: 'cow', model: 'a_c_cow', x: 2178.07, y: 4951.24, z: 41.00, h: 51.69 },
+    { id: 207, type: 'cow', model: 'a_c_cow', x: 2174.46, y: 4947.18, z: 41.04, h: 39.83 },
+
+    // --- PIGS ---
+    { id: 300, type: 'pig', model: 'a_c_pig', x: 2165.78, y: 4996.82, z: 41.00, h: 44.35 },
+    { id: 301, type: 'pig', model: 'a_c_pig', x: 2158.07, y: 4989.39, z: 41.03, h: 40.66 },
+    { id: 302, type: 'pig', model: 'a_c_pig', x: 2151.51, y: 4982.47, z: 41.12, h: 39.98 },
+    { id: 303, type: 'pig', model: 'a_c_pig', x: 2144.21, y: 4975.33, z: 41.20, h: 44.65 },
+    { id: 304, type: 'pig', model: 'a_c_pig', x: 2128.30, y: 4991.68, z: 41.16, h: -141.70 },
+    { id: 305, type: 'pig', model: 'a_c_pig', x: 2136.05, y: 4998.37, z: 41.11, h: -136.79 },
+    { id: 306, type: 'pig', model: 'a_c_pig', x: 2142.56, y: 5005.97, z: 41.04, h: -133.91 },
+    { id: 307, type: 'pig', model: 'a_c_pig', x: 2149.99, y: 5013.23, z: 41.08, h: -138.22 },
+];
+
 const TREES = [
     { id: 'tree_1', x: 2389.63, y: 4991.62, z: 45.15 },
     { id: 'tree_2', x: 2374.04, y: 4988.31, z: 43.99 },
@@ -76,7 +128,7 @@ loadCrops();
 function formatCropRow(row) {
     return {
         id: row.id, owner: row.character_id, item: row.seed_item_id,
-        fieldId: row.field_id, // [FIX] Store fieldId for counting
+        fieldId: row.field_id,
         x: row.x, y: row.y, z: row.z, h: row.heading,
         planted: Number(row.planted_at), ready: Number(row.ready_at)
     };
@@ -107,20 +159,137 @@ const logic = {
     onInteract: async (player, action) => { 
         if (action === 'apple') return startAppleJob(player);
         if (action === 'crop') return startCropJob(player);
-        if (action === 'animal') return player.call('showNotification', ['Farmer', 'Coming soon!']);
+        if (action === 'animal') return startAnimalJob(player);
     },
     onStop: (player) => {
         const data = activeJobs.get(player.id);
         if (data && data.vehicle && mp.vehicles.exists(data.vehicle)) data.vehicle.destroy();
         activeJobs.delete(player.id);
         jobManager.clearObjective(player);
+        
+        // Clear all client-side visuals
         player.call('client:farmer:clearMarkers'); 
         player.call('client:farmer:clearCrops'); 
         player.call('client:farmer:clearFieldBlips');
+        
+        // [NEW] Clear Animal Blips
+        player.call('client:farmer:clearAnimalBlips'); 
+
         player.call('client:farmer:toggleSeller', [false]);
     }
 };
 
+// --- ANIMAL JOB LOGIC ---
+async function startAnimalJob(player) {
+    jobManager.startJobSession(player, JOB_KEY);
+    
+    // Initialize per-player animal states (tracking cooldowns)
+    const animalStates = {};
+    ANIMALS.forEach(a => {
+        animalStates[a.id] = { nextReady: 0 };
+    });
+
+    activeJobs.set(player.id, { 
+        type: 'animal', 
+        animalStates: animalStates 
+    });
+
+    // Create visual markers for the animals
+    syncAnimalMarkers(player);
+    player.call('client:farmer:createAnimalBlips', [JSON.stringify(ANIMAL_ZONES)]);
+
+    player.call('showNotification', ['Farmer', 'Animal Keeper Job started. Check map for locations.']);
+}
+
+function syncAnimalMarkers(player) {
+    const data = activeJobs.get(player.id);
+    if (!data || data.type !== 'animal') return;
+
+    const now = Date.now();
+    const validPositions = [];
+
+    ANIMALS.forEach(anim => {
+        const state = data.animalStates[anim.id];
+        // Only show marker if animal is ready for interaction
+        if (state && now >= state.nextReady) {
+            validPositions.push({ x: anim.x, y: anim.y, z: anim.z + 1.0 }); // Float above animal
+        }
+    });
+
+    player.call('client:farmer:updateMarkers', [JSON.stringify(validPositions)]);
+}
+
+mp.events.add('server:farmer:interactAnimal', async (player, animalId) => {
+    if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'You are not on the clock.']);
+    if (player.data.isBusy) return;
+
+    const data = activeJobs.get(player.id);
+    if (!data || !data.animalStates) return;
+
+    const animalDef = ANIMALS.find(a => a.id === animalId);
+    const state = data.animalStates[animalId];
+    
+    if (!animalDef || !state) return;
+
+    const now = Date.now();
+    if (now < state.nextReady) {
+        const seconds = Math.ceil((state.nextReady - now) / 1000);
+        return player.call('showNotification', ['Farmer', `Animal is resting. Wait ${seconds}s.`]);
+    }
+
+    // Determine Action
+    let actionType = 'feed';
+    let animDict = 'amb@world_human_gardener_plant@male@base';
+    let animName = 'base';
+    let duration = 4000;
+    let msg = "Fed the animal.";
+
+    // Logic based on animal type
+    if (animalDef.type === 'cow') {
+        if (Math.random() > 0.5) {
+            actionType = 'milk';
+            msg = "Collected fresh milk.";
+            animDict = 'amb@medic@standing@kneel@base';
+            animName = 'base'; 
+        } else {
+            msg = "Fed the cow.";
+        }
+    } else if (animalDef.type === 'hen') {
+        actionType = 'collect';
+        msg = "Collected eggs.";
+        animDict = 'amb@prop_human_movie_bulb@idle_a'; 
+        animName = 'idle_a'; 
+    }
+
+    // Start Action
+    player.data.isBusy = true;
+    player.call('client:freezePlayer', [true]);
+    player.playAnimation(animDict, animName, 1, 33);
+
+    setTimeout(async () => {
+        player.data.isBusy = false;
+        if (!mp.players.exists(player)) return;
+
+        player.stopAnimation();
+        player.call('client:freezePlayer', [false]);
+
+        // Payment
+        const pay = ANIMAL_PAYOUTS[actionType];
+        await playerManager.addMoneyAndSave(player, pay, 'Farmer Job');
+        await jobManager.addJobXp(player, JOB_KEY, 2);
+
+        player.call('showNotification', ['Farmer', `+ $${pay} | ${msg}`]);
+
+        // Set Cooldown
+        state.nextReady = Date.now() + ANIMAL_COOLDOWN_MS;
+        
+        // Refresh markers
+        syncAnimalMarkers(player);
+
+    }, duration);
+});
+
+// --- APPLE JOB LOGIC ---
 async function startAppleJob(player) {
     const level = jobManager.getJobLevel(player, JOB_KEY);
     if (level < JOB_REQUIREMENT_LEVEL) return player.call('showNotification', ['Job Center', `Need Level ${JOB_REQUIREMENT_LEVEL}.`]);
@@ -136,6 +305,7 @@ async function startAppleJob(player) {
     player.call('showNotification', ['Farmer', 'Apple Job started.']);
 }
 
+// --- CROP JOB LOGIC ---
 async function startCropJob(player) {
     jobManager.startJobSession(player, JOB_KEY);
     activeJobs.set(player.id, { vehicle: null }); 
@@ -170,16 +340,14 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
 
     if (!inField) return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field.']);
 
-    // [FIX] Global Capacity Check for this field
+    // Capacity Check
     if (inField.maxCapacity) {
         let totalInField = 0;
-        // Iterate all crops from all players
         for (const crops of activeCropsByPlayer.values()) {
             for (const c of crops) {
                 if (c.fieldId === inField.id) totalInField++;
             }
         }
-        
         if (totalInField >= inField.maxCapacity) {
              return player.call('showNotification', ['Farmer', `Field is full! (${totalInField}/${inField.maxCapacity})`]);
         }
@@ -239,7 +407,7 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
             id: res.insertId, 
             owner: player.data.dbId, 
             item: seedId, 
-            fieldId: inField.id, // [FIX] Store for cache
+            fieldId: inField.id, 
             x: player.position.x, 
             y: player.position.y, 
             z: groundZ, 
@@ -451,6 +619,8 @@ sellerCol.setVariable('interaction', {
     title: 'Farm Wholesaler', text: 'Sell Crops', event: 'server:farmer:openSeller', requireOnFoot: true
 });
 
+// --- SPAWN OBJECTS ---
+
 TREES.forEach((tree, index) => {
     const col = mp.colshapes.newSphere(tree.x, tree.y, tree.z, 2.0);
     col.setVariable('interaction', {
@@ -483,4 +653,25 @@ garageCol.setVariable('interaction', {
 });
 mp.peds.new(mp.joaat('cs_old_man2'), new mp.Vector3(GARAGE_POS.x, GARAGE_POS.y, GARAGE_POS.z), {
     heading: GARAGE_POS.h, dynamic: false, invincible: true, frozen: true
+});
+
+// --- SPAWN ANIMALS & ZONES ---
+ANIMALS.forEach((anim) => {
+    // 1. Spawn the Animal Ped (Global, Invincible, Frozen)
+    mp.peds.new(mp.joaat(anim.model), new mp.Vector3(anim.x, anim.y, anim.z), {
+        heading: anim.h,
+        dynamic: false,
+        invincible: true,
+        frozen: true
+    });
+
+    // 2. Create Interaction Sphere
+    const col = mp.colshapes.newSphere(anim.x, anim.y, anim.z, 1.5);
+    col.setVariable('interaction', {
+        title: 'Farm Animal',
+        text: 'Press E to Interact',
+        event: 'server:farmer:interactAnimal',
+        data: anim.id,
+        requireOnFoot: true
+    });
 });
