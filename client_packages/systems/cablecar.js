@@ -214,7 +214,7 @@ function getPosOnTrack(trackIdx, progress) {
 }
 
 // =========================================================
-// --- NEW: CLIENT-SIDE INTERACTIONS & MARKERS ---
+// --- NEW: CLIENT-SIDE INTERACTIONS WITH "showInteraction" ---
 // =========================================================
 
 const STATION_POSITIONS = [
@@ -222,9 +222,12 @@ const STATION_POSITIONS = [
     { x: 446.44, y: 5572.03, z: 781.19 }   // Top
 ];
 
+let cableCarShapes = [];
+let currentStationIndex = -1; // -1 means not in any station
+
 function setupInteractions() {
     STATION_POSITIONS.forEach((pos, index) => {
-        // 1. Visual Marker (Yellow Cylinder)
+        // 1. Visual Marker
         mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 2.0, {
             color: [255, 255, 0, 100],
             visible: true,
@@ -232,24 +235,39 @@ function setupInteractions() {
         });
 
         // 2. Client-Side ColShape
-        // Using "newCircle" creates an infinite vertical cylinder 
-        // which ensures detection even if Z coord is slightly off.
         const shape = mp.colshapes.newCircle(pos.x, pos.y, 2.0);
-        
-        // This 'interaction' variable is what your core/interaction.js listens for
-        shape.setVariable('interaction', {
-            title: "Cable Car",
-            text: `Press E to ride ($100)`,
-            event: "CableCar:Interact", 
-            requireOnFoot: true,
-            data: { stationIndex: index }
-        });
+        shape.cableCarStationIndex = index; // Tag the shape so we know it's ours
+        cableCarShapes.push(shape);
     });
 }
 setupInteractions();
 
-// Relay Event: If interactions call this locally, send it to server
-mp.events.add("CableCar:Interact", (data) => {
-    // Forward the interaction data to the server
-    mp.events.callRemote("CableCar:Interact", data);
+// --- EVENTS ---
+
+mp.events.add("playerEnterColshape", (shape) => {
+    // Check if this shape is one of our cable car stations
+    if (shape.cableCarStationIndex !== undefined) {
+        currentStationIndex = shape.cableCarStationIndex;
+        
+        // TRIGGER YOUR UI
+        mp.events.call('showInteraction', 'Cable Car', 'Press E to ride ($100)');
+    }
+});
+
+mp.events.add("playerExitColshape", (shape) => {
+    if (shape.cableCarStationIndex !== undefined) {
+        currentStationIndex = -1;
+        
+        // HIDE YOUR UI
+        // Assuming 'hideInteraction' is the counterpart, or pass null/false
+        mp.events.call('hideInteraction'); 
+    }
+});
+
+// --- INPUT HANDLING (KEY 'E') ---
+mp.keys.bind(0x45, true, () => { // 0x45 is 'E'
+    if (currentStationIndex !== -1 && !mp.gui.cursor.visible) {
+        // Send interaction to server
+        mp.events.callRemote("CableCar:Interact", { stationIndex: currentStationIndex });
+    }
 });
