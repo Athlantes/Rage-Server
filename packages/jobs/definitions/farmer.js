@@ -10,7 +10,7 @@ const ItemRegistry = require('../../data/items');
 const JOB_KEY = 'farmer';
 const JOB_REQUIREMENT_LEVEL = 1; 
 const RECOVERY_TIME_MS = 30 * 60 * 1000; 
-const PLANT_RADIUS = 2.5; // Increased radius to prevent overlapping
+const PLANT_RADIUS = 2.5; 
 
 // Wholesaler Configuration
 const SELLABLE_ITEMS = {
@@ -64,7 +64,7 @@ async function loadCrops() {
     try {
         const [rows] = await db.query('SELECT * FROM character_farm_crops');
         rows.forEach(row => {
-            const charId = parseInt(row.character_id); // Ensure ID is number
+            const charId = parseInt(row.character_id); 
             if (!activeCropsByPlayer.has(charId)) activeCropsByPlayer.set(charId, []);
             activeCropsByPlayer.get(charId).push(formatCropRow(row));
         });
@@ -76,6 +76,7 @@ loadCrops();
 function formatCropRow(row) {
     return {
         id: row.id, owner: row.character_id, item: row.seed_item_id,
+        fieldId: row.field_id, // [FIX] Store fieldId for counting
         x: row.x, y: row.y, z: row.z, h: row.heading,
         planted: Number(row.planted_at), ready: Number(row.ready_at)
     };
@@ -95,7 +96,6 @@ function isPointInPolygon(p, vertices) {
     return inside;
 }
 
-// Safer distance check that doesn't rely on Rage API quirks
 function getDistance(v1, v2) {
     const dx = v1.x - v2.x;
     const dy = v1.y - v2.y;
@@ -158,7 +158,6 @@ async function startCropJob(player) {
 mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     if (player.activeJobId !== JOB_KEY) return player.call('showNotification', ['Farmer', 'Start the job first.']);
     
-    // [FIX] Anti-Spam Lock
     if (player.data.isPlanting) return;
 
     const pPos = player.position;
@@ -171,6 +170,21 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
 
     if (!inField) return player.call('showNotification', ['Farmer', 'You must be inside a Farming Field.']);
 
+    // [FIX] Global Capacity Check for this field
+    if (inField.maxCapacity) {
+        let totalInField = 0;
+        // Iterate all crops from all players
+        for (const crops of activeCropsByPlayer.values()) {
+            for (const c of crops) {
+                if (c.fieldId === inField.id) totalInField++;
+            }
+        }
+        
+        if (totalInField >= inField.maxCapacity) {
+             return player.call('showNotification', ['Farmer', `Field is full! (${totalInField}/${inField.maxCapacity})`]);
+        }
+    }
+
     const seedDef = ItemRegistry[seedId];
     if (!seedDef) return;
 
@@ -178,13 +192,11 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     const variableAmount = Math.floor((Math.min(level, 100) / 100) * (CROP_LIMIT_MAX - CROP_LIMIT_MIN));
     const allowed = CROP_LIMIT_MIN + variableAmount;
     
-    // Ensure we use the correct Key type (integer)
     const charId = parseInt(player.data.dbId);
     const myCrops = activeCropsByPlayer.get(charId) || [];
     
-    if (myCrops.length >= allowed) return player.call('showNotification', ['Farmer', `Limit Reached! (Max: ${allowed})`]);
+    if (myCrops.length >= allowed) return player.call('showNotification', ['Farmer', `Personal Limit Reached! (Max: ${allowed})`]);
     
-    // [FIX] Explicit distance check with larger radius
     const tooClose = myCrops.some(crop => {
         const d = getDistance(pPos, {x: crop.x, y: crop.y, z: crop.z});
         return d < PLANT_RADIUS;
@@ -197,7 +209,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     const itemObj = player.inventory.find(i => i.slot === slot);
     if (!itemObj) return;
 
-    // Remove item early to prevent duping
     if (itemObj.count > 1) {
         itemObj.count--;
         await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [itemObj.count, itemObj.id]);
@@ -206,7 +217,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     }
     inventory.syncClient(player);
 
-    // [FIX] Lock planting
     player.data.isPlanting = true;
     
     const groundZ = player.position.z - 1.0; 
@@ -214,7 +224,6 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
     player.call('client:freezePlayer', [true]);
 
     setTimeout(async () => {
-        // [FIX] Unlock planting
         player.data.isPlanting = false;
 
         if (!mp.players.exists(player)) return;
@@ -226,7 +235,18 @@ mp.events.add('server:farmer:tryPlant', async (player, seedId, slot) => {
         
         const [res] = await db.query('INSERT INTO character_farm_crops (character_id, field_id, seed_item_id, x, y, z, heading, planted_at, ready_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [player.data.dbId, inField.id, seedId, player.position.x, player.position.y, groundZ, player.heading, now, readyAt]);
 
-        const newCrop = { id: res.insertId, owner: player.data.dbId, item: seedId, x: player.position.x, y: player.position.y, z: groundZ, h: player.heading, planted: now, ready: readyAt };
+        const newCrop = { 
+            id: res.insertId, 
+            owner: player.data.dbId, 
+            item: seedId, 
+            fieldId: inField.id, // [FIX] Store for cache
+            x: player.position.x, 
+            y: player.position.y, 
+            z: groundZ, 
+            h: player.heading, 
+            planted: now, 
+            ready: readyAt 
+        };
         
         if (!activeCropsByPlayer.has(charId)) activeCropsByPlayer.set(charId, []);
         activeCropsByPlayer.get(charId).push(newCrop);
