@@ -9,6 +9,7 @@ require('./banking');
 require('./playerMenu');
 require('./voiceManager');
 require('./chatEvents');
+require('./afkSystem');
 
 const vehicleManager = require('./vehicles/vehicleManager');
 

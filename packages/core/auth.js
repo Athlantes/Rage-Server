@@ -243,21 +243,35 @@ function startSession(player, userData) {
     player.data.adminLevel = userData.admin_level || 0; 
     player.setVariable('adminLevel', player.data.adminLevel);
 
-    // Load Economy & Stats
+    // --- ECONOMY & STATS ---
     player.model = (player.data.gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
+    
     player.data.money = userData.money;
-    player.data.bank_money = userData.bank_money || 0;
+    player.data.bank_money = userData.bank_money || 0; // Ensure bank is loaded
     player.setVariable('money', userData.money);
-    player.data.level = userData.level;
+
+    // 1. LOAD XP & LEVEL
+    player.data.level = userData.level || 1;
+    player.data.xp = userData.xp || 0; // Load XP from DB
+
+    // 2. CALCULATE MAX XP (for HUD)
+    // We use the helper from playerManager to keep the math consistent
+    const xpMax = playerManager.calculateNextLevelXp(player.data.level);
+
+    // 3. SYNC TO CLIENT
+    player.setVariable('level', player.data.level);
+    player.setVariable('xp', player.data.xp);
+    player.setVariable('xpMax', xpMax);
+
     player.data.vehicle_slots = userData.vehicle_slots;
 
-    // Init Managers
+    // --- MANAGERS ---
     CharCreator.applyAppearance(player, userData.appearance);
     PhotoHuntManager.initPlayer(player);
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
 
-    // Load Cooldowns
+    // --- COOLDOWNS ---
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
         player.data.cooldowns = cd;
@@ -277,15 +291,13 @@ function startSession(player, userData) {
     };
     player.hasCooldown = (name) => player.data.cooldowns && player.data.cooldowns[name] > Date.now();
 
-    // Apply Appearance
-    CharCreator.applyAppearance(player, userData.appearance);
-
-    // --- NEW LOGIC: SPAWN CHECK ---
+    // --- SPAWN LOGIC ---
+    // Calculate if we should spawn them at last location or show spawn menu
     const lastActive = new Date(userData.last_active).getTime();
     const now = Date.now();
     const diffMinutes = (now - lastActive) / 1000 / 60;
     
-    let showSpawnSelector = true; // Default: Show menu
+    let showSpawnSelector = true; 
     let lastPos = null;
 
     if (userData.position) {
@@ -298,7 +310,7 @@ function startSession(player, userData) {
         player.data.lastLocation = lastPos;
     }
 
-    // If connected within 5 minutes AND has a valid position
+    // If connected within 5 minutes AND has a valid position, spawn automatically
     if (diffMinutes < 5 && lastPos) {
         player.spawn(new mp.Vector3(lastPos.x, lastPos.y, lastPos.z));
         player.dim = 0; 
@@ -306,10 +318,12 @@ function startSession(player, userData) {
         showSpawnSelector = false; 
     }
 
-    // Trigger Success (Pass 'false' if we already spawned them, 'true' if they need to choose)
+    // Trigger Success
     player.call('client:auth:success', [showSpawnSelector, lastPos]);
     
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
+    
+    // Trigger any other load events
     mp.events.call('server:loadAccount', player);
 }
 

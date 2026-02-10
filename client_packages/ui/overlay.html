@@ -288,11 +288,42 @@
         .zone-text.safe { color: var(--success); }
         .zone-text.noclip { color: var(--primary); }
 
+        .payday-box {
+            position: fixed;   /* Changed to fixed to stay on screen */
+            bottom: 35px;      /* Aligned with Mic icon */
+            left: 380px;       /* Positioned just to the right of the Mic/Minimap area */
+            right: auto;       /* Remove the right alignment */
+            
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px; /* Slightly more compact padding */
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #2ecc71;
+            
+            /* Changed font to Poppins to match your theme */
+            font-family: 'Poppins', sans-serif; 
+            color: white;
+            z-index: 100;      /* Ensure it sits on top */
+        }
+        
+        .payday-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+
+        #payday-timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 
     <div class="hud-container" id="hud-container">
+
         <div class="hud-top-row">
             <div class="hud-money-col">
                 <div class="hud-row-money">
@@ -327,6 +358,12 @@
     <div class="mic-status" id="mic-icon">
         <i class="fas fa-microphone"></i>
     </div>
+
+    <div class="payday-box">
+        <div class="payday-title">PAYDAY IN</div>
+        <div id="payday-timer">60 min</div>
+    </div>
+
 
     <div class="speedo-container" id="speedo">
         <div class="speed-val" id="speed">0</div>
@@ -394,6 +431,20 @@
             document.getElementById('hud-cash').innerText = new Intl.NumberFormat().format(money);
             document.getElementById('hud-bank-val').innerText = new Intl.NumberFormat().format(bank);
             document.getElementById('hud-date').innerText = dateStr;
+        }
+
+        function updatePaydayTimer(minutesPlayed) {
+            const remaining = 60 - minutesPlayed;
+            const display = (remaining <= 0) ? "NOW" : remaining + " min";
+            
+            const el = document.getElementById('payday-timer');
+            if(el) {
+                el.innerText = display;
+                
+                // Optional: Turn text red if less than 5 mins
+                if(remaining <= 5) el.style.color = "#e74c3c"; 
+                else el.style.color = "#ffffff";
+            }
         }
 
         // --- NEW WEAPON HUD ---

@@ -1,67 +1,54 @@
-// core/playerManager.js
+// packages/core/playerManager.js
 const db = require('./database');
 
+// --- LEVELING CONFIGURATION ---
+const BASE_XP_NEEDED = 1000;
+const XP_MULTIPLIER = 1.2; // Each level requires 20% more XP than the last
+
 const playerManager = {
-    // Standard memory update (use for temporary items or HUD sync)
+    // Helper: Calculate XP needed for next level
+    calculateNextLevelXp: (currentLevel) => {
+        return Math.floor(BASE_XP_NEEDED * Math.pow(XP_MULTIPLIER, currentLevel - 1));
+    },
+
     addMoney: (player, amount, reason = "Unknown") => {
         if (!player || !mp.players.exists(player)) return false;
         player.data.money += amount;
         player.setVariable('money', player.data.money);
-        console.log(`[Economy] ${player.name} gained $${amount} (${reason}). Total: ${player.data.money}`);
         return true;
     },
 
-    /**
-     * SECURE PAYOUT: Updates memory AND immediately persists to DB.
-     * Essential for Job Rewards to prevent loss on server crash.
-     */
     addMoneyAndSave: async (player, amount, reason = "Job Reward") => {
         if (!player || !mp.players.exists(player)) return false;
 
-        // 1. Update Memory immediately so UI stays snappy
         player.data.money += amount;
         player.setVariable('money', player.data.money);
 
-        // 2. Immediate Database Write
         try {
             const dbId = player.data.dbId;
             if (!dbId) return false;
-
-            // Use additive SQL logic to prevent race conditions
             await db.query("UPDATE users SET money = money + ? WHERE id = ?", [amount, dbId]);
-            
-            console.log(`[Economy-Secure] ${player.name} +$${amount} (${reason}). DB Synced.`);
             return true;
         } catch (err) {
             console.error(`[CRITICAL] Failed to save money for ${player.name}:`, err);
-            // Even if DB fails, memory is updated, but we log the error for admins
             return false;
         }
     },
 
     removeMoneyAndSave: async (player, amount, reason = "Unknown") => {
         if (!player || !mp.players.exists(player)) return false;
-        
-        // Check balance before proceeding
         if (player.data.money < amount) return false;
 
-        // 1. Update Memory immediately
         player.data.money -= amount;
         player.setVariable('money', player.data.money);
 
-        // 2. Immediate Database Write
         try {
             const dbId = player.data.dbId;
             if (!dbId) return false;
-
-            // Use subtractive SQL logic
             await db.query("UPDATE users SET money = money - ? WHERE id = ?", [amount, dbId]);
-
-            console.log(`[Economy-Secure] ${player.name} -$${amount} (${reason}). DB Synced.`);
             return true;
         } catch (err) {
             console.error(`[CRITICAL] Failed to sync money removal for ${player.name}:`, err);
-            // Note: Money was already removed from memory.
             return false;
         }
     },
@@ -71,9 +58,14 @@ const playerManager = {
 
         const name = player.name; 
         const dbId = player.data.dbId;
-        const level = player.data.level;
-        let currentPos;
+        
+        // Stats
+        const level = player.data.level || 1;
+        const xp = player.data.xp || 0;
+        const playedMinutes = player.data.playedMinutes || 0;
+        const bank = player.data.bank || 0;
 
+        let currentPos;
         try {
             currentPos = JSON.stringify(player.position);
         } catch (err) {
@@ -81,9 +73,10 @@ const playerManager = {
         }
 
         try {
+            // Note: Ensure your DB has 'xp' column instead of 'respect'
             await db.query(
-                "UPDATE users SET level=?, position=? WHERE id=?", 
-                [level, currentPos, dbId]
+                "UPDATE users SET level=?, position=?, played_minutes=?, xp=?, bank=? WHERE id=?", 
+                [level, currentPos, playedMinutes, xp, bank, dbId]
             );
             console.log(`[Data] Saved account: ${name}`);
         } catch (e) {
@@ -105,9 +98,8 @@ const spawnPoints = [
 
 // --- EVENTS ---
 
-// 1. Assign Online ID on Join
 mp.events.add('playerJoin', (player) => {
-    // Gather all currently used IDs
+    // ID Assignment
     const usedIds = new Set();
     mp.players.forEach(p => {
         if (p !== player && p.data.onlineId !== undefined) {
@@ -115,37 +107,38 @@ mp.events.add('playerJoin', (player) => {
         }
     });
 
-    // Find lowest available ID
     let newId = 0;
-    while (usedIds.has(newId)) {
-        newId++;
-    }
-
-    // Assign
+    while (usedIds.has(newId)) newId++;
     player.data.onlineId = newId;
     player.setVariable('onlineId', newId);
     
+    // Init RPG Variables
+    player.data.playedMinutes = 0;
+    player.data.bank = 0;
+    player.data.isAfk = false; 
+
+    // Init XP / Level
+    if (!player.data.level) player.data.level = 1;
+    if (!player.data.xp) player.data.xp = 0;
+
+    // Calculate Max XP for current level and sync to client
+    const xpMax = playerManager.calculateNextLevelXp(player.data.level);
+    player.setVariable('level', player.data.level);
+    player.setVariable('xp', player.data.xp);
+    player.setVariable('xpMax', xpMax);
+
     console.log(`[Connection] ${player.name} joined. Assigned ID: ${newId}`);
 });
 
 mp.events.add('server:spawn:player', (player, index) => {
     let pos;
-
-    // Index -1 means "Last Location"
     if (index === -1) {
-        if (player.data.lastLocation) {
-            pos = player.data.lastLocation;
-        } else {
-            // Fallback if data is missing
-            pos = spawnPoints[0];
-        }
+        pos = player.data.lastLocation ? player.data.lastLocation : spawnPoints[0];
     } else {
-        // Standard Checks
         if (index < 0 || index >= spawnPoints.length) return;
         pos = spawnPoints[index];
     }
     
-    // Spawn
     player.spawn(new mp.Vector3(pos.x, pos.y, pos.z));
     player.dimension = 0;
     player.health = 100;
@@ -153,7 +146,80 @@ mp.events.add('server:spawn:player', (player, index) => {
 
 mp.events.add('server:kickPlayer', (player) => {
     if (!player || !mp.players.exists(player)) return;
-    
-    console.log(`[Disconnect] ${player.name} requested disconnect.`);
     player.kick('Disconnected by user request.');
 });
+
+// =========================================================================
+//  --- GAME TIME LOOP (PAYDAY & XP) ---
+// =========================================================================
+
+setInterval(() => {
+    mp.events.call('server:tickMinute');
+}, 60000);
+
+mp.events.add('server:tickMinute', () => {
+    mp.players.forEach(player => {
+        if (!player.logged) return;
+
+        // Skip if AFK
+        if (player.data.isAfk) return;
+
+        if (!player.data.playedMinutes) player.data.playedMinutes = 0;
+        player.data.playedMinutes++;
+
+        player.call('updateHUD', [player.data.playedMinutes]);
+
+        // Payday every 60 mins
+        if (player.data.playedMinutes >= 60) {
+            triggerPayday(player);
+        }
+    });
+});
+
+function triggerPayday(player) {
+    player.data.playedMinutes = 0;
+
+    // 1. Give XP (e.g., 250 XP per payday)
+    const xpReward = 250;
+    player.data.xp += xpReward;
+
+    // 2. Check Level Up
+    let xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
+    
+    // While loop handles multi-level ups (if they somehow got huge XP)
+    while (player.data.xp >= xpNeeded) {
+        player.data.xp -= xpNeeded;
+        player.data.level++;
+        
+        player.outputChatBox(`!{#f0c400}🎉 LEVEL UP! You are now Level ${player.data.level}!`);
+        player.call('playSound', ['HUD_AWARDS', 'CHALLENGE_UNLOCKED']); // Plays GTA sound
+        
+        // Recalculate needed for next level
+        xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
+    }
+
+    // 3. Sync new stats to Client (for Player Menu / HUD)
+    player.setVariable('level', player.data.level);
+    player.setVariable('xp', player.data.xp);
+    player.setVariable('xpMax', xpNeeded);
+
+    // 4. Calculate Money
+    if (!player.data.bank) player.data.bank = 0;
+    
+    // Salary increases with Level ($500 base + $50 per level)
+    const salary = 500 + (player.data.level * 50); 
+    const interest = Math.floor(player.data.bank * 0.001); 
+    const totalIncome = salary + interest;
+
+    player.data.bank += totalIncome;
+
+    // 5. Output
+    player.outputChatBox(`!{#00FF00}_________________ PAYDAY _________________`);
+    player.outputChatBox(`!{#FFFFFF}Paycheck: !{#2ecc71}$${salary}`);
+    player.outputChatBox(`!{#FFFFFF}Bank Interest: !{#2ecc71}$${interest}`);
+    player.outputChatBox(`!{#FFFFFF}XP Gained: !{#00a2ff}+${xpReward}`);
+    player.outputChatBox(`!{#FFFFFF}New Balance: !{#2ecc71}$${player.data.bank}`);
+
+    // 6. Save
+    playerManager.saveAccount(player);
+}

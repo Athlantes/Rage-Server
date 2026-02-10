@@ -40,8 +40,14 @@ mp.events.add('render', () => {
                 if (displayId === undefined) displayId = player.remoteId;
 
                 const isTyping = player.getVariable('isTyping');
+                const isAfk = player.getVariable('isAfk');
 
                 let nameText = `(${displayId}) ${player.name}`;
+                if (isAfk) {
+                    nameText += "\n~r~⏳ AFK"; 
+                } else if (isTyping) {
+                    nameText += "\n~c~...";
+                }
                 if (isTyping) nameText += "\n~c~...";
 
                 // --- SCALING LOGIC ---

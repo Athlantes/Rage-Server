@@ -198,6 +198,13 @@ mp.events.add('updateOverlayHotbar', (itemsJson) => {
     }
 });
 
+mp.events.add('updateHUD', (minutesPlayed) => {
+    if (global.hudBrowser) { // Use your browser variable name
+        // Execute the function we wrote in Step 1
+        global.hudBrowser.execute(`updatePaydayTimer(${minutesPlayed});`);
+    }
+});
+
 mp.events.add('showOverlayHotbar', (index) => {
     if(overlayBrowser) {
         overlayBrowser.execute(`showHotbar(${index})`);
