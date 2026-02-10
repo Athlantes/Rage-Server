@@ -39,6 +39,11 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
     }
 });
 
+mp.events.add('client:playerMenu:setSelfTag', (enabled) => {
+    // Forward it to the nametag script
+    mp.events.call('client:nametags:toggleSelf', enabled);
+});
+
 // Event to receive data from server and pass to UI
 mp.events.add('client:playerMenu:receiveData', (json) => {
     if (playerMenuBrowser && isplayerMenuOpen) {

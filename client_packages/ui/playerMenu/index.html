@@ -207,8 +207,23 @@
 
         <div id="settings" class="content">
             <div class="quest-container-limit">
-                <div class="quest-title">Audio Settings</div>
                 
+                <div class="quest-title">Interface</div>
+                <div class="stat-card" style="border-color: #9b59b6; padding: 25px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0; color: white; font-size: 1.1rem;">Show Own Nametag</h3>
+                            <div style="color: #777; font-size: 0.85rem; margin-top: 5px;">Toggle visibility of your own name above your head.</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-self-tag" onclick="updateNametagSetting(this)">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+
+                <div class="quest-title">Audio Settings</div>
                 <div class="stat-card" style="border-color: #00a2ff; padding: 25px;">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
@@ -242,6 +257,12 @@
     </div>
 
     <script>
+        // --- NEW: Toggle Own Nametag ---
+        function updateNametagSetting(element) {
+            // Sends the checkbox state (true/false) to client script
+            mp.trigger('client:playerMenu:setSelfTag', element.checked);
+        }
+
         function updateVolume(val) {
             document.getElementById('vol-display').innerText = val + '%';
             // Send the volume percentage (0-100) to the client script
