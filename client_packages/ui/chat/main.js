@@ -86,6 +86,18 @@ resetFadeTimer();
 
 // --- Input Event Listeners ---
 
+// [NEW] Typing Indicator Logic
+// When the player focuses the input (chat opens), tell the client we are typing
+input.addEventListener('focus', () => {
+    mp.trigger('client:chatTyping', true);
+});
+
+// When the player blurs the input (chat closes), tell the client we stopped
+input.addEventListener('blur', () => {
+    mp.trigger('client:chatTyping', false);
+});
+
+
 input.addEventListener('keydown', (e) => {
     // ENTER: Send
     if (e.key === 'Enter') {

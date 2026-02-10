@@ -8,6 +8,7 @@ require('./questManager');
 require('./banking');
 require('./playerMenu');
 require('./voiceManager');
+require('./chatEvents');
 
 const vehicleManager = require('./vehicles/vehicleManager');
 
