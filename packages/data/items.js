@@ -104,6 +104,13 @@ module.exports = {
         maxStack: 1,
         icon: "empty_wallet.png"
     },
+    "wallet_stolen": {
+        name: "Stolen Wallet",
+        type: "misc",
+        weight: 0.3,
+        maxStack: 1,
+        icon: "empty_wallet.png"
+    },
 
     "shirt_white": {
         name: "White T-Shirt",

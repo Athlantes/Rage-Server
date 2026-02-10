@@ -1,5 +1,6 @@
 // packages/systems/atm.js
 const Banking = require('../core/banking');
+const { isRateLimited } = require('../core/rateLimit');
 
 mp.events.add('server:atm:open', (player) => {
     if (!player.logged) return;
@@ -14,6 +15,7 @@ mp.events.add('server:atm:open', (player) => {
 });
 
 mp.events.add('server:atm:process', async (player, type, amount) => {
+    if (isRateLimited(player, 'atm:process', 3, 5000)) return;
     amount = parseInt(amount);
     if (isNaN(amount) || amount <= 0) return;
 

@@ -51,6 +51,10 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
         // CUSTOM NOTIFICATION: Phone Closed
         mp.events.call('showNotification', 'System', 'Phone closed for safety.');
     }
+    // End active call when entering vehicle (realistic RP)
+    if (callState === 'active' || callState === 'ringing' || callState === 'incoming') {
+        mp.events.callRemote('server:phone:endCall');
+    }
     
     if (scooterBlip || scooterMarker) {
         clearScooterMarkers();
@@ -80,6 +84,100 @@ function closePhone() {
     mp.gui.chat.activate(true); 
     if(phoneBrowser) phoneBrowser.execute(`closePhone()`);
 }
+
+// --- CALL STATE TRACKING ---
+let callState = null; // null | 'ringing' | 'incoming' | 'active'
+let callTimer = null;
+let callSeconds = 0;
+
+// --- INCOMING CALL: other player is calling us ---
+mp.events.add('client:phone:incomingCall', (callerNumber, callerName) => {
+    callState = 'incoming';
+    const safeName = (callerName || callerNumber).replace(/'/g, "\\'");
+    if (phoneBrowser) {
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.showIncomingCall === 'function') {
+                    app.showIncomingCall('${callerNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('${callerNumber}', 'Incoming Call', '${safeName} is calling...', 'phone');
+                }
+            })();
+        `);
+    }
+    // Play ringtone sound if phone is closed
+    if (!isPhoneOpen) {
+        mp.events.call('showNotification', 'Phone', `${safeName} is calling...`);
+    }
+});
+
+// --- CALL RINGING: we started a call, waiting for answer ---
+mp.events.add('client:phone:callRinging', (targetNumber, targetName) => {
+    callState = 'ringing';
+    const safeName = (targetName || targetNumber).replace(/'/g, "\\'");
+    if (phoneBrowser) {
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.showOutgoingCall === 'function') {
+                    app.showOutgoingCall('${targetNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('Phone', 'Calling...', 'Ringing ${safeName}...', 'phone');
+                }
+            })();
+        `);
+    }
+});
+
+// --- CALL CONNECTED: call accepted by other party ---
+mp.events.add('client:phone:callConnected', (partnerNumber, partnerName) => {
+    callState = 'active';
+    callSeconds = 0;
+    const safeName = (partnerName || partnerNumber).replace(/'/g, "\\'");
+    
+    // Start call timer
+    if (callTimer) clearInterval(callTimer);
+    callTimer = setInterval(() => {
+        callSeconds++;
+        const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+        const secs = (callSeconds % 60).toString().padStart(2, '0');
+        if (phoneBrowser) {
+            phoneBrowser.execute(`
+                if(typeof app.updateCallTimer === 'function') app.updateCallTimer('${mins}:${secs}');
+            `);
+        }
+    }, 1000);
+
+    if (phoneBrowser) {
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.showActiveCall === 'function') {
+                    app.showActiveCall('${partnerNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('Phone', 'Connected', 'Call with ${safeName}', 'phone');
+                }
+            })();
+        `);
+    }
+    mp.events.call('showNotification', 'Phone', `Connected to ${safeName}`);
+});
+
+// --- CALL ENDED ---
+mp.events.add('client:phone:callEnded', (reason) => {
+    callState = null;
+    callSeconds = 0;
+    if (callTimer) { clearInterval(callTimer); callTimer = null; }
+    
+    const safeReason = (reason || 'Call ended.').replace(/'/g, "\\'");
+    if (phoneBrowser) {
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.hideCallUI === 'function') app.hideCallUI();
+                app.receiveNotification('Phone', '${safeReason}', '', 'phone');
+            })();
+        `);
+    }
+    mp.events.call('showNotification', 'Phone', safeReason);
+});
 
 // --- STANDARD APP EVENTS ---
 
@@ -341,6 +439,18 @@ mp.events.add('client:proxyAction', (action, data) => {
 
         case 'startCall':
              mp.events.callRemote('server:phone:startCall', data); 
+             break;
+
+        case 'acceptCall':
+             mp.events.callRemote('server:phone:acceptCall');
+             break;
+
+        case 'declineCall':
+             mp.events.callRemote('server:phone:declineCall');
+             break;
+
+        case 'endCall':
+             mp.events.callRemote('server:phone:endCall');
              break;
 
         case 'shareLocation':

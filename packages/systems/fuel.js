@@ -2,6 +2,7 @@
 const PlayerManager = require('../core/playerManager');
 const FuelStations = require('../data/fuelLocations').FuelStations;
 const QuestEvents = require('../core/questEvents');
+const { isRateLimited } = require('../core/rateLimit');
 
 const CONFIG = {
     pricePerLiter: 2, 
@@ -45,6 +46,7 @@ mp.events.add('server:openFuelUI', (player) => {
 
 // 3. Process Transaction Event
 mp.events.add('server:processRefuel', async (player, litersToFill) => {
+    if (isRateLimited(player, 'fuel:refuel', 2, 5000)) return;
     const veh = player.vehicle;
     if (!veh) return;
 

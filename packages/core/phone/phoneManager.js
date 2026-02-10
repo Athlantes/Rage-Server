@@ -3,6 +3,7 @@ const path = require('path');
 const db = require('../database');
 const vehicleManager = require('../vehicles/vehicleManager'); 
 const webServer = require('../../webserver');
+const CallManager = require('../voiceManager');
 
 const uploadCache = new Map();
 
@@ -237,8 +238,193 @@ mp.events.add('server:phone:sendSMS', async (player, targetNumber, body, type = 
     }
 });
 
-mp.events.add('server:phone:startCall', (player, targetNumber) => {
-    player.call('showNotification', ['Phone', 'Calling functionality coming soon...']);
+// =============================================
+// --- PHONE CALL SYSTEM ---
+// =============================================
+const pendingCalls = new Map(); // callerId -> { targetId, timeout, targetNumber }
+const RING_TIMEOUT_MS = 30000; // 30 seconds to answer
+
+function findPlayerByPhone(phoneNumber) {
+    const players = mp.players.toArray();
+    for (const p of players) {
+        if (p && mp.players.exists(p) && p.logged && p.data && p.data.phoneNumber === phoneNumber) {
+            return p;
+        }
+    }
+    return null;
+}
+
+function cleanupCall(playerId, reason) {
+    const pending = pendingCalls.get(playerId);
+    if (pending) {
+        clearTimeout(pending.timeout);
+        pendingCalls.delete(playerId);
+        pendingCalls.delete(pending.targetId);
+    }
+
+    const partnerId = CallManager.endCall(playerId);
+    const player = mp.players.at(playerId);
+    if (player && mp.players.exists(player)) {
+        player.setVariable('callPartnerId', null);
+        player.setVariable('callState', null);
+        player.call('client:phone:callEnded', [reason || 'Call ended.']);
+    }
+    if (partnerId !== undefined) {
+        const partner = mp.players.at(partnerId);
+        if (partner && mp.players.exists(partner)) {
+            partner.setVariable('callPartnerId', null);
+            partner.setVariable('callState', null);
+            partner.call('client:phone:callEnded', [reason || 'Call ended.']);
+        }
+    }
+}
+
+// --- START CALL ---
+mp.events.add('server:phone:startCall', async (player, targetNumber) => {
+    if (!player.logged) return;
+
+    // Already in a call or ringing?
+    if (CallManager.isInCall(player.id) || pendingCalls.has(player.id)) {
+        return player.call('showNotification', ['Phone', 'You are already in a call.']);
+    }
+
+    // Can't call yourself
+    if (player.data.phoneNumber === targetNumber) {
+        return player.call('showNotification', ['Phone', 'You cannot call yourself.']);
+    }
+
+    // Find target player
+    const target = findPlayerByPhone(targetNumber);
+    if (!target) {
+        return player.call('client:phone:callEnded', ['Number not reachable.']);
+    }
+
+    // Check if target is busy
+    if (CallManager.isInCall(target.id) || pendingCalls.has(target.id)) {
+        return player.call('client:phone:callEnded', ['Line busy.']);
+    }
+
+    // Check DND / flight mode
+    try {
+        const [rows] = await db.query('SELECT is_dnd, is_flight_mode FROM player_phone WHERE user_id = ?', [target.data.dbId]);
+        if (rows.length > 0 && (rows[0].is_dnd || rows[0].is_flight_mode)) {
+            return player.call('client:phone:callEnded', ['Number not reachable.']);
+        }
+    } catch (err) { console.error('[Phone Call] DND check error:', err); }
+
+    // Set up pending call with timeout
+    const timeout = setTimeout(() => {
+        if (pendingCalls.has(player.id)) {
+            pendingCalls.delete(player.id);
+            pendingCalls.delete(target.id);
+            player.call('client:phone:callEnded', ['No answer.']);
+            target.call('client:phone:callEnded', ['Missed call.']);
+            player.setVariable('callState', null);
+            target.setVariable('callState', null);
+        }
+    }, RING_TIMEOUT_MS);
+
+    pendingCalls.set(player.id, { targetId: target.id, timeout, targetNumber });
+    pendingCalls.set(target.id, { targetId: player.id, timeout, targetNumber: player.data.phoneNumber });
+
+    player.setVariable('callState', 'ringing');
+    target.setVariable('callState', 'ringing');
+
+    // Notify both sides
+    player.call('client:phone:callRinging', [targetNumber, target.name]);
+    target.call('client:phone:incomingCall', [player.data.phoneNumber, player.name]);
+});
+
+// --- ACCEPT CALL ---
+mp.events.add('server:phone:acceptCall', (player) => {
+    if (!player.logged) return;
+    const pending = pendingCalls.get(player.id);
+    if (!pending) return player.call('showNotification', ['Phone', 'No incoming call.']);
+
+    const caller = mp.players.at(pending.targetId);
+    if (!caller || !mp.players.exists(caller)) {
+        pendingCalls.delete(player.id);
+        return player.call('client:phone:callEnded', ['Caller disconnected.']);
+    }
+
+    // Clear timeout & pending state
+    clearTimeout(pending.timeout);
+    pendingCalls.delete(player.id);
+    pendingCalls.delete(caller.id);
+
+    // Start voice routing via CallManager
+    CallManager.startCall(caller.id, player.id);
+
+    caller.setVariable('callPartnerId', player.id);
+    player.setVariable('callPartnerId', caller.id);
+    caller.setVariable('callState', 'active');
+    player.setVariable('callState', 'active');
+
+    // Notify both sides call is connected
+    caller.call('client:phone:callConnected', [player.data.phoneNumber, player.name]);
+    player.call('client:phone:callConnected', [caller.data.phoneNumber, caller.name]);
+});
+
+// --- DECLINE CALL ---
+mp.events.add('server:phone:declineCall', (player) => {
+    if (!player.logged) return;
+    const pending = pendingCalls.get(player.id);
+    if (!pending) return;
+
+    const caller = mp.players.at(pending.targetId);
+    clearTimeout(pending.timeout);
+    pendingCalls.delete(player.id);
+
+    player.setVariable('callState', null);
+    player.call('client:phone:callEnded', ['Call declined.']);
+
+    if (caller && mp.players.exists(caller)) {
+        pendingCalls.delete(caller.id);
+        caller.setVariable('callState', null);
+        caller.call('client:phone:callEnded', ['Call declined.']);
+    }
+});
+
+// --- END CALL (Hang up active or ringing) ---
+mp.events.add('server:phone:endCall', (player) => {
+    if (!player.logged) return;
+
+    // If ringing (pending), treat as decline
+    if (pendingCalls.has(player.id)) {
+        const pending = pendingCalls.get(player.id);
+        const other = mp.players.at(pending.targetId);
+        clearTimeout(pending.timeout);
+        pendingCalls.delete(player.id);
+        player.setVariable('callState', null);
+        player.call('client:phone:callEnded', ['Call cancelled.']);
+        if (other && mp.players.exists(other)) {
+            pendingCalls.delete(other.id);
+            other.setVariable('callState', null);
+            other.call('client:phone:callEnded', ['Call cancelled.']);
+        }
+        return;
+    }
+
+    // If active call
+    if (CallManager.isInCall(player.id)) {
+        cleanupCall(player.id, 'Call ended.');
+    }
+});
+
+// --- CLEANUP ON DISCONNECT ---
+mp.events.add('playerQuit', (player) => {
+    if (pendingCalls.has(player.id)) {
+        const pending = pendingCalls.get(player.id);
+        clearTimeout(pending.timeout);
+        const other = mp.players.at(pending.targetId);
+        pendingCalls.delete(player.id);
+        if (other && mp.players.exists(other)) {
+            pendingCalls.delete(other.id);
+            other.setVariable('callState', null);
+            other.call('client:phone:callEnded', ['Caller disconnected.']);
+        }
+    }
+    // Active call cleanup is handled by voiceManager playerQuit event
 });
 
 // --- EXISTING HANDLERS ---

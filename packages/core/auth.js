@@ -221,7 +221,22 @@ function startSession(player, userData) {
         player.setVariable('cooldown_' + name, exp);
         db.query('UPDATE users SET cooldowns = ? WHERE id = ?', [JSON.stringify(player.data.cooldowns), player.data.dbId]).catch(console.error);
     };
-    player.hasCooldown = (name) => player.data.cooldowns && player.data.cooldowns[name] > Date.now();
+    player.hasCooldown = (name) => {
+        return player.data.cooldowns && player.data.cooldowns[name] && player.data.cooldowns[name] > Date.now();
+    };
+    player.getCooldownTime = (name) => {
+        if (!player.data.cooldowns || !player.data.cooldowns[name]) return 0;
+        const remaining = player.data.cooldowns[name] - Date.now();
+        if (remaining <= 0) return 0;
+        return Math.ceil(remaining / 60000);
+    };
+    player.clearCooldown = (name) => {
+        if (player.data.cooldowns) {
+            delete player.data.cooldowns[name];
+            player.setVariable('cooldown_' + name, null);
+            db.query('UPDATE users SET cooldowns = ? WHERE id = ?', [JSON.stringify(player.data.cooldowns), player.data.dbId]).catch(console.error);
+        }
+    };
 
     // Spawn Logic
     const lastActive = new Date(userData.last_active).getTime();

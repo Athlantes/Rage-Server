@@ -16,6 +16,7 @@ const app = {
     mediaBaseUrl: '',
     photos: [],
     currentPhoto: null,
+    photoDetailReturnView: 'gallery', // tracks where to go back from photo-detail
     galleryMode: 'view', // 'view' or 'pick'
 
     getRelativeTime: (dateString) => {
@@ -37,6 +38,9 @@ const app = {
         app.isLocked = false;
         document.getElementById('view-lock').classList.add('hidden');
         document.getElementById('view-home').classList.remove('hidden');
+        // Clear all lockscreen notifications on unlock (mirrors real phone behavior)
+        const lockList = document.getElementById('lock-notification-list');
+        if (lockList) lockList.innerHTML = '';
     },
 
     lock: () => {
@@ -123,7 +127,10 @@ const app = {
             </div>
             `;
             
-            notif.onclick = () => {
+            // Tap to open the relevant app
+            notif.onclick = (e) => {
+                e.stopPropagation(); // Prevent view-lock's onclick from firing
+                notif.remove();
                 if(app.isLocked) {
                     app.unlock(); 
                     let targetView = appId;
@@ -131,6 +138,42 @@ const app = {
                     app.open(targetView);
                 }
             };
+
+            // Swipe-to-dismiss (horizontal drag)
+            let startX = 0;
+            notif.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+            notif.addEventListener('mousedown', (e) => { startX = e.clientX; });
+            notif.addEventListener('touchmove', (e) => {
+                const dx = e.touches[0].clientX - startX;
+                if (dx > 0) notif.style.transform = `translateX(${dx}px)`;
+                notif.style.opacity = Math.max(0, 1 - dx / 200);
+            }, { passive: true });
+            notif.addEventListener('mousemove', (e) => {
+                if (e.buttons !== 1) return;
+                const dx = e.clientX - startX;
+                if (dx > 0) notif.style.transform = `translateX(${dx}px)`;
+                notif.style.opacity = Math.max(0, 1 - dx / 200);
+            });
+            const dismissOnEnd = (dx) => {
+                if (dx > 80) {
+                    notif.style.transition = 'transform 0.2s, opacity 0.2s';
+                    notif.style.transform = 'translateX(300px)';
+                    notif.style.opacity = '0';
+                    setTimeout(() => notif.remove(), 200);
+                } else {
+                    notif.style.transition = 'transform 0.2s, opacity 0.2s';
+                    notif.style.transform = 'translateX(0)';
+                    notif.style.opacity = '1';
+                    setTimeout(() => { notif.style.transition = ''; }, 200);
+                }
+            };
+            notif.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches ? e.changedTouches[0].clientX - startX : 0;
+                dismissOnEnd(dx);
+            });
+            notif.addEventListener('mouseup', (e) => {
+                dismissOnEnd(e.clientX - startX);
+            });
 
             lockContainer.prepend(notif);
             
@@ -691,6 +734,7 @@ const app = {
                     div.innerHTML = `<img src="${fullUrl}" alt="Photo">`;
                     // Add Click Event to view full screen
                     div.onclick = () => {
+                         app.photoDetailReturnView = 'chat-thread';
                          app.openPhotoDetail({ image_path: msg.body, created_at: msg.time });
                     };
                 }
@@ -892,6 +936,20 @@ const app = {
         const dateEl = document.getElementById('photo-detail-date');
         const date = new Date(photo.created_at);
         dateEl.innerText = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        // Update the back button to return to the correct view
+        const backBtn = document.querySelector('#view-photo-detail .back-btn');
+        if (backBtn) {
+            backBtn.onclick = () => {
+                if (app.photoDetailReturnView === 'chat-thread') {
+                    document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
+                    document.getElementById('view-chat-thread').classList.remove('hidden');
+                } else {
+                    app.open('gallery');
+                }
+                app.photoDetailReturnView = 'gallery'; // reset to default
+            };
+        }
     },
 
     pendingAction: null,
@@ -1062,3 +1120,12 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 app.settings.init();
+
+// Lockscreen: clicking the time/date area unlocks; notifications handle their own clicks
+document.addEventListener('DOMContentLoaded', () => {
+    const lockTimeGroup = document.querySelector('.lock-time-group');
+    if (lockTimeGroup) {
+        lockTimeGroup.style.cursor = 'pointer';
+        lockTimeGroup.addEventListener('click', () => app.unlock());
+    }
+});
