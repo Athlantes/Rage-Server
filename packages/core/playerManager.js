@@ -3,7 +3,7 @@ const db = require('./database');
 
 // --- LEVELING CONFIGURATION ---
 const BASE_XP_NEEDED = 1000;
-const XP_MULTIPLIER = 1.2; // Each level requires 20% more XP than the last
+const XP_MULTIPLIER = 1.2;
 
 const playerManager = {
     // Helper: Calculate XP needed for next level
@@ -15,6 +15,7 @@ const playerManager = {
         if (!player || !mp.players.exists(player)) return false;
         player.data.money += amount;
         player.setVariable('money', player.data.money);
+        // console.log(`[Economy] ${player.name} gained $${amount} (${reason}).`);
         return true;
     },
 
@@ -59,11 +60,12 @@ const playerManager = {
         const name = player.name; 
         const dbId = player.data.dbId;
         
-        // Stats
+        // Data to save
         const level = player.data.level || 1;
         const xp = player.data.xp || 0;
-        const playedMinutes = player.data.playedMinutes || 0;
-        const bank = player.data.bank || 0;
+        const bank_money = player.data.bank_money || 0;
+        // Default to 60 if for some reason it's missing/null
+        const paydayIn = (player.data.paydayIn !== undefined) ? player.data.paydayIn : 60;
 
         let currentPos;
         try {
@@ -73,12 +75,12 @@ const playerManager = {
         }
 
         try {
-            // Note: Ensure your DB has 'xp' column instead of 'respect'
+            // Note: We are saving 'payday_in' now
             await db.query(
-                "UPDATE users SET level=?, position=?, played_minutes=?, xp=?, bank=? WHERE id=?", 
-                [level, currentPos, playedMinutes, xp, bank, dbId]
+                "UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=? WHERE id=?", 
+                [level, currentPos, xp, bank_money, paydayIn, dbId]
             );
-            console.log(`[Data] Saved account: ${name}`);
+            console.log(`[Data] Saved ${name} (Payday in: ${paydayIn}m)`);
         } catch (e) {
             console.error(`[Data] Failed to save ${name}:`, e);
         }
@@ -99,7 +101,6 @@ const spawnPoints = [
 // --- EVENTS ---
 
 mp.events.add('playerJoin', (player) => {
-    // ID Assignment
     const usedIds = new Set();
     mp.players.forEach(p => {
         if (p !== player && p.data.onlineId !== undefined) {
@@ -109,19 +110,19 @@ mp.events.add('playerJoin', (player) => {
 
     let newId = 0;
     while (usedIds.has(newId)) newId++;
+
     player.data.onlineId = newId;
     player.setVariable('onlineId', newId);
     
     // Init RPG Variables
-    player.data.playedMinutes = 0;
-    player.data.bank = 0;
+    player.data.bank_money = 0;
     player.data.isAfk = false; 
+    player.data.paydayIn = 60; // Default until loaded from DB
 
     // Init XP / Level
     if (!player.data.level) player.data.level = 1;
     if (!player.data.xp) player.data.xp = 0;
 
-    // Calculate Max XP for current level and sync to client
     const xpMax = playerManager.calculateNextLevelXp(player.data.level);
     player.setVariable('level', player.data.level);
     player.setVariable('xp', player.data.xp);
@@ -153,73 +154,69 @@ mp.events.add('server:kickPlayer', (player) => {
 //  --- GAME TIME LOOP (PAYDAY & XP) ---
 // =========================================================================
 
+// Global Timer: Runs every 60 seconds (60000ms)
 setInterval(() => {
-    mp.events.call('server:tickMinute');
-}, 60000);
-
-mp.events.add('server:tickMinute', () => {
     mp.players.forEach(player => {
         if (!player.logged) return;
 
         // Skip if AFK
         if (player.data.isAfk) return;
 
-        if (!player.data.playedMinutes) player.data.playedMinutes = 0;
-        player.data.playedMinutes++;
+        // Ensure variable exists
+        if (!player.data.paydayIn && player.data.paydayIn !== 0) player.data.paydayIn = 60;
 
-        player.call('updateHUD', [player.data.playedMinutes]);
+        // 1. DECREMENT TIMER
+        player.data.paydayIn--;
 
-        // Payday every 60 mins
-        if (player.data.playedMinutes >= 60) {
+        // 2. SEND UPDATE TO CLIENT (UI)
+        // We send the EXACT remaining minutes
+        player.call('updatePaydayHUD', [player.data.paydayIn]);
+
+        // 3. CHECK FOR PAYDAY
+        if (player.data.paydayIn <= 0) {
             triggerPayday(player);
+            // Reset logic is inside triggerPayday or here:
+            player.data.paydayIn = 60; 
+            player.call('updatePaydayHUD', [60]); // Immediate UI reset
         }
     });
-});
+}, 60000);
 
 function triggerPayday(player) {
-    player.data.playedMinutes = 0;
-
-    // 1. Give XP (e.g., 250 XP per payday)
+    // 1. Give XP
     const xpReward = 250;
-    player.data.xp += xpReward;
+    player.data.xp = (player.data.xp || 0) + xpReward;
 
     // 2. Check Level Up
     let xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
     
-    // While loop handles multi-level ups (if they somehow got huge XP)
     while (player.data.xp >= xpNeeded) {
         player.data.xp -= xpNeeded;
         player.data.level++;
-        
         player.outputChatBox(`!{#f0c400}🎉 LEVEL UP! You are now Level ${player.data.level}!`);
-        player.call('playSound', ['HUD_AWARDS', 'CHALLENGE_UNLOCKED']); // Plays GTA sound
-        
-        // Recalculate needed for next level
+        player.call('playSound', ['HUD_AWARDS', 'CHALLENGE_UNLOCKED']); 
         xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
     }
 
-    // 3. Sync new stats to Client (for Player Menu / HUD)
+    // 3. Sync stats
     player.setVariable('level', player.data.level);
     player.setVariable('xp', player.data.xp);
     player.setVariable('xpMax', xpNeeded);
 
     // 4. Calculate Money
-    if (!player.data.bank) player.data.bank = 0;
-    
-    // Salary increases with Level ($500 base + $50 per level)
+    if (!player.data.bank_money) player.data.bank_money = 0;
     const salary = 500 + (player.data.level * 50); 
-    const interest = Math.floor(player.data.bank * 0.001); 
+    const interest = Math.floor(player.data.bank_money * 0.001); 
     const totalIncome = salary + interest;
 
-    player.data.bank += totalIncome;
+    player.data.bank_money += totalIncome;
 
     // 5. Output
-    player.outputChatBox(`!{#00FF00}_________________ PAYDAY _________________`);
+    player.outputChatBox(`!{#00FF00}___ PAYDAY ___`);
     player.outputChatBox(`!{#FFFFFF}Paycheck: !{#2ecc71}$${salary}`);
-    player.outputChatBox(`!{#FFFFFF}Bank Interest: !{#2ecc71}$${interest}`);
-    player.outputChatBox(`!{#FFFFFF}XP Gained: !{#00a2ff}+${xpReward}`);
-    player.outputChatBox(`!{#FFFFFF}New Balance: !{#2ecc71}$${player.data.bank}`);
+    player.outputChatBox(`!{#FFFFFF}bank_money Interest: !{#2ecc71}$${interest}`);
+    player.outputChatBox(`!{#FFFFFF}New Balance: !{#2ecc71}$${player.data.bank_money}`);
 
-    // 6. Save
+    // 6. Save Account (This saves the reset timer too)
     playerManager.saveAccount(player);
 }

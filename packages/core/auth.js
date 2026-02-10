@@ -5,15 +5,14 @@ const QuestManager = require('./questManager');
 const Banking = require('./banking');
 const CharCreator = require('../systems/charCreator');
 const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
+
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
     player.logged = false;
-    player.dim = 2000 + player.id; // Isolation dimension
-    // We can safely access player.ip and player.serial (HWID)
+    player.dim = 2000 + player.id; 
     console.log(`[Connect] ${player.name} | SCID: ${player.rgscId} | HWID: ${player.serial} | IP: ${player.ip}`);
 
     try {
-        // Fetch recent accounts (Only matching SCID for privacy)
         const [recentAccounts] = await db.query(
             `SELECT username, money, level, hwid FROM users 
              WHERE social_id = ? 
@@ -22,31 +21,25 @@ mp.events.add('playerJoin', async (player) => {
              LIMIT 3`,
             [player.rgscId]
         );
-        
         player.call('client:auth:show', [JSON.stringify(recentAccounts)]);
-
     } catch (err) {
         console.error("[Auth] Init Error:", err);
         player.call('client:auth:show', ["[]"]);
     }
 });
 
-// --- 2. AUTO-LOGIN (Quick Access) ---
+// --- 2. AUTO-LOGIN ---
 mp.events.add('server:auth:autoLogin', async (player, username) => {
     if (player.logged) return;
-
     try {
         const [rows] = await db.query("SELECT * FROM users WHERE username = ?", [username]);
         if (rows.length === 0) return player.call('client:auth:error', ["Account invalid."]);
         const user = rows[0];
 
-        // Strict Auto-Login: Must match SCID + HWID
         if (user.social_id !== player.rgscId || user.hwid !== player.serial) {
              return player.call('client:auth:error', ["Security alert: Device changed. Login manually."]);
         }
-
-        performLoginChecks(player, user, null); // Password null = trusted auto-login
-
+        performLoginChecks(player, user, null);
     } catch (err) {
         console.error(err);
         player.call('client:auth:error', ["Server error."]);
@@ -56,15 +49,11 @@ mp.events.add('server:auth:autoLogin', async (player, username) => {
 // --- 3. MANUAL LOGIN ---
 mp.events.add('server:auth:login', async (player, username, password) => {
     if (player.logged) return;
-
     try {
         const [rows] = await db.query("SELECT * FROM users WHERE username = ?", [username]);
         if (rows.length === 0) return player.call('client:auth:error', ["Account not found."]);
         const user = rows[0];
-
-        // This function handles the rest (password check -> finalize -> startSession)
         performLoginChecks(player, user, password);
-
     } catch (err) {
         console.log(err);
         player.call('client:auth:error', ["Database Error."]);
@@ -76,7 +65,6 @@ mp.events.add('server:auth:register', async (player, username, password) => {
     if (player.logged) return;
     if (!username || username.length < 3) return player.call('client:auth:error', ["Username too short."]);
 
-    // PRE-CHECK: Anti-Multibox (Scenario: Same HWID/SCID already online?)
     if (isDeviceOrSocialActive(player)) {
         return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time from the same device."]);
     }
@@ -87,9 +75,8 @@ mp.events.add('server:auth:register', async (player, username, password) => {
 
         const hash = await bcrypt.hash(password, 10);
 
-        // Insert with Tracking Data (IP, HWID)
         const [res] = await db.query(
-            "INSERT INTO users (username, password, social_id, hwid, ip, money, level, vehicle_slots, last_active) VALUES (?, ?, ?, ?, ?, 500, 1, 3, NOW())",
+            "INSERT INTO users (username, password, social_id, hwid, ip, money, level, vehicle_slots, last_active, payday_in) VALUES (?, ?, ?, ?, ?, 500, 1, 3, NOW(), 60)",
             [username, hash, player.rgscId, player.serial, player.ip]
         );
 
@@ -102,6 +89,7 @@ mp.events.add('server:auth:register', async (player, username, password) => {
             money: 500,
             level: 1,
             vehicle_slots: 3,
+            payday_in: 60,
             cooldowns: '{}'
         };
 
@@ -113,11 +101,9 @@ mp.events.add('server:auth:register', async (player, username, password) => {
     }
 });
 
-// --- 5. SECURITY LOGIC (The Core Request) ---
+// --- 5. SECURITY LOGIC ---
 async function performLoginChecks(player, user, passwordInput) {
-    // 1. Check for Active Bans (New System)
     try {
-        // Check for active bans that are either Permanent (NULL) or Not Yet Expired
         const [bans] = await db.query(
             `SELECT * FROM user_bans 
              WHERE user_id = ? AND active = 1 
@@ -128,108 +114,58 @@ async function performLoginChecks(player, user, passwordInput) {
 
         if (bans.length > 0) {
             const ban = bans[0];
-            const reason = ban.reason;
-            const admin = ban.admin_name;
-            
-            // Logic to display "Permanent" if expire_time is null
             const expireDisplay = ban.expire_time ? new Date(ban.expire_time).toLocaleString() : "Permanent";
-            
-            player.outputChatBox("!{FF0000}========================================");
             player.outputChatBox("!{FF0000}       YOU ARE BANNED FROM THIS SERVER");
-            player.outputChatBox("!{FF0000}========================================");
-            player.outputChatBox(`!{FFFFFF}Reason: ${reason}`);
-            player.outputChatBox(`!{FFFFFF}Banned By: ${admin}`);
-            player.outputChatBox(`!{FFFFFF}Expires: ${expireDisplay}`);
-            
-            // Stop login and show error on client
-            return player.call('client:auth:error', [`Banned: ${reason} (Expires: ${expireDisplay})`]);
+            return player.call('client:auth:error', [`Banned: ${ban.reason} (Expires: ${expireDisplay})`]);
         }
     } catch (err) {
         console.error("[Auth] Ban Check Error:", err);
         return player.call('client:auth:error', ["Server Error (Ban System)."]);
     }
 
-    // 2. Password Check (Skipped if Auto-Login)
     if (passwordInput !== null) {
         const match = await bcrypt.compare(passwordInput, user.password);
         if (!match) return player.call('client:auth:error', ["Incorrect Password."]);
     }
 
-    // 3. SCID OWNERSHIP CHECK (Scenario: Same HWID, Diff SCID -> Block)
     if (user.social_id && user.social_id !== player.rgscId) {
-        console.log(`[Security] Blocked ${player.name}. Account SCID: ${user.social_id} vs Player SCID: ${player.rgscId}`);
         return player.call('client:auth:error', ["This account belongs to another Social Club ID."]);
     }
 
-    // 4. ACCOUNT ALREADY ONLINE CHECK (Scenario: Diff HWID, Same SCID -> Kick Old)
     const existingSession = mp.players.toArray().find(p => p.logged && p.data.dbId === user.id);
     if (existingSession) {
-        // We notify the new player
         player.call('client:auth:error', ["You are already connected in another location. Disconnecting old session..."]);
-        
-        // We kick the old player
-        existingSession.outputChatBox("!{FF0000}Logged in from another location.");
         existingSession.kick("Logged in from another location.");
-        
-        // Return here to force the new player to click Login again (safer to ensure DB sync)
         return; 
     }
 
-    // 5. DEVICE ALREADY PLAYING CHECK (Scenario: Same HWID/SCID already online -> Block)
-    // This prevents opening 2 game instances on the same PC to farm money
     if (isDeviceOrSocialActive(player)) {
-        return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time from the same device."]);
+        return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time."]);
     }
 
-    // 6. IP SAFETY CHECK (New)
-    // If IP changed significantly, we just log it (don't block, to allow dynamic IPs)
-    if (user.ip && user.ip !== player.ip) {
-        console.log(`[Auth] ${player.name} new IP detected: ${player.ip} (Old: ${user.ip})`);
-        player.outputChatBox("!{FFFF00}[Security] New login location detected.");
-    }
-
-    // 7. UPDATE TRACKING & LOGIN
-    // First time link?
     if (!user.social_id) await db.query("UPDATE users SET social_id = ? WHERE id = ?", [player.rgscId, user.id]);
-
-    // Update Last Active, HWID, IP
-    await db.query("UPDATE users SET last_active = NOW(), hwid = ?, ip = ? WHERE id = ?", 
-        [player.serial, player.ip, user.id]);
+    await db.query("UPDATE users SET last_active = NOW(), hwid = ?, ip = ? WHERE id = ?", [player.serial, player.ip, user.id]);
 
     finalizeLogin(player, user);
 }
 
-// Helper: Checks if this physical computer is already playing any account
 function isDeviceOrSocialActive(currentPlayer) {
     return mp.players.toArray().some(p => {
         if (!p.logged) return false;
         if (p === currentPlayer) return false;
-
-        // Check HWID (Serial)
-        const sameHWID = (p.serial === currentPlayer.serial);
-        // Check Social Club
-        const sameSCID = (p.rgscId === currentPlayer.rgscId);
-
-        // NOTE: We do NOT check IP here to allow brothers/roommates (Same IP, Diff HWID) to play.
-        return sameHWID || sameSCID;
+        return (p.serial === currentPlayer.serial) || (p.rgscId === currentPlayer.rgscId);
     });
 }
 
 async function finalizeLogin(player, userData) {
-    // 1. Check if Character Exists
     if (!userData.appearance) {
         player.data.dbId = userData.id;
         player.data.username = userData.username;
         player.logged = true; 
-        
-        console.log(`[Auth] ${player.name} sent to Character Creator.`);
-        
         player.call('client:auth:destroy');
-        
         player.call('client:creator:start'); 
         return;
     }
-
     startSession(player, userData);
 }
 
@@ -243,35 +179,32 @@ function startSession(player, userData) {
     player.data.adminLevel = userData.admin_level || 0; 
     player.setVariable('adminLevel', player.data.adminLevel);
 
-    // --- ECONOMY & STATS ---
     player.model = (player.data.gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
-    
     player.data.money = userData.money;
-    player.data.bank_money = userData.bank_money || 0; // Ensure bank is loaded
+    player.data.bank_money = userData.bank_money || 0;
     player.setVariable('money', userData.money);
-
-    // 1. LOAD XP & LEVEL
+    
+    // --- LOAD RPG STATS ---
     player.data.level = userData.level || 1;
-    player.data.xp = userData.xp || 0; // Load XP from DB
+    player.data.xp = userData.xp || 0; 
+    player.data.vehicle_slots = userData.vehicle_slots;
+    
+    // --- LOAD PAYDAY TIMER ---
+    // If it's 0 or null (unlikely but safe), set to 60. Otherwise use DB value.
+    player.data.paydayIn = (userData.payday_in && userData.payday_in > 0) ? userData.payday_in : 60;
 
-    // 2. CALCULATE MAX XP (for HUD)
-    // We use the helper from playerManager to keep the math consistent
+    // Sync XP
     const xpMax = playerManager.calculateNextLevelXp(player.data.level);
-
-    // 3. SYNC TO CLIENT
     player.setVariable('level', player.data.level);
     player.setVariable('xp', player.data.xp);
     player.setVariable('xpMax', xpMax);
 
-    player.data.vehicle_slots = userData.vehicle_slots;
-
-    // --- MANAGERS ---
+    // Init Managers
     CharCreator.applyAppearance(player, userData.appearance);
     PhotoHuntManager.initPlayer(player);
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
 
-    // --- COOLDOWNS ---
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
         player.data.cooldowns = cd;
@@ -281,7 +214,6 @@ function startSession(player, userData) {
         }
     } catch(e) { player.data.cooldowns = {}; }
 
-    // Helper: Set Cooldown
     player.setCooldown = function(name, minutes) {
         const exp = Date.now() + (minutes * 60000);
         player.data.cooldowns = player.data.cooldowns || {};
@@ -291,8 +223,7 @@ function startSession(player, userData) {
     };
     player.hasCooldown = (name) => player.data.cooldowns && player.data.cooldowns[name] > Date.now();
 
-    // --- SPAWN LOGIC ---
-    // Calculate if we should spawn them at last location or show spawn menu
+    // Spawn Logic
     const lastActive = new Date(userData.last_active).getTime();
     const now = Date.now();
     const diffMinutes = (now - lastActive) / 1000 / 60;
@@ -301,16 +232,11 @@ function startSession(player, userData) {
     let lastPos = null;
 
     if (userData.position) {
-        try {
-            lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position;
-        } catch (e) {}
+        try { lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position; } catch (e) {}
     }
 
-    if (lastPos) {
-        player.data.lastLocation = lastPos;
-    }
+    if (lastPos) player.data.lastLocation = lastPos;
 
-    // If connected within 5 minutes AND has a valid position, spawn automatically
     if (diffMinutes < 5 && lastPos) {
         player.spawn(new mp.Vector3(lastPos.x, lastPos.y, lastPos.z));
         player.dim = 0; 
@@ -318,16 +244,18 @@ function startSession(player, userData) {
         showSpawnSelector = false; 
     }
 
-    // Trigger Success
     player.call('client:auth:success', [showSpawnSelector, lastPos]);
-    
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
     
-    // Trigger any other load events
+    // --- INITIAL TIMER UPDATE ---
+    // Send the loaded time to the HUD immediately so they don't see "60" for 1 minute
+    setTimeout(() => {
+        player.call('updatePaydayHUD', [player.data.paydayIn]);
+    }, 2000); // Small delay to ensure HUD is loaded
+
     mp.events.call('server:loadAccount', player);
 }
 
-// Event called by Creator when done
 mp.events.add('server:auth:finalized', async (player) => {
     const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [player.data.dbId]);
     if (rows.length > 0) {
