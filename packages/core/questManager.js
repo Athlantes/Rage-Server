@@ -91,7 +91,15 @@ const QuestManager = {
             // Handle Reward
             if (justCompleted) {
                 await PlayerManager.addMoneyAndSave(player, quest.reward, `Quest: ${quest.title}`);
-                player.call('showNotification', ['Quest Complete', `Completed: ${quest.title}`]);
+                const rewards = [
+                    { type: 'money', value: `$${quest.reward}` }
+                ];
+                player.call('showCenterPopup', [
+                    'QUEST COMPLETE',
+                    quest.title,
+                    JSON.stringify(rewards),
+                    6000
+                ]);
                 player.call('client:questCompleteSound'); // Optional sound
             }
         });

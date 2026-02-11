@@ -95,7 +95,18 @@ const PhotoHuntManager = {
         await PlayerManager.addMoneyAndSave(player, def.reward, `Photo Hunt: ${def.name}`);
         
         player.call('client:photoSuccess', [landmarkId]);
-        player.call('showNotification', ['Photo Hunt', `Captured ${def.name}! Received $${def.reward}`]);
+
+        const completedCount = completed.length;
+        const totalCount = assigned.length;
+        const rewards = [
+            { type: 'money', value: `$${def.reward}` }
+        ];
+        player.call('showCenterPopup', [
+            'LANDMARK CAPTURED',
+            `${def.name} (${completedCount}/${totalCount})`,
+            JSON.stringify(rewards),
+            5000
+        ]);
     }
 };
 

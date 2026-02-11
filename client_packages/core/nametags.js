@@ -9,7 +9,11 @@ const FONT_ID = 4;          // Font 4 (Chalet London) is clean.
 const FONT_SCALE = 0.6;     // INCREASED from 0.4 to 1.0
 
 // --- SETTINGS STATE ---
-let showSelf = false; 
+let showSelf = false;
+try {
+    const saved = mp.storage.data.showSelfTag;
+    if (saved !== undefined && saved !== null) showSelf = saved;
+} catch(e) {}
 
 mp.events.add('client:nametags:toggleSelf', (enabled) => {
     showSelf = enabled;

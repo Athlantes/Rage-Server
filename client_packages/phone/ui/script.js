@@ -1,12 +1,12 @@
 // CONFIGURATION: Define your apps here for easy modularity
 const NOTIFICATION_APPS = {
-    'mail':      { color: '#007aff', icon: 'fas fa-envelope', title: 'Mail' },
+    'mail':      { color: '#00a8ff', icon: 'fas fa-envelope', title: 'Mail' },
     'phone':     { color: '#34c759', icon: 'fas fa-phone-alt', title: 'Phone' },
     'bank':      { color: '#1abc9c', icon: 'fas fa-university', title: 'Fleeca' },
     'scooter':   { color: '#56ab2f', icon: 'fas fa-bolt', title: 'eScootr' },
     'quickeats': { color: '#ff9500', icon: 'fas fa-hamburger', title: 'QuickEats' },
     'vehicles':  { color: '#f1c40f', icon: 'fas fa-car', title: 'Vehicles' },
-    'system':    { color: '#8e8e93', icon: 'fas fa-cog', title: 'System' },
+    'system':    { color: '#636366', icon: 'fas fa-cog', title: 'System' },
 };
 
 const app = {
@@ -244,7 +244,7 @@ const app = {
             div.innerHTML = `
                 <div class="mail-header-row" style="display:flex; justify-content:space-between; align-items:baseline;">
                     <div class="mail-sender">${mail.sender}</div>
-                    <div class="mail-time" style="font-size:11px; color:#8e8e93;">${timeAgo}</div>
+                    <div class="mail-time" style="font-size:11px; color:rgba(0,0,0,0.35);">${timeAgo}</div>
                 </div>
                 <div class="mail-title">${mail.title}</div>
                 <div class="mail-msg">${mail.message}</div>
@@ -325,7 +325,7 @@ const app = {
             div.innerHTML = `
                 <div class="mail-header-row" style="display:flex; justify-content:space-between; align-items:baseline;">
                     <div class="mail-sender">${mail.sender}</div>
-                    <div class="mail-time" style="font-size:11px; color:#8e8e93;">${timeAgo}</div>
+                    <div class="mail-time" style="font-size:11px; color:rgba(0,0,0,0.35);">${timeAgo}</div>
                 </div>
                 <div class="mail-title">${mail.title}</div>
                 <div class="mail-msg">${mail.message}</div>
@@ -347,22 +347,40 @@ const app = {
         const container = document.getElementById('vehicle-list');
         container.innerHTML = '';
         const safeCars = Array.isArray(cars) ? cars : [];
+
+        // Update slots badge
+        const slotsBadge = document.getElementById('veh-slots-badge');
+        if (slotsBadge) slotsBadge.textContent = safeCars.length + ' vehicles';
+
         if (safeCars.length === 0) {
-            container.innerHTML = '<div style="padding:30px; text-align:center; color:#999;">No vehicles found</div>';
+            container.innerHTML = `
+                <div class="veh-empty-state">
+                    <div class="veh-empty-icon"><i class="fas fa-car"></i></div>
+                    <div class="veh-empty-title">No Vehicles</div>
+                    <div class="veh-empty-sub">Visit a dealership to purchase your first car</div>
+                </div>`;
             return;
         }
         safeCars.forEach(car => {
             const isOut = car.spawned;
+            const gradeColors = { S:'#ff4757', A:'#ff6b35', B:'#f39c12', C:'#2ecc71', D:'#00a8ff', E:'#8a8fa6', F:'#555' };
+            const gc = gradeColors[car.grade] || '#888';
             const div = document.createElement('div');
             div.className = 'vehicle-item';
             div.onclick = () => app.openVehicleDetails(car);
             div.innerHTML = `
-                <div class="veh-icon"><i class="fas fa-car"></i></div>
-                <div class="veh-info">
-                    <div class="veh-model">${car.model}</div>
-                    <div class="veh-plate">${car.plate}</div>
+                <div class="veh-icon-new" style="border-color: ${gc}33; background: ${gc}11;">
+                    <i class="fas fa-car" style="color:${gc}"></i>
+                    <span class="veh-grade-pip" style="background:${gc}">${car.grade}</span>
                 </div>
-                <div class="veh-status-dot ${isOut ? 'status-active' : ''}"></div>
+                <div class="veh-info">
+                    <div class="veh-model">${car.displayName || car.model}</div>
+                    <div class="veh-plate">${car.plate} · ${car.type || 'Unknown'}</div>
+                </div>
+                <div class="veh-right">
+                    <div class="veh-status-pill ${isOut ? 'active' : ''}">${isOut ? 'Active' : 'Parked'}</div>
+                    <div class="veh-fuel-mini"><i class="fas fa-gas-pump"></i> ${Math.floor(car.fuel)}%</div>
+                </div>
             `;
             container.appendChild(div);
         });
@@ -370,11 +388,31 @@ const app = {
 
     openVehicleDetails: (car) => {
         app.currentVehicleId = car.id;
+        app._currentCar = car;
         document.getElementById('view-vehicles').classList.add('hidden');
         document.getElementById('view-vehicle-details').classList.remove('hidden');
-        document.getElementById('detail-model').innerText = car.model;
+        document.getElementById('detail-model').innerText = car.displayName || car.model;
         document.getElementById('detail-plate').innerText = car.plate;
-        document.getElementById('detail-fuel').innerText = Math.floor(car.fuel) + "%";
+        document.getElementById('detail-type').innerText = car.type || 'Unknown';
+        
+        const gradeEl = document.getElementById('detail-grade');
+        if (gradeEl) {
+            gradeEl.innerText = car.grade || '?';
+            const gradeColors = { S:'#ff4757', A:'#ff6b35', B:'#f39c12', C:'#2ecc71', D:'#00a8ff', E:'#8a8fa6', F:'#555' };
+            gradeEl.style.background = gradeColors[car.grade] || '#888';
+        }
+        
+        const fuelPct = Math.floor(car.fuel);
+        document.getElementById('detail-fuel').innerText = fuelPct + '%';
+        const fuelBar = document.getElementById('detail-fuel-bar');
+        if (fuelBar) {
+            fuelBar.style.width = fuelPct + '%';
+            fuelBar.style.background = fuelPct > 50 ? '#2ecc71' : fuelPct > 20 ? '#f39c12' : '#ff4757';
+        }
+        
+        const sellPriceEl = document.getElementById('detail-sell-price');
+        if (sellPriceEl) sellPriceEl.innerText = '$' + (car.sellPrice || 0).toLocaleString();
+        
         const statusEl = document.getElementById('detail-status');
         const btnSpawn = document.getElementById('btn-spawn');
         const btnLocate = document.getElementById('btn-locate');
@@ -392,6 +430,22 @@ const app = {
             btnLocate.classList.add('btn-disabled');
             btnTow.classList.add('btn-disabled');
         }
+    },
+
+    sellVehicle: () => {
+        if (!app.currentVehicleId) return;
+        const car = app._currentCar;
+        if (!car) return;
+        // Open confirm modal
+        document.getElementById('confirm-title').innerText = 'Sell Vehicle';
+        document.getElementById('confirm-text').innerText = `Sell your ${car.displayName || car.model} for $${(car.sellPrice || 0).toLocaleString()}? This cannot be undone.`;
+        document.getElementById('btn-confirm-yes').innerText = 'Sell';
+        document.getElementById('btn-confirm-yes').onclick = () => {
+            if ('mp' in window) mp.trigger('client:phone:sellVehicle', app.currentVehicleId);
+            app.closeConfirmModal();
+            app.open('vehicles');
+        };
+        document.getElementById('confirm-modal').classList.remove('hidden');
     },
 
     doVehicleAction: (action) => {
@@ -413,36 +467,39 @@ const app = {
 
     updateQuickEatsUI: (isActive, statusText, locationName) => {
         app.quickEatsActive = isActive;
-        const circle = document.getElementById('qe-status-circle');
+        const ring = document.getElementById('qe-status-ring');
         const icon = document.getElementById('qe-icon');
-        const txtStatus = document.getElementById('qe-status-text');
-        const txtSub = document.getElementById('qe-subtext');
+        const titleEl = document.getElementById('qe-hero-title');
+        const subEl = document.getElementById('qe-hero-sub');
         const btn = document.getElementById('btn-qe-toggle');
         const card = document.getElementById('qe-order-card');
+        const statsRow = document.getElementById('qe-stats-row');
         btn.disabled = false; 
         if (isActive) {
-            circle.className = 'status-circle online';
+            ring.className = 'qe-status-ring online';
             icon.className = 'fas fa-hamburger';
             btn.innerText = "GO OFFLINE";
-            btn.className = "btn-qe-action active";
-            txtStatus.innerText = statusText || "Searching...";
-            txtSub.innerText = "Driving to destination...";
+            btn.className = "qe-toggle-btn go-offline";
+            titleEl.innerText = statusText || "Searching...";
+            subEl.innerText = "Driving to destination...";
+            if (statsRow) statsRow.classList.remove('hidden');
             if (locationName) {
                 card.classList.remove('hidden');
                 document.getElementById('qe-task-name').innerText = statusText;
                 document.getElementById('qe-location').innerText = locationName;
             } else {
                 card.classList.add('hidden');
-                txtSub.innerText = "Waiting for new orders...";
+                subEl.innerText = "Waiting for new orders...";
             }
         } else {
-            circle.className = 'status-circle offline';
+            ring.className = 'qe-status-ring offline';
             icon.className = 'fas fa-power-off';
             btn.innerText = "GO ONLINE";
-            btn.className = "btn-qe-action";
-            txtStatus.innerText = "Offline";
-            txtSub.innerText = "Go online to start receiving delivery orders.";
+            btn.className = "qe-toggle-btn go-online";
+            titleEl.innerText = "Offline";
+            subEl.innerText = "Go online to start receiving orders";
             card.classList.add('hidden');
+            if (statsRow) statsRow.classList.add('hidden');
         }
     },
 
@@ -477,7 +534,7 @@ const app = {
                     <span style="font-weight:600; font-size:14px;">${safeDesc}</span>
                     <span style="color:${color}; font-weight:bold; font-size:14px;">${sign}$${safeAmount.toLocaleString()}</span>
                 </div>
-                <div style="font-size:11px; color:#8e8e93; text-align:right;">${app.getRelativeTime(tx.created_at)}</div>
+                <div style="font-size:11px; color:rgba(0,0,0,0.35); text-align:right;">${app.getRelativeTime(tx.created_at)}</div>
             `;
             list.appendChild(div);
         });
@@ -672,10 +729,10 @@ const app = {
                 
                 const div = document.createElement('div');
                 div.className = 'msg-row';
-                if(hasUnread) div.style.backgroundColor = "#f0f8ff"; 
+                if(hasUnread) div.style.backgroundColor = "rgba(0,168,255,0.06)"; 
                 div.onclick = () => app.phoneApp.openChat(num, displayName);
                 const prefix = lastMsg.isMine ? "You: " : "";
-                div.innerHTML = `<div class="msg-header"><span class="msg-sender" style="${hasUnread ? 'font-weight:800; color:#007aff;' : ''}">${displayName} ${hasUnread ? '●' : ''}</span><span class="msg-date">${app.getRelativeTime(lastMsg.time)}</span></div><div class="msg-preview" style="${hasUnread ? 'font-weight:600; color:#000;' : ''}">${prefix}${preview}</div>`;
+                div.innerHTML = `<div class="msg-header"><span class="msg-sender" style="${hasUnread ? 'font-weight:800; color:#00a8ff;' : ''}">${displayName} ${hasUnread ? '●' : ''}</span><span class="msg-date">${app.getRelativeTime(lastMsg.time)}</span></div><div class="msg-preview" style="${hasUnread ? 'font-weight:600; color:#1a1a2e;' : ''}">${prefix}${preview}</div>`;
                 container.appendChild(div);
             });
         },
@@ -809,11 +866,11 @@ const app = {
 
         scan: () => {
             if (app.scooter.state === 'found') { app.scooter.unlock(); return; }
-            const circle = document.querySelector('.radar-circle');
+            const ring = document.getElementById('scootr-ring');
             const msg = document.getElementById('escootr-status-msg');
             const btn = document.getElementById('btn-escootr-main');
             app.scooter.state = 'scanning';
-            circle.classList.add('pulsing');
+            ring.classList.add('pulsing');
             msg.innerText = "Triangulating nearby scooters..."; 
             btn.disabled = true;
             btn.innerText = "SEARCHING...";
@@ -821,22 +878,26 @@ const app = {
         },
 
         onScanResult: (data) => {
-            const circle = document.querySelector('.radar-circle');
+            const ring = document.getElementById('scootr-ring');
             const msg = document.getElementById('escootr-status-msg');
             const btn = document.getElementById('btn-escootr-main');
             const info = document.getElementById('escootr-found-info');
-            circle.classList.remove('pulsing');
+            ring.classList.remove('pulsing');
             btn.disabled = false;
-            if (data.status === 'found') {
+            if (data.status === 'failed') {
+                app.scooter.state = 'idle';
+                msg.innerText = data.msg || "Cannot scan here.";
+                btn.innerText = "SCAN AREA";
+            } else if (data.status === 'found') {
                 app.scooter.state = 'found';
                 app.scooter.simulatedBattery = data.battery;
                 msg.innerText = "Signal acquired.";
                 info.classList.remove('hidden');
-                const distContainer = info.querySelector('div > span:first-child');
-                if(distContainer) distContainer.innerHTML = `<i class="fas fa-walking"></i> ${data.dist || 15}m`;
+                const distEl = document.getElementById('escootr-found-dist');
+                if(distEl) distEl.innerText = data.dist || 15;
                 document.getElementById('escootr-found-batt').innerText = data.battery;
                 btn.innerText = `UNLOCK ($${app.scooter.unlockCost})`;
-                btn.style.background = "white"; 
+                btn.className = "scootr-scan-btn unlock";
             } else {
                 app.scooter.state = 'idle';
                 msg.innerText = "No scooters signal nearby.";
@@ -875,7 +936,7 @@ const app = {
             document.getElementById('escootr-found-info').classList.add('hidden');
             const btn = document.getElementById('btn-escootr-main');
             btn.innerText = "SCAN AREA";
-            btn.style.background = "#32cd32";
+            btn.className = "scootr-scan-btn";
             document.getElementById('escootr-status-msg').innerText = "Ride ended.";
         }
     },
@@ -886,7 +947,9 @@ const app = {
         const grid = document.getElementById('gallery-grid');
         if (!grid) return;
         grid.innerHTML = '';
-        if (app.photos.length === 0) { grid.innerHTML = '<div style="width:100%; padding:40px; text-align:center; color:#999; grid-column: 1 / -1;">No photos yet</div>'; return; }
+        const countBadge = document.getElementById('gallery-count');
+        if (countBadge) countBadge.innerText = app.photos.length > 0 ? app.photos.length : '';
+        if (app.photos.length === 0) { grid.innerHTML = '<div class="gallery-empty"><i class="fas fa-camera"></i><span>No photos yet</span></div>'; return; }
         
         app.photos.forEach(photo => {
             const div = document.createElement('div');
@@ -963,7 +1026,7 @@ const app = {
         const newBtn = yesBtn.cloneNode(true);
         yesBtn.parentNode.replaceChild(newBtn, yesBtn);
         newBtn.innerText = "Confirm";
-        newBtn.style.background = "#007aff";
+        newBtn.style.background = "#00a8ff";
         if(title.includes("Delete")) newBtn.style.background = "#ff3b30";
         
         newBtn.addEventListener('click', () => { if (app.pendingAction) app.pendingAction(); app.closeConfirmModal(); });

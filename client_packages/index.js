@@ -38,3 +38,5 @@ require('./jobs/farmer.js');
 require('./jobs/preview.js');
 
 require('./creator/index.js');
+require('./core/dealership.js');
+require('./core/tuning.js');

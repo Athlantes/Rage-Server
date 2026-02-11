@@ -28,6 +28,23 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
         // REQUEST DATA FROM SERVER
         mp.events.callRemote('server:playerMenu:getData');
 
+        // Send saved settings state to UI
+        setTimeout(() => {
+            if (playerMenuBrowser) {
+                let voiceVol = 100, voiceEnabled = true, selfTag = false;
+                try {
+                    const sv = mp.storage.data.voiceVolume;
+                    if (sv !== undefined && sv !== null) voiceVol = sv;
+                    const se = mp.storage.data.voiceEnabled;
+                    if (se !== undefined && se !== null) voiceEnabled = se;
+                    const st = mp.storage.data.showSelfTag;
+                    if (st !== undefined && st !== null) selfTag = st;
+                } catch(e) {}
+                const settingsJson = JSON.stringify({ voiceVolume: voiceVol, voiceEnabled: voiceEnabled, showSelfTag: selfTag });
+                playerMenuBrowser.execute(`applySettings('${settingsJson}')`);
+            }
+        }, 200);
+
     } else {
         if (playerMenuBrowser) {
             playerMenuBrowser.active = false;
@@ -40,6 +57,8 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
 });
 
 mp.events.add('client:playerMenu:setSelfTag', (enabled) => {
+    // Persist the nametag setting
+    try { mp.storage.data.showSelfTag = enabled; mp.storage.flush(); } catch(e) {}
     // Forward it to the nametag script
     mp.events.call('client:nametags:toggleSelf', enabled);
 });
@@ -47,7 +66,8 @@ mp.events.add('client:playerMenu:setSelfTag', (enabled) => {
 // Event to receive data from server and pass to UI
 mp.events.add('client:playerMenu:receiveData', (json) => {
     if (playerMenuBrowser && isplayerMenuOpen) {
-        playerMenuBrowser.execute(`receiveData('${json}')`);
+        const safe = json.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+        playerMenuBrowser.execute(`receiveData('${safe}')`);
     }
 });
 

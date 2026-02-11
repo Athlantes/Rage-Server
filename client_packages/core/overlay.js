@@ -149,3 +149,14 @@ mp.events.add('updatePaydayHUD', (minutesLeft) => {
         overlayBrowser.execute(`updatePaydayTimer(${minutesLeft});`);
     }
 });
+
+// --- CENTER POPUP EVENT ---
+mp.events.add('showCenterPopup', (title, subtitle, rewardsJson, duration) => {
+    if (overlayBrowser) {
+        const safeTitle = title.replace(/'/g, "\\'");
+        const safeSubtitle = subtitle.replace(/'/g, "\\'");
+        const safeRewards = rewardsJson.replace(/'/g, "\\'");
+        const dur = duration || 6000;
+        overlayBrowser.execute(`showCenterPopup('${safeTitle}', '${safeSubtitle}', '${safeRewards}', ${dur});`);
+    }
+});

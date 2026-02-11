@@ -2,8 +2,16 @@
 
 const MAX_VOICE_RANGE = 20.0;
 let isVoiceEnabled = false;   // Current PTT state (Holding N?)
-let masterVolume = 1.0;       // Volume Slider
-let isSystemEnabled = true;   // New Toggle (Settings Menu)
+
+// Load persisted settings from mp.storage
+let masterVolume = 1.0;
+let isSystemEnabled = true;
+try {
+    const savedVol = mp.storage.data.voiceVolume;
+    if (savedVol !== undefined && savedVol !== null) masterVolume = savedVol / 100.0;
+    const savedEnabled = mp.storage.data.voiceEnabled;
+    if (savedEnabled !== undefined && savedEnabled !== null) isSystemEnabled = savedEnabled;
+} catch(e) {}
 
 // 1. Configuration
 mp.voiceChat.muted = true;
@@ -12,11 +20,13 @@ mp.gui.chat.show(true);
 // --- EVENT: Volume Slider ---
 mp.events.add('client:voice:setVolume', (percentage) => {
     masterVolume = percentage / 100.0;
+    try { mp.storage.data.voiceVolume = percentage; mp.storage.flush(); } catch(e) {}
 });
 
 // --- EVENT: System Toggle ---
 mp.events.add('client:voice:toggleSystem', (enabled) => {
     isSystemEnabled = enabled;
+    try { mp.storage.data.voiceEnabled = enabled; mp.storage.flush(); } catch(e) {}
     
     if (!isSystemEnabled) {
         // Immediately silence everyone

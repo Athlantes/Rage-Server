@@ -76,7 +76,7 @@ mp.events.add('server:auth:register', async (player, username, password) => {
         const hash = await bcrypt.hash(password, 10);
 
         const [res] = await db.query(
-            "INSERT INTO users (username, password, social_id, hwid, ip, money, level, vehicle_slots, last_active, payday_in) VALUES (?, ?, ?, ?, ?, 500, 1, 3, NOW(), 60)",
+            "INSERT INTO users (username, password, social_id, hwid, ip, money, level, vehicle_slots, last_active, payday_in, created_at, total_playtime) VALUES (?, ?, ?, ?, ?, 500, 1, 3, NOW(), 60, NOW(), 0)",
             [username, hash, player.rgscId, player.serial, player.ip]
         );
 

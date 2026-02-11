@@ -36,7 +36,24 @@ const vehicles = {
         
         veh.lastActive = Date.now(); 
 
-        veh.setColor(colors.prim, colors.sec);
+        // Apply colors: support new RGB format and legacy index format
+        if (colors.primRGB) {
+            // New RGB format: { primRGB: {r,g,b}, secRGB: {r,g,b}, paintType: 0 }
+            try {
+                veh.setColorRGB(
+                    colors.primRGB.r, colors.primRGB.g, colors.primRGB.b,
+                    colors.secRGB.r, colors.secRGB.g, colors.secRGB.b
+                );
+            } catch(e) {
+                veh.setColor(0, 0);
+            }
+            // Store paint type for client-side application
+            veh.setVariable('paintType', colors.paintType || 0);
+        } else {
+            // Legacy format: { prim: 0, sec: 0 }
+            veh.setColor(colors.prim || 0, colors.sec || 0);
+        }
+
         veh.engineHealth = data.engine_health;
         veh.dirtLevel = data.dirt_level;
         veh.setVariable('fuel', data.fuel);

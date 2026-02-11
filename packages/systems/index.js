@@ -7,3 +7,5 @@ require('./charCreator');
 require('./scooter');
 require('./photoHunt/photoHuntManager');
 require('./cablecar');
+require('./dealership');
+require('./tuning');

@@ -5,6 +5,7 @@
     <title>RPGOS Mobile</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -101,7 +102,7 @@
                 </div>
             </div>
 
-            <div id="view-phone-app" class="view hidden" style="background: #fff;">
+            <div id="view-phone-app" class="view hidden" style="background: #f5f5f8;">
                 <div id="tab-content-keypad" class="phone-tab-content">
                     <div class="keypad-display">
                         <div id="keypad-number" class="keypad-input"></div>
@@ -138,7 +139,7 @@
                 <div id="tab-content-contacts" class="phone-tab-content hidden">
                     <div class="app-header">
                         <span>Contacts</span>
-                        <i class="fas fa-plus" style="color:#007aff; margin-left:auto; cursor:pointer;" onclick="app.phoneApp.openContactEdit()"></i>
+                        <i class="fas fa-plus" style="color:#00a8ff; margin-left:auto; cursor:pointer;" onclick="app.phoneApp.openContactEdit()"></i></i>
                     </div>
                     <div class="search-bar-container">
                         <input type="text" placeholder="Search" onkeyup="app.phoneApp.filterContacts(this.value)">
@@ -163,7 +164,7 @@
                 </div>
             </div>
 
-            <div id="view-chat-thread" class="view hidden" style="background: white;">
+            <div id="view-chat-thread" class="view hidden" style="background: #f5f5f8;">
                 <div class="app-header">
                     <button class="back-btn" onclick="app.phoneApp.closeChat()"><i class="fas fa-chevron-left"></i></button>
                     <span id="chat-thread-name">John Doe</span>
@@ -190,16 +191,16 @@
                     <button class="btn-attach" onclick="app.phoneApp.toggleAttachMenu()">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <input type="text" id="chat-input-text" placeholder="iMessage">
+                    <input type="text" id="chat-input-text" placeholder="Type a message...">
                     <button onclick="app.phoneApp.sendSMS()"><i class="fas fa-arrow-up"></i></button>
                 </div>
             </div>
 
-            <div id="view-contact-edit" class="view hidden" style="background: #f2f2f7;">
+            <div id="view-contact-edit" class="view hidden" style="background: #f5f5f8;">
                 <div class="app-header">
                     <button class="back-btn" onclick="app.phoneApp.closeContactEdit()">Cancel</button>
-                    <span style="font-weight:600;">New Contact</span>
-                    <button class="text-btn" style="color:#007aff; border:none; background:none; font-weight:bold; margin-left:auto;" onclick="app.phoneApp.saveContact()">Done</button>
+                    <span style="font-weight:700;">New Contact</span>
+                    <button class="text-btn" style="color:#00a8ff; border:none; background:none; font-weight:bold; margin-left:auto;" onclick="app.phoneApp.saveContact()">Done</button>
                 </div>
                 <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center;">
                     <div class="contact-avatar-large"><i class="fas fa-user"></i></div>
@@ -212,12 +213,12 @@
             </div>
 
             <div id="view-settings" class="view hidden">
-                <div class="app-header" style="background: #f2f2f7; color: #000; border-bottom: 1px solid #d1d1d6;">
-                    <button class="back-btn" onclick="app.goHome()" style="color: #007aff;"><i class="fas fa-chevron-left"></i></button>
-                    <span style="font-weight: 600;">Settings</span>
+                <div class="app-header" style="background: #ffffff; color: #1a1a2e; border-bottom: 1px solid rgba(0,0,0,0.06);">
+                    <button class="back-btn" onclick="app.goHome()" style="color: #00a8ff;"><i class="fas fa-chevron-left"></i></button>
+                    <span style="font-weight: 700;">Settings</span>
                 </div>
                 
-                <div class="scrollable-content" style="background: #f2f2f7; padding-top: 20px;">
+                <div class="scrollable-content" style="background: #f5f5f8; padding-top: 20px;">
                     
                     <div class="settings-group">
                         <div class="settings-item" style="height: 80px;">
@@ -252,14 +253,14 @@
 
                     <div class="settings-group">
                         <div class="settings-item" onclick="app.open('settings-wallpapers')">
-                            <div class="settings-icon" style="background: #34c759;"><i class="fas fa-image"></i></div>
+                            <div class="settings-icon" style="background: #2ecc71;"><i class="fas fa-image"></i></div>
                             <div class="settings-label">Wallpaper</div>
                             <div class="settings-chevron"><i class="fas fa-chevron-right"></i></div>
                         </div>
                         <div class="settings-item-col">
                             <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 5px;">
                                 <div style="display:flex; align-items:center; gap:10px;">
-                                    <div class="settings-icon" style="background: #007aff;"><i class="fas fa-search-plus"></i></div>
+                                    <div class="settings-icon" style="background: #00a8ff;"><i class="fas fa-search-plus"></i></div>
                                     <div class="settings-label">Zoom</div>
                                 </div>
                                 <span id="zoom-val" style="color:#888; font-size:13px;">100%</span>
@@ -279,7 +280,7 @@
                     <span>Wallpapers</span>
                 </div>
 
-                <div class="scrollable-content" style="background: #f2f2f7;">
+                <div class="scrollable-content" style="background: #f5f5f8;">
                     
                     <div class="wallpaper-section-title">Choose a Wallpaper</div>
                     <div id="wallpaper-grid" class="wallpaper-grid">
@@ -306,16 +307,17 @@
                 <div class="app-header">
                     <button class="back-btn" onclick="app.goHome()" id="btn-gallery-back"><i class="fas fa-chevron-left"></i></button>
                     <span id="gallery-title">Gallery</span>
+                    <span id="gallery-count" class="gallery-count"></span>
                 </div>
                 <div id="gallery-grid" class="scrollable-content gallery-grid">
                 </div>
             </div>
 
-            <div id="view-photo-detail" class="view hidden" style="background: #000;">
-                <div class="app-header" style="background: rgba(0,0,0,0.6); color: white; border: none; position: absolute; top: 0; width: 100%; z-index: 10;">
+            <div id="view-photo-detail" class="view hidden" style="background: #0a0a0a;">
+                <div class="app-header" style="background: rgba(10,10,10,0.8); backdrop-filter: blur(10px); color: white; border: none; position: absolute; top: 0; width: 100%; z-index: 10;">
                     <button class="back-btn" style="color: white;"><i class="fas fa-chevron-left"></i></button>
-                    <span id="photo-detail-date" style="font-size: 14px; font-weight: normal;">Date</span>
-                    <button onclick="app.deleteCurrentPhoto()" style="margin-left: auto; background: none; border: none; color: #ff3b30; font-size: 18px; cursor: pointer;">
+                    <span id="photo-detail-date" style="font-size: 13px; font-weight: 500; font-family: 'Poppins', sans-serif; opacity: 0.7;">Date</span>
+                    <button onclick="app.deleteCurrentPhoto()" style="margin-left: auto; background: none; border: none; color: #ff4757; font-size: 16px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -326,55 +328,86 @@
             </div>
 
             <div id="view-quickeats" class="view hidden">
-                <div class="app-header" style="background: #00b09b; color: white; border: none;">
-                    <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
-                    <span>QuickEats Driver</span>
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                    <span style="font-family: 'Poppins', sans-serif; font-weight: 800; letter-spacing: 0.5px; color: #00b09b;">QuickEats</span>
                 </div>
-                <div class="app-content" style="padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100%; background: #f0fff4;">
-                    <div id="qe-status-circle" class="status-circle offline"><i id="qe-icon" class="fas fa-power-off"></i></div>
-                    <h2 id="qe-status-text" style="margin: 20px 0 5px 0; color: #333;">Offline</h2>
-                    <p id="qe-subtext" style="color: #666; font-size: 13px; text-align: center;">Go online to start receiving delivery orders.</p>
-                    <div id="qe-order-card" class="hidden" style="width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 20px;">
-                        <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">Current Task</div>
-                        <div id="qe-task-name" style="font-size: 16px; font-weight: bold; color: #00b09b; margin-bottom: 5px;">Pickup</div>
-                        <div style="height: 1px; background: #eee; margin: 10px 0;"></div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-map-marker-alt" style="color: #00b09b;"></i>
-                            <span id="qe-location" style="font-size: 14px; color: #333;">Burger Shot</span>
+                <div class="qe-app">
+                    <div class="qe-hero">
+                        <div id="qe-status-ring" class="qe-status-ring offline">
+                            <i id="qe-icon" class="fas fa-power-off"></i>
                         </div>
+                        <div id="qe-hero-title" class="qe-hero-title">Offline</div>
+                        <div id="qe-hero-sub" class="qe-hero-sub">Go online to start receiving orders</div>
                     </div>
-                    <div style="flex: 1;"></div>
-                    <button id="btn-qe-toggle" onclick="app.toggleQuickEats()" class="btn-qe-action">GO ONLINE</button>
+                    <div class="qe-body">
+                        <div id="qe-stats-row" class="qe-stats-row hidden">
+                            <div class="qe-stat-card">
+                                <div id="qe-stat-deliveries" class="qe-stat-value">0</div>
+                                <div class="qe-stat-label">Deliveries</div>
+                            </div>
+                            <div class="qe-stat-card">
+                                <div id="qe-stat-earnings" class="qe-stat-value">$0</div>
+                                <div class="qe-stat-label">Earnings</div>
+                            </div>
+                        </div>
+                        <div id="qe-order-card" class="qe-task-card hidden">
+                            <div class="qe-task-label">Current Task</div>
+                            <div id="qe-task-name" class="qe-task-name">Pickup</div>
+                            <div class="qe-task-divider"></div>
+                            <div class="qe-task-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span id="qe-location">Burger Shot</span>
+                            </div>
+                        </div>
+                        <button id="btn-qe-toggle" onclick="app.toggleQuickEats()" class="qe-toggle-btn go-online">GO ONLINE</button>
+                    </div>
                 </div>
             </div>
 
             <div id="view-escootr" class="view hidden">
-                <div class="app-header" style="background: #111; color: white; border-bottom: 1px solid #333;">
-                    <button class="back-btn" onclick="app.goHome()" style="color: white;"><i class="fas fa-chevron-left"></i></button>
-                    <span style="color: #32cd32; letter-spacing: 1px;">eScootr</span>
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
+                    <span style="color: #32cd32; letter-spacing: 1.5px; font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 16px;">eScootr</span>
                 </div>
-                <div class="app-content" style="background: #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 20px; height: 100%;">
-                    <div id="escootr-scan-ui" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
-                        <div class="radar-circle"><i class="fas fa-search-location"></i><div class="radar-pulse"></div></div>
-                        <div id="escootr-status-msg" style="color: #888; margin-top: 30px; font-size: 14px;">Tap below to find a ride</div>
-                        <div id="escootr-found-info" class="hidden" style="background: #222; padding: 15px; border-radius: 10px; width: 100%; margin-top: 20px; border-left: 3px solid #32cd32;">
-                            <div style="color: white; font-weight: bold; margin-bottom: 5px;">Scooter Nearby</div>
-                            <div style="color: #888; font-size: 12px; display: flex; justify-content: space-between;">
-                                <span><i class="fas fa-walking"></i> 2 min</span>
-                                <span style="color: #32cd32;"><i class="fas fa-battery-three-quarters"></i> <span id="escootr-found-batt">--</span>%</span>
+                <div class="scootr-app">
+                    <div id="escootr-scan-ui">
+                        <div class="scootr-hero">
+                            <div id="scootr-ring" class="scootr-scan-ring">
+                                <i class="fas fa-bolt"></i>
                             </div>
+                            <div id="escootr-status-msg" class="scootr-hero-msg">Tap below to find a ride</div>
                         </div>
-                        <button id="btn-escootr-main" class="btn-green-glow" onclick="app.scooter.scan()" style="margin-top: 40px;">SCAN AREA</button>
-                        <div style="margin-top: 15px; font-size: 11px; color: #555;">$5.00 Unlock • $1.00/min</div>
+                        <div class="scootr-body">
+                            <div id="escootr-found-info" class="scootr-found-card hidden">
+                                <div class="scootr-found-title"><i class="fas fa-check-circle" style="color: #32cd32; margin-right: 6px;"></i>Scooter Found</div>
+                                <div class="scootr-found-meta">
+                                    <span><i class="fas fa-walking"></i> <span id="escootr-found-dist">15</span>m away</span>
+                                    <span class="batt"><i class="fas fa-battery-three-quarters"></i> <span id="escootr-found-batt">--</span>%</span>
+                                </div>
+                            </div>
+                            <button id="btn-escootr-main" class="scootr-scan-btn" onclick="app.scooter.scan()">SCAN AREA</button>
+                            <div class="scootr-pricing">$5.00 Unlock • $1.00/min</div>
+                        </div>
                     </div>
-                    <div id="escootr-active-ui" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                        <div style="font-size: 60px; font-weight: 200; color: white;" id="escootr-timer">00:00</div>
-                        <div style="color: #32cd32; font-size: 18px; margin-bottom: 30px;">ACTIVE RIDE</div>
-                        <div class="stat-box" style="background: #222; color: white; width: 100%;">
-                            <div class="stat-row"><span>Cost</span><span id="escootr-cost" style="color: white;">$5.00</span></div>
-                            <div class="stat-row"><span>Battery</span><span id="escootr-batt-live" style="color: #32cd32;">--%</span></div>
+                    <div id="escootr-active-ui" class="hidden scootr-ride-active">
+                        <div class="scootr-ride-hero">
+                            <div id="escootr-timer" class="scootr-timer">00:00</div>
+                            <div class="scootr-ride-badge">Active Ride</div>
                         </div>
-                        <button class="btn-red-glow" onclick="app.scooter.endRide()" style="margin-top: auto; margin-bottom: 30px;">END RIDE & LOCK</button>
+                        <div class="scootr-ride-body">
+                            <div class="scootr-ride-stats">
+                                <div class="scootr-ride-stat">
+                                    <div id="escootr-cost" class="scootr-ride-stat-val">$5.00</div>
+                                    <div class="scootr-ride-stat-label">Cost</div>
+                                </div>
+                                <div class="scootr-ride-stat">
+                                    <div id="escootr-batt-live" class="scootr-ride-stat-val green">--%</div>
+                                    <div class="scootr-ride-stat-label">Battery</div>
+                                </div>
+                            </div>
+                            <button class="scootr-end-btn" onclick="app.scooter.endRide()">END RIDE & LOCK</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,7 +426,7 @@
                             <div class="card-details"><div class="card-holder">PERSONAL ACCOUNT</div><div class="card-logo">FLEECA</div></div>
                         </div>
                         <div class="bank-actions-grid">
-                            <div class="bank-action-btn" onclick="app.openTransferModal()"><div class="action-icon-box" style="background: #007aff;"><i class="fas fa-paper-plane"></i></div><span>Transfer</span></div>
+                            <div class="bank-action-btn" onclick="app.openTransferModal()"><div class="action-icon-box" style="background: #00a8ff;"><i class="fas fa-paper-plane"></i></div><span>Transfer</span></div>
                             <div class="bank-action-btn"><div class="action-icon-box" style="background: #ff9500;"><i class="fas fa-file-invoice-dollar"></i></div><span>Bills</span></div>
                             <div class="bank-action-btn"><div class="action-icon-box" style="background: #34c759;"><i class="fas fa-arrow-down"></i></div><span>Request</span></div>
                             <div class="bank-action-btn"><div class="action-icon-box" style="background: #8e8e93;"><i class="fas fa-ellipsis-h"></i></div><span>More</span></div>
@@ -427,7 +460,7 @@
                         <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
                         <span>Inbox</span>
                     </div>
-                    <button onclick="app.readAllMails()" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer;">Read All</button>
+                    <button onclick="app.readAllMails()" style="background:none; border:none; color:#00a8ff; font-size:13px; font-weight:700; cursor:pointer; font-family:'Poppins',sans-serif; text-transform:uppercase; letter-spacing:0.5px;">Read All</button>
                 </div>
                 <div id="mail-list" class="scrollable-content"></div>
             </div>
@@ -439,8 +472,8 @@
                 </div>
                 <div class="scrollable-content detail-container">
                     <div class="stat-box">
-                        <h3 id="mail-detail-title" style="margin-top:0; color:#000;">Title</h3>
-                        <p id="mail-detail-body" style="color:#333; line-height:1.4; white-space: pre-wrap;"></p>
+                        <h3 id="mail-detail-title" style="margin-top:0; color:#1a1a2e;">Title</h3>
+                        <p id="mail-detail-body" style="color:#555; line-height:1.4; white-space: pre-wrap;"></p>
                     </div>
                 </div>
             </div>
@@ -449,6 +482,7 @@
                 <div class="app-header">
                     <button class="back-btn" onclick="app.goHome()"><i class="fas fa-chevron-left"></i></button>
                     <span>My Cars</span>
+                    <span id="veh-slots-badge" class="slots-badge">0/3</span>
                 </div>
                 <div id="vehicle-list" class="scrollable-content"></div>
             </div>
@@ -458,18 +492,31 @@
                     <button class="back-btn" onclick="app.open('vehicles')"><i class="fas fa-chevron-left"></i></button>
                     <span id="detail-title">Vehicle</span>
                 </div>
-                <div class="detail-container">
-                    <div class="car-icon-large"><i class="fas fa-car"></i></div>
-                    <h2 id="detail-model">Model Name</h2>
-                    <p id="detail-plate">AAA-111</p>
+                <div class="detail-container veh-detail-new">
+                    <div class="veh-detail-top">
+                        <div class="veh-detail-icon-wrap">
+                            <i class="fas fa-car"></i>
+                            <span class="veh-detail-grade" id="detail-grade">C</span>
+                        </div>
+                        <h2 id="detail-model">Model Name</h2>
+                        <p id="detail-plate">AAA-111</p>
+                        <span class="veh-detail-type" id="detail-type">Sedan</span>
+                    </div>
                     <div class="stat-box">
                         <div class="stat-row"><span>Status</span><span id="detail-status" class="status-tag">In Garage</span></div>
-                        <div class="stat-row"><span>Fuel</span><span id="detail-fuel">100%</span></div>
+                        <div class="stat-row"><span>Fuel</span><div class="fuel-bar-wrap"><div class="fuel-bar" id="detail-fuel-bar" style="width:100%"></div></div><span id="detail-fuel" class="fuel-pct">100%</span></div>
                     </div>
                     <div class="action-buttons">
                         <button id="btn-spawn" class="action-btn btn-green" onclick="app.doVehicleAction('spawn')"><i class="fas fa-key"></i> Spawn</button>
                         <button id="btn-locate" class="action-btn btn-blue" onclick="app.doVehicleAction('locate')"><i class="fas fa-map-marker-alt"></i> Locate</button>
                         <button id="btn-tow" class="action-btn btn-red" onclick="app.doVehicleAction('despawn')"><i class="fas fa-warehouse"></i> Park (Tow)</button>
+                    </div>
+                    <div class="veh-sell-section">
+                        <div class="sell-info">
+                            <span class="sell-label">Sell Value</span>
+                            <span class="sell-price" id="detail-sell-price">$0</span>
+                        </div>
+                        <button class="sell-btn" id="btn-sell" onclick="app.sellVehicle()"><i class="fas fa-dollar-sign"></i> Sell</button>
                     </div>
                 </div>
             </div>

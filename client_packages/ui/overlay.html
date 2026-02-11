@@ -251,6 +251,87 @@
         .zone-text.safe { color: var(--success); }
         .zone-text.noclip { color: var(--primary); }
 
+        /* --- CENTER POPUP --- */
+        .center-popup {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            min-width: 320px;
+            max-width: 420px;
+            padding: 22px 28px 18px;
+            text-align: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .center-popup.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+        .center-popup .popup-accent {
+            width: 40px; height: 3px;
+            background: var(--primary);
+            margin: 0 auto 14px;
+        }
+        .center-popup .popup-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .center-popup .popup-subtitle {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        .center-popup .popup-rewards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .center-popup .popup-reward {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+        }
+        .center-popup .popup-reward i {
+            font-size: 14px;
+        }
+        .center-popup .popup-reward .reward-val {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .center-popup .popup-reward.money i { color: var(--success); }
+        .center-popup .popup-reward.money .reward-val { color: var(--success); }
+        .center-popup .popup-reward.xp i { color: var(--primary); }
+        .center-popup .popup-reward.xp .reward-val { color: var(--primary); }
+        .center-popup .popup-reward.levelup i { color: #f0c400; }
+        .center-popup .popup-reward.levelup .reward-val { color: #f0c400; }
+        .center-popup .popup-reward.generic i { color: #ccc; }
+        .center-popup .popup-reward.generic .reward-val { color: #ccc; }
+
+        .center-popup .popup-progress {
+            margin-top: 14px;
+            width: 100%; height: 3px;
+            overflow: hidden;
+        }
+        .center-popup .popup-progress .popup-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width linear;
+        }
+
     </style>
 </head>
 <body>
@@ -321,6 +402,15 @@
     <div class="inter-box" id="interaction"><div class="inter-key">E</div><div class="inter-lbl" id="inter-text">INTERACT</div></div>
     <div class="hotbar" id="pop-hotbar"></div>
     <div class="zone-text" id="zone-status"><span id="zone-label">ZONE</span></div>
+
+    <!-- CENTER POPUP -->
+    <div class="center-popup" id="center-popup">
+        <div class="popup-accent"></div>
+        <div class="popup-title" id="popup-title"></div>
+        <div class="popup-subtitle" id="popup-subtitle"></div>
+        <div class="popup-rewards" id="popup-rewards"></div>
+        <div class="popup-progress"><div class="popup-progress-fill" id="popup-progress-fill"></div></div>
+    </div>
 
     <script>
         function toggleMic(isActive) {
@@ -481,6 +571,63 @@
             if (type === 'safe_zone') { el.classList.add('safe'); label.innerText = "SAFE ZONE"; } 
             else if (type === 'no_collision') { el.classList.add('noclip'); label.innerText = "NO COLLISION"; }
             else { label.innerText = type.replace('_', ' '); }
+        }
+
+        // --- CENTER POPUP SYSTEM ---
+        let popupTimer = null;
+        const ICON_MAP = {
+            money: 'fas fa-dollar-sign',
+            xp: 'fas fa-star',
+            levelup: 'fas fa-arrow-up',
+            generic: 'fas fa-gift'
+        };
+
+        /**
+         * Show a center-bottom popup.
+         * @param {string} title - Main title (e.g. "PAYDAY")
+         * @param {string} subtitle - Description line
+         * @param {string} rewardsJson - JSON array of { type: "money"|"xp"|"levelup"|"generic", value: "$1000" }
+         * @param {number} duration - How long to show in ms (default 6000)
+         */
+        function showCenterPopup(title, subtitle, rewardsJson, duration) {
+            const popup = document.getElementById('center-popup');
+            const dur = duration || 6000;
+
+            document.getElementById('popup-title').innerText = title;
+            document.getElementById('popup-subtitle').innerText = subtitle;
+
+            // Build rewards
+            const rewardsEl = document.getElementById('popup-rewards');
+            rewardsEl.innerHTML = '';
+            try {
+                const rewards = JSON.parse(rewardsJson);
+                rewards.forEach(r => {
+                    const type = r.type || 'generic';
+                    const icon = ICON_MAP[type] || ICON_MAP.generic;
+                    const div = document.createElement('div');
+                    div.className = 'popup-reward ' + type;
+                    div.innerHTML = '<i class="' + icon + '"></i><span class="reward-val">' + r.value + '</span>';
+                    rewardsEl.appendChild(div);
+                });
+            } catch(e) {}
+
+            // Progress bar (auto-closing indicator)
+            const fill = document.getElementById('popup-progress-fill');
+            fill.style.transition = 'none';
+            fill.style.width = '100%';
+            // Force reflow
+            void fill.offsetWidth;
+            fill.style.transition = 'width ' + dur + 'ms linear';
+            fill.style.width = '0%';
+
+            // Show
+            popup.classList.add('visible');
+
+            // Auto-hide
+            if (popupTimer) clearTimeout(popupTimer);
+            popupTimer = setTimeout(() => {
+                popup.classList.remove('visible');
+            }, dur);
         }
     </script>
 </body>

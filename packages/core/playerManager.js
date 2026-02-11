@@ -75,11 +75,16 @@ const playerManager = {
         }
 
         try {
-            // Note: We are saving 'payday_in' now
+            // Save core stats + accumulate total_playtime
+            const sessionMinutes = player.data.activeMinutes || 0;
             await db.query(
-                "UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=? WHERE id=?", 
-                [level, currentPos, xp, bank_money, paydayIn, dbId]
+                "UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, total_playtime = COALESCE(total_playtime, 0) + ? WHERE id=?", 
+                [level, currentPos, xp, bank_money, paydayIn, sessionMinutes, dbId]
             );
+            // Reset session counter after saving to prevent double-counting
+            if (mp.players.exists(player)) {
+                player.data.activeMinutes = 0;
+            }
             console.log(`[Data] Saved ${name} (Payday in: ${paydayIn}m)`);
         } catch (e) {
             console.error(`[Data] Failed to save ${name}:`, e);
@@ -118,6 +123,7 @@ mp.events.add('playerJoin', (player) => {
     player.data.bank_money = 0;
     player.data.isAfk = false; 
     player.data.paydayIn = 60; // Default until loaded from DB
+    player.data.activeMinutes = 0; // Track non-AFK minutes for payday popup
 
     // Init XP / Level
     if (!player.data.level) player.data.level = 1;
@@ -165,8 +171,9 @@ setInterval(() => {
         // Ensure variable exists
         if (!player.data.paydayIn && player.data.paydayIn !== 0) player.data.paydayIn = 60;
 
-        // 1. DECREMENT TIMER
+        // 1. DECREMENT TIMER & TRACK ACTIVE TIME
         player.data.paydayIn--;
+        player.data.activeMinutes = (player.data.activeMinutes || 0) + 1;
 
         // 2. SEND UPDATE TO CLIENT (UI)
         // We send the EXACT remaining minutes
@@ -177,6 +184,7 @@ setInterval(() => {
             triggerPayday(player);
             // Reset logic is inside triggerPayday or here:
             player.data.paydayIn = 60; 
+            player.data.activeMinutes = 0; // Reset active time tracker
             player.call('updatePaydayHUD', [60]); // Immediate UI reset
         }
     });
@@ -210,12 +218,25 @@ function triggerPayday(player) {
     const totalIncome = salary + interest;
 
     player.data.bank_money += totalIncome;
+    player.data.bank = player.data.bank_money; // Sync bank property used by overlay
+    player.setVariable('bank', player.data.bank); // Push update to client
 
-    // 5. Output
-    player.outputChatBox(`!{#00FF00}___ PAYDAY ___`);
-    player.outputChatBox(`!{#FFFFFF}Paycheck: !{#2ecc71}$${salary}`);
-    player.outputChatBox(`!{#FFFFFF}bank_money Interest: !{#2ecc71}$${interest}`);
-    player.outputChatBox(`!{#FFFFFF}New Balance: !{#2ecc71}$${player.data.bank_money}`);
+    // 5. Send popup to client instead of chat messages
+    const activeMins = player.data.activeMinutes || 0;
+    const rewards = [
+        { type: 'money', value: `$${new Intl.NumberFormat().format(totalIncome)}` },
+        { type: 'xp', value: `${xpReward} XP` }
+    ];
+    if (interest > 0) {
+        rewards.push({ type: 'generic', value: `$${interest} Interest` });
+    }
+    const subtitle = `You played ${activeMins} minute${activeMins !== 1 ? 's' : ''} this payday.`;
+    player.call('showCenterPopup', [
+        'PAYDAY',
+        subtitle,
+        JSON.stringify(rewards),
+        7000
+    ]);
 
     // 6. Save Account (This saves the reset timer too)
     playerManager.saveAccount(player);

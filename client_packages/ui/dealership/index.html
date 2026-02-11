@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dealership</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+    --primary: #00a8ff;
+    --primary-dim: #0080c0;
+    --danger: #ff4757;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --bg: rgba(10, 12, 18, 0.92);
+    --border: rgba(255, 255, 255, 0.06);
+    --text: #e8e8e8;
+    --text-dim: #8a8fa6;
+    --glass: rgba(255, 255, 255, 0.03);
+    --grade-s: #ff4757;
+    --grade-a: #ff6b35;
+    --grade-b: #f39c12;
+    --grade-c: #2ecc71;
+    --grade-d: #00a8ff;
+    --grade-e: #8a8fa6;
+    --grade-f: #555;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    font-family: 'Poppins', sans-serif;
+    background: none !important;
+    background-color: transparent !important;
+    color: var(--text);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* ═══ TOP BAR — pinned to top ═══ */
+.top-bar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 60px);
+    max-width: 1300px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 22px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    z-index: 10;
+    animation: fadeDown 0.35s ease forwards;
+}
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.top-bar .ds-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.top-bar .ds-tier {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    color: #fff;
+}
+.ds-tier.low { background: var(--success); }
+.ds-tier.mid { background: var(--primary); }
+.ds-tier.high { background: var(--danger); }
+
+.top-bar .player-info {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+.top-bar .info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+.top-bar .info-item .val { color: #fff; font-weight: 600; }
+.top-bar .info-item .val.money { color: var(--success); }
+
+.close-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.close-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* ═══ LEFT PANEL — pinned left center ═══ */
+.left-panel {
+    position: fixed;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 220px;
+    max-height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 14px;
+    overflow-y: auto;
+    z-index: 10;
+    animation: fadeRight 0.35s ease 0.05s both;
+}
+@keyframes fadeRight {
+    from { opacity: 0; transform: translateY(-50%) translateX(-20px); }
+    to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+.left-panel::-webkit-scrollbar { width: 3px; }
+.left-panel::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
+
+.section-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+}
+
+.grade-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.grade-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--glass);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+}
+.grade-btn[data-grade="S"] { --gc: var(--grade-s); }
+.grade-btn[data-grade="A"] { --gc: var(--grade-a); }
+.grade-btn[data-grade="B"] { --gc: var(--grade-b); }
+.grade-btn[data-grade="C"] { --gc: var(--grade-c); }
+.grade-btn[data-grade="D"] { --gc: var(--grade-d); }
+.grade-btn[data-grade="E"] { --gc: var(--grade-e); }
+.grade-btn[data-grade="F"] { --gc: var(--grade-f); }
+.grade-btn.active { background: var(--gc); border-color: var(--gc); color: #fff; box-shadow: 0 0 10px rgba(0,168,255,0.2); }
+.grade-btn:hover { border-color: var(--gc); color: var(--gc); }
+.grade-btn.active:hover { color: #fff; }
+
+.type-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.type-btn {
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: var(--glass);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.type-btn .count { font-size: 9px; opacity: 0.5; }
+.type-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.type-btn.active {
+    background: rgba(0,168,255,0.12);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* ═══ RIGHT PANEL — pinned right center ═══ */
+.right-panel {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 16px;
+    z-index: 10;
+    animation: fadeLeft 0.35s ease 0.1s both;
+}
+@keyframes fadeLeft {
+    from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+    to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.car-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.selected-car-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.selected-car-name .car-grade {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 5px;
+    color: #fff;
+}
+.price-tag {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--success);
+}
+
+.no-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 0;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-style: italic;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.stat-item .stat-label {
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+}
+.stat-item .stat-bar-wrapper {
+    height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.stat-item .stat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+.stat-item .stat-bar.speed { background: var(--primary); }
+.stat-item .stat-bar.accel { background: var(--success); }
+.stat-item .stat-bar.brake { background: var(--danger); }
+.stat-item .stat-bar.traction { background: var(--warning); }
+.stat-value {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-top: -1px;
+}
+
+.extra-info {
+    display: flex;
+    gap: 12px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+}
+.extra-info .ei { font-size: 10px; color: var(--text-dim); }
+.extra-info .ei span { color: #fff; font-weight: 600; }
+
+.action-row {
+    display: flex;
+    gap: 6px;
+}
+.action-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.action-btn.buy-cash { background: var(--success); color: #fff; }
+.action-btn.test-drive {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+}
+.action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
+.action-btn:active { transform: translateY(0); }
+.action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+}
+
+/* ═══ BOTTOM BAR — pinned to bottom ═══ */
+.bottom-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 60px);
+    max-width: 1300px;
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    min-height: 90px;
+    align-items: center;
+    z-index: 10;
+    animation: fadeUp 0.35s ease 0.15s both;
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(15px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.bottom-bar::-webkit-scrollbar { height: 3px; }
+.bottom-bar::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
+
+.car-card {
+    min-width: 130px;
+    max-width: 130px;
+    padding: 10px 12px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+}
+.car-card:hover { border-color: var(--primary); background: rgba(0,168,255,0.06); }
+.car-card.active {
+    border-color: var(--primary);
+    background: rgba(0,168,255,0.12);
+    box-shadow: 0 0 14px rgba(0,168,255,0.15);
+}
+.car-card .card-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.car-card .card-price {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--success);
+}
+.car-card .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 1px;
+}
+.car-card .card-grade {
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #fff;
+}
+.car-card .card-seats {
+    font-size: 8px;
+    color: var(--text-dim);
+}
+
+.no-cars-msg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* Grade colors */
+.g-S { background: var(--grade-s); }
+.g-A { background: var(--grade-a); }
+.g-B { background: var(--grade-b); }
+.g-C { background: var(--grade-c); }
+.g-D { background: var(--grade-d); }
+.g-E { background: var(--grade-e); }
+.g-F { background: var(--grade-f); }
+
+/* ═══ Payment Modal ═══ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    width: 360px;
+}
+.modal h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.modal .modal-subtitle { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; }
+.modal .modal-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--success);
+    text-align: center;
+    margin-bottom: 18px;
+}
+.modal .modal-btns { display: flex; flex-direction: column; gap: 8px; }
+.modal .modal-btn {
+    padding: 11px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--glass);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal .modal-btn:hover { border-color: var(--primary); background: rgba(0,168,255,0.1); }
+.modal .modal-btn .balance { font-size: 10px; color: var(--text-dim); }
+.modal .modal-btn .balance.enough { color: var(--success); }
+.modal .modal-btn .balance.not-enough { color: var(--danger); }
+.modal .modal-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.modal .modal-cancel {
+    margin-top: 8px;
+    padding: 9px;
+    border-radius: 9px;
+    border: none;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+.modal .modal-cancel:hover { color: #fff; background: rgba(255,255,255,0.08); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="ds-name">
+        <span id="dsName">Dealership</span>
+        <span class="ds-tier" id="dsTier">LOW-END</span>
+    </div>
+    <div class="player-info">
+        <div class="info-item">Cash: <span class="val money" id="playerCash">$0</span></div>
+        <div class="info-item">Bank: <span class="val money" id="playerBank">$0</span></div>
+        <div class="info-item">Garage: <span class="val" id="playerGarage">0/3</span></div>
+        <button class="close-btn" onclick="closeDS()">&times;</button>
+    </div>
+</div>
+
+<!-- LEFT PANEL -->
+<div class="left-panel">
+    <div class="section-label">Performance Class</div>
+    <div class="grade-row" id="gradeRow"></div>
+    <div class="section-label" style="margin-top:6px;">Vehicle Type</div>
+    <div class="type-list" id="typeList"></div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right-panel" id="rightPanel">
+    <div class="no-selection" id="noSelection">Select a vehicle to view details</div>
+    <div id="carDetails" style="display:none; flex-direction:column; gap:8px;">
+        <div class="car-header">
+            <div class="selected-car-name">
+                <span id="selCarName">—</span>
+                <span class="car-grade g-C" id="selCarGrade">C</span>
+            </div>
+            <div class="price-tag" id="selCarPrice">$0</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">Top Speed</div>
+                <div class="stat-bar-wrapper"><div class="stat-bar speed" id="barSpeed" style="width:0%"></div></div>
+                <div class="stat-value" id="valSpeed">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Acceleration</div>
+                <div class="stat-bar-wrapper"><div class="stat-bar accel" id="barAccel" style="width:0%"></div></div>
+                <div class="stat-value" id="valAccel">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Braking</div>
+                <div class="stat-bar-wrapper"><div class="stat-bar brake" id="barBrake" style="width:0%"></div></div>
+                <div class="stat-value" id="valBrake">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Traction</div>
+                <div class="stat-bar-wrapper"><div class="stat-bar traction" id="barTraction" style="width:0%"></div></div>
+                <div class="stat-value" id="valTraction">0</div>
+            </div>
+        </div>
+
+        <div class="extra-info">
+            <div class="ei">Seats: <span id="selSeats">2</span></div>
+            <div class="ei">Type: <span id="selType">—</span></div>
+            <div class="ei">Model: <span id="selModel">—</span></div>
+        </div>
+
+        <div class="action-row">
+            <button class="action-btn buy-cash" id="btnBuy" onclick="openBuyModal()">Buy Vehicle</button>
+            <button class="action-btn test-drive" id="btnTest" onclick="testDrive()">Test Drive</button>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar" id="bottomBar">
+    <div class="no-cars-msg" id="noCarsMsg">Select a class and type to browse vehicles</div>
+</div>
+
+<!-- Buy Modal -->
+<div class="modal-overlay" id="buyModal">
+    <div class="modal">
+        <h3>Confirm Purchase</h3>
+        <div class="modal-subtitle" id="modalCarName">—</div>
+        <div class="modal-price" id="modalPrice">$0</div>
+        <div class="modal-btns">
+            <button class="modal-btn" id="modalCash" onclick="confirmBuy('cash')">
+                Pay with Cash <span class="balance" id="modalCashBal">$0</span>
+            </button>
+            <button class="modal-btn" id="modalBank" onclick="confirmBuy('bank')">
+                Pay with Bank <span class="balance" id="modalBankBal">$0</span>
+            </button>
+        </div>
+        <button class="modal-cancel" onclick="closeBuyModal()">Cancel</button>
+    </div>
+</div>
+
+<script>
+let allVehicles = [];
+let allTypes = [];
+let currentTier = '';
+let currentGrade = null;
+let currentType = null;
+let selectedCar = null;
+let filteredCars = [];
+let playerInfo = { cash: 0, bank: 0, vehicleCount: 0, vehicleSlots: 3 };
+const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'E', 'F'];
+
+function initDealership(tier, name, vehicles, types, pInfo) {
+    allVehicles = vehicles;
+    allTypes = types;
+    currentTier = tier;
+    playerInfo = pInfo;
+    selectedCar = null;
+    currentGrade = null;
+    currentType = null;
+
+    document.getElementById('dsName').textContent = name;
+    const tierEl = document.getElementById('dsTier');
+    tierEl.textContent = tier === 'low' ? 'BUDGET' : tier === 'mid' ? 'PREMIUM' : 'LEGENDARY';
+    tierEl.className = 'ds-tier ' + tier;
+
+    document.getElementById('playerCash').textContent = '$' + playerInfo.cash.toLocaleString();
+    document.getElementById('playerBank').textContent = '$' + playerInfo.bank.toLocaleString();
+    document.getElementById('playerGarage').textContent = playerInfo.vehicleCount + '/' + playerInfo.vehicleSlots;
+
+    buildGradeButtons([...new Set(allVehicles.map(v => v.grade))]);
+    buildTypeList();
+    filterAndShow();
+}
+
+function buildGradeButtons(available) {
+    const row = document.getElementById('gradeRow');
+    row.innerHTML = '';
+    GRADE_ORDER.forEach(g => {
+        if (!available.includes(g)) return;
+        const btn = document.createElement('button');
+        btn.className = 'grade-btn';
+        btn.dataset.grade = g;
+        btn.textContent = g;
+        btn.onclick = () => selectGrade(g);
+        row.appendChild(btn);
+    });
+}
+
+function buildTypeList() {
+    const list = document.getElementById('typeList');
+    list.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.className = 'type-btn' + (!currentType ? ' active' : '');
+    allBtn.innerHTML = `All Types <span class="count">${allVehicles.length}</span>`;
+    allBtn.onclick = () => selectType(null);
+    list.appendChild(allBtn);
+
+    allTypes.forEach(t => {
+        const count = getFilteredCount(t);
+        if (count === 0) return;
+        const btn = document.createElement('button');
+        btn.className = 'type-btn' + (currentType === t ? ' active' : '');
+        btn.innerHTML = `${t} <span class="count">${count}</span>`;
+        btn.onclick = () => selectType(t);
+        list.appendChild(btn);
+    });
+}
+
+function getFilteredCount(type) {
+    return allVehicles.filter(v => {
+        if (currentGrade && v.grade !== currentGrade) return false;
+        if (type && v.type !== type) return false;
+        return true;
+    }).length;
+}
+
+function selectGrade(g) {
+    currentGrade = (currentGrade === g) ? null : g;
+    document.querySelectorAll('.grade-btn').forEach(b => b.classList.toggle('active', b.dataset.grade === currentGrade));
+    buildTypeList();
+    filterAndShow();
+}
+
+function selectType(t) {
+    currentType = t;
+    buildTypeList();
+    filterAndShow();
+}
+
+function filterAndShow() {
+    filteredCars = allVehicles.filter(v => {
+        if (currentGrade && v.grade !== currentGrade) return false;
+        if (currentType && v.type !== currentType) return false;
+        return true;
+    }).sort((a, b) => a.price - b.price);
+    renderCarCards();
+    if (selectedCar && !filteredCars.find(c => c.model === selectedCar.model)) {
+        selectedCar = null;
+        showNoSelection();
+    }
+}
+
+function renderCarCards() {
+    const bar = document.getElementById('bottomBar');
+    bar.innerHTML = '';
+    if (filteredCars.length === 0) {
+        bar.innerHTML = '<div class="no-cars-msg">No vehicles match your filters</div>';
+        return;
+    }
+    filteredCars.forEach(car => {
+        const card = document.createElement('div');
+        card.className = 'car-card' + (selectedCar && selectedCar.model === car.model ? ' active' : '');
+        card.innerHTML = `
+            <div class="card-name">${car.name}</div>
+            <div class="card-price">$${car.price.toLocaleString()}</div>
+            <div class="card-meta">
+                <span class="card-grade g-${car.grade}">${car.grade}</span>
+                <span class="card-seats">${car.seats} seats</span>
+            </div>`;
+        card.onclick = () => selectCar(car);
+        bar.appendChild(card);
+    });
+}
+
+function selectCar(car) {
+    selectedCar = car;
+    document.querySelectorAll('.car-card').forEach(c => c.classList.toggle('active', c.querySelector('.card-name').textContent === car.name));
+
+    document.getElementById('noSelection').style.display = 'none';
+    document.getElementById('carDetails').style.display = 'flex';
+
+    document.getElementById('selCarName').textContent = car.name;
+    const gradeEl = document.getElementById('selCarGrade');
+    gradeEl.textContent = car.grade;
+    gradeEl.className = 'car-grade g-' + car.grade;
+    document.getElementById('selCarPrice').textContent = '$' + car.price.toLocaleString();
+
+    animateBar('barSpeed', Math.min(100, (car.speed / 54) * 100));
+    document.getElementById('valSpeed').textContent = car.speed.toFixed(1);
+    animateBar('barAccel', Math.min(100, (car.accel / 0.43) * 100));
+    document.getElementById('valAccel').textContent = car.accel.toFixed(3);
+    animateBar('barBrake', Math.min(100, (car.brake / 1.4) * 100));
+    document.getElementById('valBrake').textContent = car.brake.toFixed(1);
+    animateBar('barTraction', Math.min(100, (car.traction / 2.9) * 100));
+    document.getElementById('valTraction').textContent = car.traction.toFixed(1);
+
+    document.getElementById('selSeats').textContent = car.seats;
+    document.getElementById('selType').textContent = car.type;
+    document.getElementById('selModel').textContent = car.model;
+
+    const garageFull = playerInfo.vehicleCount >= playerInfo.vehicleSlots;
+    document.getElementById('btnBuy').disabled = garageFull;
+    document.getElementById('btnBuy').textContent = garageFull ? 'Garage Full' : 'Buy Vehicle';
+
+    try { mp.trigger('cef:dealership:preview', car.model); } catch(e) {}
+}
+
+function animateBar(id, pct) {
+    const bar = document.getElementById(id);
+    bar.style.width = '0%';
+    requestAnimationFrame(() => { requestAnimationFrame(() => { bar.style.width = pct + '%'; }); });
+}
+
+function showNoSelection() {
+    document.getElementById('noSelection').style.display = 'flex';
+    document.getElementById('carDetails').style.display = 'none';
+}
+
+function openBuyModal() {
+    if (!selectedCar) return;
+    document.getElementById('modalCarName').textContent = selectedCar.name + ' — ' + selectedCar.type;
+    document.getElementById('modalPrice').textContent = '$' + selectedCar.price.toLocaleString();
+
+    const cashBal = document.getElementById('modalCashBal');
+    cashBal.textContent = '$' + playerInfo.cash.toLocaleString();
+    cashBal.className = 'balance ' + (playerInfo.cash >= selectedCar.price ? 'enough' : 'not-enough');
+    document.getElementById('modalCash').disabled = playerInfo.cash < selectedCar.price;
+
+    const bankBal = document.getElementById('modalBankBal');
+    bankBal.textContent = '$' + playerInfo.bank.toLocaleString();
+    bankBal.className = 'balance ' + (playerInfo.bank >= selectedCar.price ? 'enough' : 'not-enough');
+    document.getElementById('modalBank').disabled = playerInfo.bank < selectedCar.price;
+
+    document.getElementById('buyModal').classList.add('show');
+}
+
+function closeBuyModal() { document.getElementById('buyModal').classList.remove('show'); }
+
+function confirmBuy(method) {
+    if (!selectedCar) return;
+    closeBuyModal();
+    try { mp.trigger('cef:dealership:buy', selectedCar.model, method); } catch(e) {}
+}
+
+function testDrive() {
+    if (!selectedCar) return;
+    try { mp.trigger('cef:dealership:testDrive', selectedCar.model); } catch(e) {}
+}
+
+function closeDS() { try { mp.trigger('cef:dealership:close'); } catch(e) {} }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        if (document.getElementById('buyModal').classList.contains('show')) closeBuyModal();
+        else closeDS();
+    }
+});
+</script>
+</body>
+</html>

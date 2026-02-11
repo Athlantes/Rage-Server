@@ -209,5 +209,47 @@ module.exports = {
         name: "Pink Sneakers", type: "clothing", weight: 0.4, maxStack: 1,
         sex: 1, isEquippable: false,
         data: { componentId: 6, drawable: 2, texture: 0 } 
+    },
+
+    // --- CAR PARTS (for tuning system) ---
+    "car_part_common": {
+        name: "Common Car Part",
+        type: "car_part",
+        rarity: "common",
+        weight: 0.3,
+        maxStack: 50,
+        icon: "car_part_common.png"
+    },
+    "car_part_uncommon": {
+        name: "Uncommon Car Part",
+        type: "car_part",
+        rarity: "uncommon",
+        weight: 0.3,
+        maxStack: 50,
+        icon: "car_part_uncommon.png"
+    },
+    "car_part_rare": {
+        name: "Rare Car Part",
+        type: "car_part",
+        rarity: "rare",
+        weight: 0.3,
+        maxStack: 30,
+        icon: "car_part_rare.png"
+    },
+    "car_part_epic": {
+        name: "Epic Car Part",
+        type: "car_part",
+        rarity: "epic",
+        weight: 0.3,
+        maxStack: 20,
+        icon: "car_part_epic.png"
+    },
+    "car_part_legendary": {
+        name: "Legendary Car Part",
+        type: "car_part",
+        rarity: "legendary",
+        weight: 0.3,
+        maxStack: 10,
+        icon: "car_part_legendary.png"
     }
 };

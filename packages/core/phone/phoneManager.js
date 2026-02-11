@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../database');
 const vehicleManager = require('../vehicles/vehicleManager'); 
+const { catalog } = require('../../data/dealershipCatalog');
 const webServer = require('../../webserver');
 const CallManager = require('../voiceManager');
 
@@ -158,8 +159,13 @@ mp.events.add('server:phone:open', async (player) => {
         const cars = await vehicleManager.getPlayerVehicles(userId);
         const processedCars = cars.map(c => {
             const activeVeh = vehicleManager.findActiveVehicle(c.id);
+            const catEntry = catalog.find(v => v.model === c.model);
             return {
-                id: c.id, model: c.model, plate: c.plate, fuel: c.fuel, parked: c.parked, spawned: !!activeVeh 
+                id: c.id, model: c.model, plate: c.plate, fuel: c.fuel, parked: c.parked, spawned: !!activeVeh,
+                displayName: catEntry ? catEntry.name : c.model,
+                type: catEntry ? catEntry.type : 'Unknown',
+                grade: catEntry ? catEntry.grade : '?',
+                sellPrice: catEntry ? Math.floor(catEntry.price * 0.4) : 0
             };
         });
         player.call('client:phone:updateVehicles', [JSON.stringify(processedCars)]);

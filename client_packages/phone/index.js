@@ -334,20 +334,49 @@ mp.events.add('client:phone:proxyResponse', (action, data) => {
 mp.events.add('client:phone:findScooterSpawn', () => {
     const player = mp.players.local;
     const pos = player.position;
-    const heading = player.getHeading();
-    const distance = 5.0; 
 
-    const rad = heading * (Math.PI / 180);
-    const backX = pos.x + (Math.sin(rad) * distance); 
-    const backY = pos.y + (-Math.cos(rad) * distance);
-
-    const spawnPos = mp.game.pathfind.getClosestVehicleNode(backX, backY, pos.z, 1, 3.0, 0);
-
-    if (spawnPos) {
-        mp.events.callRemote('server:scooter:performRent', spawnPos);
-    } else {
-        mp.events.callRemote('server:scooter:performRent', new mp.Vector3(backX, backY, pos.z));
+    // Block if player is in an interior (non-zero dimension)
+    if (player.dimension !== 0) {
+        mp.events.call('showNotification', 'eScootr', 'Go outside to spawn a scooter.');
+        return;
     }
+
+    // Try to detect interior via native (some interiors are in dim 0)
+    try {
+        const interiorId = mp.game.interior.getInteriorAtCoords(pos.x, pos.y, pos.z);
+        if (interiorId !== 0) {
+            mp.events.call('showNotification', 'eScootr', 'Go outside to spawn a scooter.');
+            return;
+        }
+    } catch (e) { /* native may not be available, fall through */ }
+
+    const heading = player.getHeading();
+    const distance = 5.0;
+    const rad = heading * (Math.PI / 180);
+    const behindX = pos.x + (Math.sin(rad) * distance);
+    const behindY = pos.y + (-Math.cos(rad) * distance);
+
+    // Find nearest road node behind the player
+    const roadNode = mp.game.pathfind.getClosestVehicleNode(behindX, behindY, pos.z, 1, 3.0, 0);
+
+    let finalPos;
+    if (roadNode) {
+        // Validate the road node isn't absurdly far (tunnel/underground)
+        const dx = roadNode.x - pos.x;
+        const dy = roadNode.y - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 30) {
+            // Road node is too far — use position behind player with Z offset
+            finalPos = { x: behindX, y: behindY, z: pos.z + 0.5 };
+        } else {
+            finalPos = { x: roadNode.x, y: roadNode.y, z: roadNode.z + 0.3 };
+        }
+    } else {
+        // No road node found — use behind-player with slight Z offset
+        finalPos = { x: behindX, y: behindY, z: pos.z + 0.5 };
+    }
+
+    mp.events.callRemote('server:scooter:performRent', JSON.stringify(finalPos));
 });
 
 mp.events.add('client:phone:appCallback', (appName, funcName) => {
@@ -550,6 +579,11 @@ mp.events.add('client:proxyAction', (action, data) => {
 
         default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
     }
+});
+
+// Sell vehicle from phone
+mp.events.add('client:phone:sellVehicle', (vehicleId) => {
+    mp.events.callRemote('server:dealership:sell', vehicleId);
 });
 
 mp.events.add('client:leaveVehicle', () => {

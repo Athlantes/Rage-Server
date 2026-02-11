@@ -8,10 +8,4 @@ mp.events.add('server:setAfkState', (player, isAfk) => {
 
     // 2. Set Server-Side Data (for logic)
     player.data.isAfk = isAfk;
-
-    if (isAfk) {
-        console.log(`${player.name} is now AFK.`);
-    } else {
-        console.log(`${player.name} returned.`);
-    }
 });

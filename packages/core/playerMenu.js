@@ -1,7 +1,8 @@
 const db = require('./database');
 const Inventory = require('../systems/inventory');
 const PhotoHunt = require('../systems/photoHunt/photoHuntManager');
-const JobManager = require('../jobs/jobManager'); // [NEW] Import JobManager
+const JobManager = require('../jobs/jobManager');
+const playerManager = require('./playerManager');
 
 const MAX_VEHICLE_SLOTS = 5; 
 
@@ -10,13 +11,15 @@ mp.events.add('server:playerMenu:getData', async (player) => {
 
     try {
         // 1. Basic Stats
+        const level = player.data.level || 1;
+        const rawWeight = Inventory.getWeight(player);
         const stats = {
-            level: player.data.level || 1,
+            level: level,
             xp: player.data.xp || 0, 
-            xpMax: 1000,
+            xpMax: playerManager.calculateNextLevelXp(level),
             money: player.data.money || 0,
-            bank: player.data.bank || 0,
-            weight: Inventory.getWeight(player),
+            bank: player.data.bank_money || 0,
+            weight: typeof rawWeight === 'string' ? parseFloat(rawWeight) : (rawWeight || 0),
             maxWeight: 40.0
         };
 
@@ -64,8 +67,34 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             };
         }
 
+        // 6. Extra Info (hours played, registration date, payday timer)
+        let hoursPlayed = 0;
+        let registeredDate = '-';
+        try {
+            const [userRows] = await db.query("SELECT created_at, total_playtime FROM users WHERE id = ?", [player.data.dbId]);
+            if (userRows.length > 0) {
+                if (userRows[0].created_at) {
+                    const d = new Date(userRows[0].created_at);
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    registeredDate = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+                }
+                const storedMinutes = userRows[0].total_playtime || 0;
+                const sessionMinutes = player.data.activeMinutes || 0;
+                hoursPlayed = (storedMinutes + sessionMinutes) / 60;
+            }
+        } catch (e) {
+            // Columns may not exist yet — gracefully fallback
+            const sessionMinutes = player.data.activeMinutes || 0;
+            hoursPlayed = sessionMinutes / 60;
+        }
+
         // Send payload
         const payload = {
+            playerName: player.name || 'Unknown',
+            onlineId: player.data.onlineId !== undefined ? player.data.onlineId : player.id,
+            hoursPlayed: hoursPlayed,
+            registeredDate: registeredDate,
+            paydayIn: player.data.paydayIn || 60,
             stats: { ...stats, vehicleCount, maxVehicles: MAX_VEHICLE_SLOTS },
             jobs: formattedJobs,
             quests: dailyQuests,
