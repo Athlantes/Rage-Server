@@ -79,6 +79,7 @@ const playerManager = {
             const sessionMinutes = player.data.activeMinutes || 0;
             const now = new Date();
             const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            
             await db.query(
                 `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, 
                  total_playtime = COALESCE(total_playtime, 0) + ?,
@@ -87,8 +88,13 @@ const playerManager = {
                  WHERE id=?`, 
                 [level, currentPos, xp, bank_money, paydayIn, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
             );
-            // Reset session counter after saving to prevent double-counting
+
+            // --- UPDATE VARIABLES AFTER SAVE ---
             if (mp.players.exists(player)) {
+                // Move session minutes into the "Base" (Saved) variable
+                player.data.dailyPlaytimeBase = (player.data.dailyPlaytimeBase || 0) + sessionMinutes;
+                
+                // Reset session counter
                 player.data.activeMinutes = 0;
             }
             console.log(`[Data] Saved ${name} (Payday in: ${paydayIn}m)`);

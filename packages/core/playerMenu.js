@@ -28,19 +28,18 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         const vehicleCount = vehRows[0].count;
 
         // 3. Job Skills (Merged)
-        const allJobs = JobManager.getDefinitions(); // Get all registered jobs
+        const allJobs = JobManager.getDefinitions();
         const playerSkills = player.data.jobSkills || {};
         const formattedJobs = [];
 
-        // Iterate through ALL defined jobs, not just the ones the player has done
         allJobs.forEach((jobData, jobKey) => {
-            const skill = playerSkills[jobKey] || { level: 1, xp: 0 }; // Default to Lvl 1 if no data
+            const skill = playerSkills[jobKey] || { level: 1, xp: 0 };
             
             const nextLevelXp = Math.pow(skill.level, 2) * 100;
             const prevLevelXp = Math.pow(skill.level - 1, 2) * 100;
             
             formattedJobs.push({
-                name: jobData.config.name, // Use the nice name (e.g., "Sanitation Worker")
+                name: jobData.config.name,
                 key: jobKey,
                 level: skill.level,
                 xp: skill.xp,
@@ -70,8 +69,11 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         // 6. Extra Info (hours played, registration date, payday timer)
         let hoursPlayed = 0;
         let registeredDate = '-';
+        let playedToday = 0; // Initialize variable for daily playtime
+
         try {
-            const [userRows] = await db.query("SELECT created_at, total_playtime FROM users WHERE id = ?", [player.data.dbId]);
+            // UPDATED QUERY: Fetch daily_playtime and daily_playtime_date
+            const [userRows] = await db.query("SELECT created_at, total_playtime, daily_playtime, daily_playtime_date FROM users WHERE id = ?", [player.data.dbId]);
             if (userRows.length > 0) {
                 if (userRows[0].created_at) {
                     const d = new Date(userRows[0].created_at);
@@ -81,11 +83,30 @@ mp.events.add('server:playerMenu:getData', async (player) => {
                 const storedMinutes = userRows[0].total_playtime || 0;
                 const sessionMinutes = player.data.activeMinutes || 0;
                 hoursPlayed = (storedMinutes + sessionMinutes) / 60;
+
+                // --- LOGIC FIX FOR PLAYED TODAY ---
+                // 1. Get today's date string matching how playerManager saves it (YYYY-MM-DD)
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+                // 2. Check if the stored daily stats are from today
+                let storedDaily = 0;
+                if (userRows[0].daily_playtime_date) {
+                    const dbDate = new Date(userRows[0].daily_playtime_date);
+                    const dbDateStr = `${dbDate.getFullYear()}-${String(dbDate.getMonth()+1).padStart(2,'0')}-${String(dbDate.getDate()).padStart(2,'0')}`;
+                    if (dbDateStr === todayStr) {
+                        storedDaily = userRows[0].daily_playtime || 0;
+                    }
+                }
+
+                // 3. Add stored daily minutes + current unsaved session minutes
+                playedToday = storedDaily + sessionMinutes;
+                // ----------------------------------
             }
         } catch (e) {
-            // Columns may not exist yet — gracefully fallback
             const sessionMinutes = player.data.activeMinutes || 0;
             hoursPlayed = sessionMinutes / 60;
+            playedToday = sessionMinutes;
         }
 
         // 7. Repo Jobs
@@ -118,7 +139,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             stats: { ...stats, vehicleCount, maxVehicles: player.data.vehicle_slots || 3 },
             jobs: formattedJobs,
             quests: dailyQuests,
-            activeMinutes: player.data.activeMinutes || 0,
+            activeMinutes: playedToday, // FIX: Send calculated daily total instead of just activeMinutes
             photoHunt: photoHuntData,
             repoJobs: repoJobs
         };

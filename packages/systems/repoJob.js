@@ -258,8 +258,11 @@ const RepoJob = {
         const firstJob = jobs.find(j => j.job_number === 1);
         if (!firstJob || firstJob.status !== 'completed') return;
 
-        const sessionMinutes = player.data.activeMinutes || 0;
-        if (sessionMinutes < SECOND_JOB_PLAYTIME) return;
+        // --- NEW LOGIC: Combine Database Time + Current Session Time ---
+        const totalMinutesToday = (player.data.dailyPlaytimeBase || 0) + (player.data.activeMinutes || 0);
+        
+        if (totalMinutesToday < SECOND_JOB_PLAYTIME) return;
+        // ---------------------------------------------------------------
 
         const targetModel = await this.pickTargetModel(userId);
         if (!targetModel) return;

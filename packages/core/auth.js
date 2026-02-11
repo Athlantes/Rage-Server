@@ -191,24 +191,37 @@ function startSession(player, userData) {
     player.data.vehicle_slots = userData.vehicle_slots;
     
     // --- LOAD PAYDAY TIMER ---
-    // If it's 0 or null (unlikely but safe), set to 60. Otherwise use DB value.
     player.data.paydayIn = (userData.payday_in && userData.payday_in > 0) ? userData.payday_in : 60;
 
-    // --- RESTORE DAILY PLAYTIME ---
+    // --- FIX: DO NOT RESTORE DAILY PLAYTIME ---
+    // We start at 0 so playerManager.saveAccount() only adds the NEW minutes.
+    // playerMenu.js will handle fetching the DB history + current session for the UI.
+    player.data.activeMinutes = 0; 
+    console.log(`[Playtime] Tracker started at 0 for ${player.name}`);
+
+    // --- 1. SETUP DAILY PLAYTIME TRACKER ---
     const todayStr = new Date();
     const today = `${todayStr.getFullYear()}-${String(todayStr.getMonth()+1).padStart(2,'0')}-${String(todayStr.getDate()).padStart(2,'0')}`;
     const dbDate = userData.daily_playtime_date;
     let dbDateStr = null;
+    
     if (dbDate) {
         const d = (typeof dbDate === 'string') ? new Date(dbDate + 'T00:00:00') : new Date(dbDate);
         dbDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
+
     if (dbDateStr === today) {
-        player.data.activeMinutes = userData.daily_playtime || 0;
-        console.log(`[Playtime] Restored ${player.data.activeMinutes}m for ${player.name} (date: ${dbDateStr})`);
+        // Store the DB time in a SEPARATE variable (Base)
+        player.data.dailyPlaytimeBase = userData.daily_playtime || 0;
+        console.log(`[Playtime] Loaded ${player.data.dailyPlaytimeBase}m previous playtime for today.`);
     } else {
-        console.log(`[Playtime] New day for ${player.name} — DB date: ${dbDateStr}, today: ${today}`);
+        // New day, start base at 0
+        player.data.dailyPlaytimeBase = 0;
+        console.log(`[Playtime] New day for ${player.name}. Reset daily tracker.`);
     }
+
+    // Always start session counter at 0
+    player.data.activeMinutes = 0;
 
     // Sync XP
     const xpMax = playerManager.calculateNextLevelXp(player.data.level);
@@ -281,10 +294,9 @@ function startSession(player, userData) {
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
 
     // --- INITIAL TIMER UPDATE ---
-    // Send the loaded time to the HUD immediately so they don't see "60" for 1 minute
     setTimeout(() => {
         player.call('updatePaydayHUD', [player.data.paydayIn]);
-    }, 2000); // Small delay to ensure HUD is loaded
+    }, 2000); 
 
     mp.events.call('server:loadAccount', player);
 }
