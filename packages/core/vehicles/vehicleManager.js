@@ -119,9 +119,9 @@ const vehicles = {
     },
 
     // 5. Create (Buy)
-    create: async (player, model) => {
-        // Fix: Save player's heading when buying too
-        const spawnPos = {
+    // spawnPosition: optional { x, y, z, heading } to place the car at a specific spot
+    create: async (player, model, spawnPosition) => {
+        const spawnPos = spawnPosition || {
             x: player.position.x,
             y: player.position.y,
             z: player.position.z,

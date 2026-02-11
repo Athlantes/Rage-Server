@@ -551,7 +551,7 @@ html, body {
                 <div class="stat-value" id="valSpeed">0</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">Acceleration</div>
+                <div class="stat-label">0-100 km/h</div>
                 <div class="stat-bar-wrapper"><div class="stat-bar accel" id="barAccel" style="width:0%"></div></div>
                 <div class="stat-value" id="valAccel">0</div>
             </div>
@@ -561,7 +561,7 @@ html, body {
                 <div class="stat-value" id="valBrake">0</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">Traction</div>
+                <div class="stat-label">Grip</div>
                 <div class="stat-bar-wrapper"><div class="stat-bar traction" id="barTraction" style="width:0%"></div></div>
                 <div class="stat-value" id="valTraction">0</div>
             </div>
@@ -740,14 +740,14 @@ function selectCar(car) {
     gradeEl.className = 'car-grade g-' + car.grade;
     document.getElementById('selCarPrice').textContent = '$' + car.price.toLocaleString();
 
-    animateBar('barSpeed', Math.min(100, (car.speed / 54) * 100));
-    document.getElementById('valSpeed').textContent = car.speed.toFixed(1);
-    animateBar('barAccel', Math.min(100, (car.accel / 0.43) * 100));
-    document.getElementById('valAccel').textContent = car.accel.toFixed(3);
-    animateBar('barBrake', Math.min(100, (car.brake / 1.4) * 100));
-    document.getElementById('valBrake').textContent = car.brake.toFixed(1);
-    animateBar('barTraction', Math.min(100, (car.traction / 2.9) * 100));
-    document.getElementById('valTraction').textContent = car.traction.toFixed(1);
+    animateBar('barSpeed', Math.min(100, (car.topSpeed / 200) * 100));
+    document.getElementById('valSpeed').textContent = car.topSpeed + ' km/h';
+    animateBar('barAccel', Math.min(100, Math.max(0, (1 - (car.accelTime - 3) / 14) * 100)));
+    document.getElementById('valAccel').textContent = car.accelTime + 's';
+    animateBar('barBrake', Math.min(100, Math.max(0, (1 - (car.brakeDistance - 20) / 45) * 100)));
+    document.getElementById('valBrake').textContent = car.brakeDistance + 'm';
+    animateBar('barTraction', Math.min(100, (car.grip / 1.2) * 100));
+    document.getElementById('valTraction').textContent = car.grip.toFixed(2) + 'g';
 
     document.getElementById('selSeats').textContent = car.seats;
     document.getElementById('selType').textContent = car.type;

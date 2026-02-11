@@ -3,10 +3,15 @@ const db = require('../core/database');
 const playerManager = require('../core/playerManager');
 const vehicleManager = require('../core/vehicles/vehicleManager');
 const banking = require('../core/banking');
-const { catalog, DEALERSHIPS } = require('../data/dealershipCatalog');
+const { catalog, DEALERSHIPS, DEALERSHIP_DIM_OFFSET } = require('../data/dealershipCatalog');
 
 // Active test drives: playerId -> { timeout, vehicleEntity }
 const testDrives = new Map();
+
+// Helper: get a unique dimension for a player
+function getPlayerDimension(player) {
+    return DEALERSHIP_DIM_OFFSET + player.id;
+}
 
 // ─── Blips, NPCs & Interaction ColShapes ───
 mp.events.add('packagesLoaded', () => {
@@ -67,6 +72,11 @@ mp.events.add('server:dealership:open', (player, tier) => {
         vehicleSlots: player.data.vehicle_slots || 3
     };
 
+    // Move player to a private dimension so only they exist there
+    const privateDim = getPlayerDimension(player);
+    player._dealershipReturnDim = player.dimension; // save original dimension
+    player.dimension = privateDim;
+
     // Count owned vehicles
     db.query("SELECT COUNT(*) as cnt FROM server_vehicles WHERE owner_id = ?", [player.data.dbId])
         .then(([rows]) => {
@@ -98,9 +108,10 @@ mp.events.add('server:dealership:preview', (player, model, tier) => {
     }
 
     const sp = ds.spawnPos;
+    const privateDim = player.dimension; // already in private dimension from open
     const veh = mp.vehicles.new(mp.joaat(model), new mp.Vector3(sp.x, sp.y, sp.z), {
         heading: sp.heading,
-        dimension: player.dimension,
+        dimension: privateDim,
         locked: true,
         engine: false
     });
@@ -108,12 +119,18 @@ mp.events.add('server:dealership:preview', (player, model, tier) => {
     veh.isDealershipPreview = true;
     player.dealershipPreview = veh;
 
-    // Auto destroy after 60 seconds (safety)
-    setTimeout(() => {
+    // Clear old safety timeout if switching previews
+    if (player._previewTimeout) {
+        clearTimeout(player._previewTimeout);
+    }
+
+    // Auto destroy after 5 minutes (safety, in case player disconnects without cleanup)
+    player._previewTimeout = setTimeout(() => {
         if (mp.vehicles.exists(veh) && veh.isDealershipPreview) {
             veh.destroy();
         }
-    }, 60000);
+        player._previewTimeout = null;
+    }, 300000);
 });
 
 // ─── Buy Vehicle ───
@@ -167,9 +184,24 @@ mp.events.add('server:dealership:buy', async (player, model, payMethod) => {
         player.dealershipPreview.destroy();
         player.dealershipPreview = null;
     }
+    if (player._previewTimeout) {
+        clearTimeout(player._previewTimeout);
+        player._previewTimeout = null;
+    }
 
-    // Create vehicle via vehicle manager 
-    await vehicleManager.create(player, car.model);
+    // Restore original dimension before spawning purchased vehicle
+    if (!testDrives.has(player.id)) {
+        const returnDim = player._dealershipReturnDim != null ? player._dealershipReturnDim : 0;
+        player.dimension = returnDim;
+        player._dealershipReturnDim = null;
+    }
+
+    // Pick a random parking spot from this dealership's config
+    const spots = ds.parkingSpots;
+    const parkSpot = spots[Math.floor(Math.random() * spots.length)];
+
+    // Create vehicle at the random parking spot
+    await vehicleManager.create(player, car.model, parkSpot);
 
     // Log transaction
     await db.query(
@@ -178,7 +210,8 @@ mp.events.add('server:dealership:buy', async (player, model, payMethod) => {
     );
 
     player.call('client:dealership:close');
-    player.call('showNotification', ['Dealership', `You purchased a ${car.name} for $${car.price.toLocaleString()}!`]);
+    player.call('showNotification', ['Dealership', `You purchased a ${car.name} for $${car.price.toLocaleString()}! A marker has been set to your vehicle.`]);
+    player.call('client:setWaypoint', [parkSpot.x, parkSpot.y]);
     console.log(`[Dealership] ${player.name} bought ${car.name} ($${car.price}) via ${payMethod}`);
 });
 
@@ -206,12 +239,23 @@ mp.events.add('server:dealership:testDrive', async (player, model, tier) => {
         player.dealershipPreview.destroy();
         player.dealershipPreview = null;
     }
+    if (player._previewTimeout) {
+        clearTimeout(player._previewTimeout);
+        player._previewTimeout = null;
+    }
 
-    // Spawn test drive vehicle
-    const sp = ds.spawnPos;
-    const veh = mp.vehicles.new(mp.joaat(model), new mp.Vector3(sp.x, sp.y, sp.z), {
-        heading: sp.heading,
-        dimension: 0,
+    // Use dedicated test drive street position
+    const tdPos = ds.testDrivePos;
+    const privateDim = getPlayerDimension(player);
+
+    // Ensure player is in private dimension (may already be from dealership menu)
+    player._dealershipReturnDim = player._dealershipReturnDim != null ? player._dealershipReturnDim : player.dimension;
+    player.dimension = privateDim;
+
+    // Spawn test drive vehicle on the street, in the player's private dimension
+    const veh = mp.vehicles.new(mp.joaat(model), new mp.Vector3(tdPos.x, tdPos.y, tdPos.z), {
+        heading: tdPos.heading,
+        dimension: privateDim,
         locked: false,
         engine: false
     });
@@ -219,12 +263,14 @@ mp.events.add('server:dealership:testDrive', async (player, model, tier) => {
     veh.isTestDrive = true;
     veh.setVariable('fuel', 100);
 
-    // Put player into car
+    // Teleport player to the street and put them in the car
+    player.position = new mp.Vector3(tdPos.x, tdPos.y, tdPos.z);
+
     setTimeout(() => {
         if (mp.players.exists(player) && mp.vehicles.exists(veh)) {
-            player.putIntoVehicle(veh, -1);
+            player.putIntoVehicle(veh, 0);
         }
-    }, 200);
+    }, 400);
 
     player.call('client:dealership:close');
     player.call('showNotification', ['Test Drive', `Enjoy your ${car.name}! You have 60 seconds.`]);
@@ -255,8 +301,11 @@ function endTestDrive(player) {
         td.vehicle.destroy();
     }
 
-    // Teleport back to dealership
+    // Teleport back to dealership and restore original dimension
     if (mp.players.exists(player)) {
+        const returnDim = player._dealershipReturnDim != null ? player._dealershipReturnDim : 0;
+        player.dimension = returnDim;
+        player._dealershipReturnDim = null;
         player.position = new mp.Vector3(td.returnPos.x, td.returnPos.y, td.returnPos.z);
         player.call('showNotification', ['Dealership', 'Test drive over! You have been returned to the dealership.']);
     }
@@ -267,11 +316,30 @@ mp.events.add('server:dealership:endTestDrive', (player) => {
     endTestDrive(player);
 });
 
+// ─── End test drive when player exits the vehicle ───
+mp.events.add('playerExitVehicle', (player, vehicle) => {
+    const td = testDrives.get(player.id);
+    if (td && vehicle === td.vehicle) {
+        endTestDrive(player);
+    }
+});
+
 // ─── Close / Cleanup ───
 mp.events.add('server:dealership:close', (player) => {
     if (player.dealershipPreview && mp.vehicles.exists(player.dealershipPreview)) {
         player.dealershipPreview.destroy();
         player.dealershipPreview = null;
+    }
+    if (player._previewTimeout) {
+        clearTimeout(player._previewTimeout);
+        player._previewTimeout = null;
+    }
+
+    // Restore original dimension (only if not on a test drive)
+    if (!testDrives.has(player.id)) {
+        const returnDim = player._dealershipReturnDim != null ? player._dealershipReturnDim : 0;
+        player.dimension = returnDim;
+        player._dealershipReturnDim = null;
     }
 });
 
@@ -280,6 +348,10 @@ mp.events.add('playerQuit', (player) => {
     // Cleanup preview
     if (player.dealershipPreview && mp.vehicles.exists(player.dealershipPreview)) {
         player.dealershipPreview.destroy();
+    }
+    if (player._previewTimeout) {
+        clearTimeout(player._previewTimeout);
+        player._previewTimeout = null;
     }
     // Cleanup test drive
     endTestDrive(player);
