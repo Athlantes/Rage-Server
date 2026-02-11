@@ -1,19 +1,13 @@
 let craftingBrowser = null;
 
 mp.events.add('client:crafting:open', (recipesJson, playerInfoJson) => {
-    // 1. If browser does NOT exist, create it and initialize
     if (!craftingBrowser) {
         craftingBrowser = mp.browsers.new('package://ui/carCrafting/index.html');
         mp.gui.cursor.show(true, true);
-        
-        // Wait for DOM to load before sending initial data
         setTimeout(() => {
-            if (craftingBrowser) {
-                craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
-            }
+            if (craftingBrowser) craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
         }, 150);
-    } 
-    else {
+    } else {
         craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
     }
 });
@@ -26,7 +20,16 @@ mp.events.add('client:crafting:close', () => {
     mp.gui.cursor.show(false, false);
 });
 
-// Event triggered from UI to request crafting
-mp.events.add('client:crafting:tryCraft', (recipeId) => {
-    mp.events.callRemote('server:crafting:craft', recipeId);
+// Pass boost boolean to server
+mp.events.add('client:crafting:tryCraft', (recipeId, useBoost) => {
+    mp.events.callRemote('server:crafting:craft', recipeId, useBoost);
+});
+
+// Play sound/effect based on result
+mp.events.add('client:crafting:result', (success, message) => {
+    if (craftingBrowser) {
+        craftingBrowser.execute(`showResult(${success}, '${message.replace(/'/g, "\\'")}');`);
+    }
+    if (success) mp.game.audio.playSoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true);
+    else mp.game.audio.playSoundFrontend(-1, "Hack_Failed", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true);
 });
