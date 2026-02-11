@@ -388,8 +388,8 @@ mp.events.add('server:dealership:sell', async (player, vehicleDbId) => {
 
     // Log
     await db.query(
-        "INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (NULL, ?, ?, 'sale', ?, NOW())",
-        [player.data.dbId, sellPrice, `Vehicle Sale: ${vehData.model} (+$${sellPrice.toLocaleString()})`]
+        "INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (?, ?, ?, 'sale', ?, NOW())",
+        [player.data.dbId, player.data.dbId, sellPrice, `Vehicle Sale: ${vehData.model} (+$${sellPrice.toLocaleString()})`]
     );
 
     player.call('showNotification', ['Dealership', `Sold your ${vehData.model} for $${sellPrice.toLocaleString()} (cash).`]);
