@@ -58,7 +58,6 @@ const logic = {
         const payPerStop = REWARD_CONFIG.basePayPerStop + Math.floor(level * REWARD_CONFIG.perLevelBonus);
 
         const previewData = AVAILABLE_ROUTES.map(r => {
-            // Calculate total distance for UI (like garbage job)
             let totalDist = 0;
             let lastPos = DEPOT_LOCATION;
             
@@ -74,10 +73,10 @@ const logic = {
             return {
                 id: r.id || Math.random().toString(36),
                 name: r.name,
-                difficulty: "Medium", // Placeholder to match UI style
+                difficulty: "Medium",
                 stopsCount: r.stops.length,
-                stops: r.stops, // Array of {x,y,z}
-                distance: (totalDist / 1000), // KM
+                stops: r.stops,
+                distance: (totalDist / 1000),
                 pay: (r.stops.length * payPerStop) + REWARD_CONFIG.finishBonus
             };
         });
@@ -88,11 +87,7 @@ const logic = {
 };
 
 function startRoute(player, routeIndex) {
-    // Note: routeIndex comes from client as 1-based index usually, or direct array index. 
-    // Adapting to match how garbage sends it (usually direct index or ID). 
-    // If you pass the Array Index directly:
-    const route = AVAILABLE_ROUTES[routeIndex]; 
-    
+    const route = AVAILABLE_ROUTES[routeIndex];
     if (!route) return sendChat(player, "!{FF0000}Invalid route.");
 
     jobManager.startJobSession(player, JOB_KEY);
@@ -122,7 +117,8 @@ function startRoute(player, routeIndex) {
         currentStop: 0,
         bus: bus,
         totalStops: route.stops.length,
-        isBoarding: false
+        isBoarding: false,
+        stopCheckInterval: null
     });
 
     player.call('showNotification', ['Bus Driver', `Route: ${route.name} started.`]);
@@ -132,6 +128,11 @@ function startRoute(player, routeIndex) {
 function setNextStop(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
+
+    if (job.stopCheckInterval) {
+        clearInterval(job.stopCheckInterval);
+        job.stopCheckInterval = null;
+    }
 
     if (job.currentStop >= job.totalStops) {
         jobManager.createObjective(player, DEPOT_RETURN, "Return Bus to Terminal", 5.0, (p) => {
@@ -166,16 +167,45 @@ async function handleStopArrival(player) {
     const velocity = player.vehicle.velocity;
     const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
     
-    if (speed > 0.5) {
-        return player.call('showNotification', ["~o~Stop completely to board passengers."]);
+    // Check speed. If fast, start watcher.
+    if (speed > 0.1) {
+        if (!job.stopCheckInterval) {
+            player.call('showNotification', ["Bus Driver", "~o~Stop completely to board passengers."]);
+            
+            job.stopCheckInterval = setInterval(() => {
+                if (!mp.players.exists(player) || !activeJobs.has(player.id)) {
+                    if (job.stopCheckInterval) clearInterval(job.stopCheckInterval);
+                    return;
+                }
+
+                const v = player.vehicle.velocity;
+                const s = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+
+                if (s <= 0.1) {
+                    clearInterval(job.stopCheckInterval);
+                    job.stopCheckInterval = null;
+                    processBoardingSequence(player);
+                }
+            }, 500);
+        }
+        return;
     }
+
+    processBoardingSequence(player);
+}
+
+async function processBoardingSequence(player) {
+    const job = activeJobs.get(player.id);
+    if (!job || job.isBoarding) return;
 
     job.isBoarding = true;
     const bus = job.bus;
 
     if (mp.vehicles.exists(bus)) {
-        bus.freezePosition(true);
-        for(let i=0; i<4; i++) bus.setDoorState(i, false);
+        // FIX: Use .frozen property instead of freezePosition()
+        bus.frozen = true;
+        
+        // Note: setDoorState is usually client-side only. Removed to prevent crashes.
     }
 
     player.call('client:showJobSubtitle', ["~y~Boarding Passengers... Please Wait.", 4000]);
@@ -185,8 +215,8 @@ async function handleStopArrival(player) {
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) return;
 
         if (mp.vehicles.exists(bus)) {
-            for(let i=0; i<4; i++) bus.setDoorState(i, true);
-            bus.freezePosition(false);
+            // FIX: Unfreeze using property
+            bus.frozen = false;
         }
 
         const level = jobManager.getJobLevel(player, JOB_KEY);
@@ -220,6 +250,12 @@ async function finishJob(player) {
 function cleanupJob(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
+
+    if (job.stopCheckInterval) {
+        clearInterval(job.stopCheckInterval);
+        job.stopCheckInterval = null;
+    }
+
     if (job.bus && mp.vehicles.exists(job.bus)) job.bus.destroy();
     jobManager.clearObjective(player);
     activeJobs.delete(player.id);
