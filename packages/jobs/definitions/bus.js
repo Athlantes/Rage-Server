@@ -121,6 +121,10 @@ function startRoute(player, routeIndex) {
         stopCheckInterval: null
     });
 
+    if (route.stops.length > 0) {
+        player.call('client:bus:spawnPeds', [route.stops[0]]);
+    }
+
     player.call('showNotification', ['Bus Driver', `Route: ${route.name} started.`]);
     setNextStop(player);
 }
@@ -135,6 +139,8 @@ function setNextStop(player) {
     }
 
     if (job.currentStop >= job.totalStops) {
+        player.call('client:bus:cleanupPeds');
+
         jobManager.createObjective(player, DEPOT_RETURN, "Return Bus to Terminal", 5.0, (p) => {
             finishJob(p);
         }, { blipSprite: 513, blipColor: 1, name: "Depot Return" });
@@ -143,6 +149,8 @@ function setNextStop(player) {
     }
 
     const stopData = job.route.stops[job.currentStop];
+
+    player.call('client:bus:spawnPeds', [stopData]);
 
     jobManager.createObjective(player, stopData, `Stop ${job.currentStop + 1}`, 3.5, (p) => {
         handleStopArrival(p);
@@ -202,34 +210,32 @@ async function processBoardingSequence(player) {
     const bus = job.bus;
 
     if (mp.vehicles.exists(bus)) {
-        // 1. Force stop physics
         bus.frozen = true;
-        
-        // 2. Cut the engine
         bus.engine = false;
-        bus.setVariable('engine', false); // Sync variable for vehicleSystem
+        bus.setVariable('engine', false);
 
-        // 3. Open Doors (Call Client)
-        // We pass 'true' to open doors
+        // TRIGGER THE ANIMATIONS
+        player.call('client:bus:handlePedActions', [bus.id]);
+        
+        // Open doors
         player.call('client:bus:controlDoors', [bus.id, true]);
     }
 
-    player.call('client:showJobSubtitle', ["~y~Boarding Passengers... Please Wait.", 4000]);
+    player.call('client:showJobSubtitle', ["~y~Boarding Passengers... Please Wait.", 6000]); // Increased time
     player.call('playSound', ['Bus_Schedule_Pickup', 'DLC_PRISON_BREAK_HEIST_SOUNDS']);
 
+    // INCREASE TIMEOUT TO 6-7 SECONDS
+    // NPCs need time to walk to door, open it, and sit down.
     setTimeout(async () => {
-        // Validation: Player might have disconnected or quit job
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) return;
 
+        // Clean up the "visual" peds so they don't glitch through the bus while driving
+        player.call('client:bus:cleanupPeds');
+
         if (mp.vehicles.exists(bus)) {
-            // 4. Close Doors
             player.call('client:bus:controlDoors', [bus.id, false]);
-            
-            // 5. Restart Engine
             bus.engine = true;
             bus.setVariable('engine', true);
-
-            // 6. Unfreeze
             bus.frozen = false;
         }
 
@@ -245,7 +251,7 @@ async function processBoardingSequence(player) {
         job.currentStop++;
         setNextStop(player);
 
-    }, 4000);
+    }, 7000); // 7 Seconds allows animations to finish cleanly
 }
 
 async function finishJob(player) {
@@ -271,6 +277,7 @@ function cleanupJob(player) {
     }
 
     if (job.bus && mp.vehicles.exists(job.bus)) job.bus.destroy();
+    player.call('client:bus:cleanupPeds');
     jobManager.clearObjective(player);
     activeJobs.delete(player.id);
 }
