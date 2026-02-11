@@ -36,6 +36,10 @@ mp.events.add('client:creator:updateGender', (gender) => {
     const model = (gender === 0) ? 'mp_m_freemode_01' : 'mp_f_freemode_01';
     mp.players.local.model = mp.game.joaat(model);
     mp.players.local.setDefaultComponentVariation();
+
+    mp.players.local.setComponentVariation(3, 15, 0, 0); 
+    mp.players.local.setComponentVariation(8, 15, 0, 0); 
+    mp.players.local.setComponentVariation(11, 15, 0, 0); 
 });
 
 // --- HERITAGE (Head Blend) ---
@@ -83,12 +87,12 @@ mp.events.add('client:creator:updateOverlay', (overlayId, style, opacity, color1
     color1    = parseInt(color1);
     color2    = parseInt(color2);
 
-    // RAGE:MP uses array format: [value, opacity, color1, color2]
+    // RAGE:MP Client-side expects separate arguments, NOT an array
     if (style === 0) {
         // 255 = clear overlay
-        mp.players.local.setHeadOverlay(overlayId, [255, 0.0, 0, 0]);
+        mp.players.local.setHeadOverlay(overlayId, 255, 0.0, 0, 0);
     } else {
-        mp.players.local.setHeadOverlay(overlayId, [style, opacity, color1, color2]);
+        mp.players.local.setHeadOverlay(overlayId, style, opacity, color1, color2);
     }
 });
 

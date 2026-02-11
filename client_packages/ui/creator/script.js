@@ -167,6 +167,18 @@ function selectGender(g) {
     // Reset clothing indexes
     currentIndexes = { tops: 0, legs: 0, shoes: 0 };
 
+    // --- FIX: Reset Face Features to 0 to prevent "Man Face" on Female ---
+    characterData.appearance.features.fill(0); // Reset data array
+    $('input[type=range][id^="feature-"]').val(0); // Reset sliders
+    $('span[id^="fval-"]').text("0.00"); // Reset value labels
+    
+    // Optional: Reset Mix to neutral to ensure clean transition
+    $('#shapeMix').val(0.5);
+    $('#skinMix').val(0.5);
+    characterData.appearance.shapeMix = 0.5;
+    characterData.appearance.skinMix = 0.5;
+    // ---------------------------------------------------------------------
+
     // Update hair style range for gender
     const maxHair = hairLimits[g === 0 ? 'male' : 'female'];
     $('#hairStyle').attr('max', maxHair);
@@ -220,8 +232,15 @@ function changeParent(type, direction) {
 function updateHeritage() {
     const mom = characterData.appearance.parents.mother;
     const dad = characterData.appearance.parents.father;
-    const shapeMix = parseFloat($('#shapeMix').val());
+    
+    // Get raw values from sliders
+    let shapeMix = parseFloat($('#shapeMix').val());
     const skinMix = parseFloat($('#skinMix').val());
+
+    if (currentGender === 1 && shapeMix > 0.75) {
+        shapeMix = 0.75; 
+    }
+    // ----------------------------------------
 
     characterData.appearance.shapeMix = shapeMix;
     characterData.appearance.skinMix = skinMix;
