@@ -247,23 +247,27 @@ const RepoJob = {
         const today = new Date().toISOString().split('T')[0];
         const userId = player.data.dbId;
 
+        // 1. Check existing jobs for today
         const [jobs] = await db.query(
             "SELECT * FROM repo_jobs WHERE user_id = ? AND job_date = ?",
             [userId, today]
         );
 
+        // Stop if already has max jobs (2) or hasn't started any yet
         if (jobs.length >= MAX_JOBS_PER_DAY) return;
         if (jobs.length === 0) return;
 
+        // 2. Check if Job #1 is actually completed
         const firstJob = jobs.find(j => j.job_number === 1);
         if (!firstJob || firstJob.status !== 'completed') return;
 
-        // --- NEW LOGIC: Combine Database Time + Current Session Time ---
-        const totalMinutesToday = (player.data.dailyPlaytimeBase || 0) + (player.data.activeMinutes || 0);
-        
-        if (totalMinutesToday < SECOND_JOB_PLAYTIME) return;
-        // ---------------------------------------------------------------
+        // 3. CHECK PLAYTIME (Fix: Combine Database Base + Current Session)
+        // This ensures the check works even if they relogged or the server restarted.
+        const playedToday = (player.data.dailyPlaytimeBase || 0) + (player.data.activeMinutes || 0);
 
+        if (playedToday < SECOND_JOB_PLAYTIME) return;
+
+        // 4. Assign Job #2
         const targetModel = await this.pickTargetModel(userId);
         if (!targetModel) return;
 
@@ -276,6 +280,7 @@ const RepoJob = {
             [userId, today, targetModel]
         );
 
+        // 5. Notify Player
         const mailMsg = `Good work earlier. I got another one for you. Come see me when you're ready.`;
         mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'More work available', mailMsg);
 
