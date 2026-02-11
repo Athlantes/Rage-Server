@@ -189,6 +189,71 @@ class InventorySystem {
             try { if (updates.length > 0) await Promise.all(updates); this.syncClient(player); player.call('showNotification', ['Inventory', 'Sorted items alphabetically.']); } catch (err) { console.error("Sort Error:", err); }
         });
 
+        mp.events.add('server:stackAllItems', async (player) => {
+            if (!player.inventory) return;
+
+            // 1. Get all items in the main inventory (exclude equipment)
+            const mainItems = player.inventory.filter(i => i.slot >= 0);
+            
+            // 2. Identify unique groups of items (Same ID + Same Metadata)
+            const processedKeys = new Set();
+            const updates = [];
+            const deletes = [];
+
+            for (const item of mainItems) {
+                // Create a unique key for grouping
+                const itemMeta = JSON.stringify(item.data);
+                const uniqueKey = item.itemId + "|" + itemMeta;
+
+                // Skip if we already processed this group
+                if (processedKeys.has(uniqueKey)) continue;
+                processedKeys.add(uniqueKey);
+
+                const def = ItemRegistry[item.itemId];
+                if (!def || def.maxStack <= 1) continue;
+
+                // Find all siblings in the inventory
+                const siblings = mainItems.filter(i => 
+                    i.itemId === item.itemId && 
+                    JSON.stringify(i.data) === itemMeta
+                );
+
+                if (siblings.length < 2) continue;
+
+                // 3. Calculate totals and redistribute
+                let totalCount = siblings.reduce((sum, i) => sum + i.count, 0);
+                
+                // Sort by slot to keep items in earlier slots first
+                siblings.sort((a, b) => a.slot - b.slot);
+
+                for (const sibling of siblings) {
+                    if (totalCount > 0) {
+                        const newCount = Math.min(totalCount, def.maxStack);
+                        
+                        // Only DB update if count actually changes
+                        if (sibling.count !== newCount) {
+                            sibling.count = newCount;
+                            updates.push(db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [newCount, sibling.id]));
+                        }
+                        totalCount -= newCount;
+                    } else {
+                        // 4. Delete items that are now empty
+                        const idx = player.inventory.indexOf(sibling);
+                        if (idx > -1) player.inventory.splice(idx, 1);
+                        deletes.push(db.query('DELETE FROM character_inventory WHERE id = ?', [sibling.id]));
+                    }
+                }
+            }
+
+            try {
+                await Promise.all([...updates, ...deletes]);
+                this.syncClient(player);
+                player.call('showNotification', ['Inventory', 'All items stacked.']);
+            } catch (err) {
+                console.error("Stack All Error:", err);
+            }
+        });
+
         mp.events.add('playerRequestInventory', (player) => this.syncClient(player));
     }
 
