@@ -319,20 +319,38 @@ const VISUAL_PRICES = {
 const TUNING_SHOPS = [
     {
         id: 'burton',
-        name: "LS Customs — Burton",
+        name: "Los Santos Customs",
         pos: { x: -337.13, y: -136.96, z: 39.01 },
         marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
     },
     {
         id: 'lsia',
-        name: "LS Customs — LSIA",
+        name: "Los Santos Customs",
         pos: { x: -1155.46, y: -2007.16, z: 13.18 },
         marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
     },
     {
         id: 'harmony',
-        name: "Beeker's Garage — Harmony",
+        name: "Los Santos Customs",
         pos: { x: 731.58, y: -1088.77, z: 22.17 },
+        marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
+    },
+    {
+        id: 'strawberry',
+        name: "Los Santos Customs",
+        pos: { x: -211.34, y: -1323.24, z: 30.48 },
+        marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
+    },
+    {
+        id: 'senora',
+        name: "Los Santos Customs",
+        pos: { x: 1174.96, y: 2640.11, z: 37.35 },
+        marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
+    },
+    {
+        id: 'paleto',
+        name: "Los Santos Customs",
+        pos: { x: 109.99, y: 6627.20, z: 31.38 },
         marker: { type: 1, color: [0, 168, 255, 180], scale: 1.5 }
     }
 ];

@@ -307,6 +307,7 @@ function endTestDrive(player) {
         player.dimension = returnDim;
         player._dealershipReturnDim = null;
         player.position = new mp.Vector3(td.returnPos.x, td.returnPos.y, td.returnPos.z);
+        player.call('client:dealership:stopTestTimer');
         player.call('showNotification', ['Dealership', 'Test drive over! You have been returned to the dealership.']);
     }
 }

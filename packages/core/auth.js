@@ -195,10 +195,19 @@ function startSession(player, userData) {
     player.data.paydayIn = (userData.payday_in && userData.payday_in > 0) ? userData.payday_in : 60;
 
     // --- RESTORE DAILY PLAYTIME ---
-    const today = new Date().toISOString().split('T')[0];
-    if (userData.daily_playtime_date === today || 
-        (userData.daily_playtime_date && new Date(userData.daily_playtime_date).toISOString().split('T')[0] === today)) {
+    const todayStr = new Date();
+    const today = `${todayStr.getFullYear()}-${String(todayStr.getMonth()+1).padStart(2,'0')}-${String(todayStr.getDate()).padStart(2,'0')}`;
+    const dbDate = userData.daily_playtime_date;
+    let dbDateStr = null;
+    if (dbDate) {
+        const d = (typeof dbDate === 'string') ? new Date(dbDate + 'T00:00:00') : new Date(dbDate);
+        dbDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    if (dbDateStr === today) {
         player.data.activeMinutes = userData.daily_playtime || 0;
+        console.log(`[Playtime] Restored ${player.data.activeMinutes}m for ${player.name} (date: ${dbDateStr})`);
+    } else {
+        console.log(`[Playtime] New day for ${player.name} — DB date: ${dbDateStr}, today: ${today}`);
     }
 
     // Sync XP

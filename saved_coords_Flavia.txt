@@ -1,0 +1,6 @@
+// Benny's Tunning- Strawberry
+{ x: -211.34, y: -1323.24, z: 30.48, h: 152.10 },
+// AutoRepair-GrandSenoraDesert
+{ x: 1174.96, y: 2640.11, z: 37.35, h: -178.21 },
+// Beaker's Garage-Paleto
+{ x: 109.99, y: 6627.20, z: 31.38, h: 41.14 },

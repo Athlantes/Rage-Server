@@ -120,6 +120,13 @@ mp.events.add('client:dealership:startTestTimer', (seconds) => {
     }, 1000);
 });
 
+mp.events.add('client:dealership:stopTestTimer', () => {
+    if (testDriveTimer) {
+        clearInterval(testDriveTimer);
+        testDriveTimer = null;
+    }
+});
+
 // ─── ESC to close ───
 mp.keys.bind(0x1B, false, () => { // ESC
     if (dealershipOpen) {

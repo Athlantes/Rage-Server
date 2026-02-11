@@ -115,7 +115,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             hoursPlayed: hoursPlayed,
             registeredDate: registeredDate,
             paydayIn: player.data.paydayIn || 60,
-            stats: { ...stats, vehicleCount, maxVehicles: MAX_VEHICLE_SLOTS },
+            stats: { ...stats, vehicleCount, maxVehicles: player.data.vehicle_slots || 3 },
             jobs: formattedJobs,
             quests: dailyQuests,
             activeMinutes: player.data.activeMinutes || 0,
