@@ -1,181 +1,240 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="../lib/leaflet/leaflet.css">
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Job</title>
+    <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: rgba(0,0,0,0.85); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; user-select: none; }
-        
-        /* Main Window: Two Columns */
-        .container { 
-            display: flex; 
-            width: 900px; 
-            height: 600px; 
-            background: #1a1a1a; 
-            border-radius: 10px; 
+        /* Shared Style with Garbage Job for consistency */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #141b2d; 
+            margin: 0; 
             overflow: hidden; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-            border: 1px solid #333;
+            user-select: none; 
         }
-
-        /* LEFT: Route List */
-        .sidebar { width: 350px; display: flex; flex-direction: column; border-right: 1px solid #333; }
-        .header { background: #e0ac00; color: #1a1a1a; padding: 25px; text-align: left; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .header p { margin: 5px 0 0 0; font-size: 14px; font-weight: 600; opacity: 0.8; }
-
-        .list { flex: 1; overflow-y: auto; padding: 10px; background: #222; }
-        
+        .container { 
+            width: 100vw; 
+            height: 100vh; 
+            background: rgba(20, 20, 25, 1); 
+            display: flex; 
+        }
+        .sidebar { 
+            width: 350px; 
+            min-width: 300px;
+            background: rgba(30, 30, 35, 1); 
+            border-right: 1px solid #444; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 10;
+        }
+        /* Bus Yellow Theme */
+        .header { 
+            padding: 25px; 
+            background: #ffcc00; 
+            color: #111; 
+            font-weight: bold; 
+            text-align: center; 
+            text-transform: uppercase; 
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .route-list { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 15px; 
+        }
         .route-item { 
-            background: #2a2a2a; 
-            margin-bottom: 8px; 
+            background: #2a2a2e; 
+            color: #ccc; 
             padding: 20px; 
-            border-radius: 6px; 
+            margin-bottom: 10px; 
+            border-radius: 5px; 
             cursor: pointer; 
-            transition: all 0.2s; 
-            border-left: 4px solid transparent;
+            border-left: 4px solid transparent; 
+            transition: background 0.2s, transform 0.2s;
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
-        
         .route-item:hover { background: #333; transform: translateX(5px); }
-        .route-item.active { background: #383838; border-left: 4px solid #e0ac00; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-
-        .route-info h3 { margin: 0 0 4px 0; font-size: 16px; color: #fff; }
-        .route-info span { font-size: 12px; color: #888; text-transform: uppercase; font-weight: bold; }
-        .route-price { color: #4caf50; font-weight: bold; font-size: 15px; }
-
-        /* Actions */
-        .actions { padding: 20px; background: #1a1a1a; display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 15px; border: none; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: 0.2s; }
-        .btn-select { background: #e0ac00; color: black; opacity: 0.5; pointer-events: none; } /* Disabled by default */
-        .btn-select.ready { opacity: 1; pointer-events: auto; }
-        .btn-select:hover { background: #ffc400; }
-        .btn-cancel { background: #c62828; color: white; }
-        .btn-cancel:hover { background: #b71c1c; }
-
-        /* RIGHT: Map */
-        .map-wrapper { flex: 1; position: relative; background: #0fa8d2; } /* Placeholder Blue */
-        #map { width: 100%; height: 100%; background: #151515; }
+        .route-item.active { 
+            background: #383838; 
+            border-left: 4px solid #ffcc00; 
+            color: white; 
+        }
+        .content { 
+            flex-grow: 1; 
+            position: relative; 
+            background: #141b2d; 
+        }
+        #map { 
+            width: 100%; 
+            height: 100%; 
+            z-index: 1; 
+            background: #141b2d; 
+        }
+        .btn-close { 
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            background: rgba(0,0,0,0.6); 
+            color: white; 
+            width: 40px; 
+            height: 40px; 
+            line-height: 40px; 
+            text-align: center; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            z-index: 600; 
+            font-weight: bold; 
+            font-size: 20px;
+            transition: background 0.2s;
+        }
+        .btn-close:hover { background: #d32f2f; }
         
-        /* Leaflet Customization */
-        .leaflet-container { background: #151515 !important; }
+        /* Overlay Box */
+        .job-overlay { 
+            position: absolute; 
+            bottom: 30px; 
+            right: 30px; 
+            background: rgba(0, 0, 0, 0.9); 
+            padding: 25px; 
+            border-radius: 8px; 
+            color: white; 
+            border-left: 5px solid #ffcc00; 
+            width: 300px; 
+            z-index: 500; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .btn-start { 
+            margin-top: 20px; 
+            background: #ffcc00; 
+            color: #111; 
+            border: none; 
+            width: 100%; 
+            padding: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .btn-start:hover { background: #e6b800; }
+        .stat { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 8px 0; 
+            color: #aaa; 
+            font-size: 14px;
+        }
+        .stat span { color: white; font-weight: 500; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="sidebar">
-        <div class="header">
-            <h1>Bus Schedule</h1>
-            <p>Select a route to view path</p>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">Bus Schedule</div>
+            <div class="route-list" id="routeList"></div>
         </div>
-        <div class="list" id="routeList">
+        <div class="content">
+            <div class="btn-close" onclick="closeMenu()">×</div>
+            <div id="map"></div>
+            <div id="details" class="job-overlay" style="display: none;">
+                <h2 id="rTitle" style="margin:0 0 15px 0; color:#ffcc00; font-size: 1.5rem;">Select Route</h2>
+                <div class="stat">Stops: <span id="rStops">--</span></div>
+                <div class="stat">Est. Pay: <span id="rPay">--</span></div>
+                <div class="stat">Distance: <span id="rDist">--</span></div>
+                <button class="btn-start" onclick="startJob()">Start Shift</button>
             </div>
-        <div class="actions">
-            <button class="btn btn-cancel" onclick="closeMenu()">Exit</button>
-            <button class="btn btn-select" id="startBtn" onclick="startRoute()">Select Route</button>
         </div>
     </div>
 
-    <div class="map-wrapper">
-        <div id="map"></div>
-    </div>
-</div>
+    <script src="../lib/leaflet/leaflet.js"></script>
+    
+    <script src="../lib/customMap.js"></script>
 
-<script src="../lib/leaflet/leaflet.js"></script>
+    <script>
+        let gameMap = null;
+        let selectedRouteIndex = -1;
+        let currentPolyline = null;
 
-<script>
-    let map = null;
-    let currentPolyline = null;
-    let selectedRouteIndex = -1;
+        // Bus Icon (reusing marker icon or custom if you have one)
+        const busIconOptions = {
+            iconUrl: '../lib/leaflet/images/marker-icon.png', 
+            iconSize: [25, 41],  
+            iconAnchor: [12, 41], 
+            popupAnchor: [1, -34] 
+        };
 
-    // Initialize Map (Standard GTA V Atlas configuration)
-    function initMap() {
-        // Simple CRS for flat game maps
-        map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -3,
-            maxZoom: 2,
-            zoomControl: false,
-            attributionControl: false
-        });
+        function loadBusRoutes(routesJson) {
+            // Init map using your custom class
+            if (!gameMap) {
+                gameMap = new GameMap('map', { initialZoom: 3 });
+                gameMap.disableInteraction(); // Keep static like garbage
+            }
 
-        // Bounds for GTA V map roughly
-        const bounds = [[-4000, -4000], [8000, 8000]];
-        const image = L.imageOverlay('../lib/leaflet/images/layers.png', bounds).addTo(map); // Using your layer image
-        map.fitBounds([[-4000, -4000], [4000, 4000]]);
-        map.setView([0, 0], -1);
-    }
+            const routes = JSON.parse(routesJson);
+            const list = document.getElementById('routeList');
+            list.innerHTML = '';
 
-    function loadBusRoutes(jsonStr) {
-        if (!map) initMap();
-        
-        const routes = JSON.parse(jsonStr);
-        const list = document.getElementById('routeList');
-        list.innerHTML = "";
-
-        if (routes.length === 0) {
-            list.innerHTML = "<div style='padding:20px; color:#666;'>No routes found.</div>";
-            return;
+            routes.forEach((route, index) => {
+                const div = document.createElement('div');
+                div.className = 'route-item';
+                div.innerHTML = `
+                    <span>${route.name}</span>
+                    <span style="color:#ffcc00; font-weight:bold;">$${route.pay}</span>
+                `;
+                div.onclick = () => selectRoute(div, route, index);
+                list.appendChild(div);
+            });
         }
 
-        routes.forEach((r, index) => {
-            const el = document.createElement('div');
-            el.className = 'route-item';
-            el.id = `route-${index}`;
-            el.onclick = () => previewRoute(index, r.path);
-            el.innerHTML = `
-                <div class="route-info">
-                    <h3>${r.name}</h3>
-                    <span>${r.stopsCount} Stops</span>
-                </div>
-                <div class="route-price">$${r.pay}</div>
-            `;
-            list.appendChild(el);
-        });
-    }
+        function selectRoute(element, route, index) {
+            // UI Updates
+            document.querySelectorAll('.route-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
 
-    function previewRoute(index, pathData) {
-        selectedRouteIndex = index;
+            document.getElementById('details').style.display = 'block';
+            document.getElementById('rTitle').innerText = route.name;
+            document.getElementById('rStops').innerText = route.stopsCount + " Stops";
+            document.getElementById('rPay').innerText = "$" + (route.pay || 0).toLocaleString();
+            document.getElementById('rDist').innerText = (route.distance ? route.distance.toFixed(2) : "0.00") + " km";
+            selectedRouteIndex = index;
 
-        // 1. UI Updates
-        document.querySelectorAll('.route-item').forEach(d => d.classList.remove('active'));
-        document.getElementById(`route-${index}`).classList.add('active');
-        
-        const btn = document.getElementById('startBtn');
-        btn.classList.add('ready');
-        btn.innerText = "Start Job";
+            // 1. Draw Markers using CustomMap class
+            // Note: route.stops contains objects like {x, y, z}
+            gameMap.setMarkers(route.stops, busIconOptions);
 
-        // 2. Map Updates
-        if (currentPolyline) map.removeLayer(currentPolyline);
+            // 2. Draw Polyline (Route Line) - CustomMap doesn't have this, so we access raw map
+            const rawMap = gameMap.getInstance();
+            
+            if (currentPolyline) {
+                rawMap.removeLayer(currentPolyline);
+            }
 
-        // Convert Game Coords (x, y) to Leaflet (y, x)
-        // Note: GTA V maps usually map Y to Latitude and X to Longitude
-        const latLngs = pathData.map(p => [p.y, p.x]);
+            // Convert GTA coords (x,y) to Leaflet lat/lng (y,x)
+            const latLngs = route.stops.map(p => [p.y, p.x]);
+            
+            currentPolyline = L.polyline(latLngs, {
+                color: '#ffcc00',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 10'
+            }).addTo(rawMap);
+        }
 
-        currentPolyline = L.polyline(latLngs, {
-            color: '#e0ac00',
-            weight: 5,
-            opacity: 0.8,
-            smoothFactor: 1
-        }).addTo(map);
+        function startJob() {
+            if(selectedRouteIndex > -1) {
+                if ('mp' in window) mp.trigger('client:bus:select', selectedRouteIndex);
+            }
+        }
 
-        // Center map on the route
-        map.fitBounds(currentPolyline.getBounds(), { padding: [50, 50] });
-    }
-
-    function startRoute() {
-        if (selectedRouteIndex === -1) return;
-        if ('mp' in window) mp.trigger('client:bus:select', selectedRouteIndex);
-    }
-
-    function closeMenu() {
-        if ('mp' in window) mp.trigger('client:bus:closeMenu');
-    }
-</script>
-
+        function closeMenu() {
+            if ('mp' in window) mp.trigger('client:bus:closeMenu');
+        }
+    </script>
 </body>
 </html>
