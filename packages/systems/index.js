@@ -10,3 +10,4 @@ require('./cablecar');
 require('./dealership');
 require('./tuning');
 require('./repoJob');
+require('./carCrafting');

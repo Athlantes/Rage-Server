@@ -30,6 +30,7 @@ require('./systems/returo.js');
 require('./systems/atm.js');
 require('./systems/photoHunt');
 require('./systems/cablecar.js');
+require('./systems/carCrafting.js');
 
 // 4. Jobs
 require('./jobs/manager.js');
