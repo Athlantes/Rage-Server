@@ -76,11 +76,37 @@ mp.events.add('client:playAnim', (dict, name, flag) => {
 });
 
 // --- 6. REPO JOB SYNC ---
+let repoDeliveryMarker = null;
+let repoDeliveryColshape = null;
+const REPO_DELIVER_POS = { x: -176.85, y: -1180.85, z: 23.15 };
+
 mp.events.add('client:repo:sync', (json) => {
-    // Store repo data locally for UI access
     try {
         global.repoJobs = JSON.parse(json);
     } catch(e) {
         global.repoJobs = [];
+    }
+
+    // Show delivery marker + colshape only when a job is pending (accepted)
+    const hasPending = global.repoJobs.some(j => j.status === 'pending');
+
+    if (hasPending && !repoDeliveryMarker) {
+        repoDeliveryMarker = mp.markers.new(25,
+            new mp.Vector3(REPO_DELIVER_POS.x, REPO_DELIVER_POS.y, REPO_DELIVER_POS.z - 0.8),
+            3.0, { color: [255, 50, 50, 180], visible: true, dimension: 0 }
+        );
+        repoDeliveryColshape = mp.colshapes.newSphere(
+            REPO_DELIVER_POS.x, REPO_DELIVER_POS.y, REPO_DELIVER_POS.z, 8.0, 0
+        );
+        repoDeliveryColshape.interaction = {
+            title: 'Repo Delivery',
+            text: 'Press ~r~E~w~ to deliver the vehicle',
+            event: 'server:repo:deliver',
+            requireVehicle: true,
+            requireDriver: true
+        };
+    } else if (!hasPending && repoDeliveryMarker) {
+        repoDeliveryMarker.destroy(); repoDeliveryMarker = null;
+        repoDeliveryColshape.destroy(); repoDeliveryColshape = null;
     }
 });

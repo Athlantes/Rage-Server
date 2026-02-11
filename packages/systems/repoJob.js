@@ -1,6 +1,6 @@
 // packages/systems/repoJob.js
 // Daily Vehicle Repo Job — "Luxury Motorsport Collections"
-// Every day at 7 AM, eligible players get a mail to steal & deliver a specific car model.
+// Flow: available → (talk to NPC, preview, accept) → pending → (deliver car) → completed
 // Max 2 repo jobs per day (2nd unlocks after 2h playtime that day).
 
 const db = require('../core/database');
@@ -12,13 +12,14 @@ const vehicleManager = require('../core/vehicles/vehicleManager');
 // ── CONFIG ──
 const NPC_NAME = "Salvatore";
 const NPC_MODEL = 'g_m_importexport_01';
-const NPC_POS     = { x: -179.86, y: -1178.80, z: 23.13, h: 219.01 };  // NPC stand position  (360 + -140.99)
-const DELIVER_POS = { x: -176.85, y: -1180.85, z: 23.15 };               // car delivery spot
+const NPC_POS     = { x: -179.86, y: -1178.80, z: 23.13, h: 219.01 };
+const DELIVER_POS = { x: -176.85, y: -1180.85, z: 23.15 };
 const DELIVER_RADIUS = 8.0;
-const DAILY_RESET_HOUR = 7;     // 7 AM server time
+const NPC_TALK_RADIUS = 2.5;
+const DAILY_RESET_HOUR = 7;
 const MAX_JOBS_PER_DAY = 2;
-const SECOND_JOB_PLAYTIME = 120; // minutes played today to unlock 2nd job
-const ACTIVE_DAYS = 7;          // players active in last N days get the mail
+const SECOND_JOB_PLAYTIME = 120;
+const ACTIVE_DAYS = 7;
 
 // Reward tiers based on vehicle tier
 const REWARDS = {
@@ -27,7 +28,16 @@ const REWARDS = {
     high: { cashMin: 5000, cashMax: 10000, xp: 500, partChance: 0.55, partPool: ['car_part_uncommon', 'car_part_rare', 'car_part_epic'] }
 };
 
-let deliveryColshape = null;
+// NPC dialogue lines (random pick)
+const NPC_LINES = [
+    "Some deadbeat thinks he can skip payments on my car. Show him who's boss.",
+    "I got a client who ain't paying up. Go collect the merchandise.",
+    "This punk thought he could ghost me. Bring my ride back.",
+    "Another day, another delinquent. You know the drill.",
+    "I need this car back before the boss finds out. Handle it."
+];
+
+let npcTalkColshape = null;
 let repoNpc = null;
 
 // ── INIT ──
@@ -42,24 +52,17 @@ const RepoJob = {
         });
         repoNpc.setVariable('npcType', 'repo_collector');
 
-        // Delivery colshape with interaction 
-        deliveryColshape = mp.colshapes.newSphere(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z, DELIVER_RADIUS, 0);
-        deliveryColshape.setVariable('interaction', {
-            title: 'Repo Delivery',
-            text: 'Press ~r~E~w~ to deliver the vehicle',
-            event: 'server:repo:deliver',
-            requireVehicle: true,
-            requireDriver: true
-        });
-
-        // Checkpoint marker at delivery spot
-        mp.markers.new(25, new mp.Vector3(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z - 0.8), 3.0, {
-            color: [255, 50, 50, 180],
-            dimension: 0
+        // NPC talk colshape (on foot, to accept jobs)
+        npcTalkColshape = mp.colshapes.newSphere(NPC_POS.x, NPC_POS.y, NPC_POS.z, NPC_TALK_RADIUS, 0);
+        npcTalkColshape.setVariable('interaction', {
+            title: NPC_NAME,
+            text: 'Press ~b~E~w~ to talk',
+            event: 'server:repo:talk',
+            requireOnFoot: true
         });
 
         // Blip
-        const blip = mp.blips.new(479, new mp.Vector3(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z), {
+        mp.blips.new(479, new mp.Vector3(NPC_POS.x, NPC_POS.y, NPC_POS.z), {
             name: "Repo Work",
             color: 1,
             shortRange: true,
@@ -86,7 +89,6 @@ const RepoJob = {
         const msUntil = next.getTime() - now.getTime();
         setTimeout(() => {
             this.dailyReset();
-            // Then repeat every 24h
             setInterval(() => this.dailyReset(), 24 * 60 * 60 * 1000);
         }, msUntil);
 
@@ -102,19 +104,17 @@ const RepoJob = {
         const today = new Date().toISOString().split('T')[0];
         const [rows] = await db.query("SELECT COUNT(*) as cnt FROM repo_jobs WHERE job_date = ?", [today]);
         if (rows[0].cnt === 0) {
-            // No jobs generated yet today — generate them
             await this.assignJobsToEligiblePlayers();
         }
     },
 
-    // ── ASSIGN JOBS TO ELIGIBLE PLAYERS ──
+    // ── ASSIGN JOBS (status = 'available', player must talk to NPC to accept) ──
     async assignJobsToEligiblePlayers() {
         const today = new Date().toISOString().split('T')[0];
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - ACTIVE_DAYS);
         const cutoffStr = cutoff.toISOString().split('T')[0];
 
-        // Get all players active in the last 7 days
         const [eligiblePlayers] = await db.query(
             "SELECT id FROM users WHERE last_active >= ?",
             [cutoffStr]
@@ -125,34 +125,31 @@ const RepoJob = {
             return;
         }
 
-        // For each player, pick a target model that at least 2 other players own
         for (const pRow of eligiblePlayers) {
             const userId = pRow.id;
 
-            // Check if already has jobs today
             const [existing] = await db.query(
                 "SELECT COUNT(*) as cnt FROM repo_jobs WHERE user_id = ? AND job_date = ?",
                 [userId, today]
             );
-            if (existing[0].cnt >= 1) continue; // Already assigned job #1
+            if (existing[0].cnt >= 1) continue;
 
             const targetModel = await this.pickTargetModel(userId);
-            if (!targetModel) continue; // No valid target
+            if (!targetModel) continue;
 
             const catEntry = catalog.find(c => c.model === targetModel);
             if (!catEntry) continue;
 
-            // Insert job #1
+            // Insert as 'available' — not revealed yet
             await db.query(
-                "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, ?, 'pending')",
+                "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, ?, 'available')",
                 [userId, today, targetModel]
             );
 
-            // Send mail
-            const mailMsg = `A prick thought he can get off with my payments. Let's show him who is the boss. Bring my car back!\n\nFind a ${catEntry.name} and bring it back to ${NPC_NAME}.`;
-            mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Repo Work', mailMsg);
+            // Teaser mail — no car details
+            const mailMsg = `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`;
+            mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Got a job for you', mailMsg);
 
-            // If the player is online, sync their repo data
             const onlinePlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === userId);
             if (onlinePlayer) {
                 await this.syncPlayerRepoData(onlinePlayer);
@@ -162,9 +159,7 @@ const RepoJob = {
         console.log(`[RepoJob] Daily jobs assigned for ${today}.`);
     },
 
-    // Pick a car model that at least 2 OTHER players own (not this player)
     async pickTargetModel(userId) {
-        // Pick a random model owned by at least 2 players (can include the player themselves)
         const [rows] = await db.query(
             `SELECT model, COUNT(DISTINCT owner_id) as ownerCount 
              FROM server_vehicles 
@@ -174,13 +169,75 @@ const RepoJob = {
              LIMIT 1`
         );
         if (rows.length === 0) {
-            // Fallback: any model that exists on the server
             const [fallback] = await db.query(
                 `SELECT model FROM server_vehicles ORDER BY RAND() LIMIT 1`
             );
             return fallback.length > 0 ? fallback[0].model : null;
         }
         return rows[0].model;
+    },
+
+    // ── TALK TO NPC (opens preview with accept/cancel) ──
+    async talkToNpc(player) {
+        if (!player.logged || !player.data.dbId) return;
+
+        const today = new Date().toISOString().split('T')[0];
+        const userId = player.data.dbId;
+
+        // Find an 'available' job for this player
+        const [jobs] = await db.query(
+            "SELECT * FROM repo_jobs WHERE user_id = ? AND job_date = ? AND status = 'available' ORDER BY job_number ASC LIMIT 1",
+            [userId, today]
+        );
+
+        if (jobs.length === 0) {
+            player.call('showNotification', [NPC_NAME, 'I got nothing for you right now. Come back later.']);
+            return;
+        }
+
+        const job = jobs[0];
+        const catEntry = catalog.find(c => c.model === job.target_model);
+        const carName = catEntry ? catEntry.name : job.target_model;
+        const dialogue = NPC_LINES[Math.floor(Math.random() * NPC_LINES.length)];
+
+        // Open job preview (camera on NPC, description, accept/cancel)
+        player.call('client:job:openPreview', [{
+            id: `repo_${job.id}`,
+            name: NPC_NAME,
+            description: `${dialogue}\n\nI need you to find a ${carName} and bring it back here to me. You'll be paid well for the trouble.`,
+            pos: NPC_POS,
+            buttons: [
+                { label: 'Accept', action: 'accept' },
+                { label: 'Decline', action: 'cancel' }
+            ]
+        }]);
+    },
+
+    // ── ACCEPT JOB (from preview callback) ──
+    async acceptJob(player, repoJobId) {
+        if (!player.logged || !player.data.dbId) return;
+
+        // Update status from available → pending
+        const [result] = await db.query(
+            "UPDATE repo_jobs SET status = 'pending' WHERE id = ? AND user_id = ? AND status = 'available'",
+            [repoJobId, player.data.dbId]
+        );
+
+        if (result.affectedRows === 0) {
+            player.call('showNotification', [NPC_NAME, 'Something went wrong. Try again.']);
+            return;
+        }
+
+        // Get job details for notification
+        const [rows] = await db.query("SELECT target_model FROM repo_jobs WHERE id = ?", [repoJobId]);
+        if (rows.length > 0) {
+            const catEntry = catalog.find(c => c.model === rows[0].target_model);
+            const carName = catEntry ? catEntry.name : rows[0].target_model;
+            player.call('showNotification', ['Repo Work', `Find a ${carName} and deliver it to ${NPC_NAME}.`]);
+        }
+
+        await this.syncPlayerRepoData(player);
+        console.log(`[RepoJob] ${player.name} accepted repo job #${repoJobId}`);
     },
 
     // ── UNLOCK 2ND JOB ──
@@ -190,40 +247,37 @@ const RepoJob = {
         const today = new Date().toISOString().split('T')[0];
         const userId = player.data.dbId;
 
-        // Check how many jobs they have today
         const [jobs] = await db.query(
             "SELECT * FROM repo_jobs WHERE user_id = ? AND job_date = ?",
             [userId, today]
         );
 
-        if (jobs.length >= MAX_JOBS_PER_DAY) return; // Already has 2
-        if (jobs.length === 0) return; // No first job yet
+        if (jobs.length >= MAX_JOBS_PER_DAY) return;
+        if (jobs.length === 0) return;
 
-        // First job must be completed
         const firstJob = jobs.find(j => j.job_number === 1);
         if (!firstJob || firstJob.status !== 'completed') return;
 
-        // Check playtime today (activeMinutes tracks this session)
         const sessionMinutes = player.data.activeMinutes || 0;
         if (sessionMinutes < SECOND_JOB_PLAYTIME) return;
 
-        // Pick a new target model
         const targetModel = await this.pickTargetModel(userId);
         if (!targetModel) return;
 
         const catEntry = catalog.find(c => c.model === targetModel);
         if (!catEntry) return;
 
+        // Insert as 'available' — must talk to NPC again
         await db.query(
-            "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 2, ?, 'pending')",
+            "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 2, ?, 'available')",
             [userId, today, targetModel]
         );
 
-        const mailMsg = `Good work earlier! Got another deadbeat for you.\n\nFind a ${catEntry.name} and bring it back to ${NPC_NAME}. Double the hustle, double the pay.`;
-        mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Repo Work #2', mailMsg);
+        const mailMsg = `Good work earlier. I got another one for you. Come see me when you're ready.`;
+        mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'More work available', mailMsg);
 
         await this.syncPlayerRepoData(player);
-        player.call('showNotification', ['Repo Work', `New repo job available! Check your mail.`]);
+        player.call('showNotification', ['Repo Work', 'New repo job available! Go speak with Salvatore.']);
     },
 
     // ── SYNC REPO DATA TO CLIENT ──
@@ -242,7 +296,7 @@ const RepoJob = {
                 jobNumber: j.job_number,
                 targetModel: j.target_model,
                 targetName: catEntry ? catEntry.name : j.target_model,
-                status: j.status
+                status: j.status   // 'available', 'pending', or 'completed'
             };
         });
 
@@ -261,50 +315,40 @@ const RepoJob = {
         const veh = player.vehicle;
         const vehModel = veh.model;
 
-        // Match against active repo jobs
         const today = new Date().toISOString().split('T')[0];
         const [jobs] = await db.query(
             "SELECT * FROM repo_jobs WHERE user_id = ? AND job_date = ? AND status = 'pending' ORDER BY job_number ASC",
             [player.data.dbId, today]
         );
 
-        // Find a matching job by model hash
         const matchingJob = jobs.find(j => {
             const modelHash = mp.joaat(j.target_model);
             return modelHash === vehModel;
         });
 
         if (!matchingJob) {
-            player.call('showNotification', ['Repo Work', 'This isn\'t the car model we need. Check your mail.']);
+            player.call('showNotification', ['Repo Work', 'This isn\'t the car we need. Check your objectives.']);
             return;
         }
 
-        // === SUCCESS — Deliver the car ===
+        // === SUCCESS ===
         const catEntry = catalog.find(c => c.model === matchingJob.target_model);
         const tier = catEntry ? catEntry.tier : 'low';
         const rewardConfig = REWARDS[tier] || REWARDS.low;
 
-        // 1. Remove player from vehicle
         player.removeFromVehicle();
 
-        // 2. Mark job complete
-        await db.query(
-            "UPDATE repo_jobs SET status = 'completed' WHERE id = ?",
-            [matchingJob.id]
-        );
+        await db.query("UPDATE repo_jobs SET status = 'completed' WHERE id = ?", [matchingJob.id]);
 
-        // 3. Despawn the stolen vehicle (owner can re-use it — it goes to parked state)
         setTimeout(async () => {
             if (mp.vehicles.exists(veh)) {
                 await vehicleManager.despawnVehicle(veh);
             }
         }, 1500);
 
-        // 4. Cash reward
         const cashReward = Math.floor(Math.random() * (rewardConfig.cashMax - rewardConfig.cashMin + 1)) + rewardConfig.cashMin;
         await playerManager.addMoneyAndSave(player, cashReward, `Repo Job: ${matchingJob.target_model}`);
 
-        // 5. XP reward
         player.data.xp = (player.data.xp || 0) + rewardConfig.xp;
         let xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
         while (player.data.xp >= xpNeeded) {
@@ -317,7 +361,6 @@ const RepoJob = {
         player.setVariable('xp', player.data.xp);
         player.setVariable('xpMax', xpNeeded);
 
-        // 6. Car parts (chance-based)
         const rewards = [
             { type: 'money', value: `$${cashReward.toLocaleString()}` },
             { type: 'xp', value: `${rewardConfig.xp} XP` }
@@ -333,7 +376,6 @@ const RepoJob = {
             }
         }
 
-        // 7. Show popup
         const carName = catEntry ? catEntry.name : matchingJob.target_model;
         player.call('showCenterPopup', [
             'REPO COMPLETE',
@@ -342,10 +384,8 @@ const RepoJob = {
             7000
         ]);
 
-        // 8. Sync updated repo status
         await this.syncPlayerRepoData(player);
 
-        // 9. Check if 2nd job should unlock
         setTimeout(() => {
             if (mp.players.exists(player)) {
                 this.checkSecondJob(player);
@@ -362,28 +402,27 @@ const RepoJob = {
         const today = new Date().toISOString().split('T')[0];
         const userId = player.data.dbId;
 
-        // Check if player already has a job for today
         const [existing] = await db.query(
             "SELECT COUNT(*) as cnt FROM repo_jobs WHERE user_id = ? AND job_date = ?",
             [userId, today]
         );
 
-        // If no job yet, assign one now
+        // If no job yet, assign one as 'available'
         if (existing[0].cnt === 0) {
             const targetModel = await this.pickTargetModel(userId);
             if (targetModel) {
                 const catEntry = catalog.find(c => c.model === targetModel);
                 if (catEntry) {
                     await db.query(
-                        "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, ?, 'pending')",
+                        "INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, ?, 'available')",
                         [userId, today, targetModel]
                     );
 
-                    const mailMsg = `A prick thought he can get off with my payments. Let's show him who is the boss. Bring my car back!\n\nFind a ${catEntry.name} and bring it back to ${NPC_NAME}.`;
-                    mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Repo Work', mailMsg);
+                    const mailMsg = `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`;
+                    mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Got a job for you', mailMsg);
 
-                    player.call('showNotification', ['Repo Work', 'New repo job! Check your mail.']);
-                    console.log(`[RepoJob] Assigned job on login for ${player.name}: ${targetModel}`);
+                    player.call('showNotification', ['Repo Work', `${NPC_NAME} wants to speak with you.`]);
+                    console.log(`[RepoJob] Assigned available job on login for ${player.name}: ${targetModel}`);
                 }
             }
         }
@@ -394,17 +433,31 @@ const RepoJob = {
 
 // ── EVENTS ──
 
-// Player presses E in delivery zone (triggered by interaction system)
+// Player presses E near NPC (talk interaction)
+mp.events.add('server:repo:talk', (player) => {
+    RepoJob.talkToNpc(player);
+});
+
+// Player accepts/declines from preview UI
+mp.events.add('server:job:continue', (player, jobId, action) => {
+    // Only handle repo preview callbacks (id starts with "repo_")
+    if (typeof jobId !== 'string' || !jobId.startsWith('repo_')) return;
+
+    const repoJobId = parseInt(jobId.replace('repo_', ''));
+    if (isNaN(repoJobId)) return;
+
+    if (action === 'accept') {
+        RepoJob.acceptJob(player, repoJobId);
+    }
+    // 'cancel' — do nothing, player can come back
+});
+
+// Player delivers vehicle
 mp.events.add('server:repo:deliver', (player) => {
     RepoJob.tryDeliver(player);
 });
 
-// On player spawn/login — sync repo data
-mp.events.add('server:repo:init', (player) => {
-    RepoJob.onPlayerReady(player);
-});
-
-// Periodic check for 2nd job (every 5 minutes for online players)
+// Periodic check for 2nd job (every 5 minutes)
 setInterval(() => {
     mp.players.forEach(player => {
         if (!player.logged) return;

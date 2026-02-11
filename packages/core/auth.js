@@ -194,6 +194,13 @@ function startSession(player, userData) {
     // If it's 0 or null (unlikely but safe), set to 60. Otherwise use DB value.
     player.data.paydayIn = (userData.payday_in && userData.payday_in > 0) ? userData.payday_in : 60;
 
+    // --- RESTORE DAILY PLAYTIME ---
+    const today = new Date().toISOString().split('T')[0];
+    if (userData.daily_playtime_date === today || 
+        (userData.daily_playtime_date && new Date(userData.daily_playtime_date).toISOString().split('T')[0] === today)) {
+        player.data.activeMinutes = userData.daily_playtime || 0;
+    }
+
     // Sync XP
     const xpMax = playerManager.calculateNextLevelXp(player.data.level);
     player.setVariable('level', player.data.level);

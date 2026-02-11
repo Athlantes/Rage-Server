@@ -77,9 +77,14 @@ const playerManager = {
         try {
             // Save core stats + accumulate total_playtime
             const sessionMinutes = player.data.activeMinutes || 0;
+            const today = new Date().toISOString().split('T')[0];
             await db.query(
-                "UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, total_playtime = COALESCE(total_playtime, 0) + ? WHERE id=?", 
-                [level, currentPos, xp, bank_money, paydayIn, sessionMinutes, dbId]
+                `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, 
+                 total_playtime = COALESCE(total_playtime, 0) + ?,
+                 daily_playtime = CASE WHEN daily_playtime_date = ? THEN COALESCE(daily_playtime, 0) + ? ELSE ? END,
+                 daily_playtime_date = ?
+                 WHERE id=?`, 
+                [level, currentPos, xp, bank_money, paydayIn, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
             );
             // Reset session counter after saving to prevent double-counting
             if (mp.players.exists(player)) {

@@ -58,9 +58,12 @@ const QuestManager = {
 
         let updated = false;
 
-        player.quests.forEach(async (quest) => {
+        player.quests.forEach(async (quest, idx) => {
             if (quest.completed) return;
             if (quest.type !== type) return;
+
+            // 3rd quest locked behind 2h playtime
+            if (idx === 2 && (player.data.activeMinutes || 0) < 120) return;
 
             // Calculate Progress Increase
             let increase = 1;

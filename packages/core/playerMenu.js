@@ -118,6 +118,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             stats: { ...stats, vehicleCount, maxVehicles: MAX_VEHICLE_SLOTS },
             jobs: formattedJobs,
             quests: dailyQuests,
+            activeMinutes: player.data.activeMinutes || 0,
             photoHunt: photoHuntData,
             repoJobs: repoJobs
         };

@@ -384,7 +384,7 @@
         /* Info tiles */
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
         }
 
@@ -804,6 +804,11 @@
             flex-shrink: 0;
         }
 
+        .repo-job-status.available {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
         .repo-job-status.pending {
             background: rgba(243, 156, 18, 0.15);
             color: var(--warning);
@@ -1099,6 +1104,11 @@
                         <div class="info-val" id="payday-val">60m</div>
                         <div class="info-label">Next Payday</div>
                     </div>
+                    <div class="info-tile">
+                        <div class="info-icon"><i class="fas fa-stopwatch"></i></div>
+                        <div class="info-val" id="played-today">0m</div>
+                        <div class="info-label">Played Today</div>
+                    </div>
                 </div>
             </div>
 
@@ -1316,6 +1326,11 @@
         }
         if (data.registeredDate) document.getElementById('reg-date').innerText = data.registeredDate;
         if (data.paydayIn !== undefined) document.getElementById('payday-val').innerText = data.paydayIn + 'm';
+        if (data.activeMinutes !== undefined) {
+            const th = Math.floor(data.activeMinutes / 60);
+            const tm = data.activeMinutes % 60;
+            document.getElementById('played-today').innerText = th > 0 ? th + 'h ' + tm + 'm' : tm + 'm';
+        }
 
         // ── Jobs ──
         const jc = document.getElementById('jobs-container');
@@ -1348,10 +1363,28 @@
         // ── Quests ──
         const qc = document.getElementById('quests-container');
         qc.innerHTML = '';
+        const sessionMin = data.activeMinutes || 0;
         if (data.quests.length === 0) {
             qc.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-check"></i><span>All daily quests done or none available.</span></div>';
         } else {
-            data.quests.forEach(q => {
+            data.quests.forEach((q, idx) => {
+                // 3rd quest locked behind 2h playtime
+                if (idx === 2 && sessionMin < 120 && !q.completed) {
+                    const minsLeft = 120 - sessionMin;
+                    const h = Math.floor(minsLeft / 60);
+                    const m = minsLeft % 60;
+                    const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                    qc.innerHTML += `
+                        <div class="quest-row" style="opacity:0.35;">
+                            <div class="quest-check"><i class="fas fa-lock"></i></div>
+                            <div class="quest-body">
+                                <div class="quest-name">Bonus Quest</div>
+                                <div class="quest-desc">Play ${timeStr} more to unlock</div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
                 const qPct = Math.min(100, (q.progress / q.targetAmount) * 100);
                 const done = q.completed ? 'done' : '';
                 qc.innerHTML += `
@@ -1383,28 +1416,53 @@
         } else {
             rc.innerHTML = '';
             repoJobs.forEach(job => {
-                const done = job.status === 'completed' ? 'done' : '';
-                const statusClass = job.status === 'completed' ? 'completed' : 'pending';
-                const statusText = job.status === 'completed' ? 'Done' : 'Active';
-                const hint = job.status === 'completed' 
-                    ? 'Delivered successfully' 
-                    : 'Find this car on the map and deliver it to Salvatore';
+                let icon, model, hint, statusClass, statusText, rowClass;
+
+                if (job.status === 'available') {
+                    // Job exists but player hasn't talked to NPC yet
+                    icon = '<i class="fas fa-envelope"></i>';
+                    model = 'Repo Job available';
+                    hint = 'Go and speak with Salvatore';
+                    statusClass = 'available';
+                    statusText = 'New';
+                    rowClass = '';
+                } else if (job.status === 'pending') {
+                    // Player accepted — show the car target
+                    icon = '#' + job.jobNumber;
+                    model = job.targetName;
+                    hint = 'Find this car and deliver it to Salvatore';
+                    statusClass = 'pending';
+                    statusText = 'Active';
+                    rowClass = '';
+                } else {
+                    // Completed
+                    icon = '<i class="fas fa-check"></i>';
+                    model = job.targetName;
+                    hint = 'Delivered successfully';
+                    statusClass = 'completed';
+                    statusText = 'Done';
+                    rowClass = 'done';
+                }
+
                 rc.innerHTML += `
-                    <div class="repo-job-row ${done}">
-                        <div class="repo-job-num">${job.status === 'completed' ? '<i class="fas fa-check"></i>' : '#' + job.jobNumber}</div>
+                    <div class="repo-job-row ${rowClass}">
+                        <div class="repo-job-num">${icon}</div>
                         <div class="repo-job-body">
-                            <div class="repo-job-model">${job.targetName}</div>
+                            <div class="repo-job-model">${model}</div>
                             <div class="repo-job-hint">${hint}</div>
                         </div>
                         <div class="repo-job-status ${statusClass}">${statusText}</div>
                     </div>
                 `;
             });
-            // Show locked slot if only 1 job (whether pending or completed)
+            // Show locked slot if only 1 job
             if (repoJobs.length === 1) {
-                const hint = repoJobs[0].status === 'completed'
+                const s = repoJobs[0].status;
+                const hint = s === 'completed'
                     ? 'Play 2 hours today to unlock'
-                    : 'Complete Job #1 + play 2 hours today';
+                    : s === 'pending'
+                        ? 'Complete Job #1 + play 2 hours today'
+                        : 'Accept Job #1 first';
                 rc.innerHTML += `
                     <div class="repo-job-row" style="opacity:0.3;">
                         <div class="repo-job-num" style="background:rgba(255,255,255,0.05);color:var(--text-dim);">
