@@ -650,6 +650,185 @@
             font-weight: 500;
         }
 
+        /* ── Objectives Grid Layout ── */
+        .objectives-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .objectives-left .quest-list {
+            margin-bottom: 14px;
+        }
+
+        .objectives-left .quest-row {
+            padding: 10px 12px;
+        }
+
+        .objectives-left .quest-name {
+            font-size: 11px;
+        }
+
+        .objectives-left .quest-desc {
+            font-size: 9px;
+        }
+
+        .objectives-left .quest-reward {
+            font-size: 11px;
+        }
+
+        .objectives-left .photohunt-card {
+            padding: 12px;
+            gap: 12px;
+        }
+
+        .objectives-left .ph-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 15px;
+        }
+
+        .objectives-left .ph-title {
+            font-size: 11px;
+        }
+
+        .objectives-left .ph-count {
+            font-size: 15px;
+        }
+
+        /* ── Repo Card ── */
+        .repo-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .repo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .repo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(231, 76, 60, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--danger);
+            flex-shrink: 0;
+        }
+
+        .repo-title-block { flex: 1; }
+
+        .repo-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .repo-sub {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-top: 1px;
+        }
+
+        .repo-jobs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .repo-job-row {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .repo-job-row.done {
+            opacity: 0.5;
+            border-color: var(--success);
+        }
+
+        .repo-job-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--danger);
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .repo-job-row.done .repo-job-num {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .repo-job-body { flex: 1; min-width: 0; }
+
+        .repo-job-model {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .repo-job-hint {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .repo-job-status {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .repo-job-status.pending {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--warning);
+        }
+
+        .repo-job-status.completed {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+        }
+
+        .repo-empty {
+            text-align: center;
+            padding: 20px 10px;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .repo-empty i {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 6px;
+            opacity: 0.4;
+        }
+
         /* ── Settings Tab ── */
         .settings-group {
             margin-bottom: 20px;
@@ -930,17 +1109,39 @@
 
             <!-- ═══ OBJECTIVES ═══ -->
             <div class="tab-content" id="tab-objectives">
-                <div class="section-label">Daily Assignments</div>
-                <div class="quest-list" id="quests-container"></div>
+                <div class="objectives-grid">
+                    <!-- Left Column: Daily Assignments + Exploration -->
+                    <div class="objectives-left">
+                        <div class="section-label">Daily Assignments</div>
+                        <div class="quest-list" id="quests-container"></div>
 
-                <div class="section-label">Exploration</div>
-                <div class="photohunt-card">
-                    <div class="ph-icon"><i class="fas fa-camera"></i></div>
-                    <div class="ph-info">
-                        <div class="ph-title">Landmark Spotter</div>
-                        <div class="ph-sub">Find hidden landmarks and snap a photo</div>
+                        <div class="section-label">Exploration</div>
+                        <div class="photohunt-card">
+                            <div class="ph-icon"><i class="fas fa-camera"></i></div>
+                            <div class="ph-info">
+                                <div class="ph-title">Landmark Spotter</div>
+                                <div class="ph-sub">Find hidden landmarks and snap a photo</div>
+                            </div>
+                            <div class="ph-count"><span id="ph-prog">0</span> <span>/ <span id="ph-total">6</span></span></div>
+                        </div>
                     </div>
-                    <div class="ph-count"><span id="ph-prog">0</span> <span>/ <span id="ph-total">6</span></span></div>
+
+                    <!-- Right Column: Repo Work -->
+                    <div class="objectives-right">
+                        <div class="section-label">Repo Work</div>
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <div class="repo-icon"><i class="fas fa-car-side"></i></div>
+                                <div class="repo-title-block">
+                                    <div class="repo-title">Salvatore's Collections</div>
+                                    <div class="repo-sub">Steal & deliver target vehicles</div>
+                                </div>
+                            </div>
+                            <div class="repo-jobs-list" id="repo-container">
+                                <div class="repo-empty"><i class="fas fa-lock"></i> No repo jobs today</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1173,6 +1374,48 @@
         // ── PhotoHunt ──
         document.getElementById('ph-prog').innerText = data.photoHunt.progress;
         document.getElementById('ph-total').innerText = data.photoHunt.total;
+
+        // ── Repo Jobs ──
+        const rc = document.getElementById('repo-container');
+        const repoJobs = data.repoJobs || [];
+        if (repoJobs.length === 0) {
+            rc.innerHTML = '<div class="repo-empty"><i class="fas fa-lock"></i> No repo jobs today. Check back at 7 AM.</div>';
+        } else {
+            rc.innerHTML = '';
+            repoJobs.forEach(job => {
+                const done = job.status === 'completed' ? 'done' : '';
+                const statusClass = job.status === 'completed' ? 'completed' : 'pending';
+                const statusText = job.status === 'completed' ? 'Done' : 'Active';
+                const hint = job.status === 'completed' 
+                    ? 'Delivered successfully' 
+                    : 'Find this car on the map and deliver it to Salvatore';
+                rc.innerHTML += `
+                    <div class="repo-job-row ${done}">
+                        <div class="repo-job-num">${job.status === 'completed' ? '<i class="fas fa-check"></i>' : '#' + job.jobNumber}</div>
+                        <div class="repo-job-body">
+                            <div class="repo-job-model">${job.targetName}</div>
+                            <div class="repo-job-hint">${hint}</div>
+                        </div>
+                        <div class="repo-job-status ${statusClass}">${statusText}</div>
+                    </div>
+                `;
+            });
+            // Show locked slot if only 1 job
+            if (repoJobs.length === 1 && repoJobs[0].status !== 'completed') {
+                rc.innerHTML += `
+                    <div class="repo-job-row" style="opacity:0.3;">
+                        <div class="repo-job-num" style="background:rgba(255,255,255,0.05);color:var(--text-dim);">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div class="repo-job-body">
+                            <div class="repo-job-model" style="color:var(--text-dim);">Job #2</div>
+                            <div class="repo-job-hint">Complete Job #1 + play 2 hours today</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         } catch(e) { console.error('receiveData error:', e); }
     }
 </script>

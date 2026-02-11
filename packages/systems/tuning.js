@@ -22,24 +22,8 @@ const {
     SPECIAL_PRICES
 } = require('../data/tuningConfig');
 
-// ─── Ensure vehicle_mods table exists ───
-async function ensureTable() {
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS vehicle_mods (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            vehicle_id INT NOT NULL,
-            mod_type INT NOT NULL,
-            mod_index INT NOT NULL DEFAULT -1,
-            UNIQUE KEY unique_mod (vehicle_id, mod_type),
-            INDEX idx_vehicle (vehicle_id)
-        )
-    `);
-    console.log("[Tuning] vehicle_mods table ready.");
-}
-
 // ─── Init: blips, markers, colshapes ───
 mp.events.add('packagesLoaded', async () => {
-    await ensureTable();
 
     for (const shop of TUNING_SHOPS) {
         // Blip (wrench icon)

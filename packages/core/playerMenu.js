@@ -88,6 +88,26 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             hoursPlayed = sessionMinutes / 60;
         }
 
+        // 7. Repo Jobs
+        let repoJobs = [];
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const [repoRows] = await db.query(
+                "SELECT job_number, target_model, status FROM repo_jobs WHERE user_id = ? AND job_date = ?",
+                [player.data.dbId, today]
+            );
+            const { catalog } = require('../data/dealershipCatalog');
+            repoJobs = repoRows.map(j => {
+                const catEntry = catalog.find(c => c.model === j.target_model);
+                return {
+                    jobNumber: j.job_number,
+                    targetModel: j.target_model,
+                    targetName: catEntry ? catEntry.name : j.target_model,
+                    status: j.status
+                };
+            });
+        } catch(e) { /* table may not exist yet */ }
+
         // Send payload
         const payload = {
             playerName: player.name || 'Unknown',
@@ -98,7 +118,8 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             stats: { ...stats, vehicleCount, maxVehicles: MAX_VEHICLE_SLOTS },
             jobs: formattedJobs,
             quests: dailyQuests,
-            photoHunt: photoHuntData
+            photoHunt: photoHuntData,
+            repoJobs: repoJobs
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);

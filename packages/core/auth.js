@@ -5,6 +5,7 @@ const QuestManager = require('./questManager');
 const Banking = require('./banking');
 const CharCreator = require('../systems/charCreator');
 const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
+const RepoJob = require('../systems/repoJob');
 
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
@@ -204,6 +205,7 @@ function startSession(player, userData) {
     PhotoHuntManager.initPlayer(player);
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
+    RepoJob.onPlayerReady(player);
 
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
@@ -261,7 +263,7 @@ function startSession(player, userData) {
 
     player.call('client:auth:success', [showSpawnSelector, lastPos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
-    
+
     // --- INITIAL TIMER UPDATE ---
     // Send the loaded time to the HUD immediately so they don't see "60" for 1 minute
     setTimeout(() => {

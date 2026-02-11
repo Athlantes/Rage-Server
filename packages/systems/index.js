@@ -9,3 +9,4 @@ require('./photoHunt/photoHuntManager');
 require('./cablecar');
 require('./dealership');
 require('./tuning');
+require('./repoJob');

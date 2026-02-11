@@ -67,6 +67,13 @@ mp.events.add('entityStreamIn', (entity) => {
         if (anim) {
             playPedAnim(entity, anim);
         }
+        // Static NPC: invincible + frozen
+        if (entity.getVariable('static')) {
+            entity.setInvincible(true);
+            entity.freezePosition(true);
+            entity.setConfigFlag(32, false);   // disable melee reactions
+            entity.setBlockingOfNonTemporaryEvents(true);
+        }
     }
 });
 

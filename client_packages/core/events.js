@@ -74,3 +74,13 @@ mp.events.add('client:playAnim', (dict, name, flag) => {
         if (attempts > 50) clearInterval(interval);
     }, 50);
 });
+
+// --- 6. REPO JOB SYNC ---
+mp.events.add('client:repo:sync', (json) => {
+    // Store repo data locally for UI access
+    try {
+        global.repoJobs = JSON.parse(json);
+    } catch(e) {
+        global.repoJobs = [];
+    }
+});
