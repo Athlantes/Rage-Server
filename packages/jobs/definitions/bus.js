@@ -202,20 +202,34 @@ async function processBoardingSequence(player) {
     const bus = job.bus;
 
     if (mp.vehicles.exists(bus)) {
-        // FIX: Use .frozen property instead of freezePosition()
+        // 1. Force stop physics
         bus.frozen = true;
         
-        // Note: setDoorState is usually client-side only. Removed to prevent crashes.
+        // 2. Cut the engine
+        bus.engine = false;
+        bus.setVariable('engine', false); // Sync variable for vehicleSystem
+
+        // 3. Open Doors (Call Client)
+        // We pass 'true' to open doors
+        player.call('client:bus:controlDoors', [bus.id, true]);
     }
 
     player.call('client:showJobSubtitle', ["~y~Boarding Passengers... Please Wait.", 4000]);
     player.call('playSound', ['Bus_Schedule_Pickup', 'DLC_PRISON_BREAK_HEIST_SOUNDS']);
 
     setTimeout(async () => {
+        // Validation: Player might have disconnected or quit job
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) return;
 
         if (mp.vehicles.exists(bus)) {
-            // FIX: Unfreeze using property
+            // 4. Close Doors
+            player.call('client:bus:controlDoors', [bus.id, false]);
+            
+            // 5. Restart Engine
+            bus.engine = true;
+            bus.setVariable('engine', true);
+
+            // 6. Unfreeze
             bus.frozen = false;
         }
 

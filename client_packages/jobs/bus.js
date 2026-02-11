@@ -28,3 +28,23 @@ mp.events.add('client:bus:select', (index) => {
     mp.events.call('client:bus:closeMenu');
     mp.events.callRemote('server:bus:selectRoute', index);
 });
+
+mp.events.add('client:bus:controlDoors', (vehId, open) => {
+    const veh = mp.vehicles.atRemoteId(vehId);
+    
+    if (veh && mp.vehicles.exists(veh)) {
+        // Doors: 0 = Front Left, 1 = Front Right, 2 = Back Left, 3 = Back Right
+        // We toggle all main doors for the bus effect
+        const doors = [0, 1, 2, 3];
+        
+        doors.forEach(doorIdx => {
+            if (open) {
+                // setDoorOpen(doorIndex, loose, instant)
+                veh.setDoorOpen(doorIdx, false, false);
+            } else {
+                // setDoorShut(doorIndex, instant)
+                veh.setDoorShut(doorIdx, false);
+            }
+        });
+    }
+});
