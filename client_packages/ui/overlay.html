@@ -510,11 +510,27 @@
             }, 5000);
         }
 
+        // Parse GTA-style color codes: ~b~, ~r~, ~g~, ~w~, ~y~, ~p~, ~o~
+        // Also supports hex: ~#FF5500~
+        function parseColorCodes(str) {
+            const colorMap = {
+                'b': '#5b9bd5', 'r': '#e74c3c', 'g': '#2ecc71',
+                'w': '#ffffff', 'y': '#f1c40f', 'p': '#9b59b6', 'o': '#e67e22'
+            };
+            // Replace ~X~ or ~#hex~ with span open/close
+            return str.replace(/~([a-zA-Z]|#[0-9a-fA-F]{3,6})~/g, (match, code) => {
+                if (code === 'w') return '</span>'; // white = reset
+                const color = code.startsWith('#') ? code : colorMap[code.toLowerCase()];
+                if (!color) return match;
+                return `<span style="color:${color}">`;
+            });
+        }
+
         function setInteraction(visible, title, text) {
             const box = document.getElementById('interaction');
             if(visible) {
-                const content = title ? `${title}: ${text}` : text;
-                document.getElementById('inter-text').innerText = content;
+                const raw = title ? `${title}: ${text}` : text;
+                document.getElementById('inter-text').innerHTML = parseColorCodes(raw);
                 box.style.display = 'flex';
             } else { box.style.display = 'none'; }
         }

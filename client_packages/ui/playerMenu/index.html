@@ -1400,8 +1400,11 @@
                     </div>
                 `;
             });
-            // Show locked slot if only 1 job
-            if (repoJobs.length === 1 && repoJobs[0].status !== 'completed') {
+            // Show locked slot if only 1 job (whether pending or completed)
+            if (repoJobs.length === 1) {
+                const hint = repoJobs[0].status === 'completed'
+                    ? 'Play 2 hours today to unlock'
+                    : 'Complete Job #1 + play 2 hours today';
                 rc.innerHTML += `
                     <div class="repo-job-row" style="opacity:0.3;">
                         <div class="repo-job-num" style="background:rgba(255,255,255,0.05);color:var(--text-dim);">
@@ -1409,7 +1412,7 @@
                         </div>
                         <div class="repo-job-body">
                             <div class="repo-job-model" style="color:var(--text-dim);">Job #2</div>
-                            <div class="repo-job-hint">Complete Job #1 + play 2 hours today</div>
+                            <div class="repo-job-hint">${hint}</div>
                         </div>
                     </div>
                 `;

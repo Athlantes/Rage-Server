@@ -12,7 +12,7 @@ const vehicleManager = require('../core/vehicles/vehicleManager');
 // ── CONFIG ──
 const NPC_NAME = "Salvatore";
 const NPC_MODEL = 'g_m_importexport_01';
-const NPC_POS     = { x: -179.86, y: -1178.80, z: 23.13, h: -140.99 };  // NPC stand position
+const NPC_POS     = { x: -179.86, y: -1178.80, z: 23.13, h: 219.01 };  // NPC stand position  (360 + -140.99)
 const DELIVER_POS = { x: -176.85, y: -1180.85, z: 23.15 };               // car delivery spot
 const DELIVER_RADIUS = 8.0;
 const DAILY_RESET_HOUR = 7;     // 7 AM server time
@@ -33,23 +33,27 @@ let repoNpc = null;
 // ── INIT ──
 const RepoJob = {
     async init() {
-        // Spawn NPC (static: invincible + frozen)
-        repoNpc = mp.peds.new(mp.joaat(NPC_MODEL), new mp.Vector3(NPC_POS.x, NPC_POS.y, NPC_POS.z), NPC_POS.h, 0);
+        // Spawn NPC (same pattern as dealership NPCs)
+        repoNpc = mp.peds.new(mp.joaat(NPC_MODEL), new mp.Vector3(NPC_POS.x, NPC_POS.y, NPC_POS.z), {
+            heading: NPC_POS.h,
+            dynamic: false,
+            frozen: true,
+            invincible: true
+        });
         repoNpc.setVariable('npcType', 'repo_collector');
-        repoNpc.setVariable('static', true);
 
         // Delivery colshape with interaction 
         deliveryColshape = mp.colshapes.newSphere(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z, DELIVER_RADIUS, 0);
         deliveryColshape.setVariable('interaction', {
             title: 'Repo Delivery',
-            text: 'Press ~b~E~w~ to deliver the vehicle',
+            text: 'Press ~r~E~w~ to deliver the vehicle',
             event: 'server:repo:deliver',
             requireVehicle: true,
             requireDriver: true
         });
 
         // Checkpoint marker at delivery spot
-        mp.markers.new(1, new mp.Vector3(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z - 0.5), 3.0, {
+        mp.markers.new(25, new mp.Vector3(DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z - 0.8), 3.0, {
             color: [255, 50, 50, 180],
             dimension: 0
         });
