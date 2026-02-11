@@ -411,7 +411,7 @@
                     slotDiv.oncontextmenu = (e) => showContextMenu(e, item);
                     let itemDiv = document.createElement('div');
                     itemDiv.className = 'item-inner';
-                    itemDiv.innerHTML = `<img src="items/${item.itemId}.png" class="item-img" style="width:100%; height:100%; top:0; left:0;">`;
+                    itemDiv.innerHTML = `<img src="items/${item.itemId}.png" class="item-img" style="width:100%; height:100%; top:0; left:0;" onerror="this.src='items/default.png'">`;
                     itemDiv.draggable = true;
                     itemDiv.ondragstart = (e) => { draggedSlot = item.slot; };
                     slotDiv.appendChild(itemDiv);

@@ -4,122 +4,126 @@
     <meta charset="UTF-8">
     <title>Character Creator</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="./clothingConfig.js"></script> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="./clothingConfig.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            margin: 0;
-            padding: 0;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             font-family: 'Montserrat', sans-serif;
             user-select: none;
-            /* Radial gradient vignette for that Sims look */
-            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.55) 100%);
         }
 
-        /* --- LEFT SIDEBAR (Categories) --- */
+        /* ========== LEFT SIDEBAR (Categories) ========== */
         .sidebar-left {
             position: absolute;
-            left: 50px;
+            left: 40px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 14px;
         }
 
         .category-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.9);
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.88);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            color: #333;
+            font-size: 26px;
+            color: #444;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             position: relative;
+            border: 3px solid transparent;
         }
 
         .category-btn:hover {
-            transform: scale(1.1);
+            transform: scale(1.08);
             background: #fff;
             color: #00aa00;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         }
 
         .category-btn.active {
-            background: #00aa00;
+            background: linear-gradient(135deg, #00cc44, #009933);
             color: white;
-            transform: scale(1.15);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            transform: scale(1.12);
+            box-shadow: 0 0 25px rgba(0, 200, 50, 0.35);
+            border-color: rgba(255,255,255,0.3);
         }
 
         .category-btn::after {
             content: attr(data-tooltip);
             position: absolute;
-            left: 100px;
-            background: #333;
+            left: 85px;
+            background: rgba(30,30,30,0.95);
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s;
             white-space: nowrap;
+            letter-spacing: 0.3px;
         }
-        
-        .category-btn:hover::after {
-            opacity: 1;
-        }
+        .category-btn:hover::after { opacity: 1; }
 
-        /* --- RIGHT SIDEBAR (Options) --- */
+        /* ========== RIGHT SIDEBAR (Panel) ========== */
         .sidebar-right {
             position: absolute;
-            right: 50px;
-            top: 100px;
+            right: 40px;
+            top: 80px;
             bottom: 100px;
-            width: 350px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+            width: 370px;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 16px;
             padding: 25px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+            box-shadow: -8px 0 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.3);
             overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            animation: slideIn 0.5s ease-out;
+            animation: slideIn 0.4s ease-out;
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(50px); }
+            from { opacity: 0; transform: translateX(40px); }
             to { opacity: 1; transform: translateX(0); }
         }
 
         .panel-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 800;
-            color: #333;
-            margin-bottom: 20px;
+            color: #222;
+            margin-bottom: 18px;
             border-bottom: 3px solid #00aa00;
             padding-bottom: 10px;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Input Controls */
-        .control-group { margin-bottom: 25px; }
+        /* ========== Controls ========== */
+        .control-group { margin-bottom: 18px; }
         .control-group label {
             display: block;
             font-weight: 600;
             color: #555;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 11px;
             letter-spacing: 1px;
         }
 
@@ -127,216 +131,376 @@
             width: 100%;
             appearance: none;
             -webkit-appearance: none;
-            height: 6px;
+            height: 5px;
             background: #ddd;
             border-radius: 3px;
             outline: none;
+            transition: background 0.2s;
         }
+        input[type=range]:hover { background: #ccc; }
         input[type=range]::-webkit-slider-thumb {
             appearance: none;
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #00aa00;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #00cc44, #009933);
             border-radius: 50%;
             cursor: pointer;
-            transition: background 0.2s;
+            box-shadow: 0 2px 6px rgba(0,170,0,0.3);
+            transition: transform 0.15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-row input[type=range] { flex: 1; }
+        .slider-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: #00aa00;
+            min-width: 36px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        .slider-label-sm {
+            font-size: 10px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            min-width: 50px;
+            letter-spacing: 0.5px;
         }
 
+        /* ========== Selector (Arrow Navigation) ========== */
         .selector {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #f0f0f0;
-            padding: 5px;
+            background: #f2f2f2;
+            padding: 4px;
             border-radius: 10px;
+            border: 1px solid #e0e0e0;
         }
 
         .selector button {
             background: white;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            color: #333;
-            transition: background 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            color: #444;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .selector button:hover { background: #00aa00; color: white; }
+        .selector button:hover { background: #00aa00; color: white; transform: scale(1.05); }
         
         .selector span {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
             flex-grow: 1;
+            color: #333;
         }
 
-        /* Gender Switch */
+        /* ========== Gender Switch ========== */
         .gender-switch {
             display: flex;
             gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .gender-option {
             flex: 1;
-            padding: 15px;
-            background: #eee;
+            padding: 14px;
+            background: #f0f0f0;
             border: 2px solid transparent;
             text-align: center;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.2s;
+            color: #666;
         }
+        .gender-option:hover { background: #e8e8e8; }
         .gender-option.active {
-            background: #e6ffe6;
+            background: linear-gradient(135deg, #e6ffe6, #d4ffd4);
             border-color: #00aa00;
             color: #00aa00;
+            box-shadow: 0 2px 10px rgba(0,170,0,0.15);
         }
 
-        /* Bottom Action Bar */
+        /* ========== Feature Groups ========== */
+        .feature-group-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #00aa00;
+            margin: 16px 0 8px 0;
+            padding: 6px 0;
+            border-bottom: 2px solid #e8e8e8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .feature-group-title:first-child { margin-top: 0; }
+
+        /* ========== Heritage Parent Selector ========== */
+        .parent-selector {
+            background: #f8f8f8;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid #eee;
+        }
+        .parent-selector .parent-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        .parent-icon {
+            font-size: 14px;
+            margin-right: 4px;
+            opacity: 0.6;
+        }
+
+        /* ========== Mix Indicator ========== */
+        .mix-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin-top: 3px;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        /* ========== Overlay Group ========== */
+        .overlay-group {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #eee;
+        }
+        .overlay-group label {
+            margin-bottom: 8px;
+        }
+
+        /* ========== Color Preview Bar ========== */
+        .color-preview-bar {
+            height: 8px;
+            width: 100%;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        /* ========== Bottom Action Bar ========== */
         .bottom-bar {
             position: absolute;
-            bottom: 30px;
+            bottom: 25px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
+            gap: 12px;
+            align-items: center;
         }
 
         .finish-btn {
-            background: #00aa00;
+            background: linear-gradient(135deg, #00cc44, #009933);
             color: white;
             border: none;
-            padding: 15px 50px;
-            font-size: 20px;
+            padding: 14px 50px;
+            font-size: 18px;
             font-weight: 800;
             border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0, 170, 0, 0.4);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 170, 0, 0.35);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        .finish-btn:hover { transform: scale(1.05); }
+        .finish-btn:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(0, 170, 0, 0.5); }
 
-        .rotate-btn {
-            width: 50px;
-            height: 50px;
+        .action-btn {
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             border: none;
-            background: white;
-            font-size: 20px;
+            background: rgba(255,255,255,0.92);
+            font-size: 18px;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+        }
+        .action-btn:hover { transform: scale(1.1); background: white; color: #00aa00; }
+        .action-btn.randomize-btn { 
+            background: rgba(255,220,100,0.9); 
+            color: #886600;
+        }
+        .action-btn.randomize-btn:hover { 
+            background: #ffdd66; 
+            color: #664400; 
         }
 
-        /* Sections visibility */
+        /* ========== Section visibility ========== */
         .panel { display: none; }
-        .panel.active { display: block; }
+        .panel.active { display: block; animation: fadePanel 0.25s ease-out; }
+        @keyframes fadePanel {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
+        /* ========== Info Box ========== */
+        .info-box {
+            background: #f0f8f0;
+            border-left: 3px solid #00aa00;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+            margin-top: 15px;
+        }
+        .info-box i { color: #00aa00; margin-right: 6px; }
+
+        /* ========== Scrollbar ========== */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
     </style>
 </head>
 <body>
 
+    <!-- ===== LEFT SIDEBAR ===== -->
     <div class="sidebar-left">
-        <div class="category-btn active" onclick="setTab('identity')" data-tooltip="Identity">
+        <div class="category-btn active" data-tab="identity" onclick="setTab('identity')" data-tooltip="Identity">
             <i class="fas fa-venus-mars"></i>
         </div>
-        <div class="category-btn" onclick="setTab('genes')" data-tooltip="Heritage">
-            <i class="fas fa-users"></i>
+        <div class="category-btn" data-tab="genes" onclick="setTab('genes')" data-tooltip="Heritage">
+            <i class="fas fa-dna"></i>
         </div>
-        <div class="category-btn" onclick="setTab('face')" data-tooltip="Features">
-            <i class="fas fa-user-edit"></i>
+        <div class="category-btn" data-tab="face" onclick="setTab('face')" data-tooltip="Features">
+            <i class="fas fa-head-side-virus"></i>
         </div>
-        <div class="category-btn" onclick="setTab('appearance')" data-tooltip="Hair & Eyes">
+        <div class="category-btn" data-tab="overlays" onclick="setTab('overlays')" data-tooltip="Details">
+            <i class="fas fa-paint-brush"></i>
+        </div>
+        <div class="category-btn" data-tab="appearance" onclick="setTab('appearance')" data-tooltip="Hair & Eyes">
             <i class="fas fa-eye"></i>
         </div>
-        <div class="category-btn" onclick="setTab('clothes')" data-tooltip="Clothing">
+        <div class="category-btn" data-tab="clothes" onclick="setTab('clothes')" data-tooltip="Clothing">
             <i class="fas fa-tshirt"></i>
         </div>
     </div>
 
+    <!-- ===== RIGHT PANEL ===== -->
     <div class="sidebar-right">
         
+        <!-- IDENTITY -->
         <div id="panel-identity" class="panel active">
-            <div class="panel-title">Who are you?</div>
+            <div class="panel-title">Identity</div>
             
             <div class="control-group">
                 <label>Select Gender</label>
                 <div class="gender-switch">
                     <div class="gender-option active" id="btn-male" onclick="selectGender(0)">
-                        <i class="fas fa-male"></i> Male
+                        <i class="fas fa-mars"></i> Male
                     </div>
                     <div class="gender-option" id="btn-female" onclick="selectGender(1)">
-                        <i class="fas fa-female"></i> Female
+                        <i class="fas fa-venus"></i> Female
                     </div>
                 </div>
             </div>
-            
-            <div style="text-align:center; color:#777; margin-top:50px;">
-                <i class="fas fa-info-circle"></i><br><br>
-                Changing gender will reset your clothing selections.
+
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                Choose your character's gender. This affects available hairstyles, clothing, and facial hair options. 
+                Changing gender will reset your appearance selections.
             </div>
         </div>
 
+        <!-- HERITAGE -->
         <div id="panel-genes" class="panel">
             <div class="panel-title">Heritage</div>
             
-            <div class="control-group">
-                <label>Mother Face</label>
-                <input type="range" min="21" max="45" value="21" id="mom" oninput="updateHeritage()">
-            </div>
-            <div class="control-group">
-                <label>Father Face</label>
-                <input type="range" min="0" max="20" value="0" id="dad" oninput="updateHeritage()">
-            </div>
-            <div class="control-group">
-                <label>Shape Mix (Bone Structure)</label>
-                <input type="range" min="0.0" max="1.0" step="0.1" value="0.5" id="shapeMix" oninput="updateHeritage()">
-                <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px; color:#888;">
-                    <span>Mom's Structure</span><span>Dad's Structure</span>
+            <div class="parent-selector">
+                <div class="parent-label"><i class="fas fa-female parent-icon"></i>Mother</div>
+                <div class="selector">
+                    <button onclick="changeParent('mother', -1)"><i class="fas fa-chevron-left"></i></button>
+                    <span id="motherName">Hannah</span>
+                    <button onclick="changeParent('mother', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
+            </div>
+
+            <div class="parent-selector">
+                <div class="parent-label"><i class="fas fa-male parent-icon"></i>Father</div>
+                <div class="selector">
+                    <button onclick="changeParent('father', -1)"><i class="fas fa-chevron-left"></i></button>
+                    <span id="fatherName">Benjamin</span>
+                    <button onclick="changeParent('father', 1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="control-group" style="margin-top: 15px;">
+                <label>Shape Mix (Bone Structure)</label>
+                <input type="range" min="0.0" max="1.0" step="0.05" value="0.5" id="shapeMix" oninput="updateHeritage()">
+                <div class="mix-labels"><span>Mother's Structure</span><span>Father's Structure</span></div>
             </div>
 
             <div class="control-group">
                 <label>Skin Mix (Complexion)</label>
-                <input type="range" min="0.0" max="1.0" step="0.1" value="0.5" id="skinMix" oninput="updateHeritage()">
-                <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px; color:#888;">
-                    <span>Mom's Skin</span><span>Dad's Skin</span>
-                </div>
+                <input type="range" min="0.0" max="1.0" step="0.05" value="0.5" id="skinMix" oninput="updateHeritage()">
+                <div class="mix-labels"><span>Mother's Skin</span><span>Father's Skin</span></div>
             </div>
         </div>
 
+        <!-- FACE FEATURES -->
         <div id="panel-face" class="panel">
             <div class="panel-title">Face Features</div>
-            <div id="features-container">
-                </div>
+            <div id="features-container"></div>
         </div>
 
+        <!-- FACE OVERLAYS -->
+        <div id="panel-overlays" class="panel">
+            <div class="panel-title">Details</div>
+            <div id="overlays-container"></div>
+        </div>
+
+        <!-- HAIR & EYES -->
         <div id="panel-appearance" class="panel">
-            <div class="panel-title">Appearance</div>
+            <div class="panel-title">Hair &amp; Eyes</div>
 
             <div class="control-group">
-                <label>Hair Style</label>
-                <input type="range" min="0" max="75" value="0" id="hairStyle" oninput="updateHair()">
+                <label>Hair Style <span id="hairStyleLabel" style="float:right; color:#00aa00; font-weight:700;">Style 0</span></label>
+                <input type="range" min="0" max="73" value="0" id="hairStyle" oninput="updateHair()">
             </div>
 
             <div class="control-group">
-                <label>Hair Color</label>
+                <label>Hair Color <span id="hairColorLabel" style="float:right; color:#00aa00; font-weight:700;">Color 0</span></label>
                 <input type="range" min="0" max="63" value="0" id="hairColor" oninput="updateHair()">
-                <div style="height:10px; width:100%; background:linear-gradient(to right, #222, #533, #a63, #ee9, #eee); margin-top:5px; border-radius:3px;"></div>
+                <div class="color-preview-bar" style="background: linear-gradient(to right, #1C1C1C, #3B2215, #8E5532, #DCA860, #F5D280, #FFE135, #808080, #404040, #581845, #D141C5, #DAA520, #FFD700, #6B3400, #D07000);"></div>
             </div>
 
             <div class="control-group">
-                <label>Eye Color</label>
+                <label>Eye Color <span id="eyeColorLabel" style="float:right; color:#00aa00; font-weight:700;">Green</span></label>
                 <input type="range" min="0" max="31" value="0" id="eyeColor" oninput="updateEyes()">
             </div>
         </div>
 
+        <!-- CLOTHING -->
         <div id="panel-clothes" class="panel">
             <div class="panel-title">Wardrobe</div>
 
@@ -366,14 +530,27 @@
                     <button onclick="updateClothing('shoes', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
+
+            <div class="info-box" style="margin-top: 10px;">
+                <i class="fas fa-info-circle"></i>
+                These clothes will be added to your inventory. You can change your outfit later from the inventory screen.
+            </div>
         </div>
 
     </div>
 
+    <!-- ===== BOTTOM BAR ===== -->
     <div class="bottom-bar">
-        <button class="rotate-btn" onclick="mp.trigger('client:creator:rotate', -10)"><i class="fas fa-undo"></i></button>
+        <button class="action-btn" onclick="mp.trigger('client:creator:rotate', -15)" title="Rotate Left">
+            <i class="fas fa-undo"></i>
+        </button>
+        <button class="action-btn randomize-btn" onclick="randomize()" title="Randomize">
+            <i class="fas fa-dice"></i>
+        </button>
         <button class="finish-btn" onclick="saveCharacter()">CREATE</button>
-        <button class="rotate-btn" onclick="mp.trigger('client:creator:rotate', 10)"><i class="fas fa-redo"></i></button>
+        <button class="action-btn" onclick="mp.trigger('client:creator:rotate', 15)" title="Rotate Right">
+            <i class="fas fa-redo"></i>
+        </button>
     </div>
 
     <script src="script.js"></script>
