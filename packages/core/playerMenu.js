@@ -111,23 +111,34 @@ mp.events.add('server:playerMenu:getData', async (player) => {
 
         // 7. Repo Jobs
         let repoJobs = [];
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const [repoRows] = await db.query(
-                "SELECT job_number, target_model, status FROM repo_jobs WHERE user_id = ? AND job_date = ?",
-                [player.data.dbId, today]
-            );
-            const { catalog } = require('../data/dealershipCatalog');
-            repoJobs = repoRows.map(j => {
-                const catEntry = catalog.find(c => c.model === j.target_model);
-                return {
-                    jobNumber: j.job_number,
-                    targetModel: j.target_model,
-                    targetName: catEntry ? catEntry.name : j.target_model,
-                    status: j.status
-                };
+        
+        // [CHANGE] Check level. If < 5, send a "locked" placeholder.
+        if (level < 5) {
+            repoJobs.push({
+                jobNumber: 1,
+                targetModel: 'locked',
+                targetName: 'Reach Level 5 to Unlock',
+                status: 'locked' // New status for UI handling
             });
-        } catch(e) { /* table may not exist yet */ }
+        } else {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const [repoRows] = await db.query(
+                    "SELECT job_number, target_model, status FROM repo_jobs WHERE user_id = ? AND job_date = ?",
+                    [player.data.dbId, today]
+                );
+                const { catalog } = require('../data/dealershipCatalog');
+                repoJobs = repoRows.map(j => {
+                    const catEntry = catalog.find(c => c.model === j.target_model);
+                    return {
+                        jobNumber: j.job_number,
+                        targetModel: j.target_model,
+                        targetName: catEntry ? catEntry.name : j.target_model,
+                        status: j.status
+                    };
+                });
+            } catch(e) { /* table may not exist yet */ }
+        }
 
         // Send payload
         const payload = {
