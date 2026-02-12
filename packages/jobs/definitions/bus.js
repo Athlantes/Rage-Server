@@ -144,7 +144,6 @@ function setNextStop(player) {
     }
 
     if (job.currentStop >= job.totalStops) {
-        player.call('client:bus:cleanupPeds');
 
         jobManager.createObjective(player, DEPOT_RETURN, "Return Bus to Terminal", 5.0, (p) => {
             finishJob(p);
@@ -163,9 +162,6 @@ function setNextStop(player) {
         z: stopData.z, 
         heading: busHeading 
     };
-
-    // Spawn peds on client BEFORE creating objective
-    player.call('client:bus:spawnPeds', [stopWithHeading]);
 
     jobManager.createObjective(player, stopData, `Stop ${job.currentStop + 1}`, 3.5, (p) => {
         handleStopArrival(p);
@@ -266,9 +262,6 @@ async function processBoardingSequence(player) {
     setTimeout(async () => {
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) return;
 
-        // Clean up NPCs
-        player.call('client:bus:cleanupPeds');
-
         if (mp.vehicles.exists(bus)) {
             player.call('client:bus:controlDoors', [bus.id, false]);
             
@@ -319,7 +312,6 @@ function cleanupJob(player) {
     }
 
     if (job.bus && mp.vehicles.exists(job.bus)) job.bus.destroy();
-    player.call('client:bus:cleanupPeds');
     jobManager.clearObjective(player);
     activeJobs.delete(player.id);
 }
@@ -373,12 +365,10 @@ const JOB_CONFIG = {
     name: "Bus Driver",
     description: "Transport citizens across the city. Regular stops required.",
     previewButtons: [{ label: "View Routes", action: "default" }],
-    pedModel: "s_m_m_busdev_01",
+    pedModel: "A_M_Y_BusiCas_01",
     blipSprite: 513,
     blipColor: 46,
     pos: DEPOT_LOCATION
 };
 
-// We do NOT call createJobPed() manually here anymore.
-// jobManager.register() will automatically create the ped because 'pos' is defined in JOB_CONFIG.
 jobManager.register(JOB_KEY, JOB_CONFIG, logic);

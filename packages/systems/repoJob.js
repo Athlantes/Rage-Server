@@ -116,7 +116,7 @@ const RepoJob = {
         const cutoffStr = cutoff.toISOString().split('T')[0];
 
         const [eligiblePlayers] = await db.query(
-            "SELECT id FROM users WHERE last_active >= ?",
+            "SELECT id FROM users WHERE last_active >= ? AND level >= 5",
             [cutoffStr]
         );
 
@@ -180,6 +180,11 @@ const RepoJob = {
     // ── TALK TO NPC (opens preview with accept/cancel) ──
     async talkToNpc(player) {
         if (!player.logged || !player.data.dbId) return;
+
+        if (player.data.level < 5) {
+            player.call('showNotification', [NPC_NAME, 'You need to be Level 5 to handle this work.']);
+            return;
+        }
 
         const today = new Date().toISOString().split('T')[0];
         const userId = player.data.dbId;
@@ -406,6 +411,7 @@ const RepoJob = {
     // ── PLAYER INIT (on login) ──
     async onPlayerReady(player) {
         if (!player.logged || !player.data.dbId) return;
+        if (player.data.level < 5) return;
 
         const today = new Date().toISOString().split('T')[0];
         const userId = player.data.dbId;
