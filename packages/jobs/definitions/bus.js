@@ -24,6 +24,16 @@ const REWARD_CONFIG = {
     finishBonus: 250
 };
 
+// TIMING CONFIG - Increased for smooth NPC animations
+const TIMING = {
+    doorOpenDelay: 500,      // Wait before opening doors
+    exitingTime: 4000,       // Time for NPCs to exit bus
+    boardingDelay: 2000,     // Delay before boarding starts (let exiters clear)
+    boardingTime: 8000,      // Time for NPCs to board
+    doorCloseDelay: 1000,    // Wait before closing doors
+    totalStopTime: 15500     // Total time at stop (sum of above)
+};
+
 // State storage
 let AVAILABLE_ROUTES = [];
 const activeJobs = new Map();
@@ -121,10 +131,6 @@ function startRoute(player, routeIndex) {
         stopCheckInterval: null
     });
 
-    if (route.stops.length > 0) {
-        player.call('client:bus:spawnPeds', [route.stops[0]]);
-    }
-
     player.call('showNotification', ['Bus Driver', `Route: ${route.name} started.`]);
     setNextStop(player);
 }
@@ -149,8 +155,18 @@ function setNextStop(player) {
     }
 
     const stopData = job.route.stops[job.currentStop];
+    
+    // Pass bus heading to client for proper sidewalk positioning
+    const busHeading = mp.vehicles.exists(job.bus) ? job.bus.heading : 0;
+    const stopWithHeading = { 
+        x: stopData.x, 
+        y: stopData.y, 
+        z: stopData.z, 
+        heading: busHeading 
+    };
 
-    player.call('client:bus:spawnPeds', [stopData]);
+    // Spawn peds on client BEFORE creating objective
+    player.call('client:bus:spawnPeds', [stopWithHeading]);
 
     jobManager.createObjective(player, stopData, `Stop ${job.currentStop + 1}`, 3.5, (p) => {
         handleStopArrival(p);
@@ -175,7 +191,7 @@ async function handleStopArrival(player) {
     const velocity = player.vehicle.velocity;
     const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
     
-    // Check speed. If fast, start watcher.
+    // Check speed. If moving, start watcher.
     if (speed > 0.1) {
         if (!job.stopCheckInterval) {
             player.call('showNotification', ["Bus Driver", "~o~Stop completely to board passengers."]);
@@ -183,6 +199,12 @@ async function handleStopArrival(player) {
             job.stopCheckInterval = setInterval(() => {
                 if (!mp.players.exists(player) || !activeJobs.has(player.id)) {
                     if (job.stopCheckInterval) clearInterval(job.stopCheckInterval);
+                    return;
+                }
+
+                if (!player.vehicle) {
+                    clearInterval(job.stopCheckInterval);
+                    job.stopCheckInterval = null;
                     return;
                 }
 
@@ -209,34 +231,55 @@ async function processBoardingSequence(player) {
     job.isBoarding = true;
     const bus = job.bus;
 
-    if (mp.vehicles.exists(bus)) {
-        bus.frozen = true;
-        bus.engine = false;
-        bus.setVariable('engine', false);
-
-        // TRIGGER THE ANIMATIONS
-        player.call('client:bus:handlePedActions', [bus.id]);
-        
-        // Open doors
-        player.call('client:bus:controlDoors', [bus.id, true]);
+    if (!mp.vehicles.exists(bus)) {
+        job.isBoarding = false;
+        return;
     }
 
-    player.call('client:showJobSubtitle', ["~y~Boarding Passengers... Please Wait.", 6000]); // Increased time
-    player.call('playSound', ['Bus_Schedule_Pickup', 'DLC_PRISON_BREAK_HEIST_SOUNDS']);
+    // Lock bus in place
+    bus.frozen = true;
+    bus.engine = false;
+    bus.setVariable('engine', false);
 
-    // INCREASE TIMEOUT TO 6-7 SECONDS
-    // NPCs need time to walk to door, open it, and sit down.
+    player.call('client:showJobSubtitle', ["~o~Passengers exiting... Please wait.", TIMING.exitingTime + TIMING.doorOpenDelay]);
+    
+    // Step 1: Open doors
+    setTimeout(() => {
+        if (!mp.vehicles.exists(bus)) return;
+        player.call('client:bus:controlDoors', [bus.id, true]);
+    }, TIMING.doorOpenDelay);
+
+    // Step 2: Handle exiting passengers
+    setTimeout(() => {
+        if (!mp.vehicles.exists(bus)) return;
+        player.call('client:bus:handleExiting', [bus.id]);
+    }, TIMING.doorOpenDelay + 500);
+
+    // Step 3: Start boarding
+    setTimeout(() => {
+        if (!mp.vehicles.exists(bus)) return;
+        player.call('client:showJobSubtitle', ["~y~Passengers boarding... Please wait.", TIMING.boardingTime]);
+        player.call('client:bus:handleBoarding', [bus.id]);
+        player.call('playSound', ['Bus_Schedule_Pickup', 'DLC_PRISON_BREAK_HEIST_SOUNDS']);
+    }, TIMING.doorOpenDelay + TIMING.exitingTime + TIMING.boardingDelay);
+
+    // Step 4: Close doors and continue
     setTimeout(async () => {
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) return;
 
-        // Clean up the "visual" peds so they don't glitch through the bus while driving
+        // Clean up NPCs
         player.call('client:bus:cleanupPeds');
 
         if (mp.vehicles.exists(bus)) {
             player.call('client:bus:controlDoors', [bus.id, false]);
-            bus.engine = true;
-            bus.setVariable('engine', true);
-            bus.frozen = false;
+            
+            setTimeout(() => {
+                if (mp.vehicles.exists(bus)) {
+                    bus.engine = true;
+                    bus.setVariable('engine', true);
+                    bus.frozen = false;
+                }
+            }, TIMING.doorCloseDelay);
         }
 
         const level = jobManager.getJobLevel(player, JOB_KEY);
@@ -245,13 +288,13 @@ async function processBoardingSequence(player) {
         await playerManager.addMoneyAndSave(player, pay, "Bus Stop Pay");
         await jobManager.addJobXp(player, JOB_KEY, REWARD_CONFIG.xpPerStop);
 
-        player.call('showNotification', ["Bus Driver", `Passengers Boarded. Earned $${pay}`]);
+        player.call('showNotification', ["Bus Driver", `Stop Complete! Earned $${pay}`]);
 
         job.isBoarding = false;
         job.currentStop++;
         setNextStop(player);
 
-    }, 7000); // 7 Seconds allows animations to finish cleanly
+    }, TIMING.totalStopTime);
 }
 
 async function finishJob(player) {
