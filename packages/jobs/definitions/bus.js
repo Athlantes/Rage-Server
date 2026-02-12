@@ -38,7 +38,6 @@ const TIMING = {
 let AVAILABLE_ROUTES = [];
 const activeJobs = new Map();
 const routeCreators = new Map();
-let jobPed = null;
 
 // --- DATA LOADING ---
 function loadRoutes() {
@@ -370,15 +369,6 @@ mp.events.add('server:bus:selectRoute', (player, index) => {
 });
 
 // --- DEPOT NPC ---
-function createJobPed() {
-    if(jobPed && mp.peds.exists(jobPed)) jobPed.destroy();
-    jobPed = mp.peds.new(
-        mp.joaat(JOB_CONFIG.pedModel), 
-        new mp.Vector3(DEPOT_LOCATION.x, DEPOT_LOCATION.y, DEPOT_LOCATION.z),
-        { heading: DEPOT_LOCATION.h, dimension: 0 }
-    );
-}
-
 const JOB_CONFIG = {
     name: "Bus Driver",
     description: "Transport citizens across the city. Regular stops required.",
@@ -389,5 +379,6 @@ const JOB_CONFIG = {
     pos: DEPOT_LOCATION
 };
 
-createJobPed();
+// We do NOT call createJobPed() manually here anymore.
+// jobManager.register() will automatically create the ped because 'pos' is defined in JOB_CONFIG.
 jobManager.register(JOB_KEY, JOB_CONFIG, logic);
