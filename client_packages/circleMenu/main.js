@@ -11,7 +11,6 @@ const MAX_INTERACTION_DIST = 8.0;  // Max distance
 const SELECTION_RADIUS_PIXELS = 100; // Max pixels from center of object
 
 // --- Outline System Setup (RageMP 1.1+) ---
-// We create a "batch" once, and then add entities to it every frame.
 mp.game.graphics.setEntityOverlayPassEnabled(true);
 const outlineBatch = mp.game.graphics.createEntityOverlayBatch({
     enableDepth: true,
@@ -30,23 +29,18 @@ browser.active = false;
 // 1. Keybinds & Toggles
 // ----------------------------------------------------------------------------
 
-// Toggle Interaction Mode (R-Alt)
 mp.keys.bind(KEY_INTERACTION_MODE, true, () => {
-    // Prevent opening if chat is active or other UIs are blocking
     if (mp.gui.cursor.visible && !isInteractionMode && !isMenuOpen) return;
     if (mp.players.local.isTypingInTextChat) return;
 
     if (isMenuOpen) {
-        // If menu is open, R-Alt just closes it
         closeMenu();
         setIsInteractionMode(false);
     } else {
-        // Toggle Mode
         setIsInteractionMode(!isInteractionMode);
     }
 });
 
-// Handle Clicks (Left Mouse)
 mp.events.add('click', (x, y, upOrDown, leftOrRight, relativeX, relativeY, worldX, worldY, hitEntity, hitType) => {
     if (leftOrRight !== 'left' || upOrDown !== 'down') return;
     if (!isInteractionMode || isMenuOpen) return;
@@ -63,7 +57,7 @@ function setIsInteractionMode(state) {
 }
 
 // ----------------------------------------------------------------------------
-// 2. The Render Loop (Raycasting & Outlines)
+// 2. The Render Loop
 // ----------------------------------------------------------------------------
 
 mp.events.add('render', () => {
@@ -75,8 +69,6 @@ mp.events.add('render', () => {
     // 2. Handle Outline
     if (result && result.handle) {
         hoveredEntity = result;
-        // The API 'addThisFrame' draws the outline ONLY for this frame.
-        // We don't need to manually clear it!
         outlineBatch.addThisFrame(result);
     } else {
         hoveredEntity = null;
@@ -84,7 +76,7 @@ mp.events.add('render', () => {
 });
 
 // ----------------------------------------------------------------------------
-// 3. Menu Logic (Open/Close)
+// 3. Menu Logic
 // ----------------------------------------------------------------------------
 
 function openMenu(entity) {
@@ -93,15 +85,20 @@ function openMenu(entity) {
     let menuItems = [];
     const entityType = entity.type;
 
-    // --- CARS (Clickable from outside only) ---
+    // --- CARS ---
     if (entityType === 'vehicle') {
-        if (mp.players.local.vehicle) return; // Cannot click cars while inside a car
+        if (mp.players.local.vehicle) return; 
         menuItems = getExternalVehicleOptions(entity);
     } 
     // --- PLAYERS ---
     else if (entityType === 'player') {
-        if (entity === mp.players.local) return; // Cannot click self
-        menuItems = getPlayerOptions(entity);
+        if (entity === mp.players.local) {
+            // YOU CLICKED YOURSELF
+            menuItems = getSelfOptions();
+        } else {
+            // YOU CLICKED SOMEONE ELSE
+            menuItems = getPlayerOptions(entity);
+        }
     }
     else {
         return;
@@ -121,33 +118,39 @@ function closeMenu() {
     global.circleMenuTarget = null;
 }
 
-// Receive Selection from Browser
 mp.events.add('circleMenu:onSelect', (ident) => {
     const target = global.circleMenuTarget;
 
     switch(ident) {
+        // Vehicle
         case 'lock':
             if(target && target.type === 'vehicle') mp.events.callRemote('vehicle:toggleLock', target);
             break;
         case 'trunk':
-             // Example trunk logic
+            // Handle trunk
             break;
+            
+        // Other Player
         case 'give_money':
-            if(target && target.type === 'player') {
-                // Trigger money logic
-            }
+            // Handle money
             break;
+            
+        // Self
+        case 'inventory':
+            // Open Inventory UI
+            break;
+        case 'dance':
+            mp.events.callRemote('playAnimation', 'dance'); // Example
+            break;
+            
         case 'close':
-            break;
-        default:
-            mp.gui.chat.push(`Selected option: ${ident}`);
             break;
     }
     closeMenu();
 });
 
 // ----------------------------------------------------------------------------
-// 4. Helper Functions (Math & Selection)
+// 4. Helper Functions
 // ----------------------------------------------------------------------------
 
 function getEntityUnderMouse() {
@@ -159,54 +162,38 @@ function getEntityUnderMouse() {
     let closestEntity = null;
     let closestDist2D = 99999; 
 
+    // Helper to process an entity
+    const checkEntity = (entity) => {
+        if (shouldIgnoreEntity(entity)) return;
+        
+        const pos = entity.position;
+        const dist3D = mp.game.system.vdist(pos.x, pos.y, pos.z, mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z);
+        
+        if (dist3D < maxDist3D) {
+            const screenRatio = mp.game.graphics.world3dToScreen2d(pos.x, pos.y, pos.z);
+            if (screenRatio) {
+                const screenX = screenRatio.x * resolution.x;
+                const screenY = screenRatio.y * resolution.y;
+                const dx = Math.abs(screenX - mousePos[0]);
+                const dy = Math.abs(screenY - mousePos[1]);
+                const dist2D = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist2D < SELECTION_RADIUS_PIXELS && dist2D < closestDist2D) {
+                    closestDist2D = dist2D;
+                    closestEntity = entity;
+                }
+            }
+        }
+    };
+
     // 1. Check Vehicles
-    mp.vehicles.forEachInStreamRange((veh) => {
-        if (shouldIgnoreEntity(veh)) return;
-        
-        const pos = veh.position;
-        const dist3D = mp.game.system.vdist(pos.x, pos.y, pos.z, mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z);
-        
-        if (dist3D < maxDist3D) {
-            const screenRatio = mp.game.graphics.world3dToScreen2d(pos.x, pos.y, pos.z);
-            if (screenRatio) {
-                const screenX = screenRatio.x * resolution.x;
-                const screenY = screenRatio.y * resolution.y;
-                const dx = Math.abs(screenX - mousePos[0]);
-                const dy = Math.abs(screenY - mousePos[1]);
-                const dist2D = Math.sqrt(dx*dx + dy*dy);
+    mp.vehicles.forEachInStreamRange(checkEntity);
 
-                if (dist2D < SELECTION_RADIUS_PIXELS && dist2D < closestDist2D) {
-                    closestDist2D = dist2D;
-                    closestEntity = veh;
-                }
-            }
-        }
-    });
+    // 2. Check Streamed Players (Others)
+    mp.players.forEachInStreamRange(checkEntity);
 
-    // 2. Check Players
-    mp.players.forEachInStreamRange((ply) => {
-        if (ply === mp.players.local) return; 
-        if (shouldIgnoreEntity(ply)) return;
-
-        const pos = ply.position;
-        const dist3D = mp.game.system.vdist(pos.x, pos.y, pos.z, mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z);
-
-        if (dist3D < maxDist3D) {
-            const screenRatio = mp.game.graphics.world3dToScreen2d(pos.x, pos.y, pos.z);
-            if (screenRatio) {
-                const screenX = screenRatio.x * resolution.x;
-                const screenY = screenRatio.y * resolution.y;
-                const dx = Math.abs(screenX - mousePos[0]);
-                const dy = Math.abs(screenY - mousePos[1]);
-                const dist2D = Math.sqrt(dx*dx + dy*dy);
-
-                if (dist2D < SELECTION_RADIUS_PIXELS && dist2D < closestDist2D) {
-                    closestDist2D = dist2D;
-                    closestEntity = ply;
-                }
-            }
-        }
-    });
+    // 3. Check Self (Local Player)
+    checkEntity(mp.players.local);
 
     return closestEntity;
 }
@@ -235,6 +222,16 @@ function getPlayerOptions(ply) {
         { title: 'Give Money', description: 'Hand over cash', icon: 'fa-money-bill-wave', ident: 'give_money' },
         { title: 'Show ID', description: 'Show passport', icon: 'fa-id-card', ident: 'show_id' },
         { title: 'Frisk', description: 'Search person', icon: 'fa-search', ident: 'frisk' },
+        { title: 'Close', description: 'Close Menu', icon: 'fa-times', ident: 'close' }
+    ];
+}
+
+function getSelfOptions() {
+    return [
+        { title: 'Inventory', description: 'Open your bag', icon: 'fa-backpack', ident: 'inventory' },
+        { title: 'Phone', description: 'Open mobile', icon: 'fa-mobile-alt', ident: 'phone' },
+        { title: 'Dance', description: 'Bust a move', icon: 'fa-music', ident: 'dance' },
+        { title: 'Documents', description: 'Check your ID', icon: 'fa-id-card', ident: 'docs' },
         { title: 'Close', description: 'Close Menu', icon: 'fa-times', ident: 'close' }
     ];
 }
