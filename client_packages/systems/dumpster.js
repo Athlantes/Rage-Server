@@ -66,18 +66,37 @@ setInterval(() => {
         return; 
     }
 
-    // --- 4. Object Detection ---
+    // --- 4. Object Detection (Improved) ---
+    let closestHandle = null;
+    let closestDist = 3.0; // Max detection radius (increased from 0.75)
+
     for (const hash of DUMPSTER_HASHES) {
         const handle = mp.game.object.getClosestObjectOfType(
             player.position.x, player.position.y, player.position.z,
-            0.75, 
+            3.0, // Radius
             hash, 
             false, false, false
         );
 
         if (handle && handle !== 0) {
-            found = handle;
-            break; 
+            const dumpPos = mp.game.entity.getCoords(handle, true);
+            const dist = mp.game.system.vdist(player.position.x, player.position.y, player.position.z, dumpPos.x, dumpPos.y, dumpPos.z);
+
+            // If this bin is closer than the last one found, mark it as the candidate
+            if (dist < closestDist) {
+                closestHandle = handle;
+                closestDist = dist;
+            }
+        }
+    }
+
+    // --- 5. Wall Check (Line of Sight) ---
+    if (closestHandle) {
+        // Trace flags: 17 (1 = Map, 16 = Objects) to hit walls and props
+        const hasLineOfSight = mp.game.entity.hasClearLosToEntity(player.handle, closestHandle, 17);
+        
+        if (hasLineOfSight) {
+            found = closestHandle;
         }
     }
 
