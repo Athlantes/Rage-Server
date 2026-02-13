@@ -39,22 +39,29 @@ class DumpsterSystem {
     async handleSearch(player, dumpsterPos) {
         if (player.vehicle) return;
         
-        // Rate limit: max 2 searches per 10 seconds
-        if (isRateLimited(player, 'dumpster:search', 2, 10000)) return;
+        // --- FIX 1: Rate Limit Rejection ---
+        // If limit is hit, tell client to RESET so they aren't stuck
+        if (isRateLimited(player, 'dumpster:search', 2, 10000)) {
+            player.call('showNotification', ['!{orange}Dumpster', 'You are searching too fast.']);
+            player.call('client:resetDumpsterSearch'); // <--- NEW EVENT
+            return;
+        }
         
-        // 1. Validation: Ensure player is actually near that location
-        if (player.dist(new mp.Vector3(dumpsterPos.x, dumpsterPos.y, dumpsterPos.z)) >  4) {
+        // --- FIX 2: Distance Check ---
+        // Increased to 4.0 to match client, AND added reset if failed
+        if (player.dist(new mp.Vector3(dumpsterPos.x, dumpsterPos.y, dumpsterPos.z)) > 4) {
+            player.call('client:resetDumpsterSearch'); // <--- NEW EVENT
             return; 
         }
-        // ----------------------------------
 
-        // 2. Global Cooldown Check (Using auth.js helper)
+        // 2. Global Cooldown Check
         if (player.hasCooldown('dumpster')) {
             const mins = player.getCooldownTime('dumpster');
+            player.call('client:resetDumpsterSearch'); // <--- NEW EVENT
             return player.call('showNotification', ['Dumpster', `You are tired. Rest for ${mins} minutes.`]);
         }
 
-        // 3. Start Animation (Client-side)
+        // 3. Start Animation (Success)
         player.call('client:startDumpsterAnim', [CONFIG.searchTime]);
         
         // 4. Process Outcome

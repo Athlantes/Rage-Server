@@ -12,7 +12,9 @@ const buckets = new Map(); // "playerId:eventName" -> { count, resetTime }
  * @returns {boolean} true if BLOCKED (over limit), false if ALLOWED
  */
 function isRateLimited(player, eventName, maxCalls = 5, windowMs = 5000) {
-    if (!player || !player.id) return true;
+    // FIX: Changed (!player.id) to (player.id == null) to allow Player ID 0
+    if (!player || player.id == null) return true;
+    
     const key = `${player.id}:${eventName}`;
     const now = Date.now();
     

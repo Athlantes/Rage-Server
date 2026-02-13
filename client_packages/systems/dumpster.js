@@ -168,3 +168,12 @@ mp.events.add('client:startDumpsterAnim', (duration) => {
         isSearching = false; // Allow loop to check logic again
     }, duration);
 });
+
+// 4. Reset Handler (Fixes the "Stuck" bug)
+mp.events.add('client:resetDumpsterSearch', () => {
+    isSearching = false; // Unblock the loop
+    lastInteractionState = false; // Allow UI to redraw
+    
+    // Safety: ensure player isn't frozen if this happened late
+    mp.players.local.freezePosition(false);
+});
