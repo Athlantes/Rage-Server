@@ -42,7 +42,7 @@ class DumpsterSystem {
         // --- FIX 1: Rate Limit Rejection ---
         // If limit is hit, tell client to RESET so they aren't stuck
         if (isRateLimited(player, 'dumpster:search', 2, 10000)) {
-            player.call('showNotification', ['!{orange}Dumpster', 'You are searching too fast.']);
+            player.call('showNotification', ['Dumpster', 'You are searching too fast.']);
             player.call('client:resetDumpsterSearch'); // <--- NEW EVENT
             return;
         }

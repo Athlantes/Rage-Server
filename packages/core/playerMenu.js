@@ -112,12 +112,12 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         // 7. Repo Jobs
         let repoJobs = [];
         
-        // [CHANGE] Check level. If < 5, send a "locked" placeholder.
-        if (level < 5) {
+        // [CHANGE] Check level. If < 10, send a "locked" placeholder.
+        if (level < 10) {
             repoJobs.push({
                 jobNumber: 1,
                 targetModel: 'locked',
-                targetName: 'Reach Level 5 to Unlock',
+                targetName: 'Reach Level 10 to Unlock',
                 status: 'locked' // New status for UI handling
             });
         } else {
