@@ -4,97 +4,109 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: url('img.png');
-    font-family: Arial, sans-serif;
-    background-size: cover;
+    background: transparent; /* Vital for overlay */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    user-select: none;
 }
 
 .circle-menu {
     position: relative;
     width: 500px;
     height: 500px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    /* Scale down slightly to fit nicely on 1080p screens if needed */
+    transform: scale(0.9); 
 }
 
+/* SVG Styling */
 .circle-svg {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
+    /* We handle rotation in JS now for perfect alignment */
+    overflow: visible;
+    filter: drop-shadow(0px 0px 10px rgba(0,0,0,0.5));
 }
 
-.center {
-    position: absolute;
-    width: 0;
-    height: 0;
-    background: rgb(70, 70, 70);
-    border-radius: 50%;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 20px 20px rgba(0, 0, 0, 1);
-    pointer-events: auto;
-    z-index: 2;
-    animation: expandCenter 0.5s forwards;
-    opacity: 0;
+.sector {
+    fill: rgba(20, 20, 20, 0.85); /* Dark base */
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 1px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    transform-origin: 250px 250px; /* Spin from center */
 }
 
-@keyframes expandCenter {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 100%;
-    }
+/* The Modern Glass Effect */
+.sector:hover, .sector.active {
+    fill: rgb(69, 122, 202);
+    stroke: rgba(255, 255, 255, 0.8);
+    stroke-width: 2px;
 }
 
-.center h2 {
-    margin: 0;
-    font-size: 24px;
-    color: #000;
-}
-
-.center p {
-    margin: 5px 0 0;
-    font-size: 14px;
-    color: #000;
-}
-
-.circle-svg path {
-    fill: rgba(21, 23, 47, 0.6);
-    stroke: rgba(21, 23, 47, 0.2);
-    opacity: 0;
-}
-
-.sector.active {
-    fill: rgba(112, 123, 251, 1);
-    stroke: rgba(0, 0, 0, 0);
-    filter: url(#glass-effect);
-    opacity: 1;
-}
-
+/* Icons Layer */
 #icons {
     position: absolute;
     top: 0;
     left: 0;
-    width: 500px;
-    height: 500px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-    z-index: 1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to SVG */
 }
 
 .icon {
     position: absolute;
-    font-size: 24px;
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%); /* Center the icon on its coordinate */
+    transition: all 0.2s ease;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Active State for Icons */
+.sector.active + #icons .icon, /* Complex selector fallback */
+.icon.active {
     color: #fff;
-    pointer-events: auto;
-    transition: color 0.3s ease, opacity 0.3s ease;
-    opacity: 0;
-    z-index: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Center Text */
+.center-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    width: 160px;
+    z-index: 10;
+}
+
+.center-ring {
+    fill: rgb(69, 122, 202);
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 2;
+    stroke-dasharray: 10 5; /* Dashed line effect */
+    opacity: 1.0;
+}
+
+#title-text {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    margin-bottom: 4px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+#description-text {
+    font-size: 13px;
+    margin: 0;
+    color: rgba(200, 200, 200, 0.8);
+    font-weight: 400;
 }
