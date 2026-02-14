@@ -1410,7 +1410,8 @@ window.openPhone = function() {
     console.log('openPhone called');
     if (vueAppInstance) {
         console.log('Setting isVisible to true');
-        vueAppInstance.isVisible = true;
+        // FIX: Add .value here
+        vueAppInstance.isVisible.value = true; 
     } else {
         console.error('Vue app instance not found!');
     }
@@ -1419,7 +1420,8 @@ window.openPhone = function() {
 window.closePhone = function() {
     console.log('closePhone called');
     if (vueAppInstance) {
-        vueAppInstance.isVisible = false;
+        // FIX: Add .value here
+        vueAppInstance.isVisible.value = false;
         store.lock();
     } else {
         console.error('Vue app instance not found!');
