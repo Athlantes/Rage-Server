@@ -19,7 +19,7 @@ const outlineBatch = mp.game.graphics.createEntityOverlayBatch({
     processAttachments: true,
     fill: { enable: false, color: 0xFFFFFFFF },
     noise: { enable: false, size: 0.0, speed: 0.0, intensity: 0.0 },
-    outline: { enable: true, color: 0xFFFFFFFF, width: 3.0, blurRadius: 1.0, blurIntensity: 1.0 }
+    outline: { enable: true, color: 0xFFFFFFFF, width: 2.0, blurRadius: 1.0, blurIntensity: 1.0 }
 });
 
 // Hide browser initially
