@@ -1,332 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Spawn</title>
-    <link rel="stylesheet" href="../lib/leaflet/leaflet.css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        /* Import Poppins to match Auth theme */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+  <meta charset="UTF-8">
+  <title>Select Spawn</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: 'Poppins', sans-serif; 
-            background: #191919; 
-            user-select: none;
-        }
-        
-        /* FULL SCREEN MAP BEHIND UI */
-        #map { 
-            width: 100vw; 
-            height: 100vh; 
-            z-index: 1; 
-            background: #191919; /* Ocean color match */
-        }
-        .leaflet-container { background: #191919 !important; }
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
 
-        /* UI LAYER (Glassmorphism Overlay) */
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 100;
-            pointer-events: none; /* Allow clicks to pass to map where empty */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 40px;
-            background: radial-gradient(circle at center, transparent 0%, rgba(10, 15, 20, 0.4) 100%);
-        }
+    /* ── Leaflet required styles (inlined from leaflet.css, trimmed) ── */
+    .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,
+    .leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,
+    .leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+    .leaflet-container{overflow:hidden}
+    .leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}
+    .leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}
+    .leaflet-zoom-box{width:0;height:0;box-sizing:border-box;z-index:800}
+    .leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}
+    .leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}
+    .leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}
+    .leaflet-popup-pane{z-index:700}
+    .leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}
+    .leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,
+    .leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}
+    .leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,
+    .leaflet-pane>svg path.leaflet-interactive{pointer-events:auto}
+    .leaflet-container{background:#191919;outline-offset:1px}
+    .leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
+    .leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,
+    .leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,
+    .leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important;width:auto;padding:0}
+    .leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}
+    .leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}
+    .leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+    .leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+    .leaflet-zoom-animated{-webkit-transform-origin:0 0;transform-origin:0 0}
+    .leaflet-interactive{cursor:pointer}
+    .leaflet-grab{cursor:grab}.leaflet-crosshair{cursor:crosshair}
+    .leaflet-dragging .leaflet-grab{cursor:grabbing}
+    .leaflet-container{-webkit-tap-highlight-color:transparent}
+    .leaflet-fade-anim .leaflet-popup{opacity:0;transition:opacity .2s linear}
+    .leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}
+    .leaflet-div-icon{background:#fff;border:1px solid #666}
 
-        /* HEADER TITLE */
-        .header-title {
-            text-align: center;
-            margin-top: 60px;
-            pointer-events: auto;
-            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            animation: floatInDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+    /* ── Reset ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .header-title h1 {
-            color: white;
-            font-weight: 800;
-            font-size: 42px;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            /* Gradient Text from Auth */
-            background: linear-gradient(to right, #fff, #a5c9ca);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+      background: #191919;
+      user-select: none;
+    }
 
-        .header-title p {
-            color: #cbd5e1;
-            font-size: 14px;
-            letter-spacing: 1px;
-            margin-top: 5px;
-            font-weight: 300;
-            text-transform: uppercase;
-            opacity: 0.8;
-        }
+    /* ── Full-screen map behind the UI ── */
+    #map {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: #191919;
+    }
 
-        /* BOTTOM SPAWN SELECTOR */
-        .spawn-selector-container {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 25px;
-            pointer-events: auto;
-            animation: floatInUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            margin-bottom: 20px;
-        }
+    /* ── Vue UI overlay (pointer-events: none so map stays interactive) ── */
+    #app {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
 
-        .spawn-row {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            padding: 20px;
-        }
+    /* ── UI Layer ── */
+    .ui-layer {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px;
+      background: radial-gradient(circle at center, transparent 0%, rgba(10, 15, 20, 0.4) 100%);
+    }
 
-        /* SPAWN CARDS */
-        .spawn-card {
-            width: 160px;
-            height: 140px;
-            /* Auth Theme: Blue-Gray Glass */
-            background: rgba(15, 23, 35, 0.75);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(100, 180, 255, 0.15);
-            border-radius: 16px;
-            
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
+    /* ── Header ── */
+    .header-title {
+      text-align: center;
+      margin-top: 50px;
+      pointer-events: auto;
+      animation: floatInDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-        .spawn-card:hover {
-            transform: translateY(-8px);
-            background: rgba(25, 35, 50, 0.85);
-            border-color: rgba(0, 168, 255, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 168, 255, 0.15);
-        }
+    .header-title h1 {
+      color: white;
+      font-weight: 800;
+      font-size: 42px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      background: linear-gradient(to right, #fff, #a5c9ca);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-        .spawn-card.active {
-            background: rgba(0, 168, 255, 0.15);
-            border-color: #00a8ff;
-            box-shadow: 0 0 30px rgba(0, 168, 255, 0.25);
-            transform: translateY(-8px);
-        }
+    .header-title p {
+      color: #cbd5e1;
+      font-size: 14px;
+      letter-spacing: 1px;
+      margin-top: 5px;
+      font-weight: 300;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
 
-        /* Card Icons */
-        .spawn-card i {
-            font-size: 32px;
-            color: #64748b;
-            margin-bottom: 15px;
-            transition: 0.3s;
-        }
-        
-        .spawn-card.active i, .spawn-card:hover i {
-            color: #00a8ff;
-            transform: scale(1.1);
-        }
+    /* ── Bottom selector section ── */
+    .spawn-selector-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      pointer-events: auto;
+      animation: floatInUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      margin-bottom: 20px;
+    }
 
-        .spawn-card h3 {
-            margin: 0;
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .spawn-row {
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 16px;
+    }
 
-        .spawn-card span {
-            color: #94a3b8;
-            font-size: 10px;
-            margin-top: 4px;
-            display: block;
-            font-weight: 400;
-        }
+    /* ── Spawn Cards ── */
+    .spawn-card {
+      width: 155px;
+      height: 135px;
+      background: rgba(15, 23, 35, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(100, 180, 255, 0.15);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                  background 0.25s, border-color 0.25s, box-shadow 0.25s;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+    }
 
-        /* SPECIAL STYLE FOR 'LAST LOCATION' */
-        .spawn-card.special {
-            border-color: rgba(255, 215, 0, 0.3);
-        }
-        .spawn-card.special i { color: #ffd700; opacity: 0.8; }
-        .spawn-card.special:hover { border-color: rgba(255, 215, 0, 0.6); }
-        .spawn-card.special.active {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
-        }
-        .spawn-card.special.active i { color: #ffd700; opacity: 1; }
+    .spawn-card:hover {
+      transform: translateY(-8px);
+      background: rgba(25, 35, 50, 0.88);
+      border-color: rgba(0, 168, 255, 0.4);
+      box-shadow: 0 20px 40px rgba(0, 168, 255, 0.15);
+    }
 
-        /* WAKE UP BUTTON */
-        .btn-spawn {
-            padding: 16px 60px;
-            background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); /* Auth Button Gradient */
-            color: white;
-            font-weight: 700;
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 10px 25px rgba(0, 114, 255, 0.3);
-            
-            /* Hidden state */
-            opacity: 0; 
-            transform: translateY(20px);
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+    .spawn-card.active {
+      background: rgba(0, 168, 255, 0.15);
+      border-color: #00a8ff;
+      box-shadow: 0 0 30px rgba(0, 168, 255, 0.28);
+      transform: translateY(-8px);
+    }
 
-        /* Show button when spawn selected */
-        .btn-spawn.visible {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
+    .spawn-card i {
+      font-size: 30px;
+      color: #64748b;
+      margin-bottom: 13px;
+      transition: color 0.25s, transform 0.25s;
+    }
 
-        .btn-spawn:hover {
-            filter: brightness(1.1);
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0, 114, 255, 0.5);
-        }
+    .spawn-card:hover i,
+    .spawn-card.active i { color: #00a8ff; transform: scale(1.1); }
 
-        .btn-spawn:active { transform: scale(0.98); }
+    .spawn-card h3 {
+      margin: 0;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        /* Animations */
-        @keyframes floatInDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes floatInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+    .spawn-card span {
+      color: #94a3b8;
+      font-size: 10px;
+      margin-top: 4px;
+      display: block;
+      font-weight: 400;
+    }
 
-    </style>
+    /* ── Last location (gold variant) ── */
+    .spawn-card.special { border-color: rgba(255, 215, 0, 0.3); }
+    .spawn-card.special i { color: rgba(255, 215, 0, 0.75); }
+    .spawn-card.special:hover { border-color: rgba(255, 215, 0, 0.6); }
+    .spawn-card.special:hover i { color: #ffd700; }
+    .spawn-card.special.active {
+      border-color: #ffd700;
+      background: rgba(255, 215, 0, 0.1);
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.18);
+    }
+    .spawn-card.special.active i { color: #ffd700; opacity: 1; }
+
+    /* ── Wake Up Button ── */
+    .btn-spawn {
+      padding: 15px 56px;
+      background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0, 114, 255, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: filter 0.25s, transform 0.25s, box-shadow 0.25s,
+                  opacity 0.3s, visibility 0.3s;
+    }
+
+    .btn-spawn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(0, 114, 255, 0.5);
+    }
+
+    .btn-spawn:active { transform: scale(0.98); }
+
+    /* Vue v-show drives opacity/visibility instead of display:none
+       so the transform transition still plays */
+    .btn-spawn[style*="display: none"],
+    .btn-spawn[style*="display:none"] { pointer-events: none; }
+
+    /* ── Animations ── */
+    @keyframes floatInDown {
+      from { opacity: 0; transform: translateY(-40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatInUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Vue transition for the button */
+    .btn-fade-enter-active { transition: opacity 0.3s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .btn-fade-leave-active { transition: opacity 0.2s; }
+    .btn-fade-enter-from   { opacity: 0; transform: translateY(14px); }
+    .btn-fade-leave-to     { opacity: 0; }
+  </style>
 </head>
 <body>
 
-    <div class="ui-layer">
-        <div class="header-title">
-            <h1>Welcome Back</h1>
-            <p>Where does your story continue today?</p>
-        </div>
+  <!-- Leaflet map — outside Vue, managed imperatively -->
+  <div id="map"></div>
 
-        <div class="spawn-selector-container">
-            <div id="locationList" class="spawn-row">
-                </div>
-            
-            <button id="spawnBtn" class="btn-spawn" onclick="confirmSpawn()">
-                <i class="fas fa-sign-in-alt"></i> Wake Up
-            </button>
-        </div>
-    </div>
+  <!-- Vue mounts here — floats above the map -->
+  <div id="app"></div>
 
-    <div id="map"></div>
+  <!--
+    Script loading order:
+      1. Leaflet           → exposes global L
+      2. customMap.js      → exposes class GameMap (uses L)
+      3. Vue 3             → exposes global Vue
+      4. app.js            → creates & mounts the Vue app (uses GameMap + Vue)
+  -->
+  <script src="../lib/leaflet/leaflet.js"></script>
+  <script src="../lib/customMap.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="app.js"></script>
 
-    <script src="../lib/leaflet/leaflet.js"></script>
-    <script src="../lib/customMap.js"></script>
-
-    <script>
-        // Init Map
-        const spawnMap = new GameMap('map', { initialZoom: 3, minZoom: 2, maxZoom: 5 });
-        spawnMap.disableInteraction(); 
-
-        let selectedSpawnIndex = null;
-
-        // Enhanced Spawn List with Icons (Font Awesome classes)
-        const spawns = [
-            { name: "Legion Square", x: 206.56, y: -909.89, desc: "City Center", icon: "fa-users" },
-            { name: "Vinewood Blvd", x: 384.62, y: 260.67, desc: "Entertainment", icon: "fa-star" },
-            { name: "Sandy Shores", x: 1941.40, y: 3747.01, desc: "Desert Region", icon: "fa-sun" },
-            { name: "Paleto Bay", x: -113.84, y: 6445.62, desc: "Northern Coast", icon: "fa-tree" },
-            { name: "LS Airport", x: -1037.76, y: -2737.67, desc: "Travel Hub", icon: "fa-plane" }
-        ];
-
-        // ADD LAST LOCATION CARD
-        function addLastLocation(jsonPos) {
-            const pos = JSON.parse(jsonPos);
-            const list = document.getElementById('locationList');
-
-            const card = document.createElement('div');
-            card.className = 'spawn-card special';
-            card.innerHTML = `
-                <i class="fas fa-history"></i>
-                <h3>Last Location</h3>
-                <span>Resume previous position</span>
-            `;
-            
-            card.onclick = () => {
-                selectLocation(-1, card, pos.x, pos.y);
-            };
-
-            // Prepend to list
-            if(list.firstChild) {
-                list.insertBefore(card, list.firstChild);
-            } else {
-                list.appendChild(card);
-            }
-        }
-
-        // RENDER STANDARD SPAWNS
-        const list = document.getElementById('locationList');
-        spawns.forEach((spawn, index) => {
-            const card = document.createElement('div');
-            card.className = 'spawn-card';
-            card.innerHTML = `
-                <i class="fas ${spawn.icon}"></i>
-                <h3>${spawn.name}</h3>
-                <span>${spawn.desc}</span>
-            `;
-            card.onclick = () => selectLocation(index, card, spawn.x, spawn.y);
-            list.appendChild(card);
-        });
-
-        // SELECTION LOGIC
-        function selectLocation(index, element, x, y) {
-            selectedSpawnIndex = index;
-            
-            // Handle Visual Active State
-            document.querySelectorAll('.spawn-card').forEach(c => c.classList.remove('active'));
-            element.classList.add('active');
-            
-            // Show Confirm Button
-            const btn = document.getElementById('spawnBtn');
-            btn.classList.add('visible');
-            
-            // Map Animation
-            const target = [y, x]; 
-            spawnMap.getInstance().flyTo(target, 5, { animate: true, duration: 1.5 });
-            spawnMap.setMarkers([{x: x, y: y}], {
-                iconUrl: '../lib/leaflet/images/marker-icon.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41]
-            });
-        }
-
-        // CONFIRM
-        function confirmSpawn() {
-            if(selectedSpawnIndex === null) return;
-            // Play a sound or visual effect here if desired
-            mp.trigger('client:spawn:select', selectedSpawnIndex);
-        }
-    </script>
 </body>
 </html>

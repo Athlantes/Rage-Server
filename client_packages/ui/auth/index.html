@@ -1,73 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Central Online - Login</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Central Online - Login</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+    /* ── Reset ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Poppins', sans-serif;
+      user-select: none;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: url('images/login_bg.png') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 15, 20, 0.45);
+      z-index: 0;
+    }
+
+    /* ── Card ── */
+    .auth-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 420px;
+      background: rgba(15, 23, 35, 0.80);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(100, 180, 255, 0.15);
+      border-radius: 16px;
+      padding: 45px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+      animation: floatIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(40px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+
+    /* ── Typography ── */
+    h1.server-title {
+      font-weight: 800;
+      font-size: 32px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+      background: linear-gradient(to right, #fff, #a5c9ca);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    p.sub-text {
+      color: #64748b;
+      text-align: center;
+      font-size: 13px;
+      margin-top: 5px;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    /* ── Notification ── */
+    .notification {
+      background: rgba(220, 38, 38, 0.8);
+      backdrop-filter: blur(5px);
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: shake 0.4s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0);  }
+      25%       { transform: translateX(-5px); }
+      75%       { transform: translateX(5px);  }
+    }
+
+    /* ── Inputs ── */
+    .input-group {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .input-group i {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 15px;
+      transition: color 0.2s;
+      pointer-events: none;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 15px 18px 15px 48px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group input::placeholder { color: #475569; }
+
+    .input-group input:focus {
+      border-color: #00a8ff;
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 18px rgba(0, 168, 255, 0.15);
+    }
+
+    .input-group input:focus ~ i { color: #00a8ff; }
+
+    /* ── Button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 10px 20px rgba(0, 114, 255, 0.25);
+      transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(0, 114, 255, 0.4);
+    }
+
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* ── Toggle link ── */
+    .toggle-link {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .toggle-link span {
+      color: #00a8ff;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 5px;
+      transition: color 0.2s, text-shadow 0.2s;
+    }
+
+    .toggle-link span:hover {
+      color: #6dd5fa;
+      text-shadow: 0 0 10px rgba(0, 168, 255, 0.5);
+    }
+
+    /* ── Quick Access ── */
+    .quick-access {
+      margin-top: 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 20px;
+    }
+
+    .qa-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .recent-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .recent-card {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+
+    .recent-card:hover {
+      background: rgba(0, 168, 255, 0.1);
+      border-color: rgba(0, 168, 255, 0.3);
+      transform: translateX(5px);
+    }
+
+    .avatar-circle {
+      width: 38px; height: 38px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #00a8ff;
+      font-size: 17px;
+      flex-shrink: 0;
+      margin-right: 13px;
+    }
+
+    .user-info strong { display: block; color: white; font-size: 13px; }
+    .user-info small  { color: #64748b; font-size: 11px; }
+    .recent-chevron   { margin-left: auto; color: #333; font-size: 12px; }
+
+    /* ── Vue transitions ── */
+    .panel-enter-active { animation: panelIn 0.25s ease-out; }
+    .panel-leave-active { animation: panelIn 0.15s ease-in reverse; position: absolute; width: 100%; }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .notif-enter-active { animation: shake 0.4s; }
+    .notif-leave-active { transition: opacity 0.2s; }
+    .notif-leave-to     { opacity: 0; }
+  </style>
 </head>
 <body>
 
-    <div class="auth-wrapper">
-        <h1 class="server-title">Central Online</h1>
-        
-        <div id="notification" class="notification hidden"></div>
+  <div id="app"></div>
 
-        <div id="login-panel">
-            <h2>Welcome Back</h2>
-            <p class="sub-text">Sign in to continue your story</p>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="app.js"></script>
 
-            <div class="input-group">
-                <input type="text" id="login-user" placeholder="Username">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="input-group">
-                <input type="password" id="login-pass" placeholder="Password">
-                <i class="fas fa-lock"></i>
-            </div>
-
-            <button class="btn-primary" onclick="attemptLogin()">
-                <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i> Login
-            </button>
-
-            <div class="toggle-link">
-                New to the city? <span onclick="switchTab('register')">Create Account</span>
-            </div>
-
-            <div id="quick-access-area" class="quick-access hidden">
-                <div class="qa-title">Quick Access</div>
-                <div id="recent-list" class="recent-list">
-                    </div>
-            </div>
-        </div>
-
-        <div id="register-panel" class="hidden">
-            <h2>Identity Creation</h2>
-            <p class="sub-text">Begin your new life in Central Online</p>
-
-            <div class="input-group">
-                <input type="text" id="reg-user" placeholder="Choose Username">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="input-group">
-                <input type="password" id="reg-pass" placeholder="Password">
-                <i class="fas fa-lock"></i>
-            </div>
-            <div class="input-group">
-                <input type="password" id="reg-repass" placeholder="Confirm Password">
-                <i class="fas fa-check-circle"></i>
-            </div>
-
-            <button class="btn-primary" onclick="attemptRegister()">
-                <i class="fas fa-user-plus" style="margin-right: 8px;"></i> Register
-            </button>
-
-            <div class="toggle-link">
-                Already a citizen? <span onclick="switchTab('login')">Access Account</span>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
 </body>
 </html>
