@@ -1,5 +1,4 @@
 // client_packages/phone/index.js
-// UPDATED FOR VUE.JS INTEGRATION
 
 let phoneBrowser = null;
 let isPhoneOpen = false;
@@ -30,24 +29,8 @@ mp.keys.bind(0x26, true, () => { // Up Arrow
     if (isPhoneOpen) {
         mp.events.callRemote('server:phone:open');
         mp.gui.cursor.show(true, true);
-        mp.gui.chat.activate(false);
-        
-        // Debug log
-        mp.gui.chat.push('[Phone] Opening phone...');
-        
-        if (phoneBrowser) {
-            phoneBrowser.execute(`
-                console.log('[CEF] openPhone() being called');
-                if (typeof openPhone === 'function') {
-                    openPhone();
-                    console.log('[CEF] openPhone() executed');
-                } else {
-                    console.error('[CEF] openPhone is not a function!');
-                }
-            `);
-        } else {
-            mp.gui.chat.push('[Phone] ERROR: phoneBrowser is null!');
-        }
+        mp.gui.chat.activate(false); 
+        phoneBrowser.execute(`openPhone()`);
     } else {
         closePhone();
     }
@@ -65,10 +48,10 @@ mp.keys.bind(0x28, true, () => { // Down Arrow
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     if (isPhoneOpen) {
         closePhone();
+        // CUSTOM NOTIFICATION: Phone Closed
         mp.events.call('showNotification', 'System', 'Phone closed for safety.');
     }
-    
-    // End active call when entering vehicle
+    // End active call when entering vehicle (realistic RP)
     if (callState === 'active' || callState === 'ringing' || callState === 'incoming') {
         mp.events.callRemote('server:phone:endCall');
     }
@@ -83,6 +66,7 @@ function clearScooterMarkers() {
     if (scooterMarker) { scooterMarker.destroy(); scooterMarker = null; }
 }
 
+// --- CLEAR FUNCTION ---
 function clearLocationBlip() {
     if (locationBlip) {
         if(mp.blips.exists(locationBlip)) locationBlip.destroy();
@@ -97,21 +81,8 @@ function clearLocationBlip() {
 function closePhone() {
     isPhoneOpen = false;
     mp.gui.cursor.show(false, false);
-    mp.gui.chat.activate(true);
-    
-    mp.gui.chat.push('[Phone] Closing phone...');
-    
-    if(phoneBrowser) {
-        phoneBrowser.execute(`
-            console.log('[CEF] closePhone() being called');
-            if (typeof closePhone === 'function') {
-                closePhone();
-                console.log('[CEF] closePhone() executed');
-            } else {
-                console.error('[CEF] closePhone is not a function!');
-            }
-        `);
-    }
+    mp.gui.chat.activate(true); 
+    if(phoneBrowser) phoneBrowser.execute(`closePhone()`);
 }
 
 // --- CALL STATE TRACKING ---
@@ -119,167 +90,22 @@ let callState = null; // null | 'ringing' | 'incoming' | 'active'
 let callTimer = null;
 let callSeconds = 0;
 
-// ============================================
-// VUE INTEGRATION: DATA UPDATE EVENTS
-// ============================================
-
-// --- PHONE NUMBER UPDATE ---
-mp.events.add('client:phone:setPhoneNumber', (phoneNumber) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`setPhoneNumber('${phoneNumber}')`);
-    }
-});
-
-// --- MAIL UPDATES ---
-mp.events.add('client:phone:updateMails', (mailsJson) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`updateMails(${mailsJson})`);
-    }
-});
-
-mp.events.add('client:phone:newMail', (sender, subject, body) => {
-    const mail = {
-        id: Date.now(),
-        sender: sender,
-        subject: subject,
-        body: body,
-        timestamp: new Date().toISOString(),
-        read: false
-    };
-    
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                store.mails.unshift(${JSON.stringify(mail)});
-                store.unreadMails++;
-                if (store.isLocked) {
-                    store.addNotification('mail', '${sender}', '${subject}');
-                }
-            })();
-        `);
-    }
-});
-
-// --- CONTACT UPDATES ---
-mp.events.add('client:phone:updateContacts', (contactsJson) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`updateContacts(${contactsJson})`);
-    }
-});
-
-mp.events.add('client:phone:addContact', (name, number) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                store.contacts.push({
-                    id: Date.now(),
-                    name: '${name}',
-                    number: '${number}'
-                });
-            })();
-        `);
-    }
-});
-
-// --- MESSAGE UPDATES ---
-mp.events.add('client:phone:updateMessages', (messagesJson) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`updateMessages(${messagesJson})`);
-    }
-});
-
-mp.events.add('client:phone:newMessage', (contact, message) => {
-    if (phoneBrowser) {
-        const safeContact = contact.replace(/'/g, "\\'");
-        const safeMessage = message.replace(/'/g, "\\'");
-        
-        phoneBrowser.execute(`
-            (function() {
-                const existingConvo = store.messages.find(m => m.contact === '${safeContact}');
-                if (existingConvo) {
-                    existingConvo.lastMessage = '${safeMessage}';
-                    existingConvo.timestamp = new Date().toISOString();
-                } else {
-                    store.messages.unshift({
-                        id: Date.now(),
-                        contact: '${safeContact}',
-                        lastMessage: '${safeMessage}',
-                        timestamp: new Date().toISOString()
-                    });
-                }
-                if (store.isLocked) {
-                    store.addNotification('phone', '${safeContact}', '${safeMessage}');
-                }
-            })();
-        `);
-    }
-});
-
-// --- BANK UPDATES ---
-mp.events.add('client:phone:updateBankData', (balance, historyJson) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`updateBankData(${balance}, ${historyJson})`);
-    }
-});
-
-mp.events.add('client:phone:bankTransaction', (type, description, amount) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                store.bankData.history.unshift({
-                    id: Date.now(),
-                    type: '${type}',
-                    description: '${description}',
-                    amount: ${amount},
-                    timestamp: new Date().toISOString()
-                });
-                store.bankData.balance += ${amount};
-            })();
-        `);
-    }
-});
-
-// --- VEHICLE UPDATES ---
-mp.events.add('client:phone:updateVehicles', (vehiclesJson) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`updateVehicles(${vehiclesJson})`);
-    }
-});
-
-mp.events.add('client:phone:updateVehicleStatus', (vehicleId, status, fuel) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                const vehicle = store.vehicles.find(v => v.id === ${vehicleId});
-                if (vehicle) {
-                    vehicle.status = '${status}';
-                    vehicle.fuel = ${fuel};
-                }
-            })();
-        `);
-    }
-});
-
-// --- NOTIFICATION SYSTEM ---
-mp.events.add('client:phone:notification', (appType, title, message) => {
-    if (phoneBrowser) {
-        const safeTitle = title.replace(/'/g, "\\'");
-        const safeMessage = message.replace(/'/g, "\\'");
-        phoneBrowser.execute(`receiveNotification('system', '${safeTitle}', '${safeMessage}', '${appType}')`);
-    }
-});
-
-// ============================================
-// CALL SYSTEM (UPDATED FOR VUE)
-// ============================================
-
 // --- INCOMING CALL: other player is calling us ---
 mp.events.add('client:phone:incomingCall', (callerNumber, callerName) => {
     callState = 'incoming';
     const safeName = (callerName || callerNumber).replace(/'/g, "\\'");
     if (phoneBrowser) {
-        phoneBrowser.execute(`showIncomingCall('${callerNumber}', '${safeName}')`);
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.showIncomingCall === 'function') {
+                    app.showIncomingCall('${callerNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('${callerNumber}', 'Incoming Call', '${safeName} is calling...', 'phone');
+                }
+            })();
+        `);
     }
+    // Play ringtone sound if phone is closed
     if (!isPhoneOpen) {
         mp.events.call('showNotification', 'Phone', `${safeName} is calling...`);
     }
@@ -290,7 +116,15 @@ mp.events.add('client:phone:callRinging', (targetNumber, targetName) => {
     callState = 'ringing';
     const safeName = (targetName || targetNumber).replace(/'/g, "\\'");
     if (phoneBrowser) {
-        phoneBrowser.execute(`showOutgoingCall('${targetNumber}', '${safeName}')`);
+        phoneBrowser.execute(`
+            (function() {
+                if(typeof app.showOutgoingCall === 'function') {
+                    app.showOutgoingCall('${targetNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('Phone', 'Calling...', 'Ringing ${safeName}...', 'phone');
+                }
+            })();
+        `);
     }
 });
 
@@ -298,6 +132,7 @@ mp.events.add('client:phone:callRinging', (targetNumber, targetName) => {
 mp.events.add('client:phone:callConnected', (partnerNumber, partnerName) => {
     callState = 'active';
     callSeconds = 0;
+    const safeName = (partnerName || partnerNumber).replace(/'/g, "\\'");
     
     // Start call timer
     if (callTimer) clearInterval(callTimer);
@@ -306,281 +141,454 @@ mp.events.add('client:phone:callConnected', (partnerNumber, partnerName) => {
         const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
         const secs = (callSeconds % 60).toString().padStart(2, '0');
         if (phoneBrowser) {
-            phoneBrowser.execute(`updateCallTimer('${mins}:${secs}')`);
+            phoneBrowser.execute(`
+                if(typeof app.updateCallTimer === 'function') app.updateCallTimer('${mins}:${secs}');
+            `);
         }
     }, 1000);
 
     if (phoneBrowser) {
-        const safeName = (partnerName || partnerNumber).replace(/'/g, "\\'");
         phoneBrowser.execute(`
             (function() {
-                store.callState = 'active';
-                store.callData = { number: '${partnerNumber}', name: '${safeName}' };
+                if(typeof app.showActiveCall === 'function') {
+                    app.showActiveCall('${partnerNumber}', '${safeName}');
+                } else {
+                    app.receiveNotification('Phone', 'Connected', 'Call with ${safeName}', 'phone');
+                }
             })();
         `);
     }
+    mp.events.call('showNotification', 'Phone', `Connected to ${safeName}`);
 });
 
 // --- CALL ENDED ---
-mp.events.add('client:phone:callEnded', () => {
+mp.events.add('client:phone:callEnded', (reason) => {
     callState = null;
-    if (callTimer) {
-        clearInterval(callTimer);
-        callTimer = null;
-    }
     callSeconds = 0;
+    if (callTimer) { clearInterval(callTimer); callTimer = null; }
     
-    if (phoneBrowser) {
-        phoneBrowser.execute(`endCall()`);
-    }
-});
-
-// --- CALL REJECTED ---
-mp.events.add('client:phone:callRejected', () => {
-    callState = null;
+    const safeReason = (reason || 'Call ended.').replace(/'/g, "\\'");
     if (phoneBrowser) {
         phoneBrowser.execute(`
             (function() {
-                endCall();
-                store.addNotification('system', 'Call Ended', 'The call was rejected.');
+                if(typeof app.hideCallUI === 'function') app.hideCallUI();
+                app.receiveNotification('Phone', '${safeReason}', '', 'phone');
             })();
         `);
     }
+    mp.events.call('showNotification', 'Phone', safeReason);
 });
 
-// ============================================
-// PHONE APP CALLBACKS (FROM CEF TO CLIENT)
-// ============================================
+// --- STANDARD APP EVENTS ---
 
-mp.events.add('client:phone:appCallback', (appName, action, dataJson) => {
-    const data = dataJson ? JSON.parse(dataJson) : null;
-    
-    switch (appName) {
-        case 'phone':
-            handlePhoneAppCallback(action, data);
-            break;
-        case 'bank':
-            handleBankAppCallback(action, data);
-            break;
-        case 'vehicles':
-            handleVehiclesAppCallback(action, data);
-            break;
-        case 'camera':
-            handleCameraAppCallback(action, data);
-            break;
-        case 'quickeats':
-            handleQuickEatsCallback(action, data);
-            break;
-        case 'escootr':
-            handleEScootrCallback(action, data);
-            break;
-    }
-});
+mp.events.add('client:camera:photoSaved', (filename) => {
+    // If we have a target waiting for a photo
+    if (chatPhotoTarget) {
+        
+        // 1. Close Camera
+        mp.events.call('client:forceCloseCamera');
 
-function handlePhoneAppCallback(action, data) {
-    switch (action) {
-        case 'startCall':
-            mp.events.callRemote('server:phone:startCall', data.number);
-            break;
-        case 'endCall':
-            mp.events.callRemote('server:phone:endCall');
-            break;
-        case 'acceptCall':
-            mp.events.callRemote('server:phone:acceptCall');
-            break;
-        case 'rejectCall':
-            mp.events.callRemote('server:phone:rejectCall');
-            break;
-        case 'sendMessage':
-            mp.events.callRemote('server:phone:sendMessage', data.number, data.message);
-            break;
-        case 'addContact':
-            mp.events.callRemote('server:phone:addContact', data.name, data.number);
-            break;
-        case 'deleteContact':
-            mp.events.callRemote('server:phone:deleteContact', data.contactId);
-            break;
-    }
-}
+        // 2. Send SMS via Server
+        const body = filename; // The filename from camera.js
+        mp.events.callRemote('server:phone:sendSMS', chatPhotoTarget, body, 'photo');
 
-function handleBankAppCallback(action, data) {
-    switch (action) {
-        case 'transfer':
-            mp.events.callRemote('server:bank:transfer', data.target, data.amount);
-            break;
-        case 'requestHistory':
-            mp.events.callRemote('server:bank:requestHistory');
-            break;
-    }
-}
+        // 3. Re-open Phone
+        isPhoneOpen = true;
+        mp.gui.cursor.show(true, true);
+        mp.gui.chat.activate(false); 
+        phoneBrowser.execute(`openPhone()`);
 
-function handleVehiclesAppCallback(action, data) {
-    switch (action) {
-        case 'spawn':
-            mp.events.callRemote('server:vehicle:spawn', data.vehicleId);
-            break;
-        case 'despawn':
-            mp.events.callRemote('server:vehicle:despawn', data.vehicleId);
-            break;
-        case 'locate':
-            mp.events.callRemote('server:vehicle:locate', data.vehicleId);
-            break;
-        case 'sell':
-            mp.events.callRemote('server:vehicle:sell', data.vehicleId);
-            break;
-    }
-}
-
-function handleCameraAppCallback(action, data) {
-    switch (action) {
-        case 'open':
-            // Camera logic
-            mp.events.callRemote('server:camera:open');
-            break;
-        case 'takePhoto':
-            mp.events.callRemote('server:camera:takePhoto');
-            break;
-    }
-}
-
-function handleQuickEatsCallback(action, data) {
-    switch (action) {
-        case 'order':
-            mp.events.callRemote('server:quickeats:order', data.items, data.location);
-            break;
-    }
-}
-
-function handleEScootrCallback(action, data) {
-    switch (action) {
-        case 'rent':
-            mp.events.callRemote('server:escootr:rent', data.location);
-            break;
-        case 'endRental':
-            mp.events.callRemote('server:escootr:endRental');
-            break;
-    }
-}
-
-// ============================================
-// LOCATION & MAP FEATURES
-// ============================================
-
-mp.events.add('client:phone:showLocationBlip', (x, y, z, name) => {
-    clearLocationBlip();
-    
-    const position = new mp.Vector3(x, y, z);
-    locationBlip = mp.blips.new(1, position, {
-        name: name || 'Destination',
-        scale: 1.0,
-        color: 3,
-        shortRange: false
-    });
-    
-    locationColshape = mp.colshapes.newSphere(x, y, z, 5.0);
-});
-
-mp.events.add('playerEnterColshape', (colshape) => {
-    if (colshape === locationColshape) {
-        if (phoneBrowser) {
-            phoneBrowser.execute(`
-                receiveNotification('system', 'Destination', 'You have arrived at your destination.', 'system')
-            `);
-        }
-        clearLocationBlip();
-    }
-});
-
-mp.events.add('client:phone:clearLocationBlip', () => {
-    clearLocationBlip();
-});
-
-// --- ESCOOTR TRACKING ---
-mp.events.add('client:escootr:showLocation', (x, y, z) => {
-    clearScooterMarkers();
-    
-    const position = new mp.Vector3(x, y, z);
-    scooterBlip = mp.blips.new(1, position, {
-        name: 'eScootr Rental',
-        scale: 0.8,
-        color: 25,
-        shortRange: false
-    });
-    
-    scooterMarker = mp.markers.new(1, position, 1.5, {
-        color: [86, 171, 47, 150],
-        visible: true
-    });
-});
-
-mp.events.add('client:escootr:clearLocation', () => {
-    clearScooterMarkers();
-});
-
-// ============================================
-// SETTINGS & PREFERENCES
-// ============================================
-
-mp.events.add('client:phone:updateSettings', (settingsJson) => {
-    if (phoneBrowser) {
+        // 4. Force UI to open the specific chat thread and "echo" the message
         phoneBrowser.execute(`
             (function() {
-                const settings = ${settingsJson};
-                Object.assign(store.settings, settings);
-            })();
-        `);
-    }
-});
+                // Open Chat UI
+                app.open('phone-app');
+                const name = app.phoneApp.getContactName('${chatPhotoTarget}');
+                app.phoneApp.openChat('${chatPhotoTarget}', name);
 
-// ============================================
-// GALLERY & MEDIA
-// ============================================
-
-mp.events.add('client:phone:updatePhotos', (photosJson, baseUrl) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                store.photos = ${photosJson};
-                store.mediaBaseUrl = '${baseUrl}';
-            })();
-        `);
-    }
-});
-
-mp.events.add('client:phone:addPhoto', (photoUrl) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`
-            (function() {
-                store.photos.unshift({
-                    id: Date.now(),
-                    url: '${photoUrl}',
-                    timestamp: new Date().toISOString()
+                // Echo message to UI immediately
+                app.phoneApp.messages.push({
+                    number: '${chatPhotoTarget}',
+                    body: '${body}',
+                    type: 'photo',
+                    isMine: true,
+                    is_read: 1,
+                    time: new Date().toISOString()
                 });
+                app.phoneApp.renderChatBubbles();
+            })();
+        `);
+
+        // 5. Reset target
+        chatPhotoTarget = null;
+    }
+});
+
+mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
+    if(phoneBrowser) {
+        const safeBody = message.replace(/'/g, "\\'");
+        const safeTitle = title.replace(/'/g, "\\'");
+        const safeSender = sender.replace(/'/g, "\\'");
+        
+        phoneBrowser.execute(`
+            if(typeof app.receiveMail === 'function') {
+                app.receiveMail(${id}, '${safeSender}', '${safeTitle}', '${safeBody}');
+            } else {
+                app.receiveNotification('${safeSender}', '${safeTitle}', '${safeBody}');
+            }
+        `);
+    }
+});
+
+mp.events.add('client:phone:updateVehicles', (carsJson) => {
+    if(phoneBrowser) phoneBrowser.execute(`app.loadVehicles(${carsJson})`);
+});
+mp.events.add('client:closePhoneWrapper', () => {
+    isPhoneOpen = false;
+    mp.gui.cursor.show(false, false);
+});
+mp.events.add('client:phone:bank:data', (json) => {
+    if (phoneBrowser) phoneBrowser.execute(`app.loadBankData(${json})`);
+});
+mp.events.add('client:phone:quickEats:update', (isActive, status, loc) => {
+    if(phoneBrowser) phoneBrowser.execute(`app.updateQuickEatsUI(${isActive}, '${status}', ${loc ? `'${loc}'` : 'null'})`);
+});
+
+// --- RECEIVE SMS EVENT ---
+mp.events.add('client:phone:receiveSMS', (number, body, type) => {
+    if(phoneBrowser) {
+        const msgObj = { 
+            number: number, 
+            body: body,
+            type: type || 'text',
+            isMine: false, 
+            is_read: 0, 
+            time: new Date().toISOString() 
+        };
+        
+        phoneBrowser.execute(`
+            (function() {
+                if(app.phoneApp) {
+                    app.phoneApp.messages.push(${JSON.stringify(msgObj)});
+                    
+                    const isChatting = (app.phoneApp.activeChatNumber == '${number}') && 
+                                       (!app.isLocked) && 
+                                       (!document.getElementById('phone-shell').classList.contains('hidden'));
+
+                    if(isChatting) {
+                        app.phoneApp.messages[app.phoneApp.messages.length - 1].is_read = 1;
+                        mp.trigger('client:proxyAction', 'markMessagesRead', '${number}');
+                        app.phoneApp.renderChatBubbles();
+                    } else {
+                        app.phoneApp.renderMessageList();
+                        let notifyMsg = '${body.replace(/'/g, "\\'")}';
+                        if('${type}' === 'photo') notifyMsg = 'Sent a photo';
+                        if('${type}' === 'location') notifyMsg = 'Shared location';
+                        app.receiveNotification('${number}', 'New Message', notifyMsg, 'phone');
+                    }
+                }
             })();
         `);
     }
 });
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-
-mp.events.add('client:phone:toast', (title, message) => {
-    if (phoneBrowser) {
-        phoneBrowser.execute(`receiveNotification('system', '${title}', '${message}', 'system')`);
+// --- COLSHAPE ENTER EVENT ---
+mp.events.add("playerEnterColshape", (shape) => {
+    if (shape === locationColshape) {
+        // CUSTOM NOTIFICATION: Arrived
+        mp.events.call('showNotification', 'GPS', 'You have arrived at the location.');
+        clearLocationBlip(); 
     }
 });
 
-mp.events.add('client:phone:lockScreen', () => {
+// --- PROXY HANDLER ---
+mp.events.add('client:phone:proxyResponse', (action, data) => {
     if (phoneBrowser) {
-        phoneBrowser.execute(`store.lock()`);
+        if (action === 'scooterAction') {
+            phoneBrowser.execute(`if(app.scooter) app.scooter.onScanResult(${JSON.stringify(data)})`);
+
+            if (data.status === 'started' && data.x && data.y) {
+                clearScooterMarkers();
+                const targetPos = new mp.Vector3(data.x, data.y, data.z);
+
+                scooterBlip = mp.blips.new(522, targetPos, {
+                    name: "Your eScooter",
+                    color: 2, 
+                    scale: 1.0,
+                    shortRange: false,
+                });
+                scooterBlip.setRoute(true); 
+
+                scooterMarker = mp.markers.new(1, new mp.Vector3(data.x, data.y, data.z - 1.0), 1.2, {
+                    direction: new mp.Vector3(0, 0, 0),
+                    rotation: new mp.Vector3(0, 0, 0),
+                    color: [50, 205, 50, 100], 
+                    visible: true,
+                    dimension: mp.players.local.dimension
+                });
+            }
+        }
     }
 });
 
-// ============================================
-// DEBUG & TESTING
-// ============================================
+mp.events.add('client:phone:findScooterSpawn', () => {
+    const player = mp.players.local;
+    const pos = player.position;
 
-mp.events.add('client:phone:debug', (message) => {
-    mp.gui.chat.push(`[Phone Debug] ${message}`);
+    // Block if player is in an interior (non-zero dimension)
+    if (player.dimension !== 0) {
+        mp.events.call('showNotification', 'eScootr', 'Go outside to spawn a scooter.');
+        return;
+    }
+
+    // Try to detect interior via native (some interiors are in dim 0)
+    try {
+        const interiorId = mp.game.interior.getInteriorAtCoords(pos.x, pos.y, pos.z);
+        if (interiorId !== 0) {
+            mp.events.call('showNotification', 'eScootr', 'Go outside to spawn a scooter.');
+            return;
+        }
+    } catch (e) { /* native may not be available, fall through */ }
+
+    const heading = player.getHeading();
+    const distance = 5.0;
+    const rad = heading * (Math.PI / 180);
+    const behindX = pos.x + (Math.sin(rad) * distance);
+    const behindY = pos.y + (-Math.cos(rad) * distance);
+
+    // Find nearest road node behind the player
+    const roadNode = mp.game.pathfind.getClosestVehicleNode(behindX, behindY, pos.z, 1, 3.0, 0);
+
+    let finalPos;
+    if (roadNode) {
+        // Validate the road node isn't absurdly far (tunnel/underground)
+        const dx = roadNode.x - pos.x;
+        const dy = roadNode.y - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 30) {
+            // Road node is too far — use position behind player with Z offset
+            finalPos = { x: behindX, y: behindY, z: pos.z + 0.5 };
+        } else {
+            finalPos = { x: roadNode.x, y: roadNode.y, z: roadNode.z + 0.3 };
+        }
+    } else {
+        // No road node found — use behind-player with slight Z offset
+        finalPos = { x: behindX, y: behindY, z: pos.z + 0.5 };
+    }
+
+    mp.events.callRemote('server:scooter:performRent', JSON.stringify(finalPos));
+});
+
+mp.events.add('client:phone:appCallback', (appName, funcName) => {
+    if (phoneBrowser && appName === 'scooter') {
+        if (funcName === 'startRide') phoneBrowser.execute(`if(app.scooter) app.scooter.startRide()`);
+        
+        if (funcName === 'endRide') {
+            clearScooterMarkers();
+            phoneBrowser.execute(`if(app.scooter && app.scooter.endRide) app.scooter.endRide()`);
+        }
+    }
+
+    if (appName === 'camera' && funcName === 'open') {
+        closePhone(); 
+        mp.events.call('client:toggleCamera'); 
+    }
+});
+
+mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson, contactsJson, messagesJson) => {
+    mp.gui.chat.push(`[Phone Debug] Init Data Received.`);
+
+    if(phoneBrowser) {
+        const safeMails = mailsJson || '[]';
+        const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : '[]';
+        const safeSettings = settingsJson || '{}';
+        const safeMediaUrl = mediaUrl || '';
+        const safeContacts = contactsJson || '[]';
+        const safeMessages = messagesJson || '[]';
+
+        phoneBrowser.execute(`
+            (function() {
+                try {
+                    try { app.loadMails(${safeMails}); } 
+                    catch(e) { console.error("Mail Load Error:", e); }
+
+                    try { app.loadPhotos(${safePhotos}, '${safeMediaUrl}'); } 
+                    catch(e) { console.error("Photo Load Error:", e); }
+
+                    try { app.settings.init(${safeSettings}); } 
+                    catch(e) { console.error("Settings Load Error:", e); }
+
+                    try { 
+                        if(app.phoneApp) app.phoneApp.init(${safeContacts}, ${safeMessages}); 
+                    } catch(e) { console.error("Phone App Init Error:", e); }
+
+                } catch(err) {
+                    console.error("Critical Phone Init Error:", err);
+                }
+            })();
+        `);
+    }
+});
+
+mp.events.add('client:proxyAction', (action, data) => {
+    switch (action) {
+        case 'requestBankData': mp.events.callRemote('server:phone:bank:open'); break;
+        case 'toggleQuickEats': mp.events.callRemote('server:phone:quickEats:toggle'); break;
+        case 'bankTransfer': 
+            const transferData = JSON.parse(data); 
+            mp.events.callRemote('server:phone:bank:transfer', transferData.t, transferData.a);
+            break;
+        case 'readMail': mp.events.callRemote('server:phone:readMail', data); break;
+        case 'readAllMails': mp.events.callRemote('server:phone:readAllMails'); break;
+        case 'scooterAction': mp.events.callRemote('server:phone:scooterAction', data); break;
+        
+        case 'deletePhoto':
+            const photoData = JSON.parse(data); 
+            mp.events.callRemote('server:phone:deletePhoto', photoData.id, photoData.path);
+            break;
+
+        case 'saveSetting':
+            const payload = JSON.parse(data); 
+            mp.events.callRemote('server:phone:saveSetting', payload.key, payload.val);
+            break;
+
+        case 'saveContact':
+            const contactData = JSON.parse(data);
+            mp.events.callRemote('server:phone:addContact', contactData.name, contactData.number);
+            break;
+
+        case 'sendSMS':
+            const smsData = JSON.parse(data);
+            mp.events.callRemote('server:phone:sendSMS', smsData.number, smsData.body);
+            break;
+
+        case 'markMessagesRead':
+            mp.events.callRemote('server:phone:markMessagesRead', data);
+            break;
+
+        case 'startCall':
+             mp.events.callRemote('server:phone:startCall', data); 
+             break;
+
+        case 'acceptCall':
+             mp.events.callRemote('server:phone:acceptCall');
+             break;
+
+        case 'declineCall':
+             mp.events.callRemote('server:phone:declineCall');
+             break;
+
+        case 'endCall':
+             mp.events.callRemote('server:phone:endCall');
+             break;
+
+        case 'shareLocation':
+            const player = mp.players.local;
+            const pos = player.position;
+            const locBody = `${pos.x.toFixed(2)},${pos.y.toFixed(2)}`;
+            
+            mp.events.callRemote('server:phone:sendSMS', data, locBody, 'location');
+            
+            if(phoneBrowser) {
+                const echoScript = `
+                    (function() {
+                        if(app.phoneApp) {
+                            app.phoneApp.messages.push({
+                                number: '${data}',
+                                body: '${locBody}',
+                                type: 'location',
+                                isMine: true,
+                                is_read: 1,
+                                time: new Date().toISOString()
+                            });
+                            app.phoneApp.renderChatBubbles();
+                            app.phoneApp.renderMessageList();
+                        }
+                    })();
+                `;
+                phoneBrowser.execute(echoScript);
+            }
+            break;
+
+        case 'sharePhoto':
+            const pData = JSON.parse(data);
+            mp.events.callRemote('server:phone:sendSMS', pData.target, pData.image, 'photo');
+
+            if(phoneBrowser) {
+                const echoScript = `
+                    (function() {
+                        if(app.phoneApp) {
+                            app.phoneApp.messages.push({
+                                number: '${pData.target}',
+                                body: '${pData.image}',
+                                type: 'photo',
+                                isMine: true,
+                                is_read: 1,
+                                time: new Date().toISOString()
+                            });
+                            app.phoneApp.renderChatBubbles();
+                            app.phoneApp.renderMessageList();
+                        }
+                    })();
+                `;
+                phoneBrowser.execute(echoScript);
+            }
+            break;
+
+        case 'camera':
+            if (data === 'open') {
+                closePhone();
+                chatPhotoTarget = null; // Ensure we don't auto-send
+                mp.events.call('client:toggleCamera'); 
+            }
+            break;
+
+        case 'cameraForChat':
+            // data is the phone number of the person we are chatting with
+            chatPhotoTarget = data; 
+            closePhone();
+            mp.events.call('client:toggleCamera');
+            break;
+
+        case 'setWaypoint':
+            // 1. Clear previous
+            clearLocationBlip();
+
+            // 2. Parse coordinates
+            const coords = data.split(',');
+            if (coords.length >= 2) {
+                const x = parseFloat(coords[0]);
+                const y = parseFloat(coords[1]);
+                
+                // 3. Create Blip
+                locationBlip = mp.blips.new(1, new mp.Vector3(x, y, 0), {
+                    name: "Shared Location",
+                    color: 5, 
+                    shortRange: false, 
+                    scale: 1.0
+                });
+                locationBlip.setRoute(true);
+
+                // 4. Create Colshape (Trigger)
+                locationColshape = mp.colshapes.newCircle(x, y, 15.0);
+
+                // CUSTOM NOTIFICATION: Route Set
+                mp.events.call('showNotification', 'GPS', 'Route set to location.');
+            }
+            break;
+
+        default: mp.events.callRemote('server:phone:vehicleAction', action, data); break;
+    }
+});
+
+// Sell vehicle from phone
+mp.events.add('client:phone:sellVehicle', (vehicleId) => {
+    mp.events.callRemote('server:dealership:sell', vehicleId);
+});
+
+mp.events.add('client:leaveVehicle', () => {
+    const player = mp.players.local;
+    if(player.vehicle) {
+        player.taskLeaveVehicle(player.vehicle.handle, 0);
+    }
 });
