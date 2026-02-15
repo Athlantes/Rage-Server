@@ -139,10 +139,6 @@ mp.events.addCommand('refuel', async (player) => {
 
 // --- HOUSING COMMANDS (PLAYER) ---
 
-mp.events.addCommand('buyhouse', (player) => {
-    HouseManager.buyHouse(player);
-});
-
 mp.events.addCommand('sellhouse', async (player) => {
     // Simple sell logic: get 50% back
     // (You can move this to HouseManager.js if you want it cleaner)
@@ -170,14 +166,6 @@ mp.events.addCommand('sellhouse', async (player) => {
 // This overrides your existing lock command if you wish, or you can merge logic
 mp.events.addCommand('lockhouse', (player) => {
     HouseManager.lockHouse(player);
-});
-
-// Interaction Command (Bind this to 'E' key in client-side if possible)
-mp.events.addCommand('enter', (player) => {
-    HouseManager.playerInteract(player);
-});
-mp.events.addCommand('exit', (player) => {
-    HouseManager.playerInteract(player);
 });
 
 // ----------------------------------------------------------------------------
