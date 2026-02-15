@@ -2,6 +2,7 @@ const vehicleManager = require('./vehicles/vehicleManager');
 const playerManager = require('./playerManager');
 const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
+const HouseManager = require('../systems/houseManager');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
@@ -136,10 +137,116 @@ mp.events.addCommand('refuel', async (player) => {
     }, 3000);
 });
 
+// --- HOUSING COMMANDS (PLAYER) ---
+
+mp.events.addCommand('buyhouse', (player) => {
+    HouseManager.buyHouse(player);
+});
+
+mp.events.addCommand('sellhouse', async (player) => {
+    // Simple sell logic: get 50% back
+    // (You can move this to HouseManager.js if you want it cleaner)
+    const house = HouseManager.getNearestHouse(player.position);
+    if (!house) return player.outputChatBox("!{FF0000}Go to your house entrance.");
+    if (house.ownerId !== player.data.dbId) return player.outputChatBox("!{FF0000}You don't own this house.");
+
+    try {
+        await db.query("UPDATE houses SET owner_id = 0 WHERE id = ?", [house.id]);
+        
+        const refund = Math.floor(house.price / 2);
+        player.data.money += refund; // Update memory
+        // await db.query("UPDATE users...") // Update DB money here ideally
+        
+        house.ownerId = 0;
+        house.label.text = `House #${house.id}\n~g~For Sale: $${house.price}`;
+        house.marker.setColor(0, 255, 0, 100);
+        
+        player.outputChatBox(`!{00FF00}House sold for $${refund}.`);
+    } catch (err) {
+        player.outputChatBox("!{FF0000}Error selling house.");
+    }
+});
+
+// This overrides your existing lock command if you wish, or you can merge logic
+mp.events.addCommand('lockhouse', (player) => {
+    HouseManager.lockHouse(player);
+});
+
+// Interaction Command (Bind this to 'E' key in client-side if possible)
+mp.events.addCommand('enter', (player) => {
+    HouseManager.playerInteract(player);
+});
+mp.events.addCommand('exit', (player) => {
+    HouseManager.playerInteract(player);
+});
+
 // ----------------------------------------------------------------------------
 // ADMIN SYSTEM
 // ----------------------------------------------------------------------------
 
+// --- HOUSING COMMANDS (ADMIN) ---
+
+mp.events.addCommand('createhouse', (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    const args = fullText.split(' ');
+    const price = parseInt(args[0]);
+    const interior = args[1];
+
+    if (isNaN(price) || !interior) {
+        return player.outputChatBox("Usage: /createhouse [price] [interior_preset] (e.g., motel, modern)");
+    }
+    HouseManager.createNewHouse(player, price, interior);
+});
+
+mp.events.addCommand('delhouse', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    HouseManager.deleteNearestHouse(player);
+});
+
+mp.events.addCommand('sethouseowner', async (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    const args = fullText.split(' ');
+    const houseId = parseInt(args[0]);
+    const targetId = parseInt(args[1]); 
+
+    if (isNaN(houseId) || isNaN(targetId)) return player.outputChatBox("Usage: /sethouseowner [houseId] [targetDbId]");
+
+    const house = HouseManager.getHouseById(houseId);
+    if (!house) return player.outputChatBox("!{FF0000}House not found.");
+
+    // Update DB
+    const db = require('./database'); // Require only if not globally available
+    await db.query("UPDATE houses SET owner_id = ? WHERE id = ?", [targetId, houseId]);
+    
+    // Update Visuals via HouseManager cache
+    house.ownerId = targetId;
+    const isOwned = targetId > 0;
+    
+    if (house.label) house.label.text = `House #${house.id}\n${isOwned ? "~r~Owned" : `~g~For Sale: $${house.price}`}`;
+    if (house.marker) house.marker.setColor(isOwned ? 255 : 0, isOwned ? 0 : 255, 0, 100);
+    if (house.blip) {
+        house.blip.setColor(isOwned ? 1 : 2);
+        house.blip.name = isOwned ? "House (Owned)" : "House For Sale";
+    }
+
+    player.outputChatBox(`!{00FF00}Set House #${houseId} owner to ID ${targetId}.`);
+});
+
+mp.events.addCommand('gotohouse', (player, id) => {
+    if (!checkRank(player, RANKS.HELPER)) return;
+    const houseId = parseInt(id);
+    const house = HouseManager.getHouseById(houseId);
+    
+    if (house) {
+        player.position = new mp.Vector3(house.position.x, house.position.y, house.position.z);
+        player.dimension = 0;
+        player.outputChatBox(`!{00FF00}Teleported to House #${houseId}.`);
+    } else {
+        player.outputChatBox("!{FF0000}House not found.");
+    }
+});
+
+// --- ADMIN DUTY (Godmode + Label) ---
 mp.events.addCommand('ahelp', (player) => {
     if (!checkRank(player, RANKS.HELPER)) return;
     player.outputChatBox(`${COLORS.ADMIN}--- Admin Commands ---`);
@@ -149,7 +256,6 @@ mp.events.addCommand('ahelp', (player) => {
     if (player.data.adminLevel >= RANKS.OWNER) player.outputChatBox(`!{FFFFFF}Owner: /makeadmin, /giveveh, /savecoords`);
 });
 
-// --- ADMIN DUTY (Godmode + Label) ---
 mp.events.addCommand('aduty', (player) => {
     if (!checkRank(player, RANKS.HELPER)) return;
 
