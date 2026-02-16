@@ -1,5 +1,6 @@
 // packages/core/playerManager.js
 const db = require('./database');
+const HouseManager = require('../systems/houseManager');
 
 // --- LEVELING CONFIGURATION ---
 const BASE_XP_NEEDED = 1000;
@@ -152,8 +153,20 @@ mp.events.add('playerJoin', (player) => {
 mp.events.add('server:spawn:player', (player, index) => {
     let pos;
     if (index === -1) {
+        // Last Location
         pos = player.data.lastLocation ? player.data.lastLocation : spawnPoints[0];
+    } else if (index === -2) {
+        // [ADDED] House Spawn
+        const house = HouseManager.getHouseByOwner(player.data.dbId);
+        if (house) {
+            // Spawn inside if interior exists, or outside if you prefer
+            // Currently house.position is the EXTERIOR.
+            pos = house.position;
+        } else {
+            pos = spawnPoints[0]; // Fallback
+        }
     } else {
+        // Standard Spawns
         if (index < 0 || index >= spawnPoints.length) return;
         pos = spawnPoints[index];
     }

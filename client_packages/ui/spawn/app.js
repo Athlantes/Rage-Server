@@ -59,6 +59,17 @@ const app = createApp({
             <span>Resume previous position</span>
           </div>
 
+          <div
+            v-if="houseLocation"
+            class="spawn-card special-house"
+            :class="{ active: selectedIndex === -2 }"
+            @click="selectLocation(-2, houseLocation.x, houseLocation.y)"
+          >
+            <i class="fas fa-home"></i>
+            <h3>My House</h3>
+            <span>Spawn at home</span>
+          </div>
+
           <!-- Standard spawns -->
           <div
             v-for="(spawn, i) in spawns"
@@ -95,7 +106,7 @@ const app = createApp({
     const spawns        = ref(SPAWNS)
     const selectedIndex = ref(null)   // null | -1 (last pos) | 0–4 (standard)
     const lastLocation  = ref(null)   // null | { x, y }
-
+    const houseLocation = ref(null)   // null | { x, y }
     // Plain variable — NOT reactive. Leaflet owns this instance.
     let spawnMap = null
 
@@ -137,12 +148,17 @@ const app = createApp({
       lastLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
     }
 
+    function addHouseLocation(pos) {
+      houseLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
+    }
+
     window.addLastLocation = addLastLocation
+    window.addHouseLocation = addHouseLocation
 
     // ── Expose ────────────────────────────────────────────────────────────────
 
     return {
-      spawns, selectedIndex, lastLocation,
+      spawns, selectedIndex, lastLocation, houseLocation,
       selectLocation, confirmSpawn,
     }
   },

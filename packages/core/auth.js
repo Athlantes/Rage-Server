@@ -6,6 +6,7 @@ const Banking = require('./banking');
 const CharCreator = require('../systems/charCreator');
 const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
 const RepoJob = require('../systems/repoJob');
+const HouseManager = require('../systems/houseManager');
 
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
@@ -276,9 +277,16 @@ function startSession(player, userData) {
     
     let showSpawnSelector = true; 
     let lastPos = null;
+    let housePos = null; // [ADDED]
 
     if (userData.position) {
         try { lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position; } catch (e) {}
+    }
+
+    // [ADDED] Fetch House Position
+    const house = HouseManager.getHouseByOwner(player.data.dbId);
+    if (house) {
+        housePos = house.position;
     }
 
     if (lastPos) player.data.lastLocation = lastPos;
@@ -290,7 +298,8 @@ function startSession(player, userData) {
         showSpawnSelector = false; 
     }
 
-    player.call('client:auth:success', [showSpawnSelector, lastPos]);
+    // [MODIFIED] Pass housePos to the client event
+    player.call('client:auth:success', [showSpawnSelector, lastPos, housePos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
 
     // --- INITIAL TIMER UPDATE ---
