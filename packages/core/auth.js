@@ -16,7 +16,7 @@ mp.events.add('playerJoin', async (player) => {
 
     try {
         const [recentAccounts] = await db.query(
-            `SELECT username, money, level, hwid FROM users 
+            `SELECT username, money, level, hwid, mugshot FROM users 
              WHERE social_id = ? 
              AND last_active >= NOW() - INTERVAL 3 DAY 
              ORDER BY last_active DESC 
@@ -163,11 +163,22 @@ async function finalizeLogin(player, userData) {
     if (!userData.appearance) {
         player.data.dbId = userData.id;
         player.data.username = userData.username;
+        player.data.mugshot = null;
         player.logged = true; 
         player.call('client:auth:destroy');
         player.call('client:creator:start'); 
         return;
     }
+
+    // Returning player with no mugshot yet — trigger capture after spawn
+    if (!userData.mugshot) {
+        setTimeout(() => {
+            if (player && player.logged) {
+                player.call('client:mugshot:capture', []);
+            }
+        }, 3000);
+    }
+
     startSession(player, userData);
 
     // Load family data after session starts
@@ -184,6 +195,7 @@ function startSession(player, userData) {
     player.name = userData.username;
     player.data.dbId = userData.id;
     player.data.username = userData.username;
+    player.data.mugshot = userData.mugshot || null;
     player.data.appearance = userData.appearance; 
     player.data.gender = userData.gender; 
     player.data.adminLevel = userData.admin_level || 0; 

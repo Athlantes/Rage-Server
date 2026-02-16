@@ -73,7 +73,13 @@ const app = createApp({
                 @click="tryAutoLogin(acc.username)"
               >
                 <div class="avatar-circle">
-                  <i class="fas fa-user-circle"></i>
+                  <img
+                    v-if="acc.mugshot"
+                    :src="\`http://26.170.61.66:3008/photos/\${acc.mugshot}\`"
+                    class="mugshot-img"
+                    @error="acc.mugshot = null"
+                  />
+                  <i v-else class="fas fa-user-circle"></i>
                 </div>
                 <div class="user-info">
                   <strong>{{ acc.username }}</strong>

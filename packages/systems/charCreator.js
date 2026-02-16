@@ -119,6 +119,13 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
 
         mp.events.call('server:auth:finalized', player);
 
+        // Trigger mugshot capture — small delay so the player is fully spawned
+        setTimeout(() => {
+            if (player && player.logged) {
+                player.call('client:mugshot:capture', []);
+            }
+        }, 4000);
+
     } catch (err) {
         console.error("[Creator] Save Error:", err);
         player.outputChatBox("!{FF0000}Error saving character data. Please try again.");
