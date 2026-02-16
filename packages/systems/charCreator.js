@@ -117,14 +117,12 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         player.outputChatBox("!{00FF00}Character created successfully!");
         player.logged = true;
 
-        mp.events.call('server:auth:finalized', player);
+        // Signal client to capture mugshot once the player spawns.
+        // Must be called BEFORE server:auth:finalized so the flag is set
+        // before client:auth:success arrives and opens the spawn selector.
+        player.call('client:mugshot:capture', []);
 
-        // Trigger mugshot capture — small delay so the player is fully spawned
-        setTimeout(() => {
-            if (player && player.logged) {
-                player.call('client:mugshot:capture', []);
-            }
-        }, 4000);
+        mp.events.call('server:auth:finalized', player);
 
     } catch (err) {
         console.error("[Creator] Save Error:", err);

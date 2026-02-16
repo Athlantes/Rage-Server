@@ -5,31 +5,48 @@
 </head>
 <body>
 <script>
-    var image = document.getElementById("html5");
-    var canvas = document.createElement("canvas");
+    var canvas  = document.createElement("canvas");
     document.body.appendChild(canvas);
     canvas.style.display = 'none';
-
     var context = canvas.getContext("2d");
-    // Create an image object. This is not attached to the DOM and is not part of the page.
-    mp.events.add("recieveHeadshotImage", (imgURL, screenResolution) => {
-        var image = new Image();
-        image.onload = function () {
-            screenResolution = JSON.parse(screenResolution);
-            const width = (screenResolution.x / 11);
-            const height = (screenResolution.y / 6);
-            canvas.width = width;
-            canvas.height = height;
-            console.log(screenResolution, width, height);
-            context.drawImage(image, 0, 0, width, height, 0, 0, width, height);
-            const base64 = canvas.toDataURL("image/jpg", 1);
-            console.log(base64);
-            mp.trigger("uploadHeadshot", base64);
-        }
-        image.crossOrigin = 'Anonymous';
-        image.src = imgURL;
-    })
 
+    mp.events.add("recieveHeadshotImage", (imgURL, screenResolutionStr) => {
+        var res = (typeof screenResolutionStr === 'string')
+            ? JSON.parse(screenResolutionStr)
+            : screenResolutionStr;
+
+        var attempts = 0;
+        var maxAttempts = 10;
+
+        function tryLoad() {
+            attempts++;
+            var image = new Image();
+
+            image.onload = function () {
+                const width  = Math.floor(res.x / 11);
+                const height = Math.floor(res.y / 6);
+                canvas.width  = width;
+                canvas.height = height;
+                context.drawImage(image, 0, 0, width, height, 0, 0, width, height);
+                const base64 = canvas.toDataURL("image/jpeg", 1);
+                mp.trigger("uploadHeadshot", base64);
+            };
+
+            image.onerror = function () {
+                if (attempts < maxAttempts) {
+                    // File not ready yet — retry after 500ms
+                    setTimeout(tryLoad, 500);
+                }
+                // After 10 attempts (5 seconds total) silently give up
+            };
+
+            image.crossOrigin = 'Anonymous';
+            // Cache-bust so the browser doesn't serve a stale 404
+            image.src = imgURL + '?t=' + Date.now();
+        }
+
+        tryLoad();
+    });
 </script>
 </body>
 </html>

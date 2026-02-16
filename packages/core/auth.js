@@ -170,15 +170,6 @@ async function finalizeLogin(player, userData) {
         return;
     }
 
-    // Returning player with no mugshot yet — trigger capture after spawn
-    if (!userData.mugshot) {
-        setTimeout(() => {
-            if (player && player.logged) {
-                player.call('client:mugshot:capture', []);
-            }
-        }, 3000);
-    }
-
     startSession(player, userData);
 
     // Load family data after session starts
@@ -331,6 +322,11 @@ function startSession(player, userData) {
     // Pass housePos and familyHQPos to the client event
     player.call('client:auth:success', [showSpawnSelector, lastPos, housePos, familyHQPos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
+
+    // If no mugshot yet, tell the client to capture one once the player spawns
+    if (!userData.mugshot) {
+        player.call('client:mugshot:capture', []);
+    }
 
     // --- INITIAL TIMER UPDATE ---
     setTimeout(() => {
