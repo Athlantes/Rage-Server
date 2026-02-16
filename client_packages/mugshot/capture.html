@@ -12,124 +12,72 @@
     let uploadInterval = null;
 
     const DBG = (...args) => mp.trigger('client:mugshot:log', '[capture.html] ' + args.join(' '));
-    const ERR = (...args) => mp.trigger('client:mugshot:log', '[capture.html][ERROR] ' + args.join(' '));
 
-    DBG('capture.html script loaded and ready');
+    // Updated function signature to accept headX and headY
+    function recieveHeadshotImage(imgURL, screenResolutionStr, headX, headY) {
+        DBG(`>> Processing Image. Head Pos: ${headX}, ${headY}`);
 
-    mp.events.add("recieveHeadshotImage", (imgURL, screenResolutionStr) => {
-        DBG(`>> recieveHeadshotImage fired | url="${imgURL}" | res="${screenResolutionStr}"`);
+        var image = new Image();
+        image.crossOrigin = 'Anonymous';
+        
+        image.onload = function () {
+            // 1. Define the size of the final mugshot (e.g. 300x300 pixels)
+            const targetSize = 300; 
+            
+            canvas.width  = targetSize;
+            canvas.height = targetSize;
 
-        var res;
-        try {
-            res = (typeof screenResolutionStr === 'string')
-                ? JSON.parse(screenResolutionStr)
-                : screenResolutionStr;
-            DBG(`Parsed resolution: x=${res.x} y=${res.y}`);
-        } catch(e) {
-            ERR('Failed to parse screenResolutionStr: ' + e.message);
-            res = { x: 1920, y: 1080 };
-            DBG('Using fallback resolution 1920x1080');
-        }
+            // 2. Calculate where to start cutting (Cropping)
+            // headX/Y are 0.0 to 1.0, so multiply by actual image size
+            let centerX = headX * image.naturalWidth;
+            let centerY = headY * image.naturalHeight;
 
-        var attempts = 0;
-        var maxAttempts = 20;
+            // We want the head to be in the center, so subtract half the target size
+            // Adjust '- 30' or similar if you want the head slightly higher/lower
+            let srcX = centerX - (targetSize / 2);
+            let srcY = centerY - (targetSize / 2);
 
-        function tryLoad() {
-            attempts++;
-            DBG(`tryLoad() attempt ${attempts}/${maxAttempts} — src="${imgURL + '?t=' + Date.now()}"`);
-            var image = new Image();
+            // 3. Draw ONLY the cropped part
+            context.drawImage(image, srcX, srcY, targetSize, targetSize, 0, 0, targetSize, targetSize);
 
-            image.onload = function () {
-                DBG(`Image loaded OK — naturalWidth=${image.naturalWidth} naturalHeight=${image.naturalHeight}`);
+            // 4. Convert to Base64
+            var base64Full = canvas.toDataURL("image/jpeg", 0.9);
+            var base64Body = base64Full.replace(/^data:image\/\w+;base64,/, '');
 
-                const srcX = 0;
-                const srcY = 0;
-                const srcW = image.naturalWidth;
-                const srcH = image.naturalHeight;
-                const width  = 256;
-                const height = 256;
+            // 5. Start Upload (Keep your existing chunk logic)
+            startUpload(base64Body);
+        };
 
-                canvas.width  = width;
-                canvas.height = height;
+        image.src = imgURL + '?t=' + Date.now();
+    }
 
-                try {
-                    context.drawImage(image, srcX, srcY, srcW, srcH, 0, 0, width, height);
-                    DBG(`drawImage OK — canvas is ${width}x${height}`);
-                } catch(e) {
-                    ERR('drawImage threw: ' + e.message);
-                    return;
-                }
+    function startUpload(base64Body) {
+        if (!base64Body) return;
+        
+        const CHUNK_SIZE = 4096;
+        const BURST_SIZE = 10; 
+        const totalChunks = Math.ceil(base64Body.length / CHUNK_SIZE);
 
-                var base64Full, base64Body;
-                try {
-                    base64Full = canvas.toDataURL("image/jpeg", 0.9);
-                    base64Body = base64Full.replace(/^data:image\/\w+;base64,/, '');
-                    DBG(`toDataURL OK — base64Body length=${base64Body.length} chars`);
-                } catch(e) {
-                    ERR('toDataURL threw (possible tainted canvas): ' + e.message);
-                    return;
-                }
+        mp.trigger("client:mugshot:startUpload", totalChunks);
 
-                if (!base64Body || base64Body.length === 0) {
-                    ERR('base64Body is EMPTY — canvas may be blank. Aborting upload.');
-                    return;
-                }
+        let currentChunk = 0;
+        if (uploadInterval) clearInterval(uploadInterval);
 
-                const CHUNK_SIZE = 4096;
-                const BURST_SIZE = 10;
-                const BURST_WAIT = 20;
-                const totalChunks = Math.ceil(base64Body.length / CHUNK_SIZE);
-
-                DBG(`Chunking: ${base64Body.length} bytes → ${totalChunks} chunks of ${CHUNK_SIZE} | burst=${BURST_SIZE} every ${BURST_WAIT}ms`);
-                mp.trigger("client:mugshot:startUpload", totalChunks);
-
-                let currentChunk = 0;
-                if (uploadInterval) {
-                    DBG('Clearing existing uploadInterval before starting new one');
+        uploadInterval = setInterval(() => {
+            for (let i = 0; i < BURST_SIZE; i++) {
+                if (currentChunk >= totalChunks) {
                     clearInterval(uploadInterval);
+                    mp.trigger("client:mugshot:uploadComplete");
+                    return;
                 }
-
-                uploadInterval = setInterval(() => {
-                    for (let i = 0; i < BURST_SIZE; i++) {
-                        if (currentChunk >= totalChunks) {
-                            clearInterval(uploadInterval);
-                            uploadInterval = null;
-                            DBG(`All ${totalChunks} chunks triggered — firing uploadComplete`);
-                            mp.trigger("client:mugshot:uploadComplete");
-                            return;
-                        }
-
-                        const start = currentChunk * CHUNK_SIZE;
-                        const end   = start + CHUNK_SIZE;
-                        const chunk = base64Body.substring(start, end);
-
-                        // Log every 10th chunk so we can track progress without spam
-                        if (currentChunk % 10 === 0) {
-                            DBG(`Sending chunk #${currentChunk}/${totalChunks} (${chunk.length} bytes)`);
-                        }
-
-                        mp.trigger("client:mugshot:sendChunk", chunk, currentChunk);
-                        currentChunk++;
-                    }
-                }, BURST_WAIT);
-            };
-
-            image.onerror = function () {
-                ERR(`Image load FAILED on attempt ${attempts} for "${imgURL}"`);
-                if (attempts < maxAttempts) {
-                    DBG(`Retrying in 500ms...`);
-                    setTimeout(tryLoad, 500);
-                } else {
-                    ERR(`All ${maxAttempts} attempts failed — giving up`);
-                }
-            };
-
-            image.crossOrigin = 'Anonymous';
-            image.src = imgURL + '?t=' + Date.now();
-        }
-
-        tryLoad();
-    });
+                const start = currentChunk * CHUNK_SIZE;
+                const end   = start + CHUNK_SIZE;
+                const chunk = base64Body.substring(start, end);
+                mp.trigger("client:mugshot:sendChunk", chunk, currentChunk);
+                currentChunk++;
+            }
+        }, 20);
+    }
 </script>
 </body>
 </html>

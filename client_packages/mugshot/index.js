@@ -6,7 +6,8 @@ let headshotTexture   = false;
 let screenshotBrowser = false;
 let frameCount        = 0;
 let pendingCapture    = false;
-let mugshotFilename   = 'mugshot_headshot.jpg';
+let mugshotFilename   = 'mugshot_temp.jpg'; 
+let headScreenPos     = { x: 0, y: 0 }; // Store head coordinates
 
 const DBG = (...args) => console.log('[Mugshot]', ...args);
 const ERR = (...args) => console.error('[Mugshot][ERROR]', ...args);
@@ -36,36 +37,46 @@ mp.events.add('client:spawn:select', () => {
 // ── Core capture logic ────────────────────────────────────────────────────────
 mp.events.add('prepareScreenshot', () => {
     DBG('>> prepareScreenshot — calling registerheadshot...');
-    pedHeadShot      = mp.players.local.registerheadshot();
-    const res        = mp.game.graphics.getScreenActiveResolution(100, 100);
+    pedHeadShot = mp.players.local.registerheadshot();
+    
+    // 2. Get screen resolution
+    const res = mp.game.graphics.getScreenActiveResolution(0, 0);
     screenResolution = JSON.stringify(res);
-    DBG(`Screen resolution: ${screenResolution} | headshot handle: ${pedHeadShot}`);
+
+    // 3. Calculate Head Position for Cropping
+    let headPos = mp.players.local.getBoneCoords(12844, 0, 0, 0); // Head Bone
+    let screenPos = mp.game.graphics.world3dToScreen2d(headPos);
+    
+    // Save normalized (0.0-1.0) coordinates to use later
+    if (screenPos) {
+        headScreenPos = { x: screenPos.x, y: screenPos.y };
+    } else {
+        headScreenPos = { x: 0.5, y: 0.5 }; // Fallback to center
+    }
+
+    DBG(`Screen res: ${screenResolution} | Head Screen Pos: ${JSON.stringify(headScreenPos)}`);
 
     setTimeout(() => {
+        // ... (Keep your existing validation logic here, it is fine) ...
         const valid = mp.game.ped.isPedheadshotValid(pedHeadShot);
         const ready = mp.game.ped.isPedheadshotReady(pedHeadShot);
-        DBG(`Headshot check (attempt 1) — valid=${valid} ready=${ready}`);
 
         if (valid && ready) {
-            headshotTexture  = mp.game.ped.getPedheadshotTxdString(pedHeadShot);
-            DBG(`Headshot texture: "${headshotTexture}" — starting render loop`);
-            frameCount       = 0;
+            headshotTexture = mp.game.ped.getPedheadshotTxdString(pedHeadShot);
+            frameCount = 0;
             takingScreenshot = true;
         } else {
-            DBG('Not ready yet, retrying in 1500ms...');
-            setTimeout(() => {
+            // ... (Keep your retry logic here) ...
+             setTimeout(() => {
                 const v2 = mp.game.ped.isPedheadshotValid(pedHeadShot);
                 const r2 = mp.game.ped.isPedheadshotReady(pedHeadShot);
-                DBG(`Headshot check (attempt 2) — valid=${v2} ready=${r2}`);
-
                 if (v2 && r2) {
-                    headshotTexture  = mp.game.ped.getPedheadshotTxdString(pedHeadShot);
-                    DBG(`Headshot texture (retry): "${headshotTexture}" — starting render loop`);
-                    frameCount       = 0;
+                    headshotTexture = mp.game.ped.getPedheadshotTxdString(pedHeadShot);
+                    frameCount = 0;
                     takingScreenshot = true;
                 } else {
                     mp.players.local.unregisterheadshot(pedHeadShot);
-                    ERR('Headshot texture not ready after both retries. Aborting.');
+                    ERR('Headshot texture not ready. Aborting.');
                 }
             }, 1500);
         }
@@ -76,37 +87,24 @@ mp.events.add('prepareScreenshot', () => {
 mp.events.add('render', () => {
     if (!takingScreenshot) return;
 
-    // Draw the headshot sprite every frame so it's visible on screen
     mp.game.graphics.drawSprite(
         headshotTexture, headshotTexture,
         0.045, 0.085, 0.10, 0.18,
         0.0, 255, 255, 255, 1000
     );
 
-    // Log when the loop first starts running
-    if (frameCount === 0) {
-        DBG('Render loop started — drawing headshot sprite...');
-    }
-
-    // Frame 15: sprite has been on screen long enough — schedule screenshot.
-    // IMPORTANT: mp.gui.takeScreenshot must NOT be called directly inside render.
-    // It must be deferred via setTimeout so it executes outside the render callback.
     if (frameCount === 15) {
-        DBG(`Frame 15 — scheduling takeScreenshot via setTimeout (filename="${mugshotFilename}")`);
         setTimeout(() => {
-            DBG(`takeScreenshot firing now for "${mugshotFilename}"`);
-            mp.gui.takeScreenshot(mugshotFilename, 0, 100, 0);
+            // Take the full screenshot locally
+            mp.gui.takeScreenshot(mugshotFilename, 1, 100, 0); // 1 = PNG (better quality)
 
-            // Give the engine time to flush the file to disk, then open the processor
             setTimeout(() => {
-                DBG('File flush wait done — stopping render loop and firing playerheadshot_taken');
                 takingScreenshot = false;
                 mp.players.local.unregisterheadshot(pedHeadShot);
                 mp.events.call('playerheadshot_taken');
-            }, 3000);
+            }, 2000); // 2 seconds is usually enough
         }, 0);
     }
-
     frameCount++;
 });
 
@@ -123,11 +121,15 @@ mp.events.add('playerheadshot_taken', () => {
 
 mp.events.add('browserDomReady', (browser) => {
     if (browser !== screenshotBrowser) return;
+    
+    // RAGE:MP allows accessing screenshots via this virtual URL
     const url = 'http://screenshots/' + mugshotFilename;
-    DBG(`>> browserDomReady — calling recieveHeadshotImage | url="${url}" | res=${screenResolution}`);
-    screenshotBrowser.call('recieveHeadshotImage', url, screenResolution);
+    
+    DBG(`>> browserDomReady — Sending to CEF. Crop X:${headScreenPos.x} Y:${headScreenPos.y}`);
+    
+    // 4. Pass the Head Position to the browser
+    screenshotBrowser.execute(`recieveHeadshotImage('${url}', '${screenResolution}', ${headScreenPos.x}, ${headScreenPos.y})`);
 });
-
 // ── CEF → Client log bridge (capture.html can't console.log directly) ────────
 mp.events.add('client:mugshot:log', (msg) => {
     console.log(msg);

@@ -85,6 +85,10 @@ function processMugshotSave(player, imageBase64) {
 
     console.log(`[Mugshot] Writing ${buffer.length} bytes to ${filepath}`);
 
+    if (!fs.existsSync(mugshotsDir)){
+        fs.mkdirSync(mugshotsDir, { recursive: true });
+    }
+
     fs.writeFile(filepath, buffer, async (err) => {
         if (err) {
             console.error(`[Mugshot] Write Error for ${player.data.username}:`, err);
