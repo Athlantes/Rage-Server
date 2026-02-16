@@ -1892,10 +1892,18 @@
             return;
         }
         list.innerHTML = filtered.map(f => {
-            const applyBadge = f.applicationsOpen ? `<span class="fam-badge open"><i class="fas fa-envelope" style="margin-right:3px;"></i>Applications</span>` : `<span class="fam-badge closed">Closed</span>`;
-            const joinBadge  = f.invitesOpen ? `<span class="fam-badge open"><i class="fas fa-door-open" style="margin-right:3px;"></i>Open Join</span>` : '';
-            const actions    = (f.applicationsOpen ? `<button class="fam-btn fam-btn-apply" onclick="familyApply(${f.id})"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>` : '') +
-                               (f.invitesOpen      ? `<button class="fam-btn fam-btn-join"  onclick="familyDirectJoin(${f.id})"><i class="fas fa-door-open" style="margin-right:4px;"></i>Join</button>` : '');
+            // Determine badge based on status
+            let badge = '';
+            if (f.invitesOpen) {
+                badge = `<span class="fam-badge open"><i class="fas fa-door-open" style="margin-right:3px;"></i>Direct Join</span>`;
+            } else if (f.applicationsOpen) {
+                badge = `<span class="fam-badge open"><i class="fas fa-envelope" style="margin-right:3px;"></i>Apply to Join</span>`;
+            } else {
+                badge = `<span class="fam-badge closed"><i class="fas fa-lock" style="margin-right:3px;"></i>Closed</span>`;
+            }
+            
+            const actions = (f.applicationsOpen ? `<button class="fam-btn fam-btn-apply" onclick="familyApply(${f.id})"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>` : '') +
+                            (f.invitesOpen      ? `<button class="fam-btn fam-btn-join"  onclick="familyDirectJoin(${f.id})"><i class="fas fa-door-open" style="margin-right:4px;"></i>Join</button>` : '');
             return `
                 <div class="fam-card" style="border-left-color:${f.color};">
                     <div class="fam-card-info">
@@ -1903,7 +1911,7 @@
                         <div class="fam-card-name">${f.name}</div>
                         ${f.description ? `<div class="fam-card-desc">${f.description}</div>` : ''}
                         <div class="fam-card-meta">${f.memberCount}/${f.memberCap} members</div>
-                        <div class="fam-badges">${applyBadge}${joinBadge}</div>
+                        <div class="fam-badges">${badge}</div>
                     </div>
                     <div class="fam-card-actions">${actions || '<span style="font-size:10px;color:var(--text-muted);">Invite only</span>'}</div>
                 </div>`;
@@ -1966,7 +1974,6 @@
                     <div class="fam-stat-val" style="font-size:13px;">${fam.hqHouseId ? `House #${fam.hqHouseId} <span style="font-size:11px;color:var(--success);">● Active</span>` : '<span style="font-size:12px;color:var(--text-muted);">Not set</span>'}</div>
                 </div>
             </div>
-            ${fam.hqHouseId ? `<button class="fam-hq-btn" style="margin-bottom:12px;" onclick="mp.trigger('client:family:spawn')"><i class="fas fa-location-arrow" style="margin-right:6px;"></i>Spawn at Family HQ</button>` : ''}
             <div class="fam-section-title">Ranks</div>
             <div class="fam-rank-strip">
                 ${(fam.ranks||[]).map(r => `<div class="fam-rank-pill" style="color:${r.color};border-color:${r.color}33;"><strong>${r.rank}</strong> — ${r.name}</div>`).join('')}
@@ -2033,12 +2040,37 @@
             </div>
             <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;">Current tag shown in chat and above players: <strong style="color:${fam.color};">[${fam.tag}]</strong></div>
 
+            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-palette" style="margin-right:5px;"></i>Family Colors</div>
+            <div style="margin-bottom:12px;">
+                <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Main Family Color</div>
+                <div class="fam-bank-row">
+                    <input class="fam-bank-input" id="fam-main-color-input" type="color" value="${fam.color}" style="flex:0 0 80px;height:40px;padding:4px;">
+                    <input class="fam-bank-input" id="fam-main-color-hex" type="text" maxlength="7" placeholder="#FFFFFF" value="${fam.color}" 
+                        style="flex:1;text-transform:uppercase;font-family:monospace;"
+                        oninput="this.value=this.value.toUpperCase(); document.getElementById('fam-main-color-input').value=this.value;">
+                    <button class="fam-bank-btn dep" onclick="saveMainColor()"><i class="fas fa-check" style="margin-right:4px;"></i>Save</button>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">This color is used for the family tag in chat and on the map.</div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Rank Colors</div>
+                ${(fam.ranks||[]).map((r, i) => `
+                    <div class="fam-bank-row" style="margin-bottom:8px;">
+                        <span style="flex:0 0 60px;font-size:11px;color:var(--text-dim);">Rank ${r.rank}</span>
+                        <input class="fam-bank-input" id="fam-rank-color-${r.rank}" type="color" value="${r.color}" style="flex:0 0 60px;height:32px;padding:4px;">
+                        <input class="fam-bank-input" type="text" readonly value="${r.name}" style="flex:1;background:rgba(255,255,255,0.02);cursor:default;">
+                        <button class="fam-bank-btn dep" style="flex:0 0 60px;" onclick="saveRankColor(${r.rank})"><i class="fas fa-check"></i></button>
+                    </div>
+                `).join('')}
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Rank colors are shown next to member names in the family menu.</div>
+            </div>
+
             <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-piggy-bank" style="margin-right:5px;"></i>Family Bank — $${(fam.bank||0).toLocaleString()}</div>
             <div class="fam-bank-row">
                 <input class="fam-bank-input" id="fam-bank-amt" type="number" placeholder="Amount...">
                 <button class="fam-bank-btn dep" onclick="famBankAction('deposit')"><i class="fas fa-arrow-down" style="margin-right:4px;"></i>Deposit</button>
-                <button class="fam-bank-btn wdr" onclick="famBankAction('withdraw')"><i class="fas fa-arrow-up" style="margin-right:4px;"></i>Withdraw</button>
             </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">All members can deposit to the family bank.</div>
 
             <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-house" style="margin-right:5px;"></i>Headquarters</div>
             <button class="fam-hq-btn" onclick="mp.trigger('client:family:setHQ')">
@@ -2089,7 +2121,6 @@
         const amt = parseInt(document.getElementById('fam-bank-amt')?.value);
         if (!amt || amt <= 0) return;
         if (action === 'deposit') mp.trigger('client:family:bankDeposit', amt);
-        else mp.trigger('client:family:bankWithdraw', amt);
     }
 
     // ── Create Family Modal ───────────────────────────────────────────────
@@ -2167,6 +2198,26 @@
         const tag = tagEl?.value?.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4);
         if (!tag || tag.length < 1) return;
         mp.trigger('client:family:setTag', tag);
+    }
+
+    function saveMainColor() {
+        const colorInput = document.getElementById('fam-main-color-input');
+        const color = colorInput?.value;
+        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
+            alert('Invalid color format. Must be #RRGGBB');
+            return;
+        }
+        mp.trigger('client:family:setMainColor', color);
+    }
+
+    function saveRankColor(rank) {
+        const colorInput = document.getElementById(`fam-rank-color-${rank}`);
+        const color = colorInput?.value;
+        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
+            alert('Invalid color format. Must be #RRGGBB');
+            return;
+        }
+        mp.trigger('client:family:setRankColor', rank, color);
     }
 
     function submitCreateFamily() {

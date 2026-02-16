@@ -67,7 +67,7 @@ mp.events.add('client:auth:destroy', () => {
     if (authCam)     { authCam.destroy();     authCam = null;     }
 });
 
-mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos) => {
+mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos, familyHQPos) => {
     isAuthOpen = false;
 
     if (authBrowser) { authBrowser.destroy(); authBrowser = null; }
@@ -75,7 +75,7 @@ mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos) =>
     if (shouldSpawnSelector) {
         // Hand off to spawn selector — radar stays hidden until spawn confirms
         mp.gui.cursor.show(false, false);
-        mp.events.call('client:spawn:openMenu', lastPos, housePos);
+        mp.events.call('client:spawn:openMenu', lastPos, housePos, familyHQPos);
     } else {
         // Auto-spawn at last location — re-enable everything now
         mp.gui.cursor.show(false, false);

@@ -285,8 +285,20 @@ function startSession(player, userData) {
     
     // 1. Get House Data
     const house = HouseManager.getHouseByOwner(player.data.dbId);
-    // Use 'let' if you plan to change it, or just set it once (like here)
     const housePos = house ? house.position : null; 
+    
+    // 2. Get Family HQ Data
+    let familyHQPos = null;
+    try {
+        const FamilyManager = require('../systems/familyManager');
+        const fam = FamilyManager.getFamilyByUserId(player.data.dbId);
+        if (fam && fam.hqHouseId) {
+            const hqHouse = HouseManager.getHouseById(fam.hqHouseId);
+            if (hqHouse) familyHQPos = hqHouse.position;
+        }
+    } catch (e) {
+        console.error('[Family] Error getting HQ position:', e);
+    }
     
     let showSpawnSelector = true; 
     let lastPos = null;
@@ -304,8 +316,8 @@ function startSession(player, userData) {
         showSpawnSelector = false; 
     }
 
-    // [MODIFIED] Pass housePos to the client event
-    player.call('client:auth:success', [showSpawnSelector, lastPos, housePos]);
+    // Pass housePos and familyHQPos to the client event
+    player.call('client:auth:success', [showSpawnSelector, lastPos, housePos, familyHQPos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
 
     // --- INITIAL TIMER UPDATE ---

@@ -10,7 +10,7 @@ const spawnLocations = [
 
 // ── Open Spawn Menu ───────────────────────────────────────────────────────────
 
-mp.events.add('client:spawn:openMenu', (lastPos, housePos) => {
+mp.events.add('client:spawn:openMenu', (lastPos, housePos, familyHQPos) => {
     if (spawnBrowser) return;
 
     // Overhead cinematic camera
@@ -21,17 +21,16 @@ mp.events.add('client:spawn:openMenu', (lastPos, housePos) => {
     mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
     spawnBrowser = mp.browsers.new('package://ui/spawn/index.html');
-    spawnBrowser.active = true;          // Must be set — CEF won't receive mouse events otherwise
+    spawnBrowser.active = true;
     mp.gui.cursor.show(true, true);
     mp.gui.chat.show(false);
 
-    // Wait for Vue to mount and onMounted map init to complete,
-    // then send last position via the window bridge.
-    // JSON.stringify(lastPos) produces a valid JS literal — safe to embed directly.
+    // Wait for Vue to mount and send location data
     setTimeout(() => {
         if (spawnBrowser && lastPos) {
             spawnBrowser.execute(`window.addLastLocation(${JSON.stringify(lastPos)});`);
             if (housePos) spawnBrowser.execute(`window.addHouseLocation(${JSON.stringify(housePos)});`);
+            if (familyHQPos) spawnBrowser.execute(`window.addFamilyHQLocation(${JSON.stringify(familyHQPos)});`);
         }
     }, 350);
 });

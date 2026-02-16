@@ -57,6 +57,17 @@ const app = createApp({
           </div>
 
           <div
+            v-if="familyHQLocation"
+            class="spawn-card special-family"
+            :class="{ active: selectedIndex === -3 }"
+            @click="selectLocation(-3, familyHQLocation.x, familyHQLocation.y)"
+          >
+            <i class="fas fa-users"></i>
+            <h3>Family HQ</h3>
+            <span>Spawn at family headquarters</span>
+          </div>
+
+          <div
             v-for="(spawn, i) in spawns"
             :key="i"
             class="spawn-card"
@@ -87,10 +98,11 @@ const app = createApp({
   setup() {
     // ── State ────────────────────────────────────────────────────────────────
 
-    const spawns        = ref(SPAWNS)
-    const selectedIndex = ref(null)   // null | -1 (last) | -2 (house) | 0–4 (std)
-    const lastLocation  = ref(null)   // null | { x, y }
-    const houseLocation = ref(null)   // [NEW] null | { x, y }
+    const spawns          = ref(SPAWNS)
+    const selectedIndex   = ref(null)   // null | -1 (last) | -2 (house) | -3 (family HQ) | 0–4 (std)
+    const lastLocation    = ref(null)   // null | { x, y }
+    const houseLocation   = ref(null)   // null | { x, y }
+    const familyHQLocation = ref(null)  // null | { x, y }
 
     let spawnMap = null
 
@@ -127,18 +139,22 @@ const app = createApp({
       lastLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
     }
 
-    // [NEW] Bridge for House
     function addHouseLocation(pos) {
       houseLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
     }
 
+    function addFamilyHQLocation(pos) {
+      familyHQLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
+    }
+
     window.addLastLocation = addLastLocation
-    window.addHouseLocation = addHouseLocation // Expose to window
+    window.addHouseLocation = addHouseLocation
+    window.addFamilyHQLocation = addFamilyHQLocation
 
     // ── Expose ────────────────────────────────────────────────────────────────
 
     return {
-      spawns, selectedIndex, lastLocation, houseLocation,
+      spawns, selectedIndex, lastLocation, houseLocation, familyHQLocation,
       selectLocation, confirmSpawn,
     }
   },

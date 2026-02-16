@@ -128,13 +128,28 @@ mp.events.addCommand('fspawn', (player) => {
     mp.events.call('server:family:spawn', player);
 });
 
-// ── /fbank deposit <amount> / withdraw <amount> ───────────────────────────────
+// ── /fbank deposit <amount> / /fdeposit <amount> ─────────────────────────────
 mp.events.addCommand('fbank', async (player, _, action, amount) => {
     if (!player.logged) return;
-    if (!action || !amount) return player.outputChatBox(`${C.ERR}Usage: /fbank [deposit|withdraw] [amount]`);
-    if (action === 'deposit') await FM.bankDeposit(player, amount);
-    else if (action === 'withdraw') await FM.bankWithdraw(player, amount);
-    else player.outputChatBox(`${C.ERR}Usage: /fbank [deposit|withdraw] [amount]`);
+    if (!amount) {
+        // If only one arg, treat it as amount for deposit
+        if (action && !isNaN(action)) {
+            await FM.bankDeposit(player, action);
+        } else {
+            player.outputChatBox(`${C.ERR}Usage: /fbank [amount] or /fdeposit [amount]`);
+        }
+    } else if (action === 'deposit') {
+        await FM.bankDeposit(player, amount);
+    } else {
+        player.outputChatBox(`${C.ERR}Usage: /fbank [amount] or /fdeposit [amount]`);
+    }
+});
+
+// Alias for deposit
+mp.events.addCommand('fdeposit', async (player, _, amount) => {
+    if (!player.logged) return;
+    if (!amount) return player.outputChatBox(`${C.ERR}Usage: /fdeposit [amount]`);
+    await FM.bankDeposit(player, amount);
 });
 
 // ── /fupgrade ─────────────────────────────────────────────────────────────────
@@ -212,8 +227,8 @@ mp.events.addCommand('fhelp', (player) => {
     player.outputChatBox(`!{FFFFFF}/fkick [id] !{AAAAAA}- Kick member`);
     player.outputChatBox(`!{FFFFFF}/ftag [tag] !{AAAAAA}- Change family tag (1-4 chars)`);
     player.outputChatBox(`!{FFFFFF}/fhq !{AAAAAA}- Set your house as HQ`);
-    player.outputChatBox(`!{FFFFFF}/fbank [deposit|withdraw] [amount]`);
-    player.outputChatBox(`!{FFFFFF}/fupgrade !{AAAAAA}- Upgrade member cap ($75,000)`);
+    player.outputChatBox(`!{FFFFFF}/fbank [amount] or /fdeposit [amount] !{AAAAAA}- Deposit to family bank (anyone)`);
+    player.outputChatBox(`!{FFFFFF}/fupgrade !{AAAAAA}- Upgrade member cap ($75,000 from family bank)`);
     player.outputChatBox(`!{FFFFFF}/fdisband !{AAAAAA}- Disband family`);
     player.outputChatBox(`${C.FAM}────────────────────────`);
 });

@@ -156,15 +156,36 @@ mp.events.add('server:spawn:player', (player, index) => {
         // Last Location
         pos = player.data.lastLocation ? player.data.lastLocation : spawnPoints[0];
     } else if (index === -2) {
-        // [ADDED] House Spawn
+        // House Spawn
         const house = HouseManager.getHouseByOwner(player.data.dbId);
         if (house) {
-            // Spawn inside if interior exists, or outside if you prefer
-            // Currently house.position is the EXTERIOR.
             pos = house.position;
         } else {
             pos = spawnPoints[0]; // Fallback
         }
+    } else if (index === -3) {
+        // Family HQ Spawn
+        const FamilyManager = require('../systems/familyManager');
+        const fam = FamilyManager.getFamilyByPlayer(player);
+        if (fam && fam.hqHouseId) {
+            const hqHouse = HouseManager.getHouseById(fam.hqHouseId);
+            if (hqHouse) {
+                // Spawn inside the HQ interior
+                const INTERIORS = { 
+                    motel: { x: 151.45, y: -1007.57, z: -99.00 }, 
+                    low_end: { x: 266.00, y: -1007.00, z: -101.00 }, 
+                    medium: { x: 346.52, y: -1012.42, z: -99.20 }, 
+                    modern: { x: -786.86, y: 315.76, z: 217.63 }, 
+                    luxury: { x: -1459.17, y: -520.58, z: 56.92 } 
+                };
+                const interiorPos = INTERIORS[hqHouse.interior] || INTERIORS['motel'];
+                player.position = new mp.Vector3(interiorPos.x, interiorPos.y, interiorPos.z);
+                player.dimension = hqHouse.id;
+                player.health = 100;
+                return; // Exit early since we set position and dimension manually
+            }
+        }
+        pos = spawnPoints[0]; // Fallback
     } else {
         // Standard Spawns
         if (index < 0 || index >= spawnPoints.length) return;

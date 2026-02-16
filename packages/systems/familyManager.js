@@ -202,6 +202,9 @@ class FamilyManager {
             this._applyPlayerVars(player, family, 5);
             player.outputChatBox(`!{00FF00}Family "!{${color.replace('#','')}${name}!{00FF00}" created! You are the Leader.`);
             console.log(`[FamilyManager] ${player.name} created family "${name}" (ID: ${newFamilyId})`);
+            
+            // Refresh playerMenu UI
+            mp.events.call('server:playerMenu:getData', player);
         } catch (err) {
             // Refund on DB failure
             await playerManager.addMoneyAndSave(player, CREATION_COST, 'Family Creation Refund');
@@ -367,6 +370,9 @@ class FamilyManager {
             const tagColor = family.color.replace('#', '');
             player.outputChatBox(`!{00FF00}You joined family !{${tagColor}}${family.name}!{00FF00}!`);
             this._broadcastToFamily(family, `!{${tagColor}}[Family] !{FFFFFF}${player.name} joined the family!`, []);
+            
+            // Refresh playerMenu UI
+            mp.events.call('server:playerMenu:getData', player);
         } catch (err) {
             console.error('[FamilyManager] _addMember error:', err);
             player.outputChatBox('!{FF0000}Failed to join family. Please try again.');
@@ -467,30 +473,20 @@ class FamilyManager {
     }
 
     // ── Family Bank ───────────────────────────────────────────────────────────
-    async bankDeposit(owner, amount) {
-        const fam = this.getFamilyByPlayer(owner);
-        if (!fam || fam.ownerId !== owner.data.dbId)
-            return owner.outputChatBox('!{FF0000}Only the family owner manages the bank.');
+    async bankDeposit(player, amount) {
+        const fam = this.getFamilyByPlayer(player);
+        if (!fam) return player.outputChatBox('!{FF0000}You are not in a family.');
+        
         amount = parseInt(amount);
-        if (isNaN(amount) || amount <= 0) return owner.outputChatBox('!{FF0000}Invalid amount.');
-        if (owner.data.money < amount) return owner.outputChatBox('!{FF0000}Not enough cash.');
-        await playerManager.removeMoneyAndSave(owner, amount, 'Family Bank Deposit');
+        if (isNaN(amount) || amount <= 0) return player.outputChatBox('!{FF0000}Invalid amount.');
+        if (player.data.money < amount) return player.outputChatBox('!{FF0000}Not enough cash.');
+        
+        await playerManager.removeMoneyAndSave(player, amount, 'Family Bank Deposit');
         fam.bank += amount;
         await db.query('UPDATE families SET bank = ? WHERE id = ?', [fam.bank, fam.id]);
-        owner.outputChatBox(`!{00FF00}Deposited $${amount.toLocaleString()} into the family bank. Balance: $${fam.bank.toLocaleString()}`);
-    }
-
-    async bankWithdraw(owner, amount) {
-        const fam = this.getFamilyByPlayer(owner);
-        if (!fam || fam.ownerId !== owner.data.dbId)
-            return owner.outputChatBox('!{FF0000}Only the family owner manages the bank.');
-        amount = parseInt(amount);
-        if (isNaN(amount) || amount <= 0) return owner.outputChatBox('!{FF0000}Invalid amount.');
-        if (fam.bank < amount) return owner.outputChatBox('!{FF0000}Insufficient family bank funds.');
-        fam.bank -= amount;
-        await db.query('UPDATE families SET bank = ? WHERE id = ?', [fam.bank, fam.id]);
-        await playerManager.addMoneyAndSave(owner, amount, 'Family Bank Withdrawal');
-        owner.outputChatBox(`!{00FF00}Withdrew $${amount.toLocaleString()} from family bank. Balance: $${fam.bank.toLocaleString()}`);
+        
+        player.outputChatBox(`!{00FF00}Deposited $${amount.toLocaleString()} into the family bank. Balance: $${fam.bank.toLocaleString()}`);
+        this._broadcastToFamily(fam, `!{FFAA00}[Family] ${player.name} deposited $${amount.toLocaleString()} to the bank.`, [player.data.dbId]);
     }
 
     // ── HQ ────────────────────────────────────────────────────────────────────
@@ -522,12 +518,18 @@ class FamilyManager {
         const fam = this.getFamilyByPlayer(owner);
         if (!fam || fam.ownerId !== owner.data.dbId)
             return owner.outputChatBox('!{FF0000}Only the family owner can upgrade.');
-        if (!(await playerManager.removeMoneyAndSave(owner, UPGRADE_COST, 'Family Cap Upgrade'))) {
-            return owner.outputChatBox(`!{FF0000}You need $${UPGRADE_COST.toLocaleString()} for this upgrade.`);
+        
+        if (fam.bank < UPGRADE_COST) {
+            return owner.outputChatBox(`!{FF0000}Insufficient family bank funds. Need $${UPGRADE_COST.toLocaleString()}, have $${fam.bank.toLocaleString()}.`);
         }
+        
+        fam.bank -= UPGRADE_COST;
         fam.memberCap += UPGRADE_AMOUNT;
-        await db.query('UPDATE families SET member_cap = ? WHERE id = ?', [fam.memberCap, fam.id]);
-        owner.outputChatBox(`!{00FF00}Member cap upgraded to ${fam.memberCap}! Cost: $${UPGRADE_COST.toLocaleString()}`);
+        
+        await db.query('UPDATE families SET member_cap = ?, bank = ? WHERE id = ?', [fam.memberCap, fam.bank, fam.id]);
+        
+        owner.outputChatBox(`!{00FF00}Member cap upgraded to ${fam.memberCap}! Cost: $${UPGRADE_COST.toLocaleString()} (from family bank)`);
+        this._broadcastToFamily(fam, `!{FFAA00}[Family] Member capacity upgraded to ${fam.memberCap}!`, [owner.data.dbId]);
     }
 
     // ── Toggle Settings ───────────────────────────────────────────────────────
@@ -570,6 +572,60 @@ class FamilyManager {
         const clr = fam.color.replace('#', '');
         owner.outputChatBox(`!{00FF00}Family tag updated to !{${clr}}[${newTag}]!{00FF00}.`);
         this._broadcastToFamily(fam, `!{${clr}}[Family] !{FFFFFF}Tag changed to !{${clr}}[${newTag}]!{FFFFFF}.`, [owner.data.dbId]);
+    }
+
+    // ── Change Main Color ─────────────────────────────────────────────────────
+    async setMainColor(owner, newColor) {
+        const fam = this.getFamilyByPlayer(owner);
+        if (!fam || fam.ownerId !== owner.data.dbId)
+            return owner.outputChatBox('!{FF0000}Only the family owner can change colors.');
+
+        if (!/^#[0-9A-Fa-f]{6}$/.test(newColor))
+            return owner.outputChatBox('!{FF0000}Invalid color format. Use #RRGGBB.');
+
+        fam.color = newColor.toUpperCase();
+        await db.query('UPDATE families SET color = ? WHERE id = ?', [fam.color, fam.id]);
+
+        // Update all online members' synced variables
+        mp.players.toArray().forEach(p => {
+            if (p.data.familyId === fam.id) {
+                p.setVariable('familyChatColor', fam.color.replace('#', ''));
+                p.setVariable('familyNametagColor', hexToRgbArr(fam.color));
+            }
+        });
+
+        const clr = fam.color.replace('#', '');
+        owner.outputChatBox(`!{00FF00}Family color updated to !{${clr}}${fam.color}!{00FF00}.`);
+        this._broadcastToFamily(fam, `!{${clr}}[Family] !{FFFFFF}Main color changed to !{${clr}}${fam.color}!{FFFFFF}.`, [owner.data.dbId]);
+        
+        // Refresh playerMenu for owner
+        mp.events.call('server:playerMenu:getData', owner);
+    }
+
+    // ── Change Rank Color ─────────────────────────────────────────────────────
+    async setRankColor(owner, rank, newColor) {
+        const fam = this.getFamilyByPlayer(owner);
+        if (!fam || fam.ownerId !== owner.data.dbId)
+            return owner.outputChatBox('!{FF0000}Only the family owner can change rank colors.');
+
+        rank = parseInt(rank);
+        if (isNaN(rank) || rank < 1 || rank > 5)
+            return owner.outputChatBox('!{FF0000}Invalid rank. Must be 1-5.');
+
+        if (!/^#[0-9A-Fa-f]{6}$/.test(newColor))
+            return owner.outputChatBox('!{FF0000}Invalid color format. Use #RRGGBB.');
+
+        const rankObj = fam.ranks[rank - 1];
+        rankObj.color = newColor.toUpperCase();
+
+        const dbCol = `rank${rank}_color`;
+        await db.query(`UPDATE families SET ${dbCol} = ? WHERE id = ?`, [rankObj.color, fam.id]);
+
+        const clr = rankObj.color.replace('#', '');
+        owner.outputChatBox(`!{00FF00}Rank ${rank} (${rankObj.name}) color updated to !{${clr}}${rankObj.color}!{00FF00}.`);
+        
+        // Refresh playerMenu for owner
+        mp.events.call('server:playerMenu:getData', owner);
     }
 
     // ── Disband ───────────────────────────────────────────────────────────────
@@ -771,11 +827,6 @@ mp.events.add('server:family:bankDeposit', async (player, amount) => {
     await instance.bankDeposit(player, amount);
 });
 
-mp.events.add('server:family:bankWithdraw', async (player, amount) => {
-    if (!player.logged) return;
-    await instance.bankWithdraw(player, amount);
-});
-
 mp.events.add('server:family:upgrade', async (player) => {
     if (!player.logged) return;
     await instance.upgradeCap(player);
@@ -794,6 +845,16 @@ mp.events.add('server:family:toggleInvites', async (player) => {
 mp.events.add('server:family:setTag', async (player, tag) => {
     if (!player.logged) return;
     await instance.setTag(player, tag);
+});
+
+mp.events.add('server:family:setMainColor', async (player, color) => {
+    if (!player.logged) return;
+    await instance.setMainColor(player, color);
+});
+
+mp.events.add('server:family:setRankColor', async (player, rank, color) => {
+    if (!player.logged) return;
+    await instance.setRankColor(player, rank, color);
 });
 
 mp.events.add('server:family:disband', async (player) => {

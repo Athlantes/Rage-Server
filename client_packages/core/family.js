@@ -73,3 +73,11 @@ mp.events.add('client:family:spawn', () => {
 mp.events.add('client:family:setTag', (tag) => {
     mp.events.callRemote('server:family:setTag', tag);
 });
+
+mp.events.add('client:family:setMainColor', (color) => {
+    mp.events.callRemote('server:family:setMainColor', color);
+});
+
+mp.events.add('client:family:setRankColor', (rank, color) => {
+    mp.events.callRemote('server:family:setRankColor', rank, color);
+});
