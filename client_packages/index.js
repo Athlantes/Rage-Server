@@ -1,5 +1,4 @@
 require('./auth/index.js');
-require('./mugshot/index.js');      // Mugshot capture
 require('./chat/index.js');
 require('./ui/spawn/index.js');
 require('./core/voice.js');

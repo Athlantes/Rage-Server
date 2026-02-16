@@ -1,5 +1,4 @@
 require('./webserver');             // Starts the image hosting
-require('./mugshot');               // Mugshot capture & save
 require('./core/phone/phoneManager');
 
 require('./chat');

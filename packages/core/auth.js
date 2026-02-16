@@ -16,7 +16,7 @@ mp.events.add('playerJoin', async (player) => {
 
     try {
         const [recentAccounts] = await db.query(
-            `SELECT username, money, level, hwid, mugshot FROM users 
+            `SELECT username, money, level, hwid FROM users 
              WHERE social_id = ? 
              AND last_active >= NOW() - INTERVAL 3 DAY 
              ORDER BY last_active DESC 
@@ -163,7 +163,6 @@ async function finalizeLogin(player, userData) {
     if (!userData.appearance) {
         player.data.dbId = userData.id;
         player.data.username = userData.username;
-        player.data.mugshot = null;
         player.logged = true; 
         player.call('client:auth:destroy');
         player.call('client:creator:start'); 
@@ -186,7 +185,6 @@ function startSession(player, userData) {
     player.name = userData.username;
     player.data.dbId = userData.id;
     player.data.username = userData.username;
-    player.data.mugshot = userData.mugshot || null;
     player.data.appearance = userData.appearance; 
     player.data.gender = userData.gender; 
     player.data.adminLevel = userData.admin_level || 0; 
@@ -322,15 +320,6 @@ function startSession(player, userData) {
     // Pass housePos and familyHQPos to the client event
     player.call('client:auth:success', [showSpawnSelector, lastPos, housePos, familyHQPos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
-
-    // If no mugshot yet, tell the client to capture one once the player spawns
-    console.log(`[Mugshot] ${userData.username} — DB mugshot value: ${JSON.stringify(userData.mugshot)}`);
-    if (!userData.mugshot) {
-        console.log(`[Mugshot] No mugshot on record — sending client:mugshot:capture to ${userData.username}`);
-        player.call('client:mugshot:capture', []);
-    } else {
-        console.log(`[Mugshot] Existing mugshot found (${userData.mugshot}) — skipping capture for ${userData.username}`);
-    }
 
     // --- INITIAL TIMER UPDATE ---
     setTimeout(() => {
