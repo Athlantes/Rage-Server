@@ -324,8 +324,12 @@ function startSession(player, userData) {
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
 
     // If no mugshot yet, tell the client to capture one once the player spawns
+    console.log(`[Mugshot] ${userData.username} — DB mugshot value: ${JSON.stringify(userData.mugshot)}`);
     if (!userData.mugshot) {
+        console.log(`[Mugshot] No mugshot on record — sending client:mugshot:capture to ${userData.username}`);
         player.call('client:mugshot:capture', []);
+    } else {
+        console.log(`[Mugshot] Existing mugshot found (${userData.mugshot}) — skipping capture for ${userData.username}`);
     }
 
     // --- INITIAL TIMER UPDATE ---

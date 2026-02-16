@@ -11,59 +11,102 @@
     var context = canvas.getContext("2d");
     let uploadInterval = null;
 
+    const DBG = (...args) => mp.trigger('client:mugshot:log', '[capture.html] ' + args.join(' '));
+    const ERR = (...args) => mp.trigger('client:mugshot:log', '[capture.html][ERROR] ' + args.join(' '));
+
+    DBG('capture.html script loaded and ready');
+
     mp.events.add("recieveHeadshotImage", (imgURL, screenResolutionStr) => {
-        var res = (typeof screenResolutionStr === 'string')
-            ? JSON.parse(screenResolutionStr)
-            : screenResolutionStr;
+        DBG(`>> recieveHeadshotImage fired | url="${imgURL}" | res="${screenResolutionStr}"`);
+
+        var res;
+        try {
+            res = (typeof screenResolutionStr === 'string')
+                ? JSON.parse(screenResolutionStr)
+                : screenResolutionStr;
+            DBG(`Parsed resolution: x=${res.x} y=${res.y}`);
+        } catch(e) {
+            ERR('Failed to parse screenResolutionStr: ' + e.message);
+            res = { x: 1920, y: 1080 };
+            DBG('Using fallback resolution 1920x1080');
+        }
 
         var attempts = 0;
         var maxAttempts = 20;
 
         function tryLoad() {
             attempts++;
+            DBG(`tryLoad() attempt ${attempts}/${maxAttempts} — src="${imgURL + '?t=' + Date.now()}"`);
             var image = new Image();
 
             image.onload = function () {
-                // Limit resolution to HD (like camera.js) to keep file size reasonable
-                const MAX_WIDTH = 1366; 
-                let width  = Math.floor(res.x / 11);
-                let height = Math.floor(res.y / 6);
+                DBG(`Image loaded OK — naturalWidth=${image.naturalWidth} naturalHeight=${image.naturalHeight}`);
 
-                // Aspect ratio correction if needed, or just use calculation above
-                // For mugshots, we usually want the specific crop, so we keep your calculation
-                // but ensure it isn't massive.
-                
+                const srcX = 0;
+                const srcY = 0;
+                const srcW = image.naturalWidth;
+                const srcH = image.naturalHeight;
+                const width  = 256;
+                const height = 256;
+
                 canvas.width  = width;
                 canvas.height = height;
-                context.drawImage(image, 0, 0, width, height, 0, 0, width, height);
-                
-                // Get Base64
-                const base64Full = canvas.toDataURL("image/jpeg", 0.9);
-                const base64Body = base64Full.replace(/^data:image\/\w+;base64,/, '');
 
-                // --- START CHUNKING LOGIC (From Camera System) ---
-                const CHUNK_SIZE = 4096; // 4KB
-                const BURST_SIZE = 10;   // Send 10 chunks per tick
-                const BURST_WAIT = 20;   // Wait 20ms
-                
+                try {
+                    context.drawImage(image, srcX, srcY, srcW, srcH, 0, 0, width, height);
+                    DBG(`drawImage OK — canvas is ${width}x${height}`);
+                } catch(e) {
+                    ERR('drawImage threw: ' + e.message);
+                    return;
+                }
+
+                var base64Full, base64Body;
+                try {
+                    base64Full = canvas.toDataURL("image/jpeg", 0.9);
+                    base64Body = base64Full.replace(/^data:image\/\w+;base64,/, '');
+                    DBG(`toDataURL OK — base64Body length=${base64Body.length} chars`);
+                } catch(e) {
+                    ERR('toDataURL threw (possible tainted canvas): ' + e.message);
+                    return;
+                }
+
+                if (!base64Body || base64Body.length === 0) {
+                    ERR('base64Body is EMPTY — canvas may be blank. Aborting upload.');
+                    return;
+                }
+
+                const CHUNK_SIZE = 4096;
+                const BURST_SIZE = 10;
+                const BURST_WAIT = 20;
                 const totalChunks = Math.ceil(base64Body.length / CHUNK_SIZE);
-                
-                // Notify client script to prepare for upload
+
+                DBG(`Chunking: ${base64Body.length} bytes → ${totalChunks} chunks of ${CHUNK_SIZE} | burst=${BURST_SIZE} every ${BURST_WAIT}ms`);
                 mp.trigger("client:mugshot:startUpload", totalChunks);
 
                 let currentChunk = 0;
-                if (uploadInterval) clearInterval(uploadInterval);
+                if (uploadInterval) {
+                    DBG('Clearing existing uploadInterval before starting new one');
+                    clearInterval(uploadInterval);
+                }
 
                 uploadInterval = setInterval(() => {
                     for (let i = 0; i < BURST_SIZE; i++) {
                         if (currentChunk >= totalChunks) {
                             clearInterval(uploadInterval);
+                            uploadInterval = null;
+                            DBG(`All ${totalChunks} chunks triggered — firing uploadComplete`);
+                            mp.trigger("client:mugshot:uploadComplete");
                             return;
                         }
 
                         const start = currentChunk * CHUNK_SIZE;
-                        const end = start + CHUNK_SIZE;
+                        const end   = start + CHUNK_SIZE;
                         const chunk = base64Body.substring(start, end);
+
+                        // Log every 10th chunk so we can track progress without spam
+                        if (currentChunk % 10 === 0) {
+                            DBG(`Sending chunk #${currentChunk}/${totalChunks} (${chunk.length} bytes)`);
+                        }
 
                         mp.trigger("client:mugshot:sendChunk", chunk, currentChunk);
                         currentChunk++;
@@ -72,8 +115,12 @@
             };
 
             image.onerror = function () {
+                ERR(`Image load FAILED on attempt ${attempts} for "${imgURL}"`);
                 if (attempts < maxAttempts) {
+                    DBG(`Retrying in 500ms...`);
                     setTimeout(tryLoad, 500);
+                } else {
+                    ERR(`All ${maxAttempts} attempts failed — giving up`);
                 }
             };
 

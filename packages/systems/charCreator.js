@@ -120,6 +120,7 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         // Signal client to capture mugshot once the player spawns.
         // Must be called BEFORE server:auth:finalized so the flag is set
         // before client:auth:success arrives and opens the spawn selector.
+        console.log(`[Mugshot] New character created — sending client:mugshot:capture to ${player.data.username}`);
         player.call('client:mugshot:capture', []);
 
         mp.events.call('server:auth:finalized', player);

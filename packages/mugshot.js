@@ -8,40 +8,86 @@ const path = require('path');
 const uploadQueue = new Map();
 
 mp.events.add('server:mugshot:initUpload', (player, totalChunks) => {
+    // If there's already an in-progress upload for this player, clear it
+    if (uploadQueue.has(player.id)) {
+        console.log(`[Mugshot] Reinitialising upload for player ${player.id} (${totalChunks} chunks)`);
+    } else {
+        console.log(`[Mugshot] Starting upload for player ${player.id} (${totalChunks} chunks)`);
+    }
+
     uploadQueue.set(player.id, {
-        chunks: [],
-        total: totalChunks,
-        count: 0
+        chunks:    new Array(totalChunks),
+        total:     totalChunks,
+        received:  new Set(), // track which indexes arrived so duplicates are ignored
+        done:      false
     });
 });
 
 mp.events.add('server:mugshot:receiveChunk', (player, chunk, index) => {
     const upload = uploadQueue.get(player.id);
-    if (!upload) return;
+    if (!upload) {
+        console.log(`[Mugshot] WARN: receiveChunk from player ${player.id} but no upload in queue (index=${index})`);
+        return;
+    }
+    if (upload.done) {
+        console.log(`[Mugshot] WARN: receiveChunk index=${index} from player ${player.id} but upload already done — ignoring`);
+        return;
+    }
 
-    // Store chunk
+    // Ignore duplicate chunks
+    if (upload.received.has(index)) {
+        console.log(`[Mugshot] WARN: Duplicate chunk #${index} from player ${player.id} — ignoring`);
+        return;
+    }
+
     upload.chunks[index] = chunk;
-    upload.count++;
+    upload.received.add(index);
 
-    // Check if complete
-    if (upload.count >= upload.total) {
+    // Log every 10th chunk so we can see progress without flooding
+    if (index % 10 === 0) {
+        console.log(`[Mugshot] Chunk #${index} received for player ${player.id} (${upload.received.size}/${upload.total})`);
+    }
+
+    // Check if all chunks have arrived
+    if (upload.received.size >= upload.total) {
+        upload.done = true;
+        uploadQueue.delete(player.id);
+
         const fullBase64 = upload.chunks.join('');
-        uploadQueue.delete(player.id); // Clear memory
+        console.log(`[Mugshot] All ${upload.total} chunks received for player ${player.id}. Base64 length=${fullBase64.length}. Processing...`);
         processMugshotSave(player, fullBase64);
     }
 });
 
 function processMugshotSave(player, imageBase64) {
-    if (!player.data || !player.data.dbId || !player.data.username) return;
+    if (!player || !player.data || !player.data.dbId || !player.data.username) {
+        console.error('[Mugshot] processMugshotSave called with invalid player data');
+        return;
+    }
+
+    // Validate base64 is not empty
+    if (!imageBase64 || imageBase64.length === 0) {
+        console.error(`[Mugshot] Empty base64 data for player ${player.data.username}`);
+        return;
+    }
 
     const safe     = player.data.username.replace(/[^a-zA-Z0-9_\-]/g, '');
     const filename = `${safe}.jpg`;
     const filepath = path.join(mugshotsDir, filename);
-    const buffer   = Buffer.from(imageBase64, 'base64');
+
+    let buffer;
+    try {
+        buffer = Buffer.from(imageBase64, 'base64');
+    } catch (e) {
+        console.error(`[Mugshot] Failed to decode base64 for ${player.data.username}:`, e);
+        return;
+    }
+
+    console.log(`[Mugshot] Writing ${buffer.length} bytes to ${filepath}`);
 
     fs.writeFile(filepath, buffer, async (err) => {
         if (err) {
-            console.error(`[Mugshot] Write Error:`, err);
+            console.error(`[Mugshot] Write Error for ${player.data.username}:`, err);
             return;
         }
 
@@ -49,10 +95,10 @@ function processMugshotSave(player, imageBase64) {
         try {
             await db.query('UPDATE users SET mugshot = ? WHERE id = ?', [relativePath, player.data.dbId]);
             player.data.mugshot = relativePath;
-            console.log(`[Mugshot] Saved for ${player.data.username}`);
+            console.log(`[Mugshot] Saved for ${player.data.username} → ${relativePath}`);
             player.call('client:mugshot:saved');
         } catch (dbErr) {
-            console.error(`[Mugshot] DB Error:`, dbErr);
+            console.error(`[Mugshot] DB Error for ${player.data.username}:`, dbErr);
         }
     });
 }
