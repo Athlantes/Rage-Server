@@ -52,7 +52,6 @@ mp.events.add('render', () => {
                 } else if (isTyping) {
                     nameText += "\n~c~...";
                 }
-                if (isTyping) nameText += "\n~c~...";
 
                 // --- SCALING LOGIC ---
                 const dist = Math.sqrt(distSq);
