@@ -10,7 +10,6 @@ let pendingCapture    = false;
 // ── Server trigger ────────────────────────────────────────────────────────────
 mp.events.add('client:mugshot:capture', () => {
     pendingCapture = true;
-    // Fallback for auto-spawn path (no spawn selector shown)
     setTimeout(() => {
         if (pendingCapture) {
             pendingCapture = false;
@@ -19,8 +18,6 @@ mp.events.add('client:mugshot:capture', () => {
     }, 3500);
 });
 
-// ── After spawn selector confirm ──────────────────────────────────────────────
-// client:spawn:select is where setVisible(true) + freezePosition(false) happen.
 mp.events.add('client:spawn:select', () => {
     if (!pendingCapture) return;
     pendingCapture = false;
@@ -36,21 +33,17 @@ mp.events.add('prepareScreenshot', () => {
     screenResolution = JSON.stringify(res);
 
     setTimeout(() => {
-        if (
-            mp.game.ped.isPedheadshotValid(pedHeadShot) &&
-            mp.game.ped.isPedheadshotReady(pedHeadShot)
-        ) {
+        if (mp.game.ped.isPedheadshotValid(pedHeadShot) && mp.game.ped.isPedheadshotReady(pedHeadShot)) {
             headshotTexture  = mp.game.ped.getPedheadshotTxdString(pedHeadShot);
             frameCount       = 0;
             takingScreenshot = true;
         } else {
             mp.players.local.unregisterheadshot(pedHeadShot);
-            console.warn('[Mugshot] Headshot not ready, aborting capture.');
         }
     }, 2000);
 });
 
-// ── Render loop — draw sprite for 1 frame then take screenshot ────────────────
+// ── Render loop (Increased to 15 frames for stability) ────────────────────────
 mp.events.add('render', () => {
     if (!takingScreenshot) return;
 
@@ -60,13 +53,14 @@ mp.events.add('render', () => {
         0.0, 255, 255, 255, 1000
     );
 
-    if (frameCount === 1) {
+    if (frameCount === 15) {
         mp.gui.takeScreenshot('player_headshot.jpg', 0, 100, 0);
+    }
+    
+    if (frameCount >= 16) {
         takingScreenshot = false;
         mp.players.local.unregisterheadshot(pedHeadShot);
 
-        // Wait for takeScreenshot to finish writing to disk before opening browser.
-        // capture.html will also retry up to 10x every 500ms if the file isn't ready yet.
         setTimeout(() => {
             mp.events.call('playerheadshot_taken');
         }, 2000);
@@ -74,7 +68,6 @@ mp.events.add('render', () => {
     frameCount++;
 });
 
-// ── Browser reads the file and converts to base64 ────────────────────────────
 mp.events.add('playerheadshot_taken', () => {
     screenshotBrowser = mp.browsers.new('package://mugshot/capture.html');
 });
@@ -84,15 +77,19 @@ mp.events.add('browserDomReady', (browser) => {
     screenshotBrowser.call('recieveHeadshotImage', 'http://screenshots/player_headshot.jpg', screenResolution);
 });
 
-mp.events.add('uploadHeadshot', (base64) => {
-    mp.events.callRemote('uploadPlayerHeadshot', base64);
+// ── CHUNK BRIDGES (Browser -> Client -> Server) ──────────────────────────────
+mp.events.add('client:mugshot:startUpload', (totalChunks) => {
+    mp.events.callRemote('server:mugshot:initUpload', totalChunks);
+});
+
+mp.events.add('client:mugshot:sendChunk', (chunk, index) => {
+    mp.events.callRemote('server:mugshot:receiveChunk', chunk, index);
+});
+
+mp.events.add('client:mugshot:saved', () => {
     if (screenshotBrowser) {
         screenshotBrowser.destroy();
         screenshotBrowser = false;
     }
-});
-
-// Server confirms saved — silent
-mp.events.add('client:mugshot:saved', () => {
-    console.log('[Mugshot] Mugshot saved successfully.');
+    console.log('[Mugshot] Saved successfully.');
 });

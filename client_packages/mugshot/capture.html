@@ -9,6 +9,7 @@
     document.body.appendChild(canvas);
     canvas.style.display = 'none';
     var context = canvas.getContext("2d");
+    let uploadInterval = null;
 
     mp.events.add("recieveHeadshotImage", (imgURL, screenResolutionStr) => {
         var res = (typeof screenResolutionStr === 'string')
@@ -16,32 +17,67 @@
             : screenResolutionStr;
 
         var attempts = 0;
-        var maxAttempts = 10;
+        var maxAttempts = 20;
 
         function tryLoad() {
             attempts++;
             var image = new Image();
 
             image.onload = function () {
-                const width  = Math.floor(res.x / 11);
-                const height = Math.floor(res.y / 6);
+                // Limit resolution to HD (like camera.js) to keep file size reasonable
+                const MAX_WIDTH = 1366; 
+                let width  = Math.floor(res.x / 11);
+                let height = Math.floor(res.y / 6);
+
+                // Aspect ratio correction if needed, or just use calculation above
+                // For mugshots, we usually want the specific crop, so we keep your calculation
+                // but ensure it isn't massive.
+                
                 canvas.width  = width;
                 canvas.height = height;
                 context.drawImage(image, 0, 0, width, height, 0, 0, width, height);
-                const base64 = canvas.toDataURL("image/jpeg", 1);
-                mp.trigger("uploadHeadshot", base64);
+                
+                // Get Base64
+                const base64Full = canvas.toDataURL("image/jpeg", 0.9);
+                const base64Body = base64Full.replace(/^data:image\/\w+;base64,/, '');
+
+                // --- START CHUNKING LOGIC (From Camera System) ---
+                const CHUNK_SIZE = 4096; // 4KB
+                const BURST_SIZE = 10;   // Send 10 chunks per tick
+                const BURST_WAIT = 20;   // Wait 20ms
+                
+                const totalChunks = Math.ceil(base64Body.length / CHUNK_SIZE);
+                
+                // Notify client script to prepare for upload
+                mp.trigger("client:mugshot:startUpload", totalChunks);
+
+                let currentChunk = 0;
+                if (uploadInterval) clearInterval(uploadInterval);
+
+                uploadInterval = setInterval(() => {
+                    for (let i = 0; i < BURST_SIZE; i++) {
+                        if (currentChunk >= totalChunks) {
+                            clearInterval(uploadInterval);
+                            return;
+                        }
+
+                        const start = currentChunk * CHUNK_SIZE;
+                        const end = start + CHUNK_SIZE;
+                        const chunk = base64Body.substring(start, end);
+
+                        mp.trigger("client:mugshot:sendChunk", chunk, currentChunk);
+                        currentChunk++;
+                    }
+                }, BURST_WAIT);
             };
 
             image.onerror = function () {
                 if (attempts < maxAttempts) {
-                    // File not ready yet — retry after 500ms
                     setTimeout(tryLoad, 500);
                 }
-                // After 10 attempts (5 seconds total) silently give up
             };
 
             image.crossOrigin = 'Anonymous';
-            // Cache-bust so the browser doesn't serve a stale 404
             image.src = imgURL + '?t=' + Date.now();
         }
 
