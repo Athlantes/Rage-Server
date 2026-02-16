@@ -15,11 +15,11 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 
--- Dumping database structure for rage_trucking_db
-CREATE DATABASE IF NOT EXISTS `rage_trucking_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
-USE `rage_trucking_db`;
+-- Dumping database structure for central_db
+CREATE DATABASE IF NOT EXISTS `central_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
+USE `central_db`;
 
--- Dumping structure for table rage_trucking_db.bank_transactions
+-- Dumping structure for table central_db.bank_transactions
 CREATE TABLE IF NOT EXISTS `bank_transactions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sender_id` int(11) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `bank_transactions` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.character_farm_crops
+-- Dumping structure for table central_db.character_farm_crops
 CREATE TABLE IF NOT EXISTS `character_farm_crops` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `character_id` int(11) NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `character_farm_crops` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.character_farm_trees
+-- Dumping structure for table central_db.character_farm_trees
 CREATE TABLE IF NOT EXISTS `character_farm_trees` (
   `character_id` int(11) NOT NULL,
   `tree_id` varchar(50) NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `character_farm_trees` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.character_inventory
+-- Dumping structure for table central_db.character_inventory
 CREATE TABLE IF NOT EXISTS `character_inventory` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `character_id` int(11) NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `character_inventory` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.character_job_data
+-- Dumping structure for table central_db.character_job_data
 CREATE TABLE IF NOT EXISTS `character_job_data` (
   `character_id` int(11) NOT NULL,
   `job_key` varchar(50) NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `character_job_data` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.character_job_skills
+-- Dumping structure for table central_db.character_job_skills
 CREATE TABLE IF NOT EXISTS `character_job_skills` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `character_id` int(11) NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `character_job_skills` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.escootr_spawns
+-- Dumping structure for table central_db.escootr_spawns
 CREATE TABLE IF NOT EXISTS `escootr_spawns` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `model` varchar(50) DEFAULT 'serv_electricscooter',
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS `escootr_spawns` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.ground_items
+-- Dumping structure for table central_db.ground_items
 CREATE TABLE IF NOT EXISTS `ground_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `item_id` varchar(50) NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `ground_items` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.phone_contacts
+-- Dumping structure for table central_db.phone_contacts
 CREATE TABLE IF NOT EXISTS `phone_contacts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `owner_id` int(11) NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `phone_contacts` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.phone_messages
+-- Dumping structure for table central_db.phone_messages
 CREATE TABLE IF NOT EXISTS `phone_messages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sender_number` varchar(20) NOT NULL,
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS `phone_messages` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.player_daily_quests
+-- Dumping structure for table central_db.player_daily_quests
 CREATE TABLE IF NOT EXISTS `player_daily_quests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `player_daily_quests` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.player_mails
+-- Dumping structure for table central_db.player_mails
 CREATE TABLE IF NOT EXISTS `player_mails` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS `player_mails` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.player_phone
+-- Dumping structure for table central_db.player_phone
 CREATE TABLE IF NOT EXISTS `player_phone` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `player_phone` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.player_photos
+-- Dumping structure for table central_db.player_photos
 CREATE TABLE IF NOT EXISTS `player_photos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS `player_photos` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.player_photo_hunt
+-- Dumping structure for table central_db.player_photo_hunt
 CREATE TABLE IF NOT EXISTS `player_photo_hunt` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS `player_photo_hunt` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.repo_jobs
+-- Dumping structure for table central_db.repo_jobs
 CREATE TABLE IF NOT EXISTS `repo_jobs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS `repo_jobs` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.server_vehicles
+-- Dumping structure for table central_db.server_vehicles
 CREATE TABLE IF NOT EXISTS `server_vehicles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `owner_id` int(11) NOT NULL,
@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS `server_vehicles` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.users
+-- Dumping structure for table central_db.users
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.user_bans
+-- Dumping structure for table central_db.user_bans
 CREATE TABLE IF NOT EXISTS `user_bans` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -310,7 +310,7 @@ CREATE TABLE IF NOT EXISTS `user_bans` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table rage_trucking_db.vehicle_mods
+-- Dumping structure for table central_db.vehicle_mods
 CREATE TABLE IF NOT EXISTS `vehicle_mods` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `vehicle_id` int(11) NOT NULL,
