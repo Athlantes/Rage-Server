@@ -274,17 +274,16 @@ function startSession(player, userData) {
     const lastActive = new Date(userData.last_active).getTime();
     const now = Date.now();
     const diffMinutes = (now - lastActive) / 1000 / 60;
+    const house = HouseManager.getHouseByOwner(player.data.dbId);
+    const housePos = house ? house.position : null;
     
     let showSpawnSelector = true; 
     let lastPos = null;
-    let housePos = null; // [ADDED]
 
     if (userData.position) {
         try { lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position; } catch (e) {}
     }
-
-    // [ADDED] Fetch House Position
-    const house = HouseManager.getHouseByOwner(player.data.dbId);
+    
     if (house) {
         housePos = house.position;
     }

@@ -1,13 +1,6 @@
 /**
  * app.js — ui/spawn/
  * Vue 3 root app for the spawn-selector CEF.
- *
- * The Leaflet map lives in #map (outside Vue's template).
- * GameMap is instantiated in onMounted() after Vue has rendered,
- * and stored as a plain variable — Leaflet manages its own DOM.
- *
- * Window bridge (called by client_packages/spawn/index.js):
- *   window.addLastLocation(pos)  — { x, y } object, prepends the gold card
  */
 
 const { createApp, ref, onMounted } = Vue
@@ -17,7 +10,7 @@ function mpTrigger(event, ...args) {
   if ('mp' in window) mp.trigger(event, ...args)
 }
 
-// ── Spawn definitions (mirrors client_packages/spawn/index.js) ──────────────
+// ── Spawn definitions ────────────────────────────────────────────────────────
 const SPAWNS = [
   { name: 'Legion Square', desc: 'City Center',    icon: 'fa-users',  x:  206.56, y:  -909.89 },
   { name: 'Vinewood Blvd', desc: 'Entertainment',  icon: 'fa-star',   x:  384.62, y:   260.67 },
@@ -37,17 +30,14 @@ const app = createApp({
   template: `
     <div class="ui-layer">
 
-      <!-- Header -->
       <div class="header-title">
         <h1>Welcome Back</h1>
         <p>Where does your story continue today?</p>
       </div>
 
-      <!-- Spawn cards + button -->
       <div class="spawn-selector-container">
         <div class="spawn-row">
 
-          <!-- Last Location (gold card) — only shown when server sends it -->
           <div
             v-if="lastLocation"
             class="spawn-card special"
@@ -70,7 +60,6 @@ const app = createApp({
             <span>Spawn at home</span>
           </div>
 
-          <!-- Standard spawns -->
           <div
             v-for="(spawn, i) in spawns"
             :key="i"
@@ -85,7 +74,6 @@ const app = createApp({
 
         </div>
 
-        <!-- Wake Up button — fades in once a card is selected -->
         <transition name="btn-fade">
           <button
             v-if="selectedIndex !== null"
@@ -104,15 +92,13 @@ const app = createApp({
     // ── State ────────────────────────────────────────────────────────────────
 
     const spawns        = ref(SPAWNS)
-    const selectedIndex = ref(null)   // null | -1 (last pos) | 0–4 (standard)
+    const selectedIndex = ref(null)   // null | -1 (last) | -2 (house) | 0–4 (std)
     const lastLocation  = ref(null)   // null | { x, y }
-    const houseLocation = ref(null)   // null | { x, y }
-    // Plain variable — NOT reactive. Leaflet owns this instance.
+    const houseLocation = ref(null)   // [NEW] null | { x, y }
+
     let spawnMap = null
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
-    // The #map div exists in the HTML outside Vue's template, so it's safe to
-    // initialize here — Vue has already mounted by the time onMounted fires.
 
     onMounted(() => {
       spawnMap = new GameMap('map', {
@@ -140,20 +126,18 @@ const app = createApp({
     }
 
     // ── Window Bridge ─────────────────────────────────────────────────────────
-    // Called by client_packages/spawn/index.js after the browser loads:
-    //   spawnBrowser.execute(`window.addLastLocation(${JSON.stringify(lastPos)});`)
 
     function addLastLocation(pos) {
-      // Accept both object (from direct call) and JSON string (legacy safety)
       lastLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
     }
 
+    // [NEW] Bridge for House
     function addHouseLocation(pos) {
       houseLocation.value = typeof pos === 'string' ? JSON.parse(pos) : pos
     }
 
     window.addLastLocation = addLastLocation
-    window.addHouseLocation = addHouseLocation
+    window.addHouseLocation = addHouseLocation // Expose to window
 
     // ── Expose ────────────────────────────────────────────────────────────────
 

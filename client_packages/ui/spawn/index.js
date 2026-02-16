@@ -34,6 +34,7 @@ mp.events.add('client:spawn:openMenu', (lastPos) => {
     setTimeout(() => {
         if (spawnBrowser && lastPos) {
             spawnBrowser.execute(`window.addLastLocation(${JSON.stringify(lastPos)});`);
+            if (housePos) spawnBrowser.execute(`window.addHouseLocation(${JSON.stringify(housePos)});`);
         }
     }, 350);
 });
