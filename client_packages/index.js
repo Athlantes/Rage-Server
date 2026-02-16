@@ -10,6 +10,7 @@ require('./core/nametags.js');
 require('./core/afk.js');
 require('./core/typing.js');
 require('./core/playerMenu.js');
+require('./core/family.js');
 require('./core/disableDefaults.js');
 require('./core/interaction.js');
 require('./core/keys.js');

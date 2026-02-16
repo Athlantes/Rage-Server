@@ -169,6 +169,14 @@ async function finalizeLogin(player, userData) {
         return;
     }
     startSession(player, userData);
+
+    // Load family data after session starts
+    try {
+        const FamilyManager = require('../systems/familyManager');
+        await FamilyManager.setupPlayerFamily(player, userData.id);
+    } catch (e) {
+        console.error('[Family] Error loading family on login:', e);
+    }
 }
 
 function startSession(player, userData) {
@@ -274,18 +282,17 @@ function startSession(player, userData) {
     const lastActive = new Date(userData.last_active).getTime();
     const now = Date.now();
     const diffMinutes = (now - lastActive) / 1000 / 60;
+    
+    // 1. Get House Data
     const house = HouseManager.getHouseByOwner(player.data.dbId);
-    const housePos = house ? house.position : null;
+    // Use 'let' if you plan to change it, or just set it once (like here)
+    const housePos = house ? house.position : null; 
     
     let showSpawnSelector = true; 
     let lastPos = null;
 
     if (userData.position) {
         try { lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position; } catch (e) {}
-    }
-    
-    if (house) {
-        housePos = house.position;
     }
 
     if (lastPos) player.data.lastLocation = lastPos;

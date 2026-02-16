@@ -12,10 +12,6 @@ function mpTrigger(event, ...args) {
 
 // ── Spawn definitions ────────────────────────────────────────────────────────
 const SPAWNS = [
-  { name: 'Legion Square', desc: 'City Center',    icon: 'fa-users',  x:  206.56, y:  -909.89 },
-  { name: 'Vinewood Blvd', desc: 'Entertainment',  icon: 'fa-star',   x:  384.62, y:   260.67 },
-  { name: 'Sandy Shores',  desc: 'Desert Region',  icon: 'fa-sun',    x: 1941.40, y:  3747.01 },
-  { name: 'Paleto Bay',    desc: 'Northern Coast',  icon: 'fa-tree',   x: -113.84, y:  6445.62 },
   { name: 'LS Airport',    desc: 'Travel Hub',      icon: 'fa-plane',  x:-1037.76, y: -2737.67 },
 ]
 

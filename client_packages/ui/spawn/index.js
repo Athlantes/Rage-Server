@@ -5,16 +5,12 @@ let spawnCam     = null;
 
 // Mirrors the spawn list in ui/spawn/app.js — used for 3D coordinates on confirm
 const spawnLocations = [
-    { x:  206.56, y:  -909.89, z:  30.0 }, // Legion Square
-    { x:  384.62, y:   260.67, z:  90.0 }, // Vinewood Blvd
-    { x: 1941.40, y:  3747.01, z:  32.0 }, // Sandy Shores
-    { x: -113.84, y:  6445.62, z:  31.0 }, // Paleto Bay
     { x:-1037.76, y: -2737.67, z:  13.0 }, // LS Airport
 ];
 
 // ── Open Spawn Menu ───────────────────────────────────────────────────────────
 
-mp.events.add('client:spawn:openMenu', (lastPos) => {
+mp.events.add('client:spawn:openMenu', (lastPos, housePos) => {
     if (spawnBrowser) return;
 
     // Overhead cinematic camera
@@ -25,6 +21,7 @@ mp.events.add('client:spawn:openMenu', (lastPos) => {
     mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
     spawnBrowser = mp.browsers.new('package://ui/spawn/index.html');
+    spawnBrowser.active = true;          // Must be set — CEF won't receive mouse events otherwise
     mp.gui.cursor.show(true, true);
     mp.gui.chat.show(false);
 

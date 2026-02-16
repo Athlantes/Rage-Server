@@ -4,6 +4,7 @@ const PhotoHunt = require('../systems/photoHunt/photoHuntManager');
 const HouseManager = require('../systems/houseManager');
 const JobManager = require('../jobs/jobManager');
 const playerManager = require('./playerManager');
+const FamilyManager = require('../systems/familyManager');
 
 const MAX_VEHICLE_SLOTS = 5; 
 
@@ -154,6 +155,12 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             };
         }
 
+        // 9. Family Data
+        let familyData = { inFamily: false, families: [] };
+        try {
+            familyData = await FamilyManager.getPlayerMenuData(player);
+        } catch (e) { console.error('[PlayerMenu] Family data error:', e); }
+
         // Send payload
         const payload = {
             playerName: player.name || 'Unknown',
@@ -167,7 +174,8 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             activeMinutes: playedToday, 
             photoHunt: photoHuntData,
             repoJobs: repoJobs,
-            house: houseInfo // Added to payload
+            house: houseInfo,
+            family: familyData
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);

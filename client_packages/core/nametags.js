@@ -62,7 +62,22 @@ mp.events.add('render', () => {
                 // Apply our Base Scale
                 scale = scale * FONT_SCALE;
 
-                // Draw
+                // Draw family tag above nametag if player is in a family
+                const familyTag          = player.getVariable('familyTag');
+                const familyNametagColor = player.getVariable('familyNametagColor');
+
+                if (familyTag && familyNametagColor) {
+                    const [r, g, b] = familyNametagColor;
+                    mp.game.graphics.drawText(`[${familyTag}]`, [pPos.x, pPos.y, pPos.z + 0.95], {
+                        font:    FONT_ID,
+                        color:   [r, g, b, 210],
+                        scale:   [scale * 0.85, scale * 0.85],
+                        outline: true,
+                        centre:  true
+                    });
+                }
+
+                // Draw main nametag
                 mp.game.graphics.drawText(nameText, [pPos.x, pPos.y, pPos.z + 0.6], {
                     font: FONT_ID,
                     color: [255, 255, 255, 255],

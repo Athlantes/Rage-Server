@@ -323,6 +323,54 @@ CREATE TABLE IF NOT EXISTS `vehicle_mods` (
 
 -- Data exporting was unselected.
 
+-- 1. Families table — one row per clan/family
+CREATE TABLE IF NOT EXISTS `families` (
+    `id`                INT          AUTO_INCREMENT PRIMARY KEY,
+    `name`              VARCHAR(50)  NOT NULL UNIQUE,
+    `tag`               VARCHAR(4)   NOT NULL,
+    `color`             VARCHAR(7)   NOT NULL DEFAULT '#FFFFFF',
+    `owner_id`          INT          NOT NULL,
+    `bank`              BIGINT       NOT NULL DEFAULT 0,
+    `member_cap`        INT          NOT NULL DEFAULT 25,
+    `hq_house_id`       INT          DEFAULT NULL,
+    `applications_open` TINYINT(1)   NOT NULL DEFAULT 0,
+    `invites_open`      TINYINT(1)   NOT NULL DEFAULT 1,
+    `description`       VARCHAR(200) NOT NULL DEFAULT '',
+    `rank1_name`        VARCHAR(30)  NOT NULL DEFAULT 'Recruit',
+    `rank2_name`        VARCHAR(30)  NOT NULL DEFAULT 'Member',
+    `rank3_name`        VARCHAR(30)  NOT NULL DEFAULT 'Veteran',
+    `rank4_name`        VARCHAR(30)  NOT NULL DEFAULT 'Officer',
+    `rank5_name`        VARCHAR(30)  NOT NULL DEFAULT 'Leader',
+    `rank1_color`       VARCHAR(7)   NOT NULL DEFAULT '#AAAAAA',
+    `rank2_color`       VARCHAR(7)   NOT NULL DEFAULT '#FFFFFF',
+    `rank3_color`       VARCHAR(7)   NOT NULL DEFAULT '#00AAFF',
+    `rank4_color`       VARCHAR(7)   NOT NULL DEFAULT '#FFAA00',
+    `rank5_color`       VARCHAR(7)   NOT NULL DEFAULT '#FF4444',
+    `created_at`        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Family members — one row per member (user can only be in one family)
+CREATE TABLE IF NOT EXISTS `family_members` (
+    `id`         INT       AUTO_INCREMENT PRIMARY KEY,
+    `family_id`  INT       NOT NULL,
+    `user_id`    INT       NOT NULL UNIQUE,
+    `username`   VARCHAR(50) NOT NULL,
+    `rank`       INT       NOT NULL DEFAULT 1,
+    `joined_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`family_id`) REFERENCES `families`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. Family applications — pending join requests
+CREATE TABLE IF NOT EXISTS `family_applications` (
+    `id`         INT         AUTO_INCREMENT PRIMARY KEY,
+    `family_id`  INT         NOT NULL,
+    `user_id`    INT         NOT NULL,
+    `username`   VARCHAR(50) NOT NULL,
+    `applied_at` TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_app` (`family_id`, `user_id`),
+    FOREIGN KEY (`family_id`) REFERENCES `families`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;

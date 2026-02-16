@@ -1,10 +1,17 @@
 let playerMenuBrowser = null;
 let isplayerMenuOpen = false;
 let lastToggleTime = 0;
+let isInputFocused = false; // True when a text input inside the CEF is focused
 
 // Key bind 'O'
 mp.keys.bind(0x4F, true, function() {
+    if (isInputFocused) return; // Don't close while typing
     mp.events.call('client:toggleplayerMenu');
+});
+
+// CEF fires this when any input gains / loses focus
+mp.events.add('client:playerMenu:setInputFocus', (focused) => {
+    isInputFocused = !!focused;
 });
 
 mp.events.add('client:toggleplayerMenu', (force = false) => {
@@ -51,6 +58,7 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
             playerMenuBrowser.destroy();
             playerMenuBrowser = null;
         }
+        isInputFocused = false; // Reset — can't be stuck if menu is gone
         mp.gui.cursor.show(false, false);
         mp.game.graphics.transitionFromBlurred(500);
     }

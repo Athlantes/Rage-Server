@@ -23,6 +23,11 @@ mp.events.add('chat:say', (player, message) => {
     // Security: Prevent HTML injection
     message = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+    // Build family tag prefix if player is in a family
+    const familyTag   = player.getVariable('familyTag');
+    const familyColor = player.getVariable('familyChatColor');
+    const tagPrefix   = (familyTag && familyColor) ? `!{${familyColor}}[${familyTag}] ` : '';
+
     // Send to everyone nearby
     mp.players.forEachInRange(player.position, CHAT_RANGE, (target) => {
         const distance = target.dist(player.position);
@@ -32,6 +37,6 @@ mp.events.add('chat:say', (player, message) => {
         if (distance > 10) color = '#cccccc';
         if (distance > 15) color = '#999999';
 
-        target.call('chat:push', [player.name, message, 'local']);
+        target.call('chat:push', [`${tagPrefix}${player.name}`, message, 'local']);
     });
 });

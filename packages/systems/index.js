@@ -1,3 +1,5 @@
+require('./familyManager');
+require('./familyCommands');
 require('./inventory');
 require('./dumpster');
 require('./returo');

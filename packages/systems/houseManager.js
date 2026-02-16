@@ -223,6 +223,11 @@ function processInteraction(player) {
         }
         if (house.locked) return player.outputChatBox("!{FF0000}The door is locked.");
         
+        // Family HQ: members-only access
+        if (house.hqFamilyId && player.data.familyId !== house.hqFamilyId) {
+            return player.outputChatBox("!{FF0000}This is a private Family HQ. Members only.");
+        }
+        
         const targetPos = INTERIORS[house.interior];
         player.position = new mp.Vector3(targetPos.x, targetPos.y, targetPos.z);
         player.dimension = house.id;
