@@ -157,6 +157,13 @@ async function buyHouse(player) {
     const house = getNearestHouse(player.position);
     if (!house) return player.outputChatBox("!{FF0000}Not near a house.");
     if (house.ownerId > 0) return player.outputChatBox("!{FF0000}Already owned.");
+    
+    // NEW: Check if player already owns a house
+    const existingHouse = getHouseByOwner(player.data.dbId);
+    if (existingHouse) {
+        return player.outputChatBox(`!{FF0000}You already own House #${existingHouse.id}. You can only own 1 house.`);
+    }
+
     if ((player.data.money || 0) < house.price) return player.outputChatBox("!{FF0000}Insufficient funds.");
 
     try {
@@ -164,6 +171,7 @@ async function buyHouse(player) {
         
         player.data.money -= house.price;
         player.setVariable('money', player.data.money);
+        // NOTE: Ensure you save money to DB here or in your player save loop
         
         house.ownerId = player.data.dbId;
         updateHouseVisuals(house);
@@ -250,6 +258,10 @@ function getNearestHouse(pos) {
 
 function getHouseById(id) { return houses.find(h => h.id === id); }
 
+function getHouseByOwner(ownerId) {
+    return houses.find(h => h.ownerId === ownerId);
+}
+
 mp.events.add('playerInteract', (player) => {
     processInteraction(player);
 });
@@ -263,6 +275,7 @@ module.exports = {
     buyHouse,
     lockHouse,
     getHouseById,
+    getHouseByOwner,
     getNearestHouse, // THIS WAS MISSING
     houses
 };

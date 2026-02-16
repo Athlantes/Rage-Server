@@ -1,6 +1,7 @@
 const db = require('./database');
 const Inventory = require('../systems/inventory');
 const PhotoHunt = require('../systems/photoHunt/photoHuntManager');
+const HouseManager = require('../systems/houseManager');
 const JobManager = require('../jobs/jobManager');
 const playerManager = require('./playerManager');
 
@@ -112,13 +113,12 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         // 7. Repo Jobs
         let repoJobs = [];
         
-        // [CHANGE] Check level. If < 10, send a "locked" placeholder.
         if (level < 10) {
             repoJobs.push({
                 jobNumber: 1,
                 targetModel: 'locked',
                 targetName: 'Reach Level 10 to Unlock',
-                status: 'locked' // New status for UI handling
+                status: 'locked' 
             });
         } else {
             try {
@@ -140,6 +140,20 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             } catch(e) { /* table may not exist yet */ }
         }
 
+        // 8. Properties / Houses (NEW)
+        // Fetches house based on owner_id matching player DB ID
+        const ownedHouse = HouseManager.getHouseByOwner(player.data.dbId);
+        let houseInfo = null;
+        
+        if (ownedHouse) {
+            houseInfo = {
+                id: ownedHouse.id,
+                price: ownedHouse.price,
+                locked: ownedHouse.locked,
+                position: ownedHouse.position
+            };
+        }
+
         // Send payload
         const payload = {
             playerName: player.name || 'Unknown',
@@ -150,9 +164,10 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             stats: { ...stats, vehicleCount, maxVehicles: player.data.vehicle_slots || 3 },
             jobs: formattedJobs,
             quests: dailyQuests,
-            activeMinutes: playedToday, // FIX: Send calculated daily total instead of just activeMinutes
+            activeMinutes: playedToday, 
             photoHunt: photoHuntData,
-            repoJobs: repoJobs
+            repoJobs: repoJobs,
+            house: houseInfo // Added to payload
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);

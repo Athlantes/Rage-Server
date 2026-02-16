@@ -56,6 +56,11 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
     }
 });
 
+mp.events.add('setHouseWaypoint', (x, y) => {
+    mp.game.ui.setNewWaypoint(x, y);
+    mp.gui.chat.push("!{00FF00}GPS set to your house.");
+});
+
 mp.events.add('client:playerMenu:setSelfTag', (enabled) => {
     // Persist the nametag setting
     try { mp.storage.data.showSelfTag = enabled; mp.storage.flush(); } catch(e) {}

@@ -1010,6 +1010,109 @@
             font-size: 12px;
             color: var(--text-dim);
         }
+
+        /* ── Properties Tab ── */
+        .prop-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .prop-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+        }
+
+        .prop-card:hover { background: var(--bg-card-hover); }
+
+        .prop-card-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .prop-card-icon.house { background: var(--primary-dim); color: var(--primary); }
+        .prop-card-icon.apt   { background: rgba(46,204,113,0.12); color: var(--success); }
+        .prop-card-icon.biz   { background: rgba(240,196,0,0.12); color: var(--warning); }
+
+        .prop-card-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .prop-card-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .prop-card-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .prop-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .prop-status.locked   { background: rgba(255,71,87,0.15); color: var(--danger); }
+        .prop-status.unlocked { background: rgba(46,204,113,0.15); color: var(--success); }
+
+        .prop-gps-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background: var(--primary-dim);
+            border: 1px solid rgba(0,168,255,0.2);
+            color: var(--primary);
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .prop-gps-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .prop-empty {
+            text-align: center;
+            padding: 16px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-style: italic;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -1036,6 +1139,13 @@
                 <div class="nav-text">
                     <div class="nav-label">Careers</div>
                     <div class="nav-desc">Job skills & progress</div>
+                </div>
+            </div>
+            <div class="nav-item" onclick="setTab('properties')">
+                <div class="nav-icon"><i class="fas fa-key"></i></div>
+                <div class="nav-text">
+                    <div class="nav-label">Properties</div>
+                    <div class="nav-desc">Your owned properties</div>
                 </div>
             </div>
             <div class="nav-item" onclick="setTab('objectives')">
@@ -1129,6 +1239,20 @@
                         <div class="info-label">Played Today</div>
                     </div>
                 </div>
+            </div>
+
+            <div id="tab-properties" class="tab-content">
+                <!-- ── Residential ── -->
+                <div class="section-label">Residential</div>
+                <div class="prop-grid" id="houseContent"></div>
+
+                <!-- ── Apartments (future) ── -->
+                <!-- <div class="section-label" style="margin-top:16px;">Apartments</div> -->
+                <!-- <div class="prop-grid" id="apartmentContent"></div> -->
+
+                <!-- ── Businesses (future) ── -->
+                <!-- <div class="section-label" style="margin-top:16px;">Businesses</div> -->
+                <!-- <div class="prop-grid" id="businessContent"></div> -->
             </div>
 
             <!-- ═══ CAREERS ═══ -->
@@ -1251,9 +1375,18 @@
 </div>
 
 <script>
+    let housePosition = null;
+
+    function setRoute() {
+        if (housePosition) {
+            mp.trigger('setHouseWaypoint', housePosition.x, housePosition.y);
+        }
+    }
+
     const tabTitles = {
         overview: 'Overview',
         careers: 'Careers',
+        properties: 'Properties',
         objectives: 'Objectives',
         settings: 'Settings'
     };
@@ -1349,6 +1482,36 @@
             const th = Math.floor(data.activeMinutes / 60);
             const tm = data.activeMinutes % 60;
             document.getElementById('played-today').innerText = th > 0 ? th + 'h ' + tm + 'm' : tm + 'm';
+        }
+
+        const houseContainer = document.getElementById('houseContent');
+
+        if (data.house) {
+            housePosition = data.house.position;
+            const isLocked = data.house.locked;
+            const statusHtml = isLocked
+                ? '<span class="prop-status locked"><i class="fas fa-lock"></i> Locked</span>'
+                : '<span class="prop-status unlocked"><i class="fas fa-lock-open"></i> Unlocked</span>';
+
+            houseContainer.innerHTML = `
+                <div class="prop-card">
+                    <div class="prop-card-icon house"><i class="fas fa-house-user"></i></div>
+                    <div class="prop-card-body">
+                        <div class="prop-card-name">House #${data.house.id}</div>
+                        <div class="prop-card-sub">
+                            $${data.house.price.toLocaleString()}
+                            &nbsp;·&nbsp;
+                            ${statusHtml}
+                        </div>
+                    </div>
+                    <button class="prop-gps-btn" onclick="setRoute()" title="Set GPS Route">
+                        <i class="fas fa-location-dot"></i>
+                    </button>
+                </div>
+            `;
+        } else {
+            housePosition = null;
+            houseContainer.innerHTML = `<div class="prop-empty"><i class="fas fa-bed" style="margin-right:6px;opacity:0.4;"></i>No house owned — visit a green marker to buy one.</div>`;
         }
 
         // ── Jobs ──
