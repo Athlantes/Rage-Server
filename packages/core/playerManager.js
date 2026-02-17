@@ -286,4 +286,7 @@ function triggerPayday(player) {
 
     // 6. Save Account (This saves the reset timer too)
     playerManager.saveAccount(player);
+
+    // 7. Faction salary (handled by factions/index.js listener)
+    mp.events.call('server:payday:player', player);
 }

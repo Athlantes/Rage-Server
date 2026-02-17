@@ -61,6 +61,21 @@ mp.events.add('render', () => {
                 // Apply our Base Scale
                 scale = scale * FONT_SCALE;
 
+                // Draw faction tag above everything (law/criminal/civilian)
+                const factionTag          = player.getVariable('factionTag');
+                const factionNametagColor = player.getVariable('factionNametagColor');
+
+                if (factionTag && factionNametagColor) {
+                    const [r, g, b] = factionNametagColor;
+                    mp.game.graphics.drawText(`{${factionTag}}`, [pPos.x, pPos.y, pPos.z + 1.22], {
+                        font:    FONT_ID,
+                        color:   [r, g, b, 220],
+                        scale:   [scale * 0.75, scale * 0.75],
+                        outline: true,
+                        centre:  true
+                    });
+                }
+
                 // Draw family tag above nametag if player is in a family
                 const familyTag          = player.getVariable('familyTag');
                 const familyNametagColor = player.getVariable('familyNametagColor');

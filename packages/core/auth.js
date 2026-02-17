@@ -178,6 +178,7 @@ async function finalizeLogin(player, userData) {
     } catch (e) {
         console.error('[Family] Error loading family on login:', e);
     }
+
 }
 
 function startSession(player, userData) {

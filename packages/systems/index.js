@@ -1,5 +1,6 @@
 require('./familyManager');
 require('./familyCommands');
+require('./factions/index');   // ← Factions system
 require('./inventory');
 require('./dumpster');
 require('./returo');

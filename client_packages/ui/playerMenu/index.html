@@ -38,6 +38,18 @@
             justify-content: center;
         }
 
+
+        /* ── Faction Tab Extra Styles ── */
+        .fac-card-icon { font-size: 24px; margin-right: 10px; flex-shrink: 0; line-height: 1; }
+        .fac-banner-icon { font-size: 30px; margin-right: 14px; }
+        .fac-apply-modal { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.7); border-radius:12px; align-items:center; justify-content:center; z-index:100; }
+        .fac-apply-box { background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; padding:24px; width:380px; }
+        .fac-apply-title { font-size:16px; font-weight:700; margin-bottom:12px; }
+        .fac-apply-box textarea { width:100%; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-family:inherit; font-size:13px; resize:none; }
+        .fac-apply-box textarea:focus { outline:none; border-color:var(--primary); }
+        .fac-apply-btns { display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+        #fac-tab-content { position:relative; height:100%; overflow-y:auto; }
+
         /* ── Main Panel ── */
         .panel {
             width: 960px;
@@ -1271,6 +1283,13 @@
                     <div class="nav-desc">Quests & exploration</div>
                 </div>
             </div>
+            <div class="nav-item" onclick="setTab('factions')">
+                <div class="nav-icon"><i class="fas fa-shield-halved"></i></div>
+                <div class="nav-text">
+                    <div class="nav-label">Factions</div>
+                    <div class="nav-desc">Faction & org</div>
+                </div>
+            </div>
             <div class="nav-item" onclick="setTab('settings')">
                 <div class="nav-icon"><i class="fas fa-cog"></i></div>
                 <div class="nav-text">
@@ -1464,7 +1483,11 @@
                 <div id="fam-tab-content"></div>
             </div>
 
-            <div class="tab-content" id="tab-settings">
+            <div class="tab-content" id="tab-factions">
+                <div id="fac-tab-content"></div>
+            </div>
+
+                        <div class="tab-content" id="tab-settings">
                 <div class="settings-group">
                     <div class="section-label">Interface</div>
                     <div class="setting-row">
@@ -1554,7 +1577,8 @@
         properties: 'Properties',
         families: 'Families',
         objectives: 'Objectives',
-        settings: 'Settings'
+        settings: 'Settings',
+        factions: 'Factions'
     };
 
     function setTab(id) {
@@ -1843,6 +1867,9 @@
 
         // ── Families ──
         if (data.family) renderFamilyTab(data.family);
+
+        // ── Factions ──
+        if (data.faction) renderFactionTab(data.faction);
 
         } catch(e) { console.error('receiveData error:', e); }
     }
@@ -2235,6 +2262,230 @@
         mp.trigger('client:family:create', JSON.stringify({ name, tag: rawTag, color, description: desc, ranks }));
         closeFamModal();
     }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  FACTIONS TAB — Full JavaScript
+    // ═══════════════════════════════════════════════════════════════════════
+    let _facData = null;
+    let _facSubTab = 'info';
+    let _applyModal = null; // { key } if open
+
+    const TYPE_ICONS  = { law: '🚔', criminal: '💀', civilian: '🔧' };
+    const TYPE_LABELS = { law: 'Law Enforcement', criminal: 'Criminal Org', civilian: 'Civilian' };
+
+    function renderFactionTab(fac) {
+        _facData = fac;
+        const el = document.getElementById('fac-tab-content');
+        if (!el) return;
+        if (!fac.inFaction) {
+            renderFacBrowseView(el, fac.allFactions || []);
+        } else {
+            renderFacMemberView(el, fac);
+        }
+    }
+
+    // ── Browse view (not in a faction) ────────────────────────────────────
+    function renderFacBrowseView(el, factions) {
+        el.innerHTML = `
+            <div class="fam-none-header">
+                <div class="fam-none-label">
+                    <strong>No Faction</strong>
+                    Apply to join an official faction
+                </div>
+            </div>
+            <input class="fam-search" id="fac-search" placeholder="Search factions..." oninput="filterFactions(this.value)">
+            <div class="fam-list" id="fac-list"></div>
+            <div class="fac-apply-modal" id="fac-apply-modal" style="display:none;">
+                <div class="fac-apply-box">
+                    <div class="fac-apply-title" id="fac-apply-title">Apply to Faction</div>
+                    <textarea id="fac-apply-msg" placeholder="Write a short message about why you want to join... (optional)" maxlength="300" rows="4"></textarea>
+                    <div class="fac-apply-btns">
+                        <button class="fam-modal-cancel" onclick="closeFacApply()">Cancel</button>
+                        <button class="fam-modal-submit" onclick="submitFacApply()">Send Application</button>
+                    </div>
+                </div>
+            </div>`;
+        renderFactionList(factions, '');
+    }
+
+    function renderFactionList(factions, filter) {
+        const list = document.getElementById('fac-list');
+        if (!list) return;
+        const filtered = filter ? factions.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()) || f.type.includes(filter.toLowerCase())) : factions;
+        if (!filtered.length) {
+            list.innerHTML = '<div class="fam-empty">No factions found.</div>';
+            return;
+        }
+        list.innerHTML = filtered.map(f => {
+            const icon  = TYPE_ICONS[f.type]  || '🏛️';
+            const label = TYPE_LABELS[f.type] || f.type;
+            const statusBadge = f.applicationsOpen
+                ? `<span class="fam-badge open"><i class="fas fa-envelope" style="margin-right:3px;"></i>Applications Open</span>`
+                : `<span class="fam-badge closed"><i class="fas fa-lock" style="margin-right:3px;"></i>Invite Only</span>`;
+            const applyBtn = f.applicationsOpen && !f.hasApplied
+                ? `<button class="fam-btn fam-btn-apply" onclick="openFacApply('${f.key}','${f.name.replace(/'/g,"\\'")}')"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>`
+                : f.hasApplied
+                    ? `<span style="font-size:10px;color:var(--primary);">Pending...</span>`
+                    : '';
+            return `
+                <div class="fam-card" style="border-left-color:${f.color};">
+                    <div class="fac-card-icon">${icon}</div>
+                    <div class="fam-card-info">
+                        <div class="fam-card-tag" style="color:${f.color};">[${f.tag}] <span style="font-size:10px;color:var(--text-muted);">${label}</span></div>
+                        <div class="fam-card-name">${f.name}</div>
+                        ${f.description ? `<div class="fam-card-desc">${f.description}</div>` : ''}
+                        <div class="fam-card-meta">${f.memberCount}/${f.memberCap} members</div>
+                        <div class="fam-badges">${statusBadge}</div>
+                    </div>
+                    <div class="fam-card-actions">${applyBtn}</div>
+                </div>`;
+        }).join('');
+    }
+
+    function filterFactions(val) {
+        if (_facData && !_facData.inFaction) renderFactionList(_facData.allFactions || [], val);
+    }
+
+    function openFacApply(key, name) {
+        _applyModal = { key };
+        document.getElementById('fac-apply-title').innerText = 'Apply to ' + name;
+        document.getElementById('fac-apply-msg').value = '';
+        document.getElementById('fac-apply-modal').style.display = 'flex';
+    }
+
+    function closeFacApply() {
+        _applyModal = null;
+        document.getElementById('fac-apply-modal').style.display = 'none';
+    }
+
+    function submitFacApply() {
+        if (!_applyModal) return;
+        const msg = document.getElementById('fac-apply-msg').value.trim();
+        mp.trigger('server:faction:apply', _applyModal.key, msg);
+        closeFacApply();
+    }
+
+    // ── Member view ────────────────────────────────────────────────────────
+    function renderFacMemberView(el, fac) {
+        const manageTab = fac.isLeader
+            ? `<div class="fam-subtab ${_facSubTab==='manage'?'active':''}" onclick="setFacSub('manage')">Manage<span class="fam-notif-dot${fac.applications&&fac.applications.length?' show':''}" id="fac-app-dot"></span></div>`
+            : '';
+        el.innerHTML = `
+            <div class="fam-subtabs">
+                <div class="fam-subtab ${_facSubTab==='info'?'active':''}" onclick="setFacSub('info')"><i class="fas fa-shield-halved" style="margin-right:4px;"></i>Info</div>
+                <div class="fam-subtab ${_facSubTab==='members'?'active':''}" onclick="setFacSub('members')"><i class="fas fa-users" style="margin-right:4px;"></i>Members</div>
+                ${manageTab}
+            </div>
+            <div class="fam-subview ${_facSubTab==='info'?'active':''}" id="fsub-fac-info">${buildFacInfoHTML(fac)}</div>
+            <div class="fam-subview ${_facSubTab==='members'?'active':''}" id="fsub-fac-members">${buildFacMembersHTML(fac)}</div>
+            ${fac.isLeader ? `<div class="fam-subview ${_facSubTab==='manage'?'active':''}" id="fsub-fac-manage">${buildFacManageHTML(fac)}</div>` : ''}`;
+    }
+
+    function setFacSub(sub) {
+        _facSubTab = sub;
+        document.querySelectorAll('.fam-subtab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.fam-subview').forEach(v => v.classList.remove('active'));
+        const tabEl = document.querySelector(`.fam-subtab[onclick="setFacSub('${sub}')"]`);
+        if (tabEl) tabEl.classList.add('active');
+        const viewEl = document.getElementById('fsub-fac-' + sub);
+        if (viewEl) viewEl.classList.add('active');
+    }
+
+    function buildFacInfoHTML(fac) {
+        const typeIcon  = TYPE_ICONS[fac.type]  || '🏛️';
+        const typeLabel = TYPE_LABELS[fac.type] || fac.type;
+        return `
+            <div class="fam-info-banner" style="background:linear-gradient(135deg,${fac.color}18,${fac.color}06);border-left:3px solid ${fac.color};">
+                <div class="fac-banner-icon">${typeIcon}</div>
+                <div>
+                    <div class="fam-info-tag" style="color:${fac.color};">[${fac.tag}] <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${typeLabel}</span></div>
+                    <div class="fam-info-name" style="color:${fac.color};">${fac.name}</div>
+                    ${fac.description ? `<div class="fam-info-desc">${fac.description}</div>` : ''}
+                </div>
+            </div>
+            <div class="fam-my-rank-badge" style="border-color:${fac.rankColor}33;">
+                <i class="fas fa-shield-halved" style="color:${fac.rankColor};"></i>
+                <span style="font-size:13px;font-weight:700;color:${fac.rankColor};">${fac.rankName}</span>
+                <span style="font-size:11px;color:var(--text-muted);">Rank ${fac.rank}/5 · Salary $${(fac.salary||0).toLocaleString()}/payday</span>
+            </div>
+            <div class="fam-info-grid">
+                <div class="fam-stat-card">
+                    <div class="fam-stat-label"><i class="fas fa-users" style="margin-right:4px;"></i>Members</div>
+                    <div class="fam-stat-val">${fac.memberCount}<span style="font-size:12px;color:var(--text-muted);">/${fac.memberCap}</span></div>
+                </div>
+                <div class="fam-stat-card">
+                    <div class="fam-stat-label"><i class="fas fa-coins" style="margin-right:4px;"></i>Payday Salary</div>
+                    <div class="fam-stat-val" style="font-size:14px;color:var(--success);">$${(fac.salary||0).toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="fam-section-title">Rank Structure</div>
+            <div class="fam-rank-strip">
+                ${(fac.ranks||[]).map(r=>`<div class="fam-rank-pill" style="color:${r.color};border-color:${r.color}33;"><strong>${r.rank}</strong> — ${r.name} <span style="color:var(--success);font-size:10px;">$${r.salary}</span></div>`).join('')}
+            </div>
+            <div style="margin-top:14px;text-align:center;">
+                <button onclick="confirmFacLeave()" style="background:transparent;border:1px solid var(--danger);color:var(--danger);padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;">Leave Faction</button>
+            </div>`;
+    }
+
+    function buildFacMembersHTML(fac) {
+        const members = fac.members || [];
+        if (!members.length) return '<div class="fam-empty">No members.</div>';
+        return members.map(m => `
+            <div class="fam-member-row">
+                <div class="fam-dot ${m.online?'online':'offline'}"></div>
+                <div class="fam-member-name">${m.username}${m.rank===5?'<i class="fas fa-crown" style="margin-left:5px;color:#FFD700;font-size:10px;"></i>':''}</div>
+                <div class="fam-member-rank" style="color:${m.rankColor};">${m.rankName}</div>
+            </div>`).join('');
+    }
+
+    function buildFacManageHTML(fac) {
+        const apps = fac.applications || [];
+        const members = fac.members || [];
+        const appSection = apps.length ? `
+            <div class="fam-section-title">Pending Applications (${apps.length})</div>
+            ${apps.map(a => `
+                <div class="fam-member-row" style="flex-wrap:wrap;gap:6px;">
+                    <div class="fam-dot online" style="background:var(--primary);"></div>
+                    <div class="fam-member-name" style="flex:1;">${a.username}</div>
+                    ${a.message ? `<div style="width:100%;font-size:11px;color:var(--text-muted);padding-left:20px;margin-top:-4px;">"${a.message}"</div>` : ''}
+                    <div class="fam-member-actions">
+                        <button class="fam-action-btn" style="color:var(--success);border-color:var(--success)33;" onclick="facAcceptApp(${a.userId})">Accept</button>
+                        <button class="fam-action-btn danger" onclick="facRejectApp(${a.userId})">Reject</button>
+                    </div>
+                </div>`).join('')}
+        ` : `<div class="fam-empty"><i class="fas fa-inbox" style="margin-right:6px;opacity:0.4;"></i>No pending applications.</div>`;
+
+        const memberSection = `
+            <div class="fam-section-title" style="margin-top:14px;">Manage Members</div>
+            ${members.map(m => `
+                <div class="fam-member-row">
+                    <div class="fam-dot ${m.online?'online':'offline'}"></div>
+                    <div class="fam-member-name" style="flex:1;">${m.username}</div>
+                    <div class="fam-member-rank" style="color:${m.rankColor};margin-right:8px;">${m.rankName}</div>
+                    <div class="fam-member-actions">
+                        <button class="fam-action-btn" onclick="facPromote(${m.userId},${m.rank})">▲</button>
+                        <button class="fam-action-btn" onclick="facDemote(${m.userId},${m.rank})">▼</button>
+                        <button class="fam-action-btn danger" onclick="facKick(${m.userId},'${m.username}')">Kick</button>
+                    </div>
+                </div>`).join('')}`;
+
+        return appSection + memberSection;
+    }
+
+    // ── Action helpers ─────────────────────────────────────────────────────
+    function facAcceptApp(userId)       { mp.trigger('server:faction:acceptApp', userId); setTimeout(refreshFacTab, 300); }
+    function facRejectApp(userId)       { mp.trigger('server:faction:rejectApp', userId); setTimeout(refreshFacTab, 300); }
+    function facKick(userId, name)      { if (confirm('Kick ' + name + '?')) { mp.trigger('server:faction:kick', userId); setTimeout(refreshFacTab, 300); } }
+    function facPromote(userId, rank)   { mp.trigger('server:faction:setRank', userId, rank + 1); setTimeout(refreshFacTab, 300); }
+    function facDemote(userId, rank)    { if (rank > 1) { mp.trigger('server:faction:setRank', userId, rank - 1); setTimeout(refreshFacTab, 300); } }
+    function confirmFacLeave()          { if (confirm('Leave your faction?')) mp.trigger('server:faction:leave'); }
+    function refreshFacTab()            { mp.trigger('server:faction:getMenuData'); }
+
+    // ── Faction data from server (standalone refresh) ──────────────────────
+    mp.events.add('client:faction:receiveMenuData', (json) => {
+        try { renderFactionTab(JSON.parse(json)); } catch(e) { console.error(e); }
+    });
 
 </script>
 </body>
