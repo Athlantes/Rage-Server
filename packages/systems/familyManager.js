@@ -49,7 +49,10 @@ class FamilyManager {
                 // Mark HQ on house object in-memory
                 if (family.hqHouseId) {
                     const house = HouseManager.getHouseById(family.hqHouseId);
-                    if (house) house.hqFamilyId = family.id;
+                    if (house) {
+                        house.hqFamilyId = family.id;
+                        if (house.label) house.label.text += '\n~y~[Family HQ]';
+                    }
                 }
             }
 
@@ -876,8 +879,5 @@ mp.events.add('server:family:spawn', (player) => {
     player.dimension = house.id;
     player.outputChatBox('!{00FF00}Spawned at Family HQ!');
 });
-
-// Boot
-instance.loadAll();
 
 module.exports = instance;

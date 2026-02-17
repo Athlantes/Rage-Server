@@ -4,7 +4,6 @@ require('./command-collector'); // Load the collector FIRST
 const CHAT_RANGE = 20.0;
 
 mp.events.add('playerReady', (player) => {
-    // ⚠️ THE MAGIC: Redirect standard RAGE output to our Custom UI
     player.outputChatBox = (message) => {
         player.call('chat:push', ['', message, 'server']);
     };
@@ -26,7 +25,7 @@ mp.events.add('chat:say', (player, message) => {
     // Build family tag prefix if player is in a family
     const familyTag   = player.getVariable('familyTag');
     const familyColor = player.getVariable('familyChatColor');
-    const tagPrefix   = (familyTag && familyColor) ? `!{#${familyColor}}[${familyTag}] ` : '';
+    const tagPrefix   = (familyTag && familyColor) ? `!{${familyColor}}[${familyTag}] ` : '';
 
     // Send to everyone nearby
     mp.players.forEachInRange(player.position, CHAT_RANGE, (target) => {

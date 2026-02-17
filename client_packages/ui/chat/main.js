@@ -32,11 +32,19 @@ window.chatAPI = {
         const el = document.createElement('div');
         el.className = `message ${type}`;
         
-        // Handle RAGE colors !{HEX}
-        let formattedText = text.replace(/!\{([0-9a-fA-F]{6})\}/g, '<span style="color:#$1">');
+        // Helper function to format colors
+        const formatColors = (str) => {
+            if (!str) return '';
+            // Supports both !{HEX} and !{#HEX} just in case
+            return str.replace(/!\{#?([0-9a-fA-F]{6})\}/g, '<span style="color:#$1">');
+        };
+
+        // Format BOTH text and name
+        let formattedText = formatColors(text);
+        let formattedName = formatColors(name);
 
         if (name) {
-            el.innerHTML = `<strong>${name}:</strong> ${formattedText}`;
+            el.innerHTML = `<strong>${formattedName}:</strong> ${formattedText}`;
         } else {
             el.innerHTML = formattedText;
         }
@@ -54,13 +62,11 @@ window.chatAPI = {
 
     showInput: (show) => {
         if (show) {
-            // OPENING CHAT
             inputWrapper.classList.remove('hidden');
             input.disabled = false;
             input.focus();
             setTimeout(() => input.focus(), 10);
 
-            // ⚠️ FIX: REMOVE FADED CLASS & CLEAR TIMER
             chatWrapper.classList.remove('faded'); // Makes opacity 1.0 immediately
             if (fadeTimer) clearTimeout(fadeTimer); // Stop it from fading while typing
 

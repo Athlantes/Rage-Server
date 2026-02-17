@@ -28,6 +28,10 @@ async function loadHouses() {
             createHouseEntities(row);
         });
         console.log(`[House Manager] Loaded ${houses.length} houses.`);
+
+        const FamilyManager = require('./familyManager');
+        FamilyManager.loadAll(); 
+
     } catch (err) {
         console.error('[House Manager] Failed to load houses:', err);
     }

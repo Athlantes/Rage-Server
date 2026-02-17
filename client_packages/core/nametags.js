@@ -65,7 +65,7 @@ mp.events.add('render', () => {
         const isAfk    = player.getVariable('isAfk');
 
         let nameText = `(${displayId}) ${player.name}`;
-        if (isAfk)         nameText += '\n~r~⏳ AFK';
+        if (isAfk)         nameText += '\n~r~AFK';
         else if (isTyping) nameText += '\n~c~...';
 
         // Dynamic scale based on distance

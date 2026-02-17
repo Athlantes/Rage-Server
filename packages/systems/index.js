@@ -1,3 +1,5 @@
+
+require('./houseManager');
 require('./familyManager');
 require('./familyCommands');
 require('./inventory');
