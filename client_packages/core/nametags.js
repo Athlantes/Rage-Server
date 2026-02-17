@@ -87,6 +87,8 @@ mp.events.add('render', () => {
             });
         }
 
+        let nameColor = [255, 255, 255, 255]; // default: white
+
         // ── Draw nametag ──────────────────────────────────────────────────────
         mp.game.graphics.drawText(nameText, [pPos.x, pPos.y, pPos.z + 0.6], {
             font:    FONT_ID,
