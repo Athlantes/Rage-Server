@@ -161,15 +161,6 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             familyData = await FamilyManager.getPlayerMenuData(player);
         } catch (e) { console.error('[PlayerMenu] Family data error:', e); }
 
-        // 10. Faction Data
-        let factionData = { inFaction: false, allFactions: [] };
-        try {
-            const FactionManager = require('../systems/factions/factionManager');
-            if (FactionManager.getPlayerMenuData) {
-                factionData = await FactionManager.getPlayerMenuData(player);
-            }
-        } catch (e) { console.error('[PlayerMenu] Faction data error:', e); }
-
         // Send payload
         const payload = {
             playerName: player.name || 'Unknown',
@@ -184,8 +175,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             photoHunt: photoHuntData,
             repoJobs: repoJobs,
             house: houseInfo,
-            family: familyData,
-            faction: factionData
+            family: familyData
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);

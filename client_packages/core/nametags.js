@@ -1,10 +1,4 @@
 // client_packages/core/nametags.js
-// ─────────────────────────────────────────────────────────────────────────────
-//  Custom Nametag Renderer
-//  • Faction members ON DUTY → name rendered in faction color (no floating tag)
-//  • Family tag still shown above the name (separate feature)
-//  • Off-duty / no faction → white name
-// ─────────────────────────────────────────────────────────────────────────────
 
 // Disable default RageMP tags
 mp.nametags.enabled = false;
@@ -91,17 +85,6 @@ mp.events.add('render', () => {
                 outline: true,
                 centre:  true,
             });
-        }
-
-        // ── Name color: faction color when ON DUTY, white otherwise ──────────
-        const isOnDuty      = player.getVariable('isOnDuty');
-        const factionColor  = player.getVariable('factionColor'); // 6-char hex, no #
-
-        let nameColor = [255, 255, 255, 255]; // default: white
-
-        if (isOnDuty && factionColor) {
-            const [r, g, b] = hexStrToRgb(factionColor);
-            nameColor = [r, g, b, 255];
         }
 
         // ── Draw nametag ──────────────────────────────────────────────────────

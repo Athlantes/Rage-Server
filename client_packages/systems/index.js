@@ -7,4 +7,3 @@ require('./zones.js');
 require('./questTracker.js');
 require('./atm.js');
 require('./cablecar.js');
-require('./faction.js'); // ← Factions system
