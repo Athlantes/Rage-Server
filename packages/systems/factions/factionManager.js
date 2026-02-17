@@ -15,6 +15,9 @@ function hexToRgb(hex) {
     return [parseInt(h.slice(0,2),16)||255, parseInt(h.slice(2,4),16)||255, parseInt(h.slice(4,6),16)||255, 255];
 }
 
+// Actions that do NOT require being on duty
+const DUTY_EXEMPT = new Set(['USE_RADIO', 'MANAGE_MEMBERS']);
+
 // ═════════════════════════════════════════════════════════════════════════════
 class FactionManager {
     constructor() {
@@ -23,6 +26,7 @@ class FactionManager {
         this._memberIndex = new Map(); // userId → faction key
         this._apps        = new Map(); // key → [{ userId, username, message, appliedAt }]
         this.cuffed       = new Set(); // userId of cuffed players
+        this._onDuty      = new Set(); // userId of players currently on duty
         this.loaded       = false;
     }
 
@@ -81,14 +85,39 @@ class FactionManager {
         player.setVariable('factionRank',         rank);
         player.setVariable('factionRankName',     rankObj.name);
         player.setVariable('factionType',         def.type);
+        // Duty always resets on reconnect
+        player.setVariable('isOnDuty', false);
     }
 
     _clearVars(player) {
         player.data.factionKey   = null;
         player.data.factionRank  = 0;
         player.data.factionType  = null;
-        ['factionKey','factionTag','factionColor','factionNametagColor','factionRank','factionRankName','factionType']
+        if (player.data.dbId) this._onDuty.delete(player.data.dbId);
+        ['factionKey','factionTag','factionColor','factionNametagColor','factionRank','factionRankName','factionType','isOnDuty']
             .forEach(v => player.setVariable(v, null));
+    }
+
+    // ── Duty management ───────────────────────────────────────────────────────
+    isOnDuty(player) {
+        return this._onDuty.has(player.data?.dbId);
+    }
+
+    setDuty(player, onDuty) {
+        const uid = player.data?.dbId;
+        if (!uid) return;
+        if (onDuty) {
+            this._onDuty.add(uid);
+        } else {
+            this._onDuty.delete(uid);
+        }
+        player.data.isOnDuty = onDuty;
+        player.setVariable('isOnDuty', onDuty);
+    }
+
+    // Clear duty on disconnect
+    onPlayerQuit(player) {
+        if (player.data?.dbId) this._onDuty.delete(player.data.dbId);
     }
 
     // ── Lookups ───────────────────────────────────────────────────────────────
@@ -102,7 +131,8 @@ class FactionManager {
     isMember(uid)            { return this._memberIndex.has(uid); }
 
     // ── Permission check ──────────────────────────────────────────────────────
-    // Each action in a definition has a minRank. Returns bool.
+    // Each action in a definition has a minRank.
+    // Most actions additionally require the player to be on duty.
     can(player, action) {
         const key = player.data.factionKey;
         if (!key) return false;
@@ -110,7 +140,10 @@ class FactionManager {
         if (!def)  return false;
         const rank  = player.data.factionRank || 0;
         const minR  = def.permissions?.[action] ?? 99;
-        return rank >= minR;
+        if (rank < minR) return false;
+        // Duty required for active field actions (not for radio / management)
+        if (!DUTY_EXEMPT.has(action) && !this._onDuty.has(player.data?.dbId)) return false;
+        return true;
     }
 
     // ── Apply to faction ──────────────────────────────────────────────────────
@@ -409,6 +442,15 @@ class FactionManager {
         }
         this._memberIndex.delete(userId);
         await db.query('DELETE FROM faction_members WHERE user_id=?', [userId]);
+    }
+    // ── Blip data for client ──────────────────────────────────────────────────
+    // Returns an array of blip configs for all factions that have a blipConfig defined
+    getBlipData() {
+        const blips = [];
+        for (const [, def] of this._definitions) {
+            if (def.blipConfig) blips.push(def.blipConfig);
+        }
+        return blips;
     }
 }
 

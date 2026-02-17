@@ -38,6 +38,19 @@ FM.register(KEY, {
     vehspawnPosition:{ x: 432.30, y: -978.52, z: 30.69, h: -2.0  },
     vehModel:        'police3',
 
+    // Duty: stand near the front entrance, get teleported to the bullpen/locker room inside
+    dutyPosition:         { x: 430.2, y: -983.8, z: 30.7, h: 90.0 },
+    dutyInteriorPosition: { x: 461.55, y: -1012.03, z: 26.33, h: 0.0 },
+
+    // Map blip shown to all players
+    blipConfig: {
+        sprite:   60,        // Police badge shield
+        color:    3,         // Blue
+        scale:    1.0,
+        label:    'LSPD HQ',
+        position: { x: 430.2, y: -983.8, z: 30.7 },
+    },
+
     // minRank required for each action
     permissions: {
         USE_RADIO:       1,
@@ -210,7 +223,7 @@ mp.events.addCommand('arrest', async (player, _, id, sentenceStr) => {
     target.outputChatBox(`!{FF4444}[LSPD] You have been arrested for ${sentence} minute(s). Serve your time.`);
 
     player.outputChatBox(`!{00FF00}[LSPD] ${target.name} arrested. Sentence: ${sentence} min.`);
-    this._notifyFaction?.(KEY, `!{FFAA00}[LSPD] ${player.name} arrested ${target.name} (${sentence}m).`, 1);
+    FM._notifyFaction(KEY, `!{FFAA00}[LSPD] ${player.name} arrested ${target.name} (${sentence}m).`, 1);
     log(player.data.dbId, player.name, target.data.dbId, target.name, 'arrest', sentence);
 
     // Release after sentence

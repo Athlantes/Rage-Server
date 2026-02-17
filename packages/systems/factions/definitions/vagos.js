@@ -66,6 +66,19 @@ FM.register(KEY, {
 
     drugLabPosition:  { x: 108.35, y: -1970.60, z: 20.68 },
 
+    // Duty: stand at the hideout entrance, get teleported into the drug lab area
+    dutyPosition:         { x: 96.4, y: -1945.2, z: 20.68, h: 185.0 },
+    dutyInteriorPosition: { x: 108.35, y: -1970.60, z: 20.68, h: 185.0 },
+
+    // Map blip shown to all players
+    blipConfig: {
+        sprite:   84,        // Gang activity / spray can
+        color:    5,         // Yellow
+        scale:    0.9,
+        label:    'Vagos HQ',
+        position: { x: 96.4, y: -1945.2, z: 20.68 },
+    },
+
     permissions: {
         USE_RADIO:         1,
         SPAWN_VEH:         1,

@@ -26,6 +26,19 @@ FM.register(KEY, {
     vehspawnPosition: { x: 301.62, y: -591.75, z: 43.26, h: 155.0 },
     vehModel:         'ambulance',
 
+    // Duty: stand at the hospital main entrance, get teleported to the break room inside
+    dutyPosition:         { x: 307.5, y: -597.7, z: 43.3, h: 340.0 },
+    dutyInteriorPosition: { x: 296.07, y: -584.42, z: 43.26, h: 340.0 },
+
+    // Map blip shown to all players
+    blipConfig: {
+        sprite:   61,        // Hospital cross
+        color:    1,         // Red
+        scale:    1.0,
+        label:    'EMS HQ',
+        position: { x: 307.5, y: -597.7, z: 43.3 },
+    },
+
     permissions: {
         USE_RADIO:      1,
         ACCESS_ARMORY:  1,

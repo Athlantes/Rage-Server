@@ -86,6 +86,52 @@ mp.events.addCommand('fleave', async (player) => {
     await FM.leaveFaction(player);
 });
 
+// /duty — Toggle on/off duty (must be near faction HQ)
+mp.events.addCommand('duty', (player) => {
+    if (!player.logged) return;
+    const def = FM.getFactionByPlayer(player);
+    if (!def) return player.outputChatBox(`${C.ERR}You are not in a faction.`);
+
+    const dutyPos = def.dutyPosition || def.hqPosition;
+    if (!dutyPos) return player.outputChatBox(`${C.ERR}This faction has no duty location set.`);
+
+    const dist = player.dist(new mp.Vector3(dutyPos.x, dutyPos.y, dutyPos.z));
+    if (dist > 8) return player.outputChatBox(`${C.ERR}You must be near the ${def.name} HQ to go on/off duty.`);
+
+    const isOnDuty = FM.isOnDuty(player);
+
+    if (!isOnDuty) {
+        // Going ON duty
+        FM.setDuty(player, true);
+        const color = def.color.replace('#','');
+        player.outputChatBox(`!{${color}}[${def.tag}] !{00FF00}You are now ON DUTY.`);
+
+        // Teleport to interior if defined
+        if (def.dutyInteriorPosition) {
+            const ip = def.dutyInteriorPosition;
+            player.position = new mp.Vector3(ip.x, ip.y, ip.z);
+            if (ip.h !== undefined) player.heading = ip.h;
+        }
+
+        // Notify faction members
+        FM._notifyFaction(def.key, `!{${color}}[${def.tag}] !{AAAAAA}${player.name} is now on duty.`, 1);
+    } else {
+        // Going OFF duty
+        FM.setDuty(player, false);
+        const color = def.color.replace('#','');
+        player.outputChatBox(`!{${color}}[${def.tag}] !{FFAA00}You are now OFF DUTY.`);
+
+        // Teleport back outside
+        const exitPos = def.dutyPosition || def.hqPosition;
+        if (exitPos) {
+            player.position = new mp.Vector3(exitPos.x, exitPos.y, exitPos.z);
+            if (exitPos.h !== undefined) player.heading = exitPos.h;
+        }
+
+        FM._notifyFaction(def.key, `!{${color}}[${def.tag}] !{AAAAAA}${player.name} went off duty.`, 1);
+    }
+});
+
 // /fpromote <id|name> <1-5> — Promote (rank 4+)
 mp.events.addCommand('fpromote', async (player, fullText) => {
     if (!player.logged) return;
@@ -176,6 +222,26 @@ mp.events.add('server:loadAccount', async (player) => {
             player.setVariable('wantedLevel', player.data.wantedLevel);
         }
     } catch (e) { /* column may not exist yet */ }
+
+});
+
+// ── Disconnect hook: clear duty state ────────────────────────────────────────
+mp.events.add('playerQuit', (player) => {
+    FM.onPlayerQuit(player);
+});
+
+// ── Send faction blips on spawn (map is ready at this point) ──────────────────
+mp.events.add('playerSpawn', (player) => {
+    if (!player.logged) return;
+    const blips = FM.getBlipData();
+    if (blips.length) player.call('faction:setupBlips', [JSON.stringify(blips)]);
+});
+
+// ── Client can also pull blips on demand (e.g. after a late spawn) ────────────
+mp.events.add('server:faction:requestBlips', (player) => {
+    if (!player.logged) return;
+    const blips = FM.getBlipData();
+    player.call('faction:setupBlips', [JSON.stringify(blips)]);
 });
 
 // ── Payday hook ───────────────────────────────────────────────────────────────
