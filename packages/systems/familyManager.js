@@ -116,6 +116,7 @@ class FamilyManager {
         player.data.familyId   = family.id;
         player.data.familyRank = rank;
         player.setVariable('familyTag',          family.tag);
+        player.setVariable('familyName',         family.name);
         player.setVariable('familyChatColor',    family.color.replace('#', ''));
         player.setVariable('familyNametagColor', hexToRgbArr(family.color));
     }
@@ -124,6 +125,7 @@ class FamilyManager {
         player.data.familyId   = null;
         player.data.familyRank = 0;
         player.setVariable('familyTag',          null);
+        player.setVariable('familyName',         null);
         player.setVariable('familyChatColor',    null);
         player.setVariable('familyNametagColor', null);
     }

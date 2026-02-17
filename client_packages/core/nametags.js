@@ -73,12 +73,13 @@ mp.events.add('render', () => {
         const scale = Math.max(0.4, 1.0 - (dist / SHOW_DISTANCE)) * FONT_SCALE;
 
         // ── Family tag (unchanged feature) ───────────────────────────────────
-        const familyTag          = player.getVariable('familyTag');
+        const familyName         = player.getVariable('familyName'); // Changed from familyTag
         const familyNametagColor = player.getVariable('familyNametagColor');
 
-        if (familyTag && familyNametagColor) {
+        if (familyName && familyNametagColor) {
             const [r, g, b] = familyNametagColor;
-            mp.game.graphics.drawText(`[${familyTag}]`, [pPos.x, pPos.y, pPos.z + 0.88], {
+            // Replaced `[${familyTag}]` with familyName and removed brackets
+            mp.game.graphics.drawText(familyName, [pPos.x, pPos.y, pPos.z + 0.75], {
                 font:    FONT_ID,
                 color:   [r, g, b, 210],
                 scale:   [scale * 0.85, scale * 0.85],
