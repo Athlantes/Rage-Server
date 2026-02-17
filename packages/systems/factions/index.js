@@ -214,6 +214,13 @@ mp.events.addCommand('flist', (player) => {
 // ── Login hook ────────────────────────────────────────────────────────────────
 mp.events.add('server:loadAccount', async (player) => {
     await FM.setupPlayerFaction(player, player.data.dbId);
+    
+    // [ADD THIS] Send blips immediately upon login
+    const blips = FM.getBlipData();
+    if (blips.length) {
+        player.call('faction:setupBlips', [JSON.stringify(blips)]);
+    }
+
     // Also load wanted level from DB
     try {
         const [rows] = await db.query('SELECT wanted_level FROM users WHERE id=?', [player.data.dbId]);
@@ -222,7 +229,6 @@ mp.events.add('server:loadAccount', async (player) => {
             player.setVariable('wantedLevel', player.data.wantedLevel);
         }
     } catch (e) { /* column may not exist yet */ }
-
 });
 
 // ── Disconnect hook: clear duty state ────────────────────────────────────────

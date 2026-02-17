@@ -96,18 +96,12 @@ mp.events.add('render', () => {
         // ── Name color: faction color when ON DUTY, white otherwise ──────────
         const isOnDuty      = player.getVariable('isOnDuty');
         const factionColor  = player.getVariable('factionColor'); // 6-char hex, no #
-        const factionTag    = player.getVariable('factionTag');
 
         let nameColor = [255, 255, 255, 255]; // default: white
 
         if (isOnDuty && factionColor) {
             const [r, g, b] = hexStrToRgb(factionColor);
             nameColor = [r, g, b, 255];
-
-            // Show a small "[TAG]" prefix inline with the name when on duty
-            if (factionTag) {
-                nameText = `[${factionTag}] ${nameText}`;
-            }
         }
 
         // ── Draw nametag ──────────────────────────────────────────────────────
