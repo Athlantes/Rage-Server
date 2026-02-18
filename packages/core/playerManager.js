@@ -121,17 +121,23 @@ const playerManager = {
     setCooldown: async (player, key, minutes) => {
         if (!player || !player.data) return;
         
-        if (!player.data.cooldowns) player.data.cooldowns = {};
+        // 1. Get current cooldowns or empty object
+        // We use a local variable 'cds' to ensure we modify the data correctly
+        let cds = player.data.cooldowns || {};
         
+        // 2. Set the new cooldown
         const expiry = Date.now() + (minutes * 60000);
-        player.data.cooldowns[key] = expiry;
+        cds[key] = expiry;
 
-        // Sync to client
-        player.call('updateCooldowns', [JSON.stringify(player.data.cooldowns)]);
+        // 3. RE-ASSIGN to player.data to ensure RageMP saves it
+        player.data.cooldowns = cds; 
 
-        // Save to DB
+        // 4. Sync to client
+        player.call('updateCooldowns', [JSON.stringify(cds)]);
+
+        // 5. Save to DB
         if (player.data.dbId) {
-            await db.query('UPDATE users SET cooldowns = ? WHERE id = ?', [JSON.stringify(player.data.cooldowns), player.data.dbId]);
+            await db.query('UPDATE users SET cooldowns = ? WHERE id = ?', [JSON.stringify(cds), player.data.dbId]);
         }
     },
 

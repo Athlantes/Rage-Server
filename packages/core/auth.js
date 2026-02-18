@@ -250,11 +250,17 @@ function startSession(player, userData) {
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
         player.data.cooldowns = cd;
+
+        playerManager.syncCooldowns(player); 
+
         const now = Date.now();
         for (const [key, val] of Object.entries(cd)) {
             if (val > now) player.setVariable('cooldown_' + key, val);
         }
-    } catch(e) { player.data.cooldowns = {}; }
+    } catch(e) { 
+        player.data.cooldowns = {}; 
+        playerManager.syncCooldowns(player); // Sync empty if error
+    }
 
     player.setCooldown = function(name, minutes) {
         const exp = Date.now() + (minutes * 60000);
