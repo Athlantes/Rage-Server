@@ -300,62 +300,65 @@
         /* --- COOLDOWN CONTAINER --- */
         .cooldown-container {
             position: fixed;
-            top: 220px; /* Below Weapon HUD */
+            top: 220px;
             right: 35px;
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Right Align */
-            gap: 12px;
+            align-items: flex-end;
+            gap: 2px;
             pointer-events: none;
-            width: 200px;
         }
 
         .cd-item {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.6) 100%);
-            padding: 8px 12px;
-            border-right: 3px solid var(--danger); /* Red accent for cooldowns */
-            border-radius: 4px;
+            align-items: baseline;  /* Aligns text by their base line */
+            justify-content: flex-end;
+            gap: 6px;               /* Space between items */
+            
+            background: none;
+            border: none;
+            padding: 2px 0;
+            
             animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 120px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        .cd-top-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 2px;
-        }
-
-        .cd-name {
-            font-size: 11px;
-            font-weight: 800;
-            color: #ccc;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .cd-icon {
-            font-size: 14px;
-            color: var(--primary); /* Icon Color */
-            width: 18px;
-            text-align: center;
-        }
-
+        /* TIMER (18px) */
         .cd-timer {
-            font-size: 18px;
+            font-family: 'Poppins', sans-serif;
+            font-variant-numeric: tabular-nums;
+            font-size: 14px;       
             font-weight: 700;
             color: #fff;
             line-height: 1;
-            font-family: 'Courier New', monospace; /* Monospace for steady numbers */
-            letter-spacing: -1px;
         }
 
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(30px); }
-            to { opacity: 1; transform: translateX(0); }
+        /* DOT (18px) - Matches Timer */
+        .cd-sep {
+            color: var(--primary);
+            font-size: 14px;        /* Increased to match timer */
+            opacity: 1;             /* Full opacity for visibility */
+            margin: 0 1px;
+            line-height: 1;
+        }
+
+        /* NAME (18px) - Matches Timer */
+        .cd-name {
+            font-size: 14px;        /* Increased to match timer */
+            font-weight: 700;
+            color: #ddd;            /* Slightly off-white to distinguish from timer */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        /* ICON (Adjusted to fit new size) */
+        .cd-icon {
+            font-size: 14px;        /* Slightly smaller than text looks better for icons */
+            color: var(--primary); 
+            width: 20px;
+            text-align: center;
+            transform: translateY(-1px); /* Micro-adjustment to center visually */
         }
 
         /* --- CENTER POPUP --- */
@@ -585,11 +588,10 @@
 
                     html += `
                         <div class="cd-item">
-                            <div class="cd-top-row">
-                                <span class="cd-name">${conf.label}</span>
-                                <i class="cd-icon ${conf.icon}"></i>
-                            </div>
-                            <div class="cd-timer">${timeStr}</div>
+                            <span class="cd-name">${conf.label}</span>
+                            <span class="cd-sep">&bull;</span>
+                            <span class="cd-timer">${timeStr}</span>
+                            <i class="cd-icon ${conf.icon}"></i>
                         </div>
                     `;
                 }
