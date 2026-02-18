@@ -1,5 +1,6 @@
 const Inventory = require('./inventory'); 
 const { isRateLimited } = require('../core/rateLimit');
+const playerManager = require('../core/playerManager');
 
 // Configuration
 const CONFIG = {
@@ -55,9 +56,9 @@ class DumpsterSystem {
         }
 
         // 2. Global Cooldown Check
-        if (player.hasCooldown('dumpster')) {
-            const mins = player.getCooldownTime('dumpster');
-            player.call('client:resetDumpsterSearch'); // <--- NEW EVENT
+        if (playerManager.hasCooldown(player, 'dumpster')) {
+            const mins = playerManager.getCooldownTime(player, 'dumpster');
+            player.call('client:resetDumpsterSearch'); 
             return player.call('showNotification', ['Dumpster', `You are tired. Rest for ${mins} minutes.`]);
         }
 
@@ -69,7 +70,7 @@ class DumpsterSystem {
             if (!mp.players.exists(player)) return;
             
             // 5. Set Global Cooldown
-            player.setCooldown('dumpster', CONFIG.cooldownMinutes);
+            await playerManager.setCooldown(player, 'dumpster', CONFIG.cooldownMinutes);
 
             const roll = Math.random();
 

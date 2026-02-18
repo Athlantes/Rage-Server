@@ -123,11 +123,10 @@ const playerManager = {
         
         if (!player.data.cooldowns) player.data.cooldowns = {};
         
-        // Calculate expiration time
         const expiry = Date.now() + (minutes * 60000);
         player.data.cooldowns[key] = expiry;
 
-        // Sync to client immediately
+        // Sync to client
         player.call('updateCooldowns', [JSON.stringify(player.data.cooldowns)]);
 
         // Save to DB
@@ -136,16 +135,14 @@ const playerManager = {
         }
     },
 
-    // Check if user has a cooldown (returns true if blocked)
     hasCooldown: (player, key) => {
         if (!player || !player.data || !player.data.cooldowns) return false;
         const expiry = player.data.cooldowns[key];
         if (!expiry) return false;
         
         if (expiry > Date.now()) {
-            return true; // Active
+            return true;
         } else {
-            // Cleanup expired
             delete player.data.cooldowns[key];
             return false;
         }
@@ -156,6 +153,13 @@ const playerManager = {
         if (player.data.cooldowns) {
             player.call('updateCooldowns', [JSON.stringify(player.data.cooldowns)]);
         }
+    },
+    
+    getCooldownTime: (player, key) => {
+        if (!player || !player.data || !player.data.cooldowns) return 0;
+        const expiry = player.data.cooldowns[key];
+        if (!expiry || expiry < Date.now()) return 0;
+        return Math.ceil((expiry - Date.now()) / 60000);
     }
 };
 
