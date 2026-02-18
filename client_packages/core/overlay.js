@@ -170,3 +170,9 @@ mp.events.add('showCenterPopup', (title, subtitle, rewardsJson, duration) => {
         overlayBrowser.execute(`showCenterPopup('${safeTitle}', '${safeSubtitle}', '${safeRewards}', ${dur});`);
     }
 });
+
+mp.events.add('updateCooldowns', (cooldownsJson) => {
+    if (overlayBrowser) {
+        overlayBrowser.execute(`updateCooldowns('${cooldownsJson}');`);
+    }
+});

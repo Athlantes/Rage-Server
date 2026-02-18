@@ -114,6 +114,48 @@ const playerManager = {
         } catch (e) {
             console.error(`[Data] Failed to save ${name}:`, e);
         }
+    },
+
+    // --- COOLDOWN SYSTEM ---
+    // Saves cooldown as an Expiration Timestamp (Date.now() + ms)
+    setCooldown: async (player, key, minutes) => {
+        if (!player || !player.data) return;
+        
+        if (!player.data.cooldowns) player.data.cooldowns = {};
+        
+        // Calculate expiration time
+        const expiry = Date.now() + (minutes * 60000);
+        player.data.cooldowns[key] = expiry;
+
+        // Sync to client immediately
+        player.call('updateCooldowns', [JSON.stringify(player.data.cooldowns)]);
+
+        // Save to DB
+        if (player.data.dbId) {
+            await db.query('UPDATE users SET cooldowns = ? WHERE id = ?', [JSON.stringify(player.data.cooldowns), player.data.dbId]);
+        }
+    },
+
+    // Check if user has a cooldown (returns true if blocked)
+    hasCooldown: (player, key) => {
+        if (!player || !player.data || !player.data.cooldowns) return false;
+        const expiry = player.data.cooldowns[key];
+        if (!expiry) return false;
+        
+        if (expiry > Date.now()) {
+            return true; // Active
+        } else {
+            // Cleanup expired
+            delete player.data.cooldowns[key];
+            return false;
+        }
+    },
+
+    // Sync current cooldowns (Call this on player join/spawn)
+    syncCooldowns: (player) => {
+        if (player.data.cooldowns) {
+            player.call('updateCooldowns', [JSON.stringify(player.data.cooldowns)]);
+        }
     }
 };
 
@@ -157,6 +199,18 @@ mp.events.add('playerJoin', (player) => {
     // Init XP / Level
     if (!player.data.level) player.data.level = 1;
     if (!player.data.xp) player.data.xp = 0;
+
+    if (typeof player.data.cooldowns === 'string') {
+        try {
+            player.data.cooldowns = JSON.parse(player.data.cooldowns);
+        } catch (e) {
+            player.data.cooldowns = {};
+        }
+    } else if (!player.data.cooldowns) {
+        player.data.cooldowns = {};
+    }
+
+    playerManager.syncCooldowns(player);
 
     const xpMax = playerManager.calculateNextLevelXp(player.data.level);
     player.setVariable('level', player.data.level);

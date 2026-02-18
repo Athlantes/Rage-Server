@@ -297,6 +297,67 @@
         .zone-text.safe { color: var(--success); }
         .zone-text.noclip { color: var(--primary); }
 
+        /* --- COOLDOWN CONTAINER --- */
+        .cooldown-container {
+            position: fixed;
+            top: 220px; /* Below Weapon HUD */
+            right: 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Right Align */
+            gap: 12px;
+            pointer-events: none;
+            width: 200px;
+        }
+
+        .cd-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.6) 100%);
+            padding: 8px 12px;
+            border-right: 3px solid var(--danger); /* Red accent for cooldowns */
+            border-radius: 4px;
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 120px;
+        }
+
+        .cd-top-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .cd-name {
+            font-size: 11px;
+            font-weight: 800;
+            color: #ccc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cd-icon {
+            font-size: 14px;
+            color: var(--primary); /* Icon Color */
+            width: 18px;
+            text-align: center;
+        }
+
+        .cd-timer {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            font-family: 'Courier New', monospace; /* Monospace for steady numbers */
+            letter-spacing: -1px;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         /* --- CENTER POPUP --- */
         .center-popup {
             position: fixed;
@@ -414,6 +475,9 @@
         </div>
     </div>
 
+    <div class="cooldown-container" id="cooldown-stack">
+    </div>
+
     <div class="status-container">
         <div class="mic-status" id="mic-icon">
             <i class="fas fa-microphone"></i>
@@ -474,6 +538,77 @@
     </div>
 
     <script>
+        // --- COOLDOWN SYSTEM ---
+        let activeCooldowns = {}; // Stores end timestamps
+        let cooldownInterval = null;
+
+        // Map internal keys to Display Name & Icon
+        const COOLDOWN_CONFIG = {
+            'robbery': { label: 'Store Robbery', icon: 'fas fa-mask' },
+            'heist': { label: 'Bank Heist', icon: 'fas fa-university' },
+            'job': { label: 'Job Limit', icon: 'fas fa-briefcase' },
+            'drug_sale': { label: 'Drug Sale', icon: 'fas fa-cannabis' },
+            'vehicle_export': { label: 'Export', icon: 'fas fa-car' },
+            'gambling': { label: 'Casino', icon: 'fas fa-dice' }
+        };
+
+        function updateCooldowns(json) {
+            try {
+                activeCooldowns = JSON.parse(json);
+                renderCooldowns();
+                
+                // Start active timer if not running
+                if (!cooldownInterval) {
+                    cooldownInterval = setInterval(renderCooldowns, 1000);
+                }
+            } catch (e) {
+                console.error("CD Error", e);
+            }
+        }
+
+        function renderCooldowns() {
+            const container = document.getElementById('cooldown-stack');
+            if (!container) return;
+
+            const now = Date.now();
+            let hasActive = false;
+            let html = '';
+
+            for (const [key, expiry] of Object.entries(activeCooldowns)) {
+                if (expiry > now) {
+                    hasActive = true;
+                    const diff = expiry - now;
+                    
+                    // Format Time mm:ss
+                    const totalSeconds = Math.floor(diff / 1000);
+                    const m = Math.floor(totalSeconds / 60);
+                    const s = totalSeconds % 60;
+                    const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
+
+                    // Get Config
+                    const conf = COOLDOWN_CONFIG[key] || { label: key, icon: 'fas fa-clock' };
+
+                    html += `
+                        <div class="cd-item">
+                            <div class="cd-top-row">
+                                <span class="cd-name">${conf.label}</span>
+                                <i class="cd-icon ${conf.icon}"></i>
+                            </div>
+                            <div class="cd-timer">${timeStr}</div>
+                        </div>
+                    `;
+                }
+            }
+
+            container.innerHTML = html;
+
+            // Stop timer if no cooldowns left
+            if (!hasActive && cooldownInterval) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
+            }
+        }
+
         // --- CIRCLE SYSTEM ---
         const radius = 16;
         const circumference = radius * 2 * Math.PI;
