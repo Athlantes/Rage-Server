@@ -1,6 +1,7 @@
 const ItemRegistry = require('../data/items');
 const db = require('../core/database');
 const QuestEvents = require('../core/questEvents');
+const playerManager = require('../core/playerManager');
 
 class InventorySystem {
     
@@ -396,6 +397,13 @@ class InventorySystem {
 
             player.call('showNotification', ['Consumable', `Used ${def.name}`]);
             QuestEvents.emit(player, 'consume_item', { itemId: item.itemId, type: def.type });
+
+            // --- NEW: Restore Hunger/Thirst ---
+            if (def.data) {
+                if (def.data.foodValue) playerManager.updateHunger(player, def.data.foodValue);
+                if (def.data.waterValue) playerManager.updateThirst(player, def.data.waterValue);
+            }
+            // ----------------------------------
 
             if (item.count > 1) {
                 item.count--;

@@ -4,25 +4,28 @@ module.exports = {
         name: "Cheeseburger",
         type: "food",
         weight: 0.2,
-        isEquippable: true, // <--- ALLOW
+        isEquippable: true,
         maxStack: 5,
-        icon: "burger.png"
+        icon: "burger.png",
+        data: { foodValue: 40, waterValue: -5 }
     },
     "water": {
         name: "Water Bottle",
         type: "drink",
         weight: 0.5,
-        isEquippable: true, // <--- ALLOW
+        isEquippable: true,
         maxStack: 5,
-        icon: "water.png"
+        icon: "water.png",
+        data: { waterValue: 50 }
     },
     "apple": {
         name: "Apple",
         type: "food",
         weight: 0.1,
-        isEquippable: true, // <--- ALLOW
+        isEquippable: true,
         maxStack: 20,
-        icon: "apple.png"
+        icon: "apple.png",
+        data: { foodValue: 15, waterValue: 10 }
     },
 
     // --- FARMING ITEMS ---
@@ -88,7 +91,8 @@ module.exports = {
         type: "food",
         weight: 0.2,
         maxStack: 5,
-        icon: "old_sandwich.png" // Reusing burger icon for now
+        icon: "old_sandwich.png",
+        data: { foodValue: 10, waterValue: -5 }
     },
     "plastic_bottle": {
         name: "Empty Bottle",

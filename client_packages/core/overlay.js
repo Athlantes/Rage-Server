@@ -52,11 +52,20 @@ mp.events.add('client:ui:toggleMic', (state) => {
     if (overlayBrowser) overlayBrowser.execute(`toggleMic(${state});`);
 });
 
+// --- RENDER LOOP ---
 mp.events.add('render', () => {
     if (!overlayBrowser) return;
 
     const player = mp.players.local;
     const vehicle = player.vehicle;
+
+    // --- INFINITE STAMINA LOGIC ---
+    // If Thirst is > 10%, restore stamina to full every frame
+    const thirst = player.getVariable('thirst') || 100;
+    if (thirst > 10) {
+        mp.game.player.restoreStamina(100);
+    }
+    // ------------------------------
 
     if (vehicle && vehicle.getPedInSeat(-1) === player.handle) {
         const speed = (vehicle.getSpeed() * 3.6).toFixed(0);
@@ -89,11 +98,14 @@ setInterval(() => {
         const onlineId = player.getVariable('onlineId');
         const displayId = (onlineId !== undefined) ? onlineId : '-';
         
+        const hunger = player.getVariable('hunger') || 100;
+        const thirst = player.getVariable('thirst') || 100;
+
         const now = new Date();
         const fullDate = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} | ${now.getDate()}/${now.getMonth() + 1}`;
         const safeName = player.name.replace(/'/g, "\\'");
         
-        overlayBrowser.execute(`updateInfoHud('${displayId}', '${safeName}', ${money}, ${bank}, '${fullDate}');`);
+        overlayBrowser.execute(`updateInfoHud('${displayId}', '${safeName}', ${money}, ${bank}, '${fullDate}', ${hunger}, ${thirst});`);
 
         if (currentJobLocation) {
             const dist = getDistance(player.position, currentJobLocation);
@@ -143,14 +155,12 @@ mp.events.add('updateZoneOverlay', (visible, type) => {
     if (overlayBrowser) overlayBrowser.execute(`updateZoneStatus(${visible}, '${type}')`);
 });
 
-// --- NEW EVENT FOR PAYDAY TIMER ---
 mp.events.add('updatePaydayHUD', (minutesLeft) => {
     if (overlayBrowser) {
         overlayBrowser.execute(`updatePaydayTimer(${minutesLeft});`);
     }
 });
 
-// --- CENTER POPUP EVENT ---
 mp.events.add('showCenterPopup', (title, subtitle, rewardsJson, duration) => {
     if (overlayBrowser) {
         const safeTitle = title.replace(/'/g, "\\'");

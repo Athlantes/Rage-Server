@@ -16,7 +16,6 @@ const playerManager = {
         if (!player || !mp.players.exists(player)) return false;
         player.data.money += amount;
         player.setVariable('money', player.data.money);
-        // console.log(`[Economy] ${player.name} gained $${amount} (${reason}).`);
         return true;
     },
 
@@ -55,6 +54,23 @@ const playerManager = {
         }
     },
 
+    // --- HUNGER & THIRST MANAGEMENT ---
+    updateHunger: (player, amount) => {
+        if (!player || !mp.players.exists(player)) return;
+        player.data.hunger = Math.min(100, Math.max(0, (player.data.hunger || 0) + amount));
+        player.data.hungerFloat = player.data.hunger; // Sync float tracker
+        player.setVariable('hunger', player.data.hunger);
+        if (player.data.hunger <= 0) player.call('showNotification', ['Health', 'You are starving!']);
+    },
+
+    updateThirst: (player, amount) => {
+        if (!player || !mp.players.exists(player)) return;
+        player.data.thirst = Math.min(100, Math.max(0, (player.data.thirst || 0) + amount));
+        player.data.thirstFloat = player.data.thirst; // Sync float tracker
+        player.setVariable('thirst', player.data.thirst);
+        if (player.data.thirst <= 0) player.call('showNotification', ['Health', 'You are dehydrated!']);
+    },
+
     saveAccount: async (player) => {
         if (!mp.players.exists(player) || !player.logged || !player.data.dbId) return;
 
@@ -65,7 +81,8 @@ const playerManager = {
         const level = player.data.level || 1;
         const xp = player.data.xp || 0;
         const bank_money = player.data.bank_money || 0;
-        // Default to 60 if for some reason it's missing/null
+        const hunger = player.data.hunger || 100;
+        const thirst = player.data.thirst || 100;
         const paydayIn = (player.data.paydayIn !== undefined) ? player.data.paydayIn : 60;
 
         let currentPos;
@@ -76,29 +93,24 @@ const playerManager = {
         }
 
         try {
-            // Save core stats + accumulate total_playtime
             const sessionMinutes = player.data.activeMinutes || 0;
             const now = new Date();
             const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             
             await db.query(
-                `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, 
+                `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, hunger=?, thirst=?,
                  total_playtime = COALESCE(total_playtime, 0) + ?,
                  daily_playtime = CASE WHEN daily_playtime_date = ? THEN COALESCE(daily_playtime, 0) + ? ELSE ? END,
                  daily_playtime_date = ?
                  WHERE id=?`, 
-                [level, currentPos, xp, bank_money, paydayIn, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
+                [level, currentPos, xp, bank_money, paydayIn, hunger, thirst, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
             );
 
-            // --- UPDATE VARIABLES AFTER SAVE ---
             if (mp.players.exists(player)) {
-                // Move session minutes into the "Base" (Saved) variable
                 player.data.dailyPlaytimeBase = (player.data.dailyPlaytimeBase || 0) + sessionMinutes;
-                
-                // Reset session counter
                 player.data.activeMinutes = 0;
             }
-            console.log(`[Data] Saved ${name} (Payday in: ${paydayIn}m)`);
+            console.log(`[Data] Saved ${name} (H:${hunger} T:${thirst})`);
         } catch (e) {
             console.error(`[Data] Failed to save ${name}:`, e);
         }
@@ -135,8 +147,12 @@ mp.events.add('playerJoin', (player) => {
     // Init RPG Variables
     player.data.bank_money = 0;
     player.data.isAfk = false; 
-    player.data.paydayIn = 60; // Default until loaded from DB
-    player.data.activeMinutes = 0; // Track non-AFK minutes for payday popup
+    player.data.paydayIn = 60; 
+    player.data.activeMinutes = 0; 
+    
+    // Init Hunger/Thirst
+    if (!player.data.hunger) player.data.hunger = 100;
+    if (!player.data.thirst) player.data.thirst = 100;
 
     // Init XP / Level
     if (!player.data.level) player.data.level = 1;
@@ -146,6 +162,8 @@ mp.events.add('playerJoin', (player) => {
     player.setVariable('level', player.data.level);
     player.setVariable('xp', player.data.xp);
     player.setVariable('xpMax', xpMax);
+    player.setVariable('hunger', player.data.hunger);
+    player.setVariable('thirst', player.data.thirst);
 
     console.log(`[Connection] ${player.name} joined. Assigned ID: ${newId}`);
 });
@@ -153,24 +171,16 @@ mp.events.add('playerJoin', (player) => {
 mp.events.add('server:spawn:player', (player, index) => {
     let pos;
     if (index === -1) {
-        // Last Location
         pos = player.data.lastLocation ? player.data.lastLocation : spawnPoints[0];
     } else if (index === -2) {
-        // House Spawn
         const house = HouseManager.getHouseByOwner(player.data.dbId);
-        if (house) {
-            pos = house.position;
-        } else {
-            pos = spawnPoints[0]; // Fallback
-        }
+        pos = house ? house.position : spawnPoints[0];
     } else if (index === -3) {
-        // Family HQ Spawn
         const FamilyManager = require('../systems/familyManager');
         const fam = FamilyManager.getFamilyByPlayer(player);
         if (fam && fam.hqHouseId) {
             const hqHouse = HouseManager.getHouseById(fam.hqHouseId);
             if (hqHouse) {
-                // Spawn inside the HQ interior
                 const INTERIORS = { 
                     motel: { x: 151.45, y: -1007.57, z: -99.00 }, 
                     low_end: { x: 266.00, y: -1007.00, z: -101.00 }, 
@@ -182,12 +192,11 @@ mp.events.add('server:spawn:player', (player, index) => {
                 player.position = new mp.Vector3(interiorPos.x, interiorPos.y, interiorPos.z);
                 player.dimension = hqHouse.id;
                 player.health = 100;
-                return; // Exit early since we set position and dimension manually
+                return;
             }
         }
-        pos = spawnPoints[0]; // Fallback
+        pos = spawnPoints[0];
     } else {
-        // Standard Spawns
         if (index < 0 || index >= spawnPoints.length) return;
         pos = spawnPoints[index];
     }
@@ -203,47 +212,82 @@ mp.events.add('server:kickPlayer', (player) => {
 });
 
 // =========================================================================
-//  --- GAME TIME LOOP (PAYDAY & XP) ---
+//  --- METABOLISM LOOP (Hunger & Thirst) ---
 // =========================================================================
+setInterval(() => {
+    mp.players.forEach(player => {
+        if (!player.logged || player.data.isAfk) return;
 
-// Global Timer: Runs every 60 seconds (60000ms)
+        // 1. Hunger: Slowed down significantly
+        // Previous: 0.35. New: 0.1 (Takes ~55 minutes to starve if idle)
+        if (!player.data.hungerFloat) player.data.hungerFloat = player.data.hunger || 100;
+        player.data.hungerFloat -= 0.1; 
+        
+        // 2. Thirst: Depends on Velocity
+        if (!player.data.thirstFloat) player.data.thirstFloat = player.data.thirst || 100;
+        
+        const velocity = player.velocity;
+        const speed = Math.sqrt(velocity.x*velocity.x + velocity.y*velocity.y + velocity.z*velocity.z);
+        
+        if (speed > 6.0) { // Slight lower threshold to ensure sprinting catches
+            // Running/Sprinting: Significantly Increased Drain
+            // Previous: 0.8. New: 4.0 (Drops very fast when running)
+            player.data.thirstFloat -= 4.0; 
+        } else if (speed > 1.5) {
+            // Walking
+            player.data.thirstFloat -= 0.4;
+        } else {
+            // Idle
+            player.data.thirstFloat -= 0.05;
+        }
+
+        // Apply to Integer Stats
+        const oldHunger = player.data.hunger;
+        const oldThirst = player.data.thirst;
+        
+        player.data.hunger = Math.floor(player.data.hungerFloat);
+        player.data.thirst = Math.floor(player.data.thirstFloat);
+
+        // Sync if changed
+        if (player.data.hunger !== oldHunger) player.setVariable('hunger', Math.max(0, player.data.hunger));
+        if (player.data.thirst !== oldThirst) player.setVariable('thirst', Math.max(0, player.data.thirst));
+
+        // Health Penalty if empty
+        if (player.data.hunger <= 0 || player.data.thirst <= 0) {
+            if (player.health > 10) player.health -= 1; // Don't kill instantly, just drain
+        }
+    });
+}, 5000);
+
+// =========================================================================
+//  --- PAYDAY LOOP ---
+// =========================================================================
 setInterval(() => {
     mp.players.forEach(player => {
         if (!player.logged) return;
-
-        // Skip if AFK
         if (player.data.isAfk) return;
 
-        // Ensure variable exists
         if (!player.data.paydayIn && player.data.paydayIn !== 0) player.data.paydayIn = 60;
 
-        // 1. DECREMENT TIMER & TRACK ACTIVE TIME
         player.data.paydayIn--;
         player.data.activeMinutes = (player.data.activeMinutes || 0) + 1;
 
-        // 2. SEND UPDATE TO CLIENT (UI)
-        // We send the EXACT remaining minutes
         player.call('updatePaydayHUD', [player.data.paydayIn]);
 
-        // 3. CHECK FOR PAYDAY
         if (player.data.paydayIn <= 0) {
             triggerPayday(player);
-            // Reset logic is inside triggerPayday or here:
             player.data.paydayIn = 60; 
-            player.data.activeMinutes = 0; // Reset active time tracker
-            player.call('updatePaydayHUD', [60]); // Immediate UI reset
+            player.data.activeMinutes = 0; 
+            player.call('updatePaydayHUD', [60]); 
         }
     });
 }, 60000);
 
 function triggerPayday(player) {
-    // 1. Give XP
     const xpReward = 250;
     player.data.xp = (player.data.xp || 0) + xpReward;
 
-    // 2. Check Level Up
     let xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
-    
     while (player.data.xp >= xpNeeded) {
         player.data.xp -= xpNeeded;
         player.data.level++;
@@ -252,22 +296,19 @@ function triggerPayday(player) {
         xpNeeded = playerManager.calculateNextLevelXp(player.data.level);
     }
 
-    // 3. Sync stats
     player.setVariable('level', player.data.level);
     player.setVariable('xp', player.data.xp);
     player.setVariable('xpMax', xpNeeded);
 
-    // 4. Calculate Money
     if (!player.data.bank_money) player.data.bank_money = 0;
     const salary = 500 + (player.data.level * 50); 
     const interest = Math.floor(player.data.bank_money * 0.001); 
     const totalIncome = salary + interest;
 
     player.data.bank_money += totalIncome;
-    player.data.bank = player.data.bank_money; // Sync bank property used by overlay
-    player.setVariable('bank', player.data.bank); // Push update to client
+    player.data.bank = player.data.bank_money; 
+    player.setVariable('bank', player.data.bank); 
 
-    // 5. Send popup to client instead of chat messages
     const activeMins = player.data.activeMinutes || 0;
     const rewards = [
         { type: 'money', value: `$${new Intl.NumberFormat().format(totalIncome)}` },
@@ -284,6 +325,5 @@ function triggerPayday(player) {
         7000
     ]);
 
-    // 6. Save Account (This saves the reset timer too)
     playerManager.saveAccount(player);
 }
