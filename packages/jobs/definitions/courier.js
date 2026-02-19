@@ -314,7 +314,6 @@ function startDoorPhase(player) {
         pedsToDismiss.forEach(ped => {
             if(mp.peds.exists(ped)) {
                 ped.frozen = false;
-                ped.taskWanderStandard(10.0, 10);
                 setTimeout(() => { if(mp.peds.exists(ped)) ped.destroy(); }, 10000);
             }
         });

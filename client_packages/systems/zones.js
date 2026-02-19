@@ -27,11 +27,9 @@ function applyZoneEffects(zoneId, typeDef, enable) {
     if (enable) {
         if (typeDef.visualEffects) mp.events.call('updateZoneOverlay', true, typeDef.id);
         if (typeDef.invincible) localPlayer.setInvincible(true);
-        if (typeDef.ghost && localPlayer.vehicle) localPlayer.vehicle.setAlpha(150); 
     } else {
         if (typeDef.visualEffects) mp.events.call('updateZoneOverlay', false, typeDef.id);
         if (typeDef.invincible) localPlayer.setInvincible(false);
-        if (typeDef.ghost && localPlayer.vehicle) localPlayer.vehicle.setAlpha(255);
     }
 }
 

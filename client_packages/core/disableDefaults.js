@@ -50,7 +50,7 @@ mp.events.add('render', () => {
         const weaponGroup = mp.game.weapon.getWeapontypeGroup(weaponHash);
         const PISTOL_GROUP = 416676503;
 
-        // 1. RESTRICT: Disable controls if Speed > 50 OR Weapon is NOT a Pistol
+        // 1. RESTRICT: Disable controls if Speed > 60 OR Weapon is NOT a Pistol
         if (speed > 60 || weaponGroup !== PISTOL_GROUP) {
             mp.game.controls.disableControlAction(0, 68, true); // Aim
             mp.game.controls.disableControlAction(0, 69, true); // Attack
@@ -60,8 +60,8 @@ mp.events.add('render', () => {
         // 2. EFFECT: Apply Shake & Handling Difficulty while Aiming
         const isAiming = mp.game.controls.isControlPressed(0, 68);
         
-        // Only apply if they are allowed to shoot (Pistol & < 50km/h) AND are aiming
-        if (isAiming && speed <= 50 && weaponGroup === PISTOL_GROUP) {
+        // Only apply if they are allowed to shoot (Pistol & < 60km/h) AND are aiming
+        if (isAiming && speed <= 60 && weaponGroup === PISTOL_GROUP) {
             
             // Check '!isCamShaking' to ensure we only trigger the start ONCE
             if (!isCamShaking) {
