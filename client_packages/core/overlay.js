@@ -78,14 +78,28 @@ mp.events.add('render', () => {
     }
 
     const currentWeapon = player.weapon;
-    if (currentWeapon && currentWeapon !== 2725352035 && isHudVisible) {
+    
+    // Check if the player is holding Aim (25) or Attack/Shoot (24)
+    const isAimingOrShooting = mp.game.controls.isControlPressed(0, 25) || mp.game.controls.isControlPressed(0, 24);
+
+    if (currentWeapon && currentWeapon !== 2725352035 && isHudVisible && isAimingOrShooting) {
         const ammoInClip = player.getAmmoInClip(currentWeapon);
-        const totalAmmo = player.getAmmoInWeapon(currentWeapon);
-        let reserveAmmo = totalAmmo - ammoInClip;
-        if (reserveAmmo < 0) reserveAmmo = 0; 
-        const weaponName = getWeaponName(currentWeapon);
-        overlayBrowser.execute(`updateWeaponStats(true, '${weaponName}', ${ammoInClip}, ${reserveAmmo});`);
+        
+        // Only proceed if ammo is actually defined (it becomes undefined when holstered in a car)
+        if (ammoInClip !== undefined) {
+            const totalAmmo = player.getAmmoInWeapon(currentWeapon) || 0;
+            let reserveAmmo = totalAmmo - ammoInClip;
+            
+            if (reserveAmmo < 0 || isNaN(reserveAmmo)) reserveAmmo = 0; 
+            
+            const weaponName = getWeaponName(currentWeapon);
+            overlayBrowser.execute(`updateWeaponStats(true, '${weaponName}', ${ammoInClip}, ${reserveAmmo});`);
+        } else {
+            // Hide the HUD if they are in a car and the weapon is technically "holstered"
+            overlayBrowser.execute(`updateWeaponStats(false);`);
+        }
     } else {
+        // Hide the HUD if they are not aiming/shooting, or if they unequip their weapon
         overlayBrowser.execute(`updateWeaponStats(false);`);
     }
 });

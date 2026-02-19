@@ -51,7 +51,7 @@ mp.events.add('render', () => {
         const PISTOL_GROUP = 416676503;
 
         // 1. RESTRICT: Disable controls if Speed > 50 OR Weapon is NOT a Pistol
-        if (speed > 50 || weaponGroup !== PISTOL_GROUP) {
+        if (speed > 60 || weaponGroup !== PISTOL_GROUP) {
             mp.game.controls.disableControlAction(0, 68, true); // Aim
             mp.game.controls.disableControlAction(0, 69, true); // Attack
             mp.game.controls.disableControlAction(0, 70, true); // Attack 2

@@ -162,8 +162,11 @@
         /* --- WEAPON HUD --- */
         .weapon-hud {
             position: fixed; top: 130px; right: 35px;
-            text-align: right; display: none;
+            text-align: right; 
+            display: flex; /* Changed from none to flex */
             flex-direction: column; align-items: flex-end;
+            opacity: 0; /* Start hidden */
+            transition: opacity 0.3s ease-in-out; /* Add the fade animation */
         }
         .weapon-name {
             font-size: 14px; font-weight: 800; color: var(--primary);
@@ -667,13 +670,20 @@
 
         function updateWeaponStats(visible, name, clip, total) {
             const el = document.getElementById('weapon-hud');
-            if (!visible) { el.style.display = 'none'; return; }
-            el.style.display = 'flex';
+            
+            if (!visible) { 
+                el.style.opacity = '0'; // Fade out
+                return; 
+            }
+            
+            el.style.opacity = '1'; // Fade in
             document.getElementById('weapon-name').innerText = name;
+            
             const clipEl = document.getElementById('weapon-clip');
             clipEl.innerText = clip;
             if(clip <= 3 && clip >= 0) clipEl.classList.add('low');
             else clipEl.classList.remove('low');
+            
             document.getElementById('weapon-total').innerText = total;
         }
 
