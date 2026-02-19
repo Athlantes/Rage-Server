@@ -20,8 +20,6 @@ mp.events.add('playerReady', () => {
 mp.events.add('render', () => {
     mp.gui.chat.show(false);
     
-    // [MODIFIED] Removed Pause Menu & ESC Disabling to restore native menu
-    
     const hudComponents = [1, 2, 3, 4, 19, 20, 6, 7, 8, 9];
     hudComponents.forEach(id => mp.game.ui.hideHudComponentThisFrame(id));
 
