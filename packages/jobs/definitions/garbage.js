@@ -50,8 +50,7 @@ const logic = {
         // 1. Get Player Stats
         const level = jobManager.getJobLevel(player, JOB_KEY);
         
-        // 2. Calculate Pay Per Bag for this player
-        const payPerBag = REWARD_CONFIG.basePerBag + Math.floor(level * REWARD_CONFIG.perLevel);
+        const payPerBag = REWARD_CONFIG.basePayMin + Math.floor(level * REWARD_CONFIG.perLevel);
 
         const safeRoutes = AVAILABLE_ROUTES.map(r => {
             // Distance Calc
@@ -115,17 +114,19 @@ function startRoute(player, routeIndex) {
         isCarrying: false,
         throwCol: null,
         totalSessionEarnings: 0,
-        updateInterval: null // Store the timer here
+        updateInterval: null,
+        lastTargetPos: null,
+        lastState: null
     };
 
     const visualData = [];
     route.dumpsters.forEach((pos, idx) => {
-        const col = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 0.5);
+        const col = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 2.5);
         col.dimension = player.dimension;
         col.isGarbageBin = true;
         col.garbageIndex = idx;
         col.ownerId = player.id;
-        jobData.cols.push(col); // We will check this array for 'exists' later
+        jobData.cols.push(col);
 
         visualData.push({
             id: `bin_${idx}`,
@@ -144,7 +145,6 @@ function startRoute(player, routeIndex) {
     
     updateUI(player, "Go to Closest Bin", route.dumpsters[0]);
 
-    // Start the dynamic tracker
     startJobTicker(player);
 }
 
@@ -152,7 +152,6 @@ function startJobTicker(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
 
-    // Run every 1 second
     job.updateInterval = setInterval(() => {
         if (!mp.players.exists(player) || !activeJobs.has(player.id)) {
             return clearInterval(job.updateInterval);
@@ -160,24 +159,23 @@ function startJobTicker(player) {
 
         const jobNow = activeJobs.get(player.id);
 
-        // Case A: Carrying a Bag -> Point to Truck
         if (jobNow.isCarrying) {
             if (jobNow.truck && mp.vehicles.exists(jobNow.truck)) {
-                updateUI(player, "Throw in Truck", jobNow.truck.position);
+                if (jobNow.lastState !== "carrying") {
+                    jobNow.lastState = "carrying";
+                    updateUI(player, "Throw in Truck", jobNow.truck.position);
+                }
             }
             return;
         }
 
-        // Case B: Not Carrying -> Find Closest Active Bin
         let closestBinPos = null;
         let minDist = 99999;
 
         jobNow.cols.forEach((col) => {
-            if (mp.colshapes.exists(col)) {
-                // FIX: Use safe static data from the route instead of col.position
+            if (col && mp.colshapes.exists(col)) {
                 const binPos = jobNow.route.dumpsters[col.garbageIndex];
                 
-                // Calculate distance manually since binPos is a plain object {x,y,z}
                 const dist = Math.sqrt(
                     Math.pow(binPos.x - player.position.x, 2) + 
                     Math.pow(binPos.y - player.position.y, 2) + 
@@ -192,9 +190,36 @@ function startJobTicker(player) {
         });
 
         if (closestBinPos) {
-            updateUI(player, "Go to Closest Bin", closestBinPos);
+            // Check if player has arrived (within 15 meters)
+            if (minDist <= 15.0) {
+                if (jobNow.lastState !== "arrived") {
+                    jobNow.lastState = "arrived";
+                    updateUI(player, "Collect Trash from Dumpster", closestBinPos);
+                    player.call('client:removeJobObjective', ['closest_bin']);
+                }
+            } else {
+                if (!jobNow.lastTargetPos || jobNow.lastTargetPos.x !== closestBinPos.x || jobNow.lastTargetPos.y !== closestBinPos.y || jobNow.lastState !== "seeking") {
+                    jobNow.lastTargetPos = closestBinPos;
+                    jobNow.lastState = "seeking";
+                    
+                    updateUI(player, "Go to Closest Bin", closestBinPos);
+                    
+                    player.call('client:removeJobObjective', ['closest_bin']);
+                    player.call('client:setJobObjective', ['closest_bin', {
+                        x: closestBinPos.x, 
+                        y: closestBinPos.y, 
+                        z: closestBinPos.z
+                    }, {
+                        route: true, // Creates map route only
+                        name: "Closest Bin"
+                    }]);
+                }
+            }
         } else if (jobNow.collectedCount >= jobNow.total) {
-            updateUI(player, "Return to Depot", DUMP_ZONE);
+            if (jobNow.lastState !== "returning") {
+                jobNow.lastState = "returning";
+                updateUI(player, "Return to Depot", DUMP_ZONE);
+            }
         }
 
     }, 1000);
@@ -209,7 +234,6 @@ function cleanupJob(player) {
         job.abandonTimer = null;
     }
 
-    // Stop the ticker
     if (job.updateInterval) {
         clearInterval(job.updateInterval);
         job.updateInterval = null;
@@ -217,7 +241,7 @@ function cleanupJob(player) {
 
     if (job.truck && mp.vehicles.exists(job.truck)) job.truck.destroy();
     
-    job.cols.forEach(c => { if(mp.colshapes.exists(c)) c.destroy(); });
+    job.cols.forEach(c => { if(c && mp.colshapes.exists(c)) c.destroy(); });
     if(job.throwCol && mp.colshapes.exists(job.throwCol)) job.throwCol.destroy();
 
     if (player.garbageBag && mp.objects.exists(player.garbageBag)) {
@@ -229,6 +253,7 @@ function cleanupJob(player) {
     player.setVariable('isJobCarrying', null);
 
     if (mp.players.exists(player)) {
+        player.call('client:removeJobObjective', ['closest_bin']);
         player.call('client:clearAllJobObjectives');
         player.call('updateJobUI', [false, "", 0, 0, 0, null, null, null]);
     }
@@ -240,7 +265,6 @@ function updateUI(player, text, targetPos = null) {
     if(mp.players.exists(player) && activeJobs.has(player.id)) {
         const job = activeJobs.get(player.id);
         
-        // Prepare Coordinates
         let x = null, y = null, z = null;
         if (targetPos) {
             x = targetPos.x;
@@ -248,7 +272,6 @@ function updateUI(player, text, targetPos = null) {
             z = targetPos.z;
         }
 
-        // Send: visible, text, current, max, earned, X, Y, Z
         player.call('updateJobUI', [
             true, 
             text, 
@@ -286,6 +309,7 @@ function startPickupSequence(player, index) {
     job.isCarrying = true;
 
     player.call('client:removeJobObjective', [`bin_${index}`]);
+    player.call('client:removeJobObjective', ['closest_bin']); 
     if (job.cols[index] && mp.colshapes.exists(job.cols[index])) job.cols[index].destroy();
 
     const bag = mp.objects.new(mp.joaat('prop_cs_rub_binbag_01'), player.position, { dimension: player.dimension });
@@ -294,7 +318,6 @@ function startPickupSequence(player, index) {
     setTimeout(() => {
     if (mp.players.exists(player) && mp.objects.exists(bag)) {
         mp.players.call('client:attachProp', [bag.id, player.id, 57005, 0.12, 0.0, -0.05, 0, -70, -60]);
-        
         player.playAnimation('missfbi4prepp1', '_idle_garbage_man', 1.0, 49); 
 
         player.setVariable('isJobCarrying', true);
@@ -329,23 +352,19 @@ async function finishThrowSequence(player) {
     const job = activeJobs.get(player.id);
     if (!job || !job.isCarrying) return;
 
-    // 1. Reset Carry State
     job.isCarrying = false;
     player.setVariable('isJobCarrying', null);
 
-    // 2. Cleanup Throw Marker
     if(job.throwCol && mp.colshapes.exists(job.throwCol)) job.throwCol.destroy();
     job.throwCol = null;
     player.call('client:removeJobObjective', ['throw_marker']);
 
-    // 3. Cleanup Bag Prop
     player.stopAnimation();
     if (player.garbageBag && mp.objects.exists(player.garbageBag)) {
         player.garbageBag.destroy();
         player.garbageBag = null;
     }
 
-    // 4. Increment Count
     job.collectedCount++;
 
     QuestEvents.emit(player, 'garbage_collect', { 
@@ -353,20 +372,15 @@ async function finishThrowSequence(player) {
         route: job.route.name 
     });
 
-    // === 5. CALCULATE REWARDS (RANDOMIZED) ===
     const level = jobManager.getJobLevel(player, JOB_KEY);
-
-    // Random Base Pay ($25 - $35)
     const randomBasePay = Math.floor(Math.random() * (REWARD_CONFIG.basePayMax - REWARD_CONFIG.basePayMin + 1)) + REWARD_CONFIG.basePayMin;
     let pay = randomBasePay + Math.floor(level * REWARD_CONFIG.perLevel);
 
-    // Random Base XP (5 - 10)
     const randomBaseXp = Math.floor(Math.random() * (REWARD_CONFIG.baseXpMax - REWARD_CONFIG.baseXpMin + 1)) + REWARD_CONFIG.baseXpMin;
     const xp = randomBaseXp + Math.floor(level * 0.2);
 
     job.totalSessionEarnings = (job.totalSessionEarnings || 0) + pay;
 
-    // Drops System
     const dropChance = (level * 0.1);
     if (Math.random() * 100 < dropChance) {
         const loot = ['plastic_bottle', 'broken_glass', 'scrap_metal', 'gold_ring'];
@@ -379,34 +393,8 @@ async function finishThrowSequence(player) {
     
     player.call('client:showJobSubtitle', [`+$${pay} | +${xp} XP`]);
 
-    // 6. NEXT STEP LOGIC
     if (job.collectedCount >= job.total) {
         startDepotReturn(player);
-    } else {
-        // Find closest bin using static route data (prevents 0m bug)
-        let closestBinPos = null;
-        let minDist = 99999;
-
-        job.cols.forEach((col) => {
-            if (col && mp.colshapes.exists(col)) {
-                const binPos = job.route.dumpsters[col.garbageIndex];
-                
-                const dist = Math.sqrt(
-                    Math.pow(binPos.x - player.position.x, 2) + 
-                    Math.pow(binPos.y - player.position.y, 2) + 
-                    Math.pow(binPos.z - player.position.z, 2)
-                );
-
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestBinPos = binPos;
-                }
-            }
-        });
-
-        if (closestBinPos) {
-            updateUI(player, "Go to Closest Bin", closestBinPos);
-        }
     }
 }
 
@@ -429,15 +417,10 @@ async function finishJob(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
 
-    // === 3. CALCULATE COMPLETION BONUS ===
-    // Recalculate based on current level (in case they leveled up during the job)
     const level = jobManager.getJobLevel(player, JOB_KEY);
-    const payPerBag = REWARD_CONFIG.basePerBag + Math.floor(level * REWARD_CONFIG.perLevel);
+    const payPerBag = REWARD_CONFIG.basePayMin + Math.floor(level * REWARD_CONFIG.perLevel);
     
-    // Total Earned from Bags
     const totalBagPay = payPerBag * job.total;
-
-    // Bonus = 15% of Total Bag Earnings
     const bonus = Math.floor(totalBagPay * REWARD_CONFIG.bonusPercentage);
     
     player.call('showNotification', ["Sanitation", `Job Done! Bonus: $${bonus}`]);
@@ -482,7 +465,7 @@ mp.events.addCommand('finishroute', (player, fullText, difficulty) => {
     const newRoute = { 
         id: data.name.toLowerCase().replace(/\s/g, '_'), 
         name: data.name, 
-        basePay: 0, // Ignored now
+        basePay: 0,
         difficulty: difficulty || "Medium", 
         dumpsters: data.dumpsters 
     };
@@ -499,7 +482,6 @@ mp.events.add('playerExitVehicle', (player, vehicle) => {
     const job = activeJobs.get(player.id);
     
     if (job.truck === vehicle) {
-        // Clear any existing timer first to prevent duplicates
         if (job.abandonTimer) clearTimeout(job.abandonTimer);
 
         job.abandonTimer = setTimeout(() => {
@@ -515,7 +497,6 @@ mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     if (!activeJobs.has(player.id)) return;
     const job = activeJobs.get(player.id);
     
-    // CRITICAL: If they enter the truck, STOP the abandonment timer
     if (job.truck === vehicle && job.abandonTimer) {
         clearTimeout(job.abandonTimer);
         job.abandonTimer = null;
