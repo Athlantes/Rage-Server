@@ -17,6 +17,7 @@ let isDispatchOpen = false;
 let activeCallBlip = null;
 let activeCallMarker = null;
 let activeCallColshape = null;
+let activeCallCoords = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -36,21 +37,23 @@ function closeDispatchBrowser() {
 }
 
 function cleanupActiveCall() {
-    if (activeCallBlip && mp.blips.exists(activeCallBlip)) {
-        activeCallBlip.setRoute(false);
-        activeCallBlip.destroy();
+    if (activeCallBlip) {
+        try { activeCallBlip.setRoute(false); } catch(e) {}
+        try { activeCallBlip.destroy(); } catch(e) {}
     }
     activeCallBlip = null;
 
-    if (activeCallMarker && mp.markers.exists(activeCallMarker)) {
-        activeCallMarker.destroy();
+    if (activeCallMarker) {
+        try { activeCallMarker.destroy(); } catch(e) {}
     }
     activeCallMarker = null;
 
-    if (activeCallColshape && mp.colshapes.exists(activeCallColshape)) {
-        activeCallColshape.destroy();
+    if (activeCallColshape) {
+        try { activeCallColshape.destroy(); } catch(e) {}
     }
     activeCallColshape = null;
+    
+    activeCallCoords = null;
 }
 
 // ── P Key — Toggle dispatch ───────────────────────────────────────────────────
@@ -120,34 +123,32 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
             cleanupActiveCall();
 
             const pos = new mp.Vector3(data.coords.x, data.coords.y, data.coords.z);
+            activeCallCoords = pos;
+
+            const playerDim = mp.players.local.dimension;
 
             // 1. Create a custom Blip with a route 
-            // 280 is a generic map marker, 66 is Taxi Yellow color
             activeCallBlip = mp.blips.new(280, pos, {
                 name: `Taxi Request: ${data.callerName}`,
                 color: 66,
                 scale: 1.0,
                 shortRange: false,
-                dimension: mp.players.local.dimension
+                dimension: playerDim
             });
             activeCallBlip.setRoute(true);
             activeCallBlip.setRouteColor(66);
 
-            // 2. Create a Marker on the ground (type 1 = vertical cylinder)
-            activeCallMarker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z), 1.5, {
+            // 2. FIX: Subtract 1.0 from Z so it spawns on the ground, remove invalid drawDistance
+            activeCallMarker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.5, {
                 color: [255, 204, 0, 200], // Yellow, mostly solid
-                drawDistance: 50,
-                dimension: mp.players.local.dimension
+                visible: true,
+                dimension: playerDim
             });
 
-            // 3. Create a Colshape to detect when the driver arrives (radius matches fareHUD auto-clear at 10m)
-            activeCallColshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 10.0);
-            activeCallColshape.dimension = mp.players.local.dimension;
-            activeCallColshape.isTaxiCall = true; // custom flag to identify it
+            // 3. FIX: Pass the dimension directly as the 5th argument
+            activeCallColshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 10.0, playerDim);
+            activeCallColshape.isTaxiCall = true; 
         }
-
-        // Show fare HUD strip (handled in overlay.js via client event)
-        mp.events.call('dispatch:showFareHUD', data);
 
     } catch (e) {
         console.error('[Dispatch] Error parsing accepted call data:', e);
@@ -168,13 +169,20 @@ mp.events.add('client:dispatch:callerNotified', (driverName) => {
 
 // ── Arriving at the destination ───────────────────────────────────────────────
 mp.events.add('playerEnterColshape', (shape) => {
-    // Compare by object reference — RAGEMP client colshapes don't have reliable .id equality
-    if (activeCallColshape && shape === activeCallColshape) {
-        
-        // Safely notify the driver using your overlay system
+    // If there is no active call, ignore
+    if (!activeCallColshape || !activeCallCoords) return;
+
+    const playerPos = mp.players.local.position;
+    
+    // Calculate distance mathematically 
+    const dx = playerPos.x - activeCallCoords.x;
+    const dy = playerPos.y - activeCallCoords.y;
+    const dz = playerPos.z - activeCallCoords.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // If the player triggers ANY colshape while within 15 meters of the destination, they arrived
+    if (dist <= 15.0) {
         mp.events.call('overlay:notify', 'Taxi', 'You have arrived at the caller\'s location.');
-        
-        // Clean up the route, marker, and blip
         cleanupActiveCall();
     }
 });
@@ -214,6 +222,3 @@ mp.events.add('client:dispatch:requestAccept', (callIdStr) => {
     if (!isDispatchOpen) return;
     mp.events.callRemote('server:dispatch:accept', callIdStr);
 });
-// Fires when driver accepts a call — overlay.js listens to this event
-// to show the active fare strip (caller name + location)
-// This is handled in client_packages/factions/dispatch/fareHUD.js (overlay addons)

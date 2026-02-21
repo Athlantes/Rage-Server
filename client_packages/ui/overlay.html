@@ -944,27 +944,4 @@
                 popup.classList.remove('visible');
             }, dur);
         }
-    // ── DISPATCH FARE HUD ──────────────────────────────────────────────────────
-    function showFareHUD(data) {
-        const el = document.getElementById('fare-hud');
-        if (!el) return;
-        try {
-            const d = typeof data === 'string' ? JSON.parse(data) : data;
-            document.getElementById('fare-name').textContent     = d.callerName || '—';
-            document.getElementById('fare-location').textContent = d.location   || '—';
-            document.getElementById('fare-dist').textContent     = 'Calculating...';
-            el.classList.add('visible');
-        } catch(e) { console.error('[FareHUD] showFareHUD error:', e); }
-    }
-
-    function updateFareDistance(distStr) {
-        const el = document.getElementById('fare-dist');
-        if (el) el.textContent = distStr;
-    }
-
-    function hideFareHUD() {
-        const el = document.getElementById('fare-hud');
-        if (el) el.classList.remove('visible');
-    }
-
     </script>
