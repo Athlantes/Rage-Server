@@ -133,15 +133,15 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
             activeCallBlip.setRoute(true);
             activeCallBlip.setRouteColor(66);
 
-            // 2. Create a Marker on the ground (Cylinder type 1)
-            activeCallMarker = mp.markers.new(0, new mp.Vector3(pos.x, pos.y, pos.z + 1.5), 1.5, {
+            // 2. Create a Marker on the ground (type 1 = vertical cylinder)
+            activeCallMarker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z), 1.5, {
                 color: [255, 204, 0, 200], // Yellow, mostly solid
-                visible: true,
+                drawDistance: 50,
                 dimension: mp.players.local.dimension
             });
 
-            // 3. Create a Colshape to detect when the driver arrives
-            activeCallColshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 15.0);
+            // 3. Create a Colshape to detect when the driver arrives (radius matches fareHUD auto-clear at 10m)
+            activeCallColshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 10.0);
             activeCallColshape.dimension = mp.players.local.dimension;
             activeCallColshape.isTaxiCall = true; // custom flag to identify it
         }
@@ -168,8 +168,8 @@ mp.events.add('client:dispatch:callerNotified', (driverName) => {
 
 // ── Arriving at the destination ───────────────────────────────────────────────
 mp.events.add('playerEnterColshape', (shape) => {
-    // Check if the shape exists and its ID matches our active call colshape
-    if (activeCallColshape && shape && shape.id === activeCallColshape.id) {
+    // Compare by object reference — RAGEMP client colshapes don't have reliable .id equality
+    if (activeCallColshape && shape === activeCallColshape) {
         
         // Safely notify the driver using your overlay system
         mp.events.call('overlay:notify', 'Taxi', 'You have arrived at the caller\'s location.');
