@@ -1,20 +1,4 @@
-// packages/factions/dispatch/dispatchManager.js  ── FIXED VERSION
-// ─────────────────────────────────────────────────────────────────────────────
-// Changes vs original:
-//
-//  A. Track active driver-call assignments in `this.activeAssignments`
-//     Map<driverId, { callId, callerServerId, callerName, coords }>
-//
-//  B. New server event: 'server:dispatch:driverArrived'
-//     Driver sends this when the tick-loop detects arrival.
-//     Server notifies the caller via chat and clears the assignment.
-//
-//  C. New server event: 'server:dispatch:driverArrived' also handles
-//     sending 'client:dispatch:callCleared' when a call must be cancelled
-//     (e.g. caller disconnects while a driver is en route).
-//
-//  D. playerQuit hook: if a caller quits while their driver is en route,
-//     the driver receives 'client:dispatch:callCleared'.
+// packages/factions/dispatch/dispatchManager.js
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DISPATCH_CONFIGS = require('./dispatchConfig');
@@ -57,6 +41,17 @@ class DispatchManager {
 
         this.calls.get(factionId).set(callId, call);
         console.log(`[Dispatch] New call #${callId} for faction ${factionId} — ${call.callerName} @ ${call.location}`);
+
+        const config = DISPATCH_CONFIGS[factionId];
+        const color = config.accentColor || '#ffc300'; 
+        
+        mp.players.forEach(player => {
+            if (player.logged && player.factionId === factionId && player.getVariable('factionDuty')) {
+                player.outputChatBox(`!{${color}}[Dispatch] !{#ffffff}${call.callerName}!{${color}} called for a taxi in !{#ffffff}${call.location}!{${color}}.`);
+            }
+        });
+        // -----------------------------------
+
         this._broadcastToFaction(factionId);
 
         return call;
@@ -83,13 +78,12 @@ class DispatchManager {
         call.acceptedBy = driver.id;
         factionCalls.delete(callId);
 
-        // FIX A – register active assignment so server knows who's going where
         this.activeAssignments.set(driver.id, {
             callId,
             callerServerId: call.callerServerId,
             callerName:     call.callerName,
             coords:         call.coords,
-            phase:          1,   // starts at 1 (en-route to caller)
+            phase:          1,
             driverVehicleId: driver.vehicle ? driver.vehicle.id : null,
         });
 
@@ -132,10 +126,7 @@ class DispatchManager {
     }
 
     // Phase 3 – caller boarded (detected via playerEnterVehicle server event)
-    // callerPlayer = the player who entered the vehicle
     callerBoarded(callerPlayer, vehicle) {
-        // Find the assignment where this player is the caller,
-        // is in phase 2, and entered the correct driver vehicle
         let assignment = null;
         let driverId   = null;
 
