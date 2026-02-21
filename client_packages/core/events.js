@@ -110,3 +110,59 @@ mp.events.add('client:repo:sync', (json) => {
         repoDeliveryColshape.destroy(); repoDeliveryColshape = null;
     }
 });
+
+// --- 7. EMPTY VEHICLE BLIPS ---
+const emptyVehicleBlips = new Map();
+
+setInterval(() => {
+    // Iterate through all vehicles currently streamed in for the client
+    mp.vehicles.forEachInStreamRange(veh => {
+        if (veh && mp.vehicles.exists(veh) && veh.handle !== 0) {
+            // Check if the driver seat (-1) is free
+            const isDriverSeatEmpty = mp.game.vehicle.isSeatFree(veh.handle, -1);
+
+            if (isDriverSeatEmpty) {
+                // If the blip doesn't exist yet, create it
+                if (!emptyVehicleBlips.has(veh.id)) {
+                    let blip = mp.blips.new(1, veh.position, { // Sprite 1 is a small dot
+                        name: "Empty Vehicle",
+                        color: 22, // Color 5 is gray
+                        alpha: 150, // Semi-transparent
+                        scale: 0.7, // Make it small so it's not distracting
+                        shortRange: true, // Only show on the minimap when close
+                        dimension: mp.players.local.dimension
+                    });
+                    blip.setDisplay(8); // 8 = Shows on map & minimap but NOT selectable
+                    mp.game.ui.setBlipHiddenOnLegend(blip.handle, true);
+
+                    emptyVehicleBlips.set(veh.id, blip);
+                } else {
+                    // Update position if the empty vehicle moved (e.g. rolled down a hill)
+                    let blip = emptyVehicleBlips.get(veh.id);
+                    if (blip && mp.blips.exists(blip)) {
+                        blip.setCoords(veh.position);
+                    }
+                }
+            } else {
+                // If someone gets into the vehicle, destroy the blip
+                if (emptyVehicleBlips.has(veh.id)) {
+                    let blip = emptyVehicleBlips.get(veh.id);
+                    if (blip && mp.blips.exists(blip)) blip.destroy();
+                    emptyVehicleBlips.delete(veh.id);
+                }
+            }
+        }
+    });
+
+    // Clean up blips for vehicles that are no longer streamed in (player drove away)
+    emptyVehicleBlips.forEach((blip, vehId) => {
+        let veh = mp.vehicles.at(vehId);
+        // If vehicle doesn't exist or is no longer streamed in
+        if (!veh || veh.handle === 0) {
+            if (blip && mp.blips.exists(blip)) {
+                blip.destroy();
+            }
+            emptyVehicleBlips.delete(vehId);
+        }
+    });
+}, 1000); // Checks every 1 second (1000ms) to maintain performance

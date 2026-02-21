@@ -15,10 +15,10 @@ mp.events.add('playerReady', () => {
     mp.game.vehicle.defaultEngineBehaviour = false;
     player.setConfigFlag(429, true); // Disable seatbelt chime/auto-helmet
     player.setConfigFlag(241, true); // Disable auto-helmet
+    mp.gui.chat.show(false);
 });
 
 mp.events.add('render', () => {
-    mp.gui.chat.show(false);
     
     const hudComponents = [1, 2, 3, 4, 19, 20, 6, 7, 8, 9];
     hudComponents.forEach(id => mp.game.ui.hideHudComponentThisFrame(id));
