@@ -5,7 +5,7 @@
 // getZoneName from CEF/client), then sent up to the server to create the call.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const dispatchManager = require('./dispatchManager');
+const dispatchManager = require('../dispatch/dispatchManager');
 
 const TAXI_FACTION_ID = 1;
 const CALL_COOLDOWN_MS = 60 * 1000; // 1 minute between calls per player
