@@ -27,10 +27,18 @@ class FactionsManager {
 
     // Call this when a player logs in (e.g., in your auth.js)
     async loadPlayerFactionData(player) {
+        // Double check we actually have the player's DB ID
+        if (!player.data || !player.data.dbId) {
+            console.error(`[Factions] Cannot load data for ${player.name}, missing DB ID.`);
+            return;
+        }
+
         try {
+            // CHANGE 1: Use 'users' table instead of 'accounts'
+            // CHANGE 2: Use player.data.dbId
             const [rows] = await DB.query(
                 "SELECT faction_id, faction_rank, faction_warns, faction_punish FROM users WHERE id = ?", 
-                [player.sqlId] // Use your actual player SQL ID property
+                [player.data.dbId] 
             );
 
             if (rows.length > 0) {
@@ -41,21 +49,12 @@ class FactionsManager {
                 
                 // Sync to client for UI purposes (Radial Menu, Inventory, etc.)
                 player.setVariable('factionId', player.factionId);
+                console.log(`[Factions] Loaded data for ${player.name}: Faction ${player.factionId}, Rank ${player.factionRank}`);
+            } else {
+                player.factionId = 0;
             }
         } catch (e) {
             console.error(`[Factions] Error loading player ${player.name} data:`, e);
-        }
-    }
-
-    async savePlayerFactionData(player) {
-        if (!player.sqlId) return;
-        try {
-            await DB.query(
-                "UPDATE users SET faction_id = ?, faction_rank = ?, faction_warns = ?, faction_punish = ? WHERE id = ?",
-                [player.factionId, player.factionRank, player.factionWarns, player.factionPunish, player.sqlId]
-            );
-        } catch (e) {
-            console.error(`[Factions] Error saving player ${player.name} data:`, e);
         }
     }
 }

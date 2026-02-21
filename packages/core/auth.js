@@ -182,7 +182,7 @@ async function finalizeLogin(player, userData) {
 
 }
 
-function startSession(player, userData) {
+async function startSession(player, userData) {
     player.logged = true;
     player.name = userData.username;
     player.data.dbId = userData.id;
@@ -247,7 +247,7 @@ function startSession(player, userData) {
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
     RepoJob.onPlayerReady(player);
-    FactionsManager.loadPlayerFactionData(player);
+    await FactionsManager.loadPlayerFactionData(player);
 
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
