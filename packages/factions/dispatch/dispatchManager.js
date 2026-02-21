@@ -1,6 +1,4 @@
 // packages/factions/dispatch/dispatchManager.js
-// ─────────────────────────────────────────────────────────────────────────────
-
 const DISPATCH_CONFIGS = require('./dispatchConfig');
 
 class DispatchManager {
@@ -9,12 +7,12 @@ class DispatchManager {
         this.calls = new Map();
         this._nextCallId = 1;
 
-        // FIX A – track which driver has which active call
-        // Map<driverId, { callId, callerServerId, callerName, coords }>
+        // Tracks ALL active assignments across ALL factions
+        // Map<driverId, { callId, factionId, callerServerId, callerName, coords, phase, driverVehicleId }>
         this.activeAssignments = new Map();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // ── Public API (Generic for all factions) ────────────────────────────────
 
     addCall(factionId, callData) {
         if (!DISPATCH_CONFIGS[factionId]) {
@@ -42,15 +40,15 @@ class DispatchManager {
         this.calls.get(factionId).set(callId, call);
         console.log(`[Dispatch] New call #${callId} for faction ${factionId} — ${call.callerName} @ ${call.location}`);
 
+        // --- Generic Chat Notification for all on-duty faction members ---
         const config = DISPATCH_CONFIGS[factionId];
-        const color = config.accentColor || '#ffc300'; 
+        const color = config.accentColor || '#ffffff'; 
         
         mp.players.forEach(player => {
             if (player.logged && player.factionId === factionId && player.getVariable('factionDuty')) {
-                player.outputChatBox(`!{${color}}[Dispatch] !{#ffffff}${call.callerName}!{${color}} called for a taxi in !{#ffffff}${call.location}!{${color}}.`);
+                player.outputChatBox(`!{${color}}!{#ffffff}${call.callerName}!{${color}} called for a dispatch in !{#ffffff}${call.location}!{${color}}.`);
             }
         });
-        // -----------------------------------
 
         this._broadcastToFaction(factionId);
 
@@ -59,6 +57,7 @@ class DispatchManager {
 
     acceptCall(driver, callId) {
         const factionId = driver.factionId;
+        const config = DISPATCH_CONFIGS[factionId];
 
         if (!this.calls.has(factionId)) return;
 
@@ -78,12 +77,14 @@ class DispatchManager {
         call.acceptedBy = driver.id;
         factionCalls.delete(callId);
 
+        // Register active assignment so server knows who's going where
         this.activeAssignments.set(driver.id, {
             callId,
+            factionId, // Track the faction so modules (like taxi) know if it's theirs
             callerServerId: call.callerServerId,
             callerName:     call.callerName,
             coords:         call.coords,
-            phase:          1,
+            phase:          1,   // starts at 1 (en-route to caller)
             driverVehicleId: driver.vehicle ? driver.vehicle.id : null,
         });
 
@@ -94,130 +95,65 @@ class DispatchManager {
             location:   call.location,
         })]);
 
+        // Generic Caller Notification
         if (call.callerServerId !== null) {
             const caller = mp.players.at(call.callerServerId);
             if (caller && mp.players.exists(caller)) {
-                caller.outputChatBox(`!{#ffc300}[TAXI] A taxi driver is on the way to you!`);
-                caller.call('client:dispatch:callerNotified', [driver.name]);
+                // E.g. "[TAXI] A taxi driver is on the way to you!" or "[911] An officer is responding."
+                caller.outputChatBox(`!{${config.accentColor || '#ffffff'}}${config.chatTag || '[DISPATCH]'} !{#ffffff}${config.messages.onWay}`);
+                
+                // Keep the original taxi HUD notification trigger if it's the taxi faction
+                if (factionId === 1) {
+                    caller.call('client:dispatch:callerNotified', [driver.name]);
+                }
             }
         }
 
         this._broadcastToFaction(factionId);
-        console.log(`[Dispatch] Call #${callId} accepted by ${driver.name} (ID: ${driver.id})`);
+        console.log(`[Dispatch] Call #${callId} accepted by ${driver.name} (ID: ${driver.id}, Faction: ${factionId})`);
     }
 
-    // Phase 2 – driver arrived at pickup, notify caller to board
-    driverArrived(driver) {
-        const a = this.activeAssignments.get(driver.id);
-        if (!a) return;
-
-        a.phase = 2;
-        // Refresh vehicle ID in case driver spawned a new cab after accepting
-        a.driverVehicleId = driver.vehicle ? driver.vehicle.id : null;
-
-        if (a.callerServerId !== null) {
-            const caller = mp.players.at(a.callerServerId);
-            if (caller && mp.players.exists(caller)) {
-                caller.outputChatBox('!{#00e676}[TAXI] Your driver has arrived! Get in the yellow cab.');
-            }
-        }
-
-        console.log('[Dispatch] Driver ' + driver.name + ' arrived at pickup for call #' + a.callId);
-    }
-
-    // Phase 3 – caller boarded (detected via playerEnterVehicle server event)
-    callerBoarded(callerPlayer, vehicle) {
-        let assignment = null;
-        let driverId   = null;
-
-        this.activeAssignments.forEach((a, dId) => {
-            if (
-                a.callerServerId === callerPlayer.id &&
-                a.phase === 2 &&
-                a.driverVehicleId === vehicle.id
-            ) {
-                assignment = a;
-                driverId   = dId;
-            }
-        });
-
-        if (!assignment || driverId === null) return;
-
-        assignment.phase = 3;
-
-        // Tell the driver their HUD should advance to phase 3
-        const driver = mp.players.at(driverId);
-        if (driver && mp.players.exists(driver)) {
-            driver.call('client:taxi:callerBoarded', []);
-        }
-
-        // Prompt the caller to set a waypoint
-        callerPlayer.call('client:taxi:promptWaypoint', []);
-
-        console.log('[Dispatch] Caller boarded for call #' + assignment.callId + ', waiting for waypoint');
-    }
-
-    // Phase 4 – caller set waypoint, send destination to driver
-    waypointSet(caller, x, y, z, location) {
-        let targetAssignment = null;
-        let driverId = null;
-
-        this.activeAssignments.forEach((a, dId) => {
-            if (a.callerServerId === caller.id) {
-                targetAssignment = a;
-                driverId = dId;
-            }
-        });
-
-        if (!targetAssignment || driverId === null) return;
-
-        targetAssignment.phase = 4;
-        targetAssignment.destCoords = { x, y, z };
-        targetAssignment.destLocation = location;
-
-        const driver = mp.players.at(driverId);
-        if (driver && mp.players.exists(driver)) {
-            driver.call('client:taxi:setDestination', [JSON.stringify({
-                coords: { x, y, z },
-                location: location || 'Unknown Area',
-            })]);
-        }
-
-        console.log('[Dispatch] Destination set for call #' + targetAssignment.callId + ': ' + location);
-    }
-
-    // Phase 5 – driver reached destination
-    rideComplete(driver) {
-        const a = this.activeAssignments.get(driver.id);
-        if (!a) return;
-
-        this.activeAssignments.delete(driver.id);
-
-        if (a.callerServerId !== null) {
-            const caller = mp.players.at(a.callerServerId);
-            if (caller && mp.players.exists(caller)) {
-                caller.outputChatBox('!{#00e676}[TAXI] You have arrived at your destination. Thanks for riding!');
-            }
-        }
-
-        console.log('[Dispatch] Ride #' + a.callId + ' completed by ' + driver.name);
-    }
-
-    // FIX C – cancel an active assignment (caller quit, admin cancel, etc.)
     cancelAssignment(driverId, reason) {
         const assignment = this.activeAssignments.get(driverId);
         if (!assignment) return;
 
+        const config = DISPATCH_CONFIGS[assignment.factionId];
         this.activeAssignments.delete(driverId);
 
         const driver = mp.players.at(driverId);
         if (driver && mp.players.exists(driver)) {
             driver.call('client:dispatch:callCleared', []);
             if (reason) {
-                driver.outputChatBox(`!{#ff4757}[TAXI] Call cancelled: ${reason}`);
+                driver.outputChatBox(`!{${config ? config.accentColor : '#ff4757'}}${config ? config.chatTag : '[DISPATCH]'} !{#ffffff}Call cancelled: ${reason}`);
             }
         }
     }
+
+    // ── Helper Methods for Faction Modules ──────────────────────────────────
+
+    getAssignment(driverId) {
+        return this.activeAssignments.get(driverId);
+    }
+
+    getAssignmentByCaller(callerId) {
+        let foundAssignment = null;
+        let foundDriverId = null;
+
+        this.activeAssignments.forEach((a, dId) => {
+            if (a.callerServerId === callerId) {
+                foundAssignment = a;
+                foundDriverId = dId;
+            }
+        });
+
+        return { assignment: foundAssignment, driverId: foundDriverId };
+    }
+
+    removeAssignment(driverId) {
+        this.activeAssignments.delete(driverId);
+    }
+
+    // ── Internal System Methods ─────────────────────────────────────────────
 
     clearFaction(factionId) {
         this.calls.delete(factionId);
@@ -259,8 +195,6 @@ class DispatchManager {
         this._sendToPlayer(player);
         return true;
     }
-
-    // ── Internal ──────────────────────────────────────────────────────────────
 
     _broadcastToFaction(factionId) {
         mp.players.forEach(player => {
@@ -331,7 +265,7 @@ class DispatchManager {
 const manager = new DispatchManager();
 module.exports = manager;
 
-// ── Global Server Events ──────────────────────────────────────────────────────
+// ── Global Server Events (Generic for all dispatch) ───────────────────────────
 
 mp.events.add('server:dispatch:open', (player) => {
     const wasOpen = player.getVariable('dispatchOpen');
@@ -365,11 +299,6 @@ mp.events.add('server:dispatch:accept', (player, callIdStr) => {
     manager.acceptCall(player, callId);
 });
 
-// FIX B – driver arrived event from client tick
-mp.events.add('server:dispatch:driverArrived', (player) => {
-    manager.driverArrived(player);
-});
-
 mp.events.add('playerExitVehicle', (player) => {
     if (player.getVariable('dispatchOpen')) {
         player.setVariable('dispatchOpen', false);
@@ -377,33 +306,11 @@ mp.events.add('playerExitVehicle', (player) => {
     }
 });
 
-// FIX D – if a caller disconnects, cancel the driver's active run
+// Cancel active run if the caller disconnects
 mp.events.add('playerQuit', (player) => {
-    // Check if this disconnecting player is someone's caller
     manager.activeAssignments.forEach((assignment, driverId) => {
         if (assignment.callerServerId === player.id) {
             manager.cancelAssignment(driverId, 'Caller disconnected.');
         }
     });
-});
-
-// Phase 2 → 3: server detects caller entered the driver's vehicle
-// Uses playerEnterVehicle so we match on the actual player object — no NPC false-positives
-mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
-    // Only care about passenger seats (seat -1 = driver)
-    if (seat === -1) return;
-    if (!player.logged) return;
-
-    // Check if this player is a caller in any active assignment (phase 2)
-    manager.callerBoarded(player, vehicle);
-});
-
-// Phase 3 → 4: caller placed their waypoint
-mp.events.add('server:dispatch:waypointSet', (player, x, y, z, location) => {
-    manager.waypointSet(player, parseFloat(x), parseFloat(y), parseFloat(z), location);
-});
-
-// Phase 4 → 5: driver reached the drop-off zone
-mp.events.add('server:dispatch:rideComplete', (player) => {
-    manager.rideComplete(player);
 });

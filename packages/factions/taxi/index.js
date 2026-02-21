@@ -1,4 +1,6 @@
 // packages/factions/taxi/index.js
+require('./taxiDispatch');
+
 const Faction = require('../Faction');
 const factionsManager = require('../factionsManager');
 
