@@ -26,10 +26,11 @@ module.exports = (faction) => {
         let veh = mp.vehicles.new(mp.joaat('taxi'), spawnPos, {
             heading: randomSpot.h,
             numberPlate: plateStr,
-            color: [[255, 204, 0], [255, 204, 0]]
+            color: [88, 88]  // fallback while the RGB call lands
         });
 
         // Give them a full tank of gas automatically based on your server's fuel system
+        veh.setColorRGB(255, 204, 0, 255, 204, 0);
         veh.setVariable('fuel', 100.0); 
         veh.setVariable('engine', true);
         veh.setVariable('factionId', faction.id); 
