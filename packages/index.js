@@ -15,5 +15,6 @@ require('./jobs');
 // 4. Zones
 require('./zones');
 
+require('./factions/index');
 
 console.log("[Server] Packages loaded successfully.");

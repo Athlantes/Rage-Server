@@ -7,6 +7,7 @@ const CharCreator = require('../systems/charCreator');
 const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
 const RepoJob = require('../systems/repoJob');
 const HouseManager = require('../systems/houseManager');
+const FactionsManager = require('../factions/factionsManager');
 
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
@@ -246,6 +247,7 @@ function startSession(player, userData) {
     QuestManager.initPlayer(player);
     Banking.initAccount(player);
     RepoJob.onPlayerReady(player);
+    FactionsManager.loadPlayerFactionData(player);
 
     try {
         const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
