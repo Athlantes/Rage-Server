@@ -180,7 +180,7 @@ class DispatchManager {
      */
     _broadcastToFaction(factionId) {
         mp.players.forEach(player => {
-            if (!player.getVariable('loggedIn')) return;
+            if (!player.logged) return;
             if (player.factionId !== factionId) return;
             if (!player.getVariable('factionDuty')) return;
 

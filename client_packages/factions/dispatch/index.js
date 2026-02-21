@@ -6,12 +6,17 @@
 //   • Bind P key → toggle dispatch menu (only if in faction vehicle + on duty)
 //   • Handle opening / closing the CEF browser
 //   • Resolve zone name when /calltaxi is typed (client only API)
-//   • Handle accepted call state → set GPS waypoint, show HUD strip
+//   • Handle accepted call state → set custom blip, route, marker, and colshape
 //   • Listen for server-pushed real-time updates while menu is open
 // ─────────────────────────────────────────────────────────────────────────────
 
 let dispatchBrowser = null;
 let isDispatchOpen = false;
+
+// Variables to track the active call route/marker
+let activeCallBlip = null;
+let activeCallMarker = null;
+let activeCallColshape = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -28,6 +33,24 @@ function closeDispatchBrowser() {
     }
     mp.gui.cursor.visible = false;
     isDispatchOpen = false;
+}
+
+function cleanupActiveCall() {
+    if (activeCallBlip && mp.blips.exists(activeCallBlip)) {
+        activeCallBlip.setRoute(false);
+        activeCallBlip.destroy();
+    }
+    activeCallBlip = null;
+
+    if (activeCallMarker && mp.markers.exists(activeCallMarker)) {
+        activeCallMarker.destroy();
+    }
+    activeCallMarker = null;
+
+    if (activeCallColshape && mp.colshapes.exists(activeCallColshape)) {
+        activeCallColshape.destroy();
+    }
+    activeCallColshape = null;
 }
 
 // ── P Key — Toggle dispatch ───────────────────────────────────────────────────
@@ -92,9 +115,35 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
     try {
         const data = JSON.parse(dataJson);
 
-        // Set GPS waypoint to caller
         if (data.coords) {
-            mp.game.ui.setNewWaypoint(data.coords.x, data.coords.y);
+            // Clean up any existing call markers/blips just in case
+            cleanupActiveCall();
+
+            const pos = new mp.Vector3(data.coords.x, data.coords.y, data.coords.z);
+
+            // 1. Create a custom Blip with a route 
+            // 280 is a generic map marker, 66 is Taxi Yellow color
+            activeCallBlip = mp.blips.new(280, pos, {
+                name: `Taxi Request: ${data.callerName}`,
+                color: 66,
+                scale: 1.0,
+                shortRange: false,
+                dimension: mp.players.local.dimension
+            });
+            activeCallBlip.setRoute(true);
+            activeCallBlip.setRouteColor(66);
+
+            // 2. Create a Marker on the ground (Cylinder type 1)
+            activeCallMarker = mp.markers.new(0, new mp.Vector3(pos.x, pos.y, pos.z + 1.5), 1.5, {
+                color: [255, 204, 0, 200], // Yellow, mostly solid
+                visible: true,
+                dimension: mp.players.local.dimension
+            });
+
+            // 3. Create a Colshape to detect when the driver arrives
+            activeCallColshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 15.0);
+            activeCallColshape.dimension = mp.players.local.dimension;
+            activeCallColshape.isTaxiCall = true; // custom flag to identify it
         }
 
         // Show fare HUD strip (handled in overlay.js via client event)
@@ -115,6 +164,19 @@ mp.events.add('client:dispatch:error', (message) => {
 // Server notified caller their driver is coming — show a notification in overlay
 mp.events.add('client:dispatch:callerNotified', (driverName) => {
     mp.events.call('overlay:notify', 'Taxi Dispatched', `${driverName} is heading your way!`);
+});
+
+// ── Arriving at the destination ───────────────────────────────────────────────
+mp.events.add('playerEnterColshape', (shape) => {
+    // Check if the shape exists and its ID matches our active call colshape
+    if (activeCallColshape && shape && shape.id === activeCallColshape.id) {
+        
+        // Safely notify the driver using your overlay system
+        mp.events.call('overlay:notify', 'Taxi', 'You have arrived at the caller\'s location.');
+        
+        // Clean up the route, marker, and blip
+        cleanupActiveCall();
+    }
 });
 
 // ── /calltaxi zone resolver ───────────────────────────────────────────────────

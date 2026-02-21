@@ -15,7 +15,7 @@ class Faction {
     // Send a message to all online members of this faction
     broadcast(message, color = "!{#00a8ff}") {
         mp.players.forEach(player => {
-            if (player.getVariable('loggedIn') && player.factionId === this.id) {
+            if (player.logged && player.factionId === this.id) { // <--- CHANGE HERE
                 player.outputChatBox(`${color}[${this.name}] ${player.name}: ${message}`);
             }
         });
@@ -25,7 +25,7 @@ class Faction {
     getOnlineMembers() {
         let members = [];
         mp.players.forEach(player => {
-            if (player.getVariable('loggedIn') && player.factionId === this.id) {
+            if (player.logged && player.factionId === this.id) { // <--- CHANGE HERE
                 members.push(player);
             }
         });

@@ -45,7 +45,7 @@ mp.events.add('server:dispatch:submitCall', (player, locationName, x, y, z) => {
     let driversOnDuty = 0;
     mp.players.forEach(p => {
         if (
-            p.getVariable('loggedIn') &&
+            p.logged &&
             p.factionId === TAXI_FACTION_ID &&
             p.getVariable('factionDuty')
         ) {
