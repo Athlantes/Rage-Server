@@ -44,3 +44,7 @@ require('./jobs/preview.js');
 require('./creator/index.js');
 require('./core/dealership.js');
 require('./core/tuning.js');
+
+// Factions — Dispatch system
+require('./factions/dispatch/index.js');
+require('./factions/dispatch/fareHUD.js');

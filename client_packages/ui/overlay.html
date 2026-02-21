@@ -445,6 +445,58 @@
             transition: width linear;
         }
 
+        /* ── DISPATCH FARE HUD ── */
+        .fare-hud {
+            position: fixed;
+            bottom: 90px;
+            left: 330px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            border-left: 3px solid #ffc300;
+            padding-left: 10px;
+            animation: fareIn 0.35s ease-out;
+        }
+
+        @keyframes fareIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .fare-hud.visible {
+            display: flex;
+        }
+
+        .fare-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #ffc300;
+            opacity: 0.85;
+            line-height: 1;
+        }
+
+        .fare-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .fare-meta {
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1;
+        }
+
+        .fare-dist {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffc300;
+            margin-top: 1px;
+        }
+
     </style>
 </head>
 <body>
@@ -507,6 +559,14 @@
     <div class="payday-box">
         <div class="payday-title">PAYDAY IN</div>
         <div id="payday-timer"></div>
+    </div>
+
+    <!-- DISPATCH FARE HUD — shown after driver accepts a call -->
+    <div class="fare-hud" id="fare-hud">
+        <div class="fare-label"><i class="fas fa-taxi" style="margin-right:4px;"></i>Active Fare</div>
+        <div class="fare-name" id="fare-name">—</div>
+        <div class="fare-meta" id="fare-location">—</div>
+        <div class="fare-dist" id="fare-dist">—</div>
     </div>
 
     <div class="speedo-container" id="speedo">
@@ -884,6 +944,27 @@
                 popup.classList.remove('visible');
             }, dur);
         }
+    // ── DISPATCH FARE HUD ──────────────────────────────────────────────────────
+    function showFareHUD(data) {
+        const el = document.getElementById('fare-hud');
+        if (!el) return;
+        try {
+            const d = typeof data === 'string' ? JSON.parse(data) : data;
+            document.getElementById('fare-name').textContent     = d.callerName || '—';
+            document.getElementById('fare-location').textContent = d.location   || '—';
+            document.getElementById('fare-dist').textContent     = 'Calculating...';
+            el.classList.add('visible');
+        } catch(e) { console.error('[FareHUD] showFareHUD error:', e); }
+    }
+
+    function updateFareDistance(distStr) {
+        const el = document.getElementById('fare-dist');
+        if (el) el.textContent = distStr;
+    }
+
+    function hideFareHUD() {
+        const el = document.getElementById('fare-hud');
+        if (el) el.classList.remove('visible');
+    }
+
     </script>
-</body>
-</html>

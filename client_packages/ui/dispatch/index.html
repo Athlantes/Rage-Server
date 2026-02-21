@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Faction Dispatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00a8ff;
+            --primary-dim: rgba(0, 168, 255, 0.15);
+            --primary-glow: rgba(0, 168, 255, 0.3);
+            --success: #2ecc71;
+            --warning: #f0c400;
+            --danger: #ff4757;
+            --bg-panel: rgba(12, 14, 20, 0.97);
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --border: rgba(255, 255, 255, 0.06);
+            --text: #ffffff;
+            --text-dim: #8a8f9c;
+            --text-muted: #555a66;
+
+            /* Accent — overridden per faction by JS */
+            --accent: #ffc300;
+            --accent-dim: rgba(255, 195, 0, 0.15);
+            --accent-glow: rgba(255, 195, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: transparent;
+            color: var(--text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── Panel ─────────────────────────────────────────────────────────── */
+        .panel {
+            width: 820px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.03);
+            animation: panelIn 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes panelIn {
+            from { opacity: 0; transform: scale(0.96) translateY(10px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0);    }
+        }
+
+        /* ── Header ────────────────────────────────────────────────────────── */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Coloured left stripe matching faction accent */
+        .panel-header::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent);
+            border-radius: 0;
+        }
+
+        .header-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(255, 195, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .header-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .call-count-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(255, 195, 0, 0.2);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .call-count-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .close-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 71, 87, 0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* ── Keybind hint ──────────────────────────────────────────────────── */
+        .keybind-hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .key-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .keybind-hint span {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ── Column headers ────────────────────────────────────────────────── */
+        .table-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+        }
+
+        /* ── Call list ─────────────────────────────────────────────────────── */
+        .call-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 380px;
+            padding: 8px 12px 12px;
+        }
+
+        .call-list::-webkit-scrollbar { width: 4px; }
+        .call-list::-webkit-scrollbar-track { background: transparent; }
+        .call-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        /* ── Call row ──────────────────────────────────────────────────────── */
+        .call-row {
+            display: flex;
+            align-items: center;
+            padding: 11px 4px;
+            border-radius: 8px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+            animation: rowIn 0.25s ease-out;
+        }
+
+        @keyframes rowIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .call-row:last-child {
+            border-bottom: none;
+        }
+
+        .call-row:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .cell {
+            padding: 0 6px;
+            font-size: 12px;
+            color: var(--text);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        /* Caller name cell — slightly brighter */
+        .cell-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Location */
+        .cell-location {
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        /* Distance — colored by proximity */
+        .cell-distance {
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .cell-distance.near   { color: var(--success); }
+        .cell-distance.medium { color: var(--warning); }
+        .cell-distance.far    { color: var(--text-dim); }
+
+        /* Wait time */
+        .cell-wait {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .cell-wait.urgent { color: var(--danger); font-weight: 700; }
+
+        /* ── Action button ─────────────────────────────────────────────────── */
+        .accept-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 7px;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .accept-btn.green {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid rgba(46, 204, 113, 0.25);
+            color: var(--success);
+        }
+
+        .accept-btn.green:hover {
+            background: rgba(46, 204, 113, 0.28);
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+
+        .accept-btn.blue {
+            background: var(--primary-dim);
+            border: 1px solid rgba(0, 168, 255, 0.25);
+            color: var(--primary);
+        }
+
+        .accept-btn.blue:hover {
+            background: rgba(0, 168, 255, 0.28);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .accept-btn.yellow {
+            background: rgba(240, 196, 0, 0.15);
+            border: 1px solid rgba(240, 196, 0, 0.25);
+            color: var(--warning);
+        }
+
+        .accept-btn.yellow:hover {
+            background: rgba(240, 196, 0, 0.28);
+        }
+
+        .accept-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ── Empty state ───────────────────────────────────────────────────── */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 50px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 28px;
+            opacity: 0.4;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ── Footer ────────────────────────────────────────────────────────── */
+        .panel-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .footer-note {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .footer-note i {
+            margin-right: 4px;
+            color: var(--accent);
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1s infinite;
+        }
+
+        /* ── Error toast ───────────────────────────────────────────────────── */
+        .error-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.4);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--danger);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .error-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel" id="panel">
+    <!-- ─── Header ─── -->
+    <div class="panel-header" id="panel-header">
+        <div class="header-icon" id="header-icon">
+            <i id="header-icon-i" class="fas fa-taxi"></i>
+        </div>
+        <div class="header-text">
+            <div class="header-title" id="header-title">Taxi Dispatch</div>
+            <div class="header-subtitle" id="header-subtitle">Los Santos Transit</div>
+        </div>
+        <div class="header-right">
+            <div class="call-count-badge" id="call-count-badge">
+                <div class="dot"></div>
+                <span id="call-count-text">0 Calls</span>
+            </div>
+            <div class="close-btn" onclick="closeMenu()">
+                <i class="fas fa-xmark"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Keybind hint ─── -->
+    <div class="keybind-hint">
+        <span class="key-chip">P</span>
+        <span>Close dispatch &nbsp;&nbsp;</span>
+        <span class="key-chip">Click</span>
+        <span>Accept a call</span>
+    </div>
+
+    <!-- ─── Column headers ─── -->
+    <div class="table-header" id="table-header">
+        <!-- Populated by JS from config.columns -->
+    </div>
+
+    <!-- ─── Call list ─── -->
+    <div class="call-list" id="call-list">
+        <div class="empty-state" id="empty-state">
+            <i class="fas fa-road"></i>
+            <p>No ride requests right now.</p>
+        </div>
+    </div>
+
+    <!-- ─── Footer ─── -->
+    <div class="panel-footer">
+        <div class="footer-note">
+            <i class="fas fa-circle-info"></i>
+            Calls are assigned first-come, first-served
+        </div>
+        <div class="live-badge">
+            <div class="live-dot"></div>
+            Live
+        </div>
+    </div>
+</div>
+
+<!-- Error toast -->
+<div class="error-toast" id="error-toast"></div>
+
+<script>
+    // ── State ─────────────────────────────────────────────────────────────────
+    let currentConfig = null;
+    let currentCalls  = [];
+
+    // ── Entry point — called by client JS ────────────────────────────────────
+    // payloadJson is a JSON string (double-encoded because execute() stringifies again)
+    function receiveDispatchData(payloadJson) {
+        try {
+            const payload = typeof payloadJson === 'string'
+                ? JSON.parse(payloadJson)
+                : payloadJson;
+
+            currentConfig = payload.config;
+            currentCalls  = payload.calls || [];
+
+            applyAccentColor(currentConfig.accentColor || '#ffc300');
+            renderHeader(currentConfig);
+            renderTableHeader(currentConfig.columns);
+            renderCalls(currentCalls, currentConfig);
+        } catch (e) {
+            console.error('[Dispatch UI] receiveDispatchData error:', e, payloadJson);
+        }
+    }
+
+    // ── Error toast ───────────────────────────────────────────────────────────
+    function showDispatchError(message) {
+        const toast = document.getElementById('error-toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // ── Accent colour ─────────────────────────────────────────────────────────
+    function applyAccentColor(hex) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        document.documentElement.style.setProperty('--accent', hex);
+        document.documentElement.style.setProperty('--accent-dim',  `rgba(${r},${g},${b},0.15)`);
+        document.documentElement.style.setProperty('--accent-glow', `rgba(${r},${g},${b},0.3)`);
+    }
+
+    // ── Header ────────────────────────────────────────────────────────────────
+    function renderHeader(config) {
+        document.getElementById('header-icon-i').className = config.icon || 'fas fa-radio';
+        document.getElementById('header-title').textContent  = config.title    || 'Dispatch';
+        document.getElementById('header-subtitle').textContent = config.subtitle || '';
+
+        const count = currentCalls.length;
+        document.getElementById('call-count-text').textContent =
+            count === 1 ? '1 Call' : count + ' Calls';
+    }
+
+    // ── Table header ──────────────────────────────────────────────────────────
+    function renderTableHeader(columns) {
+        const container = document.getElementById('table-header');
+        container.innerHTML = columns.map(col => `
+            <div class="th" style="width:${col.width}; padding: 0 6px;">
+                ${col.label}
+            </div>
+        `).join('');
+    }
+
+    // ── Call rows ─────────────────────────────────────────────────────────────
+    function renderCalls(calls, config) {
+        const list       = document.getElementById('call-list');
+        const emptyState = document.getElementById('empty-state');
+
+        if (!calls || calls.length === 0) {
+            list.innerHTML = '';
+            emptyState.innerHTML = `
+                <i class="${config.emptyIcon || 'fas fa-inbox'}"></i>
+                <p>${config.emptyMessage || 'No active calls.'}</p>
+            `;
+            list.appendChild(emptyState);
+            return;
+        }
+
+        list.innerHTML = calls.map(call => buildCallRow(call, config)).join('');
+    }
+
+    function buildCallRow(call, config) {
+        const cells = config.columns.map(col => {
+            if (col.key === 'action') {
+                return buildActionCell(call, config);
+            }
+            return buildDataCell(col.key, call, config);
+        }).join('');
+
+        return `<div class="call-row">${cells}</div>`;
+    }
+
+    function buildDataCell(key, call, config) {
+        const col  = config.columns.find(c => c.key === key);
+        const width = col ? col.width : 'auto';
+
+        switch (key) {
+            case 'callerName':
+                return `<div class="cell cell-name" style="width:${width}">${escHtml(call.callerName)}</div>`;
+
+            case 'location':
+                return `
+                    <div class="cell cell-location" style="width:${width}">
+                        <i class="fas fa-location-dot" style="margin-right:4px;opacity:0.5;font-size:10px;"></i>
+                        ${escHtml(call.location)}
+                    </div>`;
+
+            case 'distance': {
+                const raw = call.distanceRaw || 9999;
+                let cls = 'far';
+                if (raw < 500)       cls = 'near';
+                else if (raw < 1500) cls = 'medium';
+                return `<div class="cell cell-distance ${cls}" style="width:${width}">${escHtml(call.distance)}</div>`;
+            }
+
+            case 'waitTime': {
+                // Flag as urgent if waiting > 2 min
+                const waitSecs = extractWaitSeconds(call.waitTime);
+                const urgent   = waitSecs > 120 ? ' urgent' : '';
+                return `<div class="cell cell-wait${urgent}" style="width:${width}">${escHtml(call.waitTime)}</div>`;
+            }
+
+            case 'callType':
+                return `<div class="cell" style="width:${width}">${escHtml(call.callType || '—')}</div>`;
+
+            default:
+                return `<div class="cell" style="width:${width}">${escHtml(String(call[key] || ''))}</div>`;
+        }
+    }
+
+    function buildActionCell(call, config) {
+        const col = config.columns.find(c => c.key === 'action');
+        const width = col ? col.width : '16%';
+        const btn = config.actionButton;
+
+        return `
+            <div class="cell" style="width:${width}">
+                <button
+                    class="accept-btn ${btn.color || 'green'}"
+                    onclick="acceptCall(${call.id})"
+                >
+                    <i class="${btn.icon || 'fas fa-check'}"></i>
+                    ${escHtml(btn.label || 'Accept')}
+                </button>
+            </div>`;
+    }
+
+    // ── Accept call ───────────────────────────────────────────────────────────
+    function acceptCall(callId) {
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:requestAccept', String(callId));
+        }
+
+        // Optimistically remove from UI immediately (server will confirm/deny)
+        currentCalls = currentCalls.filter(c => c.id !== callId);
+        renderCalls(currentCalls, currentConfig);
+    }
+
+    // ── Close ─────────────────────────────────────────────────────────────────
+    function closeMenu() {
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:requestClose');
+        }
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function extractWaitSeconds(waitStr) {
+        if (!waitStr) return 0;
+        // "45s" or "1m 30s"
+        let total = 0;
+        const mMatch = waitStr.match(/(\d+)m/);
+        const sMatch = waitStr.match(/(\d+)s/);
+        if (mMatch) total += parseInt(mMatch[1]) * 60;
+        if (sMatch) total += parseInt(sMatch[1]);
+        return total;
+    }
+
+    // ── Escape key closes menu ────────────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMenu();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+// packages/factions/dispatch/dispatchConfig.js
+// ─────────────────────────────────────────────────────────────────────────────
+// Each faction that wants a dispatch system registers a config here.
+// The dispatch UI is one generic HTML page — this config drives its columns,
+// colors, header title, and what action buttons appear.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DISPATCH_CONFIGS = {
+
+    // ── Taxi (factionId: 1) ──────────────────────────────────────────────────
+    1: {
+        factionId: 1,
+        title: 'Taxi Dispatch',
+        subtitle: 'Los Santos Transit',
+        accentColor: '#ffc300',      // Yellow - matches taxi brand
+        icon: 'fas fa-taxi',
+        callLabel: 'Ride Request',
+
+        // Columns rendered in the dispatch table (in order)
+        columns: [
+            { key: 'callerName',   label: 'Caller',    width: '22%' },
+            { key: 'location',     label: 'Location',  width: '30%' },
+            { key: 'distance',     label: 'Distance',  width: '16%' },
+            { key: 'waitTime',     label: 'Waiting',   width: '16%' },
+            { key: 'action',       label: 'Action',    width: '16%' },
+        ],
+
+        // Action button that appears per row
+        actionButton: {
+            label: 'Accept',
+            icon: 'fas fa-check',
+            color: 'green',           // 'green' | 'blue' | 'yellow' | 'red'
+            event: 'dispatch:accept', // client event to fire
+        },
+
+        // HUD strip shown to driver after accepting (bottom-left, above status)
+        hud: {
+            icon: 'fas fa-taxi',
+            color: '#ffc300',
+            label: 'Active Fare',
+        },
+
+        emptyMessage: 'No ride requests right now.',
+        emptyIcon: 'fas fa-road',
+    },
+
+    // ── Template for future factions ─────────────────────────────────────────
+    // 2: {
+    //     factionId: 2,
+    //     title: 'Police Dispatch',
+    //     subtitle: 'Los Santos Police Dept.',
+    //     accentColor: '#00a8ff',
+    //     icon: 'fas fa-shield-halved',
+    //     callLabel: 'Incident',
+    //     columns: [
+    //         { key: 'callerName',   label: 'Caller',    width: '20%' },
+    //         { key: 'location',     label: 'Location',  width: '28%' },
+    //         { key: 'callType',     label: 'Type',      width: '18%' },
+    //         { key: 'distance',     label: 'Distance',  width: '14%' },
+    //         { key: 'waitTime',     label: 'Waiting',   width: '10%' },
+    //         { key: 'action',       label: 'Respond',   width: '10%' },
+    //     ],
+    //     actionButton: { label: 'Respond', icon: 'fas fa-siren', color: 'blue', event: 'dispatch:accept' },
+    //     hud: { icon: 'fas fa-shield-halved', color: '#00a8ff', label: 'Active Call' },
+    //     emptyMessage: 'No active incidents.',
+    //     emptyIcon: 'fas fa-shield-halved',
+    // },
+};
+
+module.exports = DISPATCH_CONFIGS;
