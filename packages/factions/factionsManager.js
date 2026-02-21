@@ -1,14 +1,21 @@
 // /packages/factions/factionsManager.js
-const fs = require('fs');
+// ─────────────────────────────────────────────────────────────────────────────
+// CHANGES:
+//   - /f (faction chat) now shows: [FactionName] [RankName] Firstname Lastname: message
+//     using the faction's ranks array so the rank name is human-readable.
+//   - Only members of the SAME faction see the message (was already working,
+//     now uses faction.broadcast which scopes to factionId).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const fs   = require('fs');
 const path = require('path');
-const DB = require('../core/database'); // Assuming this exports your mysql2 pool
+const DB   = require('../core/database');
 
 class FactionsManager {
     constructor() {
         this.factions = new Map();
     }
 
-    // Registers a newly created faction into the memory
     registerFaction(factionInstance) {
         if (this.factions.has(factionInstance.id)) {
             console.error(`[Factions] Faction ID ${factionInstance.id} is already registered!`);
@@ -18,36 +25,30 @@ class FactionsManager {
         console.log(`[Factions] Loaded: ${factionInstance.name} (ID: ${factionInstance.id})`);
     }
 
-    // Get a faction by ID
     getFaction(id) {
         return this.factions.get(id);
     }
 
-    // --- Player Management ---
+    // ── Player Management ─────────────────────────────────────────────────────
 
-    // Call this when a player logs in (e.g., in your auth.js)
     async loadPlayerFactionData(player) {
-        // Double check we actually have the player's DB ID
         if (!player.data || !player.data.dbId) {
             console.error(`[Factions] Cannot load data for ${player.name}, missing DB ID.`);
             return;
         }
 
         try {
-            // CHANGE 1: Use 'users' table instead of 'accounts'
-            // CHANGE 2: Use player.data.dbId
             const [rows] = await DB.query(
-                "SELECT faction_id, faction_rank, faction_warns, faction_punish FROM users WHERE id = ?", 
-                [player.data.dbId] 
+                'SELECT faction_id, faction_rank, faction_warns, faction_punish FROM users WHERE id = ?',
+                [player.data.dbId]
             );
 
             if (rows.length > 0) {
-                player.factionId = rows[0].faction_id;
-                player.factionRank = rows[0].faction_rank;
+                player.factionId    = rows[0].faction_id;
+                player.factionRank  = rows[0].faction_rank;
                 player.factionWarns = rows[0].faction_warns;
                 player.factionPunish = rows[0].faction_punish;
-                
-                // Sync to client for UI purposes (Radial Menu, Inventory, etc.)
+
                 player.setVariable('factionId', player.factionId);
                 console.log(`[Factions] Loaded data for ${player.name}: Faction ${player.factionId}, Rank ${player.factionRank}`);
             } else {
@@ -62,16 +63,40 @@ class FactionsManager {
 const manager = new FactionsManager();
 module.exports = manager;
 
-// --- Global Faction Events ---
+// ── /f Faction Chat ───────────────────────────────────────────────────────────
+// Format: [FactionName] [RankName] Firstname Lastname: message
+// Only members of the same faction see the message.
 
-// Example: Faction Chat
 mp.events.addCommand('f', (player, fullText) => {
+    if (!fullText || fullText.trim() === '') {
+        return player.outputChatBox('!{#ff4757}Usage: /f <message>');
+    }
+
     if (!player.factionId || player.factionId === 0) {
-        return player.outputChatBox("!{#ff0000}You are not in a faction.");
+        return player.outputChatBox('!{#ff4757}You are not in a faction.');
     }
 
     const faction = manager.getFaction(player.factionId);
-    if (faction) {
-        faction.broadcast(`(Rank ${player.factionRank}) ${fullText}`);
+    if (!faction) {
+        return player.outputChatBox('!{#ff4757}Your faction could not be found.');
     }
+
+    // Resolve rank name from the faction's ranks array
+    const rankIndex = player.factionRank || 0;
+    const rankName  = (faction.ranks && faction.ranks[rankIndex])
+        ? faction.ranks[rankIndex]
+        : `Rank ${rankIndex}`;
+
+    // Display name — replace underscores with spaces (RAGEMP convention)
+    const displayName = player.name.replace(/_/g, ' ');
+
+    // Build the message: only faction members will receive it
+    // Color: golden yellow for taxi, but we keep it generic using faction accent or a neutral faction color
+    const message = `!{#ffc300}[${faction.name}] !{#ffffff}[${rankName}] ${displayName}!{#cccccc}: ${fullText.trim()}`;
+
+    mp.players.forEach(p => {
+        if (p.logged && p.factionId === player.factionId) {
+            p.outputChatBox(message);
+        }
+    });
 });
