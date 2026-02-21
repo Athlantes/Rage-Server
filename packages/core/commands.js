@@ -3,6 +3,7 @@ const playerManager = require('./playerManager');
 const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
 const HouseManager = require('../systems/houseManager');
+const factionsManager = require('../factions/factionsManager');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
@@ -166,6 +167,50 @@ mp.events.addCommand('sellhouse', async (player) => {
 // This overrides your existing lock command if you wish, or you can merge logic
 mp.events.addCommand('lockhouse', (player) => {
     HouseManager.lockHouse(player);
+});
+
+// --- FACTION COMMANDS --- 
+
+mp.events.addCommand('duty', (player) => {
+    // 1. Check if the player is in a faction
+    if (!player.factionId || player.factionId === 0) {
+        return player.outputChatBox("!{#ff0000}You are not in a faction.");
+    }
+
+    // 2. Fetch the player's faction data
+    const faction = factionsManager.getFaction(player.factionId);
+    if (!faction) return player.outputChatBox("!{#ff0000}Error loading your faction data.");
+
+    // 3. Check if this faction even has a duty point defined
+    if (!faction.hq || !faction.hq.dutyPoint) {
+        return player.outputChatBox("!{#ff0000}Your faction does not have a designated locker room.");
+    }
+
+    // 4. Check if the player is close to the locker room AND in the right dimension
+    const dist = player.dist(faction.hq.dutyPoint);
+    if (dist > 3.0 || player.dimension !== faction.hq.dimension) {
+        return player.outputChatBox("!{#ff0000}You must be at your faction's HQ locker room to go on duty.");
+    }
+
+    // 5. Toggle the duty state
+    let onDuty = player.getVariable('factionDuty') || false;
+    player.setVariable('factionDuty', !onDuty);
+
+    if (!onDuty) {
+        player.outputChatBox(`!{#00ff00}You are now ON duty for ${faction.name}.`);
+        
+        // Optional: If they are LSPD, you might want to give them weapons or a uniform here later
+        // if (faction.type === "LEO") { ... }
+    } else {
+        player.outputChatBox("!{#ff0000}You are now OFF duty.");
+        
+        // Optional: Despawn their faction vehicle if they go off duty
+        if (player.factionVehicle && mp.vehicles.exists(player.factionVehicle)) {
+            player.factionVehicle.destroy();
+            player.factionVehicle = null;
+            player.outputChatBox("!{#ffcc00}Your faction vehicle has been returned to the garage.");
+        }
+    }
 });
 
 // ----------------------------------------------------------------------------
@@ -465,6 +510,51 @@ mp.events.addCommand('revive', (player, targetName) => {
     target.health = 100;
     target.armour = 0;
     player.outputChatBox(`${COLORS.SUCCESS}Revived ${target.name}.`);
+});
+
+mp.events.addCommand('setfaction', async (player, fullText) => {
+    // Check if the player is at least an Admin (Level 3)
+    if (!checkRank(player, RANKS.ADMIN)) return;
+
+    if (!fullText) return player.outputChatBox("Usage: /setfaction [id/name] [factionId] [rank (default: 1)]");
+
+    const args = fullText.split(' ');
+    const target = getPlayer(args[0]);
+    const factionId = parseInt(args[1]);
+    const rank = parseInt(args[2]) || 1; // Defaults to rank 1 if they don't type a 3rd argument
+
+    if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
+    if (isNaN(factionId)) return player.outputChatBox("Usage: /setfaction [id/name] [factionId] [rank]");
+
+    // Verify faction exists if they aren't setting it to 0 (0 = civilian/removal)
+    if (factionId > 0) {
+        const faction = factionsManager.getFaction(factionId);
+        if (!faction) return player.outputChatBox(`${COLORS.ERROR}Faction ID ${factionId} does not exist.`);
+    }
+
+    // Update the player's memory state
+    target.factionId = factionId;
+    target.factionRank = factionId > 0 ? rank : 0;
+    
+    // Sync to the client-side for UI purposes (like your inventory or radial menu)
+    target.setVariable('factionId', target.factionId);
+
+    try {
+        // Save the changes to the database
+        await db.query("UPDATE users SET faction_id = ?, faction_rank = ? WHERE id = ?", [target.factionId, target.factionRank, target.data.dbId]);
+        
+        if (factionId === 0) {
+            player.outputChatBox(`${COLORS.SUCCESS}You removed ${target.name} from their faction.`);
+            target.outputChatBox(`${COLORS.INFO}You have been removed from your faction by an admin.`);
+        } else {
+            const faction = factionsManager.getFaction(factionId);
+            player.outputChatBox(`${COLORS.SUCCESS}You placed ${target.name} into ${faction.name} (Rank: ${rank}).`);
+            target.outputChatBox(`${COLORS.INFO}Admin ${player.name} placed you into ${faction.name} (Rank: ${rank}).`);
+        }
+    } catch (err) {
+        console.error("[Factions] DB Error in /setfaction:", err);
+        player.outputChatBox(`${COLORS.ERROR}Database error occurred while setting faction.`);
+    }
 });
 
 // --- VEHICLE MANAGEMENT ---
