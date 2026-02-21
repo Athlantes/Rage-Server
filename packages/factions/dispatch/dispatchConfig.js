@@ -15,6 +15,15 @@ const DISPATCH_CONFIGS = {
         accentColor: '#ffc300',      // Yellow - matches taxi brand
         icon: 'fas fa-taxi',
         callLabel: 'Ride Request',
+        
+        // --- NEW FIELDS REQUIRED BY THE SYSTEM ---
+        chatTag: '[TAXI]', 
+        messages: {
+            onWay: 'A taxi driver is on the way to you!',
+            arrived: 'Your driver has arrived! Get in the yellow cab.',
+            completed: 'You have arrived at your destination. Thanks for riding!',
+        },
+        // ------------------------------------------
 
         // Columns rendered in the dispatch table (in order)
         columns: [
@@ -44,7 +53,7 @@ const DISPATCH_CONFIGS = {
         emptyIcon: 'fas fa-road',
     },
 
-    // ── Template for future factions ─────────────────────────────────────────
+    // ── Template for future factions (LSPD Example) ──────────────────────────
     // 2: {
     //     factionId: 2,
     //     title: 'Police Dispatch',
@@ -52,6 +61,12 @@ const DISPATCH_CONFIGS = {
     //     accentColor: '#00a8ff',
     //     icon: 'fas fa-shield-halved',
     //     callLabel: 'Incident',
+    //     chatTag: '[911]',
+    //     messages: {
+    //         onWay: 'An LSPD unit is responding to your location.',
+    //         arrived: 'Police have arrived at your location.',
+    //         completed: 'The incident has been resolved.',
+    //     },
     //     columns: [
     //         { key: 'callerName',   label: 'Caller',    width: '20%' },
     //         { key: 'location',     label: 'Location',  width: '28%' },
