@@ -48,6 +48,12 @@ function dist3(a, b) {
     return Math.sqrt(dx*dx + dy*dy + dz*dz);
 }
 
+// NEW HELPER: 2D distance for waypoints (since map waypoints lack accurate Z coords)
+function dist2(a, b) {
+    const dx = a.x-b.x, dy = a.y-b.y;
+    return Math.sqrt(dx*dx + dy*dy);
+}
+
 // ── Driver helpers ────────────────────────────────────────────────────────────
 
 function clearRideTick() {
@@ -199,8 +205,9 @@ mp.events.add('client:taxi:setDestination', (dataJson) => {
     });
     ride.destBlip.setRoute(true);
 
+    // Initial marker placement (height will be updated in the interval)
     ride.destMarker = mp.markers.new(1,
-        new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 3.0,
+        new mp.Vector3(pos.x, pos.y, mp.players.local.position.z - 1.0), 3.0,
         { color: [255, 50, 50, 200], visible: true, dimension: dim }
     );
 
@@ -209,7 +216,18 @@ mp.events.add('client:taxi:setDestination', (dataJson) => {
 
     ride.tick = setInterval(() => {
         if (ride.phase !== 4) { clearRideTick(); return; }
-        if (dist3(mp.players.local.position, pos) <= 20.0) {
+        
+        const pPos = mp.players.local.position;
+
+        // Keep marker at the driver's elevation so it isn't placed underground (Z = 0)
+        if (ride.destMarker) {
+            try {
+                ride.destMarker.position = new mp.Vector3(pos.x, pos.y, pPos.z - 1.0);
+            } catch (_) {}
+        }
+
+        // Use 2D distance check (ignoring height differences) 
+        if (dist2(pPos, pos) <= 20.0) {
             clearRideTick();
             mp.events.callRemote('server:dispatch:rideComplete');
             notify('Taxi', 'You have arrived at the destination. Ride complete!');
