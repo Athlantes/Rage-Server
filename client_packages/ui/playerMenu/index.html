@@ -1046,7 +1046,7 @@
         .fam-hq-btn:hover { background:rgba(255,170,0,0.2); }
         .fam-modal-overlay { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.75); border-radius:12px; z-index:100; align-items:center; justify-content:center; }
         .fam-modal-overlay.open { display:flex; }
-        .fam-modal { background:rgba(12,14,20,0.99); border:1px solid var(--border); border-radius:12px; width:520px; max-height:520px; overflow-y:auto; padding:24px; animation:panelIn 0.25s ease-out; }
+        .fam-modal { background:rgba(12,14,20,0.99); border:1px solid var(--border); border-radius:12px; width:700px; max-height:600px; overflow-y:auto; padding:24px; animation:panelIn 0.25s ease-out; }
         .fam-modal::-webkit-scrollbar { width:4px; } .fam-modal::-webkit-scrollbar-track { background:transparent; } .fam-modal::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:4px; }
         .fam-modal h2 { font-size:16px; font-weight:700; margin-bottom:16px; }
         .fam-modal-row { display:flex; gap:10px; margin-bottom:10px; }
@@ -1070,9 +1070,166 @@
         .fam-modal-submit { flex:2; padding:10px; background:var(--primary); border:none; border-radius:8px; color:#fff; font-family:'Poppins',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
         .fam-modal-submit:hover { background:#0093e0; }
         .fam-empty { text-align:center; padding:20px; color:var(--text-muted); font-size:12px; font-style:italic; }
+
+        /* ── Two-Column Manage Grid ── */
+        .manage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+        .manage-full { grid-column: span 2; }
+
+        /* ── Compact inline buttons ── */
+        .btn-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-inline.primary { background: var(--primary-dim); color: var(--primary); border: 1px solid rgba(0,168,255,0.25); }
+        .btn-inline.primary:hover { background: var(--primary); color: #fff; }
+        .btn-inline.success { background: rgba(46,204,113,0.12); color: #2ecc71; border: 1px solid rgba(46,204,113,0.25); }
+        .btn-inline.success:hover { background: rgba(46,204,113,0.25); }
+        .btn-inline.warning { background: rgba(255,170,0,0.1); color: #ffaa00; border: 1px solid rgba(255,170,0,0.25); }
+        .btn-inline.warning:hover { background: rgba(255,170,0,0.2); }
+        .btn-inline.danger { background: rgba(255,71,87,0.12); color: #ff4757; border: 1px solid rgba(255,71,87,0.25); }
+        .btn-inline.danger:hover { background: rgba(255,71,87,0.25); }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* ── Compact input fields ── */
+        .input-sm {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 7px 10px;
+            color: var(--text);
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .input-sm:focus { border-color: var(--primary); }
+        .input-sm.mono { font-family: monospace; letter-spacing: 1px; text-transform: uppercase; }
+        .input-sm.center { text-align: center; }
+
+        /* ── Compact setting row within sec-block ── */
+        .compact-setting {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
+        }
+        .compact-setting:last-child { border-bottom: none; }
+        .compact-setting-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .compact-setting-icon {
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 13px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .compact-setting-text { display: flex; flex-direction: column; min-width: 0; }
+        .compact-setting-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+        .compact-setting-desc { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+        .compact-setting-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* ── Inline edit row (color, tag, etc.) ── */
+        .inline-edit {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .inline-edit:last-child { border-bottom: none; }
+        .inline-edit-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            white-space: nowrap;
+            min-width: 70px;
+        }
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        /* ── Flash animation for live updates ── */
+        @keyframes valueFlash { 0% { background: rgba(0,168,255,0.15); } 100% { background: transparent; } }
+        .flash-update { animation: valueFlash 0.8s ease-out; border-radius: 4px; }
+
+        /* ── Toast Notifications ── */
+        #fam-toast-container {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .fam-toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+            max-width: 320px;
+            backdrop-filter: blur(10px);
+            animation: toastIn 0.3s ease-out;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .fam-toast.success { background: rgba(20,40,25,0.97); border-color: rgba(46,204,113,0.4); }
+        .fam-toast.error   { background: rgba(40,15,15,0.97); border-color: rgba(255,71,87,0.4); }
+        .fam-toast.info    { background: rgba(10,25,40,0.97); border-color: rgba(0,168,255,0.4); }
+        .fam-toast.warning { background: rgba(40,30,0,0.97); border-color: rgba(240,196,0,0.4); }
+        .fam-toast-icon { font-size: 15px; flex-shrink: 0; }
+        .fam-toast.success .fam-toast-icon { color: rgb(46,204,113); }
+        .fam-toast.error   .fam-toast-icon { color: rgb(255,71,87); }
+        .fam-toast.info    .fam-toast-icon { color: rgb(0,168,255); }
+        .fam-toast.warning .fam-toast-icon { color: rgb(240,196,0); }
+        @keyframes toastIn  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes toastOut { from { opacity:1; transform:translateY(0);    } to { opacity:0; transform:translateY(12px); } }
     </style>
 </head>
 <body>
+
+<div id="fam-toast-container"></div>
 
 <div class="panel">
     <!-- ─── Sidebar ─── -->
@@ -1230,43 +1387,47 @@
                                 <span class="sec-row-val yellow"><span id="veh-count">0</span> <span style="color:var(--text-muted);font-weight:400;">/ <span id="veh-max">5</span></span></span>
                             </div>
                         </div>
+
+                        <!-- Quick Info -->
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-circle-info"></i></span>
+                                <span class="sec-head-title">Quick Info</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-house"></i></span><span class="sec-row-label">Property</span></div>
+                                <span class="sec-row-val muted" id="quick-property">None</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-users"></i></span><span class="sec-row-label">Family</span></div>
+                                <span class="sec-row-val muted" id="quick-family">None</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- ═══ PROPERTIES ═══ -->
             <div id="tab-properties" class="tab-content">
-                <div class="tab-cols">
-                    <div>
-                        <div class="sec-block">
-                            <div class="sec-head">
-                                <span class="sec-head-icon"><i class="fas fa-house"></i></span>
-                                <span class="sec-head-title">Properties</span>
-                            </div>
-                            <div class="prop-grid" id="houseContent"></div>
-                        </div>
+                <div class="sec-block">
+                    <div class="sec-head">
+                        <span class="sec-head-icon"><i class="fas fa-house"></i></span>
+                        <span class="sec-head-title">Properties</span>
+                        <span class="sec-head-badge" id="prop-count-badge">0 owned</span>
                     </div>
-                    <div>
-                        <!-- placeholder right column — expand later -->
-                    </div>
+                    <div class="prop-grid" id="houseContent"></div>
                 </div>
             </div>
 
             <!-- ═══ CAREERS ═══ -->
             <div class="tab-content" id="tab-careers">
-                <div class="tab-cols">
-                    <div>
-                        <div class="sec-block">
-                            <div class="sec-head">
-                                <span class="sec-head-icon"><i class="fas fa-briefcase"></i></span>
-                                <span class="sec-head-title">Job Skills</span>
-                            </div>
-                            <div id="jobs-container"></div>
-                        </div>
+                <div class="sec-block">
+                    <div class="sec-head">
+                        <span class="sec-head-icon"><i class="fas fa-briefcase"></i></span>
+                        <span class="sec-head-title">Job Skills</span>
+                        <span class="sec-head-badge" id="jobs-count-badge">0 jobs</span>
                     </div>
-                    <div>
-                        <!-- right col — empty for now -->
-                    </div>
+                    <div id="jobs-container"></div>
                 </div>
             </div>
 
@@ -1275,32 +1436,47 @@
                 <div class="objectives-grid">
                     <!-- Left Column: Daily Assignments + Exploration -->
                     <div class="objectives-left">
-                        <div class="section-label">Daily Assignments</div>
-                        <div class="quest-list" id="quests-container"></div>
-
-                        <div class="section-label">Exploration</div>
-                        <div class="photohunt-card">
-                            <div class="ph-icon"><i class="fas fa-camera"></i></div>
-                            <div class="ph-info">
-                                <div class="ph-title">Landmark Spotter</div>
-                                <div class="ph-sub">Find hidden landmarks and snap a photo</div>
+                        <div class="sec-block" style="margin-bottom:14px;">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-clipboard-list"></i></span>
+                                <span class="sec-head-title">Daily Assignments</span>
                             </div>
-                            <div class="ph-count"><span id="ph-prog">0</span> <span>/ <span id="ph-total">6</span></span></div>
+                            <div style="padding:4px 0;">
+                                <div class="quest-list" id="quests-container" style="margin:0;padding:8px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-camera"></i></span>
+                                <span class="sec-head-title">Exploration</span>
+                            </div>
+                            <div class="photohunt-card" style="border:none;border-radius:0;">
+                                <div class="ph-icon"><i class="fas fa-camera"></i></div>
+                                <div class="ph-info">
+                                    <div class="ph-title">Landmark Spotter</div>
+                                    <div class="ph-sub">Find hidden landmarks and snap a photo</div>
+                                </div>
+                                <div class="ph-count"><span id="ph-prog">0</span> <span>/ <span id="ph-total">6</span></span></div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Right Column: Repo Work -->
                     <div class="objectives-right">
-                        <div class="section-label">Repo Work</div>
-                        <div class="repo-card">
-                            <div class="repo-header">
-                                <div class="repo-icon"><i class="fas fa-car-side"></i></div>
-                                <div class="repo-title-block">
-                                    <div class="repo-title">Salvatore's Collections</div>
-                                    <div class="repo-sub">Steal & deliver target vehicles</div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-car-side"></i></span>
+                                <span class="sec-head-title">Repo Work</span>
+                            </div>
+                            <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+                                <div class="repo-icon" style="width:32px;height:32px;font-size:14px;"><i class="fas fa-car-side"></i></div>
+                                <div>
+                                    <div style="font-size:12px;font-weight:600;color:var(--text);">Salvatore's Collections</div>
+                                    <div style="font-size:10px;color:var(--text-dim);">Steal & deliver target vehicles</div>
                                 </div>
                             </div>
-                            <div class="repo-jobs-list" id="repo-container">
+                            <div class="repo-jobs-list" id="repo-container" style="padding:8px;">
                                 <div class="repo-empty"><i class="fas fa-lock"></i> No repo jobs today</div>
                             </div>
                         </div>
@@ -1354,6 +1530,17 @@
                         </div>
                     </div>
                 </div>
+                <!-- Custom confirm dialog (avoids CEF freeze from native confirm()) -->
+                <div id="fam-confirm-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;flex-direction:column;border-radius:12px;">
+                    <div style="background:rgba(12,14,22,0.99);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px 32px;max-width:380px;text-align:center;">
+                        <i class="fas fa-circle-question" style="font-size:32px;color:rgb(240,196,0);margin-bottom:14px;"></i>
+                        <div id="fam-confirm-msg" style="font-size:14px;color:#fff;font-weight:500;margin-bottom:20px;line-height:1.5;"></div>
+                        <div style="display:flex;gap:10px;justify-content:center;">
+                            <button onclick="famConfirmNo()" style="flex:1;padding:10px 20px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-dim);font-family:'Poppins',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>
+                            <button onclick="famConfirmYes()" style="flex:1;padding:10px 20px;background:rgba(255,71,87,0.2);border:1px solid rgba(255,71,87,0.4);border-radius:8px;color:rgb(255,71,87);font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
+                        </div>
+                    </div>
+                </div>
                 <!-- Main content injected by renderFamilyTab() -->
                 <div id="fam-tab-content"></div>
             </div>
@@ -1400,15 +1587,15 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
-                            <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div class="setting-left">
-                                        <span class="setting-icon"><i class="fas fa-volume-high"></i></span>
-                                        <div class="setting-text"><div class="setting-name">Master Volume</div></div>
-                                    </div>
-                                    <span style="font-size:12px;font-weight:700;color:var(--primary);" id="vol-display">100%</span>
+                            <div class="setting-row">
+                                <div class="setting-left" style="flex:1;">
+                                    <span class="setting-icon"><i class="fas fa-volume-high"></i></span>
+                                    <div class="setting-text"><div class="setting-name">Master Volume</div></div>
                                 </div>
-                                <input type="range" id="vol-slider" min="0" max="100" value="100" class="vol-slider" oninput="updateVolume(this.value)" style="margin-left:23px;">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;max-width:200px;">
+                                    <input type="range" id="vol-slider" min="0" max="100" value="100" class="vol-slider" oninput="updateVolume(this.value)" style="flex:1;">
+                                    <span style="font-size:12px;font-weight:700;color:var(--primary);min-width:36px;text-align:right;" id="vol-display">100%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1445,6 +1632,41 @@
 </div>
 
 <script>
+    // ── Toast Notification System ─────────────────────────────────────────────
+    const TOAST_ICONS = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info', warning:'fa-triangle-exclamation' };
+    function showToast(message, type = 'info', duration = 3500) {
+        const container = document.getElementById('fam-toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `fam-toast ${type}`;
+        toast.innerHTML = `<i class="fas ${TOAST_ICONS[type]||'fa-circle-info'} fam-toast-icon"></i><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'toastOut 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // Called by server to show a notification inside the menu
+    function famNotify(jsonStr) {
+        try {
+            const { message, type } = JSON.parse(jsonStr);
+            showToast(message, type || 'info');
+        } catch(e) {}
+    }
+
+    // Called by server to refresh family data without reopening the menu
+    function famRefresh(jsonStr) {
+        try {
+            const fam = JSON.parse(jsonStr);
+            // Preserve scroll position during live updates
+            const body = document.querySelector('.content-body');
+            const scrollTop = body ? body.scrollTop : 0;
+            renderFamilyTab(fam);
+            if (body) requestAnimationFrame(() => { body.scrollTop = scrollTop; });
+        } catch(e) {}
+    }
+
     let housePosition = null;
 
     function setRoute() {
@@ -1556,8 +1778,10 @@
         }
 
         const houseContainer = document.getElementById('houseContent');
+        const propBadge = document.getElementById('prop-count-badge');
 
         if (data.house) {
+            if (propBadge) propBadge.innerText = '1 owned';
             housePosition = data.house.position;
             const isLocked = data.house.locked;
             const statusHtml = isLocked
@@ -1577,6 +1801,7 @@
                 </div>
             `;
         } else {
+            if (propBadge) propBadge.innerText = '0 owned';
             housePosition = null;
             houseContainer.innerHTML = `<div class="prop-empty"><i class="fas fa-bed" style="margin-right:6px;opacity:0.4;"></i>No house owned.</div>`;
         }
@@ -1584,6 +1809,8 @@
         // ── Jobs ──
         const jc = document.getElementById('jobs-container');
         jc.innerHTML = '';
+        const jobsBadge = document.getElementById('jobs-count-badge');
+        if (jobsBadge) jobsBadge.innerText = data.jobs.length + ' job' + (data.jobs.length !== 1 ? 's' : '');
         if (data.jobs.length === 0) {
             jc.innerHTML = '<div class="empty-state"><i class="fas fa-briefcase"></i><span>No job history. Visit the Job Center!</span></div>';
         } else {
@@ -1739,6 +1966,20 @@
         // ── Families ──
         if (data.family) renderFamilyTab(data.family);
 
+        // ── Quick Info (Overview right column) ──
+        const quickProp = document.getElementById('quick-property');
+        const quickFam = document.getElementById('quick-family');
+        if (quickProp) quickProp.innerText = data.house ? `House #${data.house.id}` : 'None';
+        if (quickFam) {
+            if (data.family && data.family.inFamily) {
+                quickFam.innerHTML = `<span style="color:${data.family.color};">[${data.family.tag}]</span> ${data.family.name}`;
+                quickFam.className = 'sec-row-val';
+            } else {
+                quickFam.innerText = 'None';
+                quickFam.className = 'sec-row-val muted';
+            }
+        }
+
         } catch(e) { console.error('receiveData error:', e); }
     }
 
@@ -1764,16 +2005,20 @@
     // ── Non-member view ───────────────────────────────────────────────────
     function renderFamilyNoneView(el, families) {
         el.innerHTML = `
-            <div class="fam-none-header">
-                <div class="fam-none-label">
-                    <strong>No Family</strong>
-                    Create your own or join an existing one
+            <div class="sec-block" style="margin-bottom:14px;">
+                <div class="sec-head">
+                    <span class="sec-head-icon"><i class="fas fa-users"></i></span>
+                    <span class="sec-head-title">No Family</span>
+                    <span class="sec-head-badge">${families.length} available</span>
                 </div>
-                <button class="fam-create-btn" onclick="openFamModal()">
-                    <i class="fas fa-plus" style="margin-right:5px;"></i>Create Family
-                </button>
+                <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <span style="font-size:12px;color:var(--text-dim);">Create your own family or join an existing one</span>
+                    <button class="btn-inline primary" onclick="openFamModal()">
+                        <i class="fas fa-plus"></i> Create Family
+                    </button>
+                </div>
             </div>
-            <input class="fam-search" id="fam-search" placeholder="Search families..." oninput="filterFamilies(this.value)">
+            <input class="input-sm" id="fam-search" placeholder="Search families..." oninput="filterFamilies(this.value)" style="width:100%;margin-bottom:12px;">
             <div class="fam-list" id="fam-list"></div>`;
         renderFamilyList(families, '');
     }
@@ -1782,12 +2027,16 @@
         const list = document.getElementById('fam-list');
         if (!list) return;
         const filtered = filter ? families.filter(f => f.name.toLowerCase().includes(filter.toLowerCase())) : families;
+        const pendingId = _famData ? _famData.pendingApplicationFamilyId : null;
+
         if (!filtered.length) {
             list.innerHTML = `<div class="fam-empty"><i class="fas fa-search" style="margin-right:6px;opacity:0.4;"></i>${filter ? 'No families match your search.' : 'No families yet. Be the first!'}</div>`;
             return;
         }
         list.innerHTML = filtered.map(f => {
-            // Determine badge based on status
+            const hasPending = pendingId !== null;
+            const isPending  = pendingId === f.id;
+
             let badge = '';
             if (f.invitesOpen) {
                 badge = `<span class="fam-badge open"><i class="fas fa-door-open" style="margin-right:3px;"></i>Direct Join</span>`;
@@ -1796,19 +2045,39 @@
             } else {
                 badge = `<span class="fam-badge closed"><i class="fas fa-lock" style="margin-right:3px;"></i>Closed</span>`;
             }
-            
-            const actions = (f.applicationsOpen ? `<button class="fam-btn fam-btn-apply" onclick="familyApply(${f.id})"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>` : '') +
-                            (f.invitesOpen      ? `<button class="fam-btn fam-btn-join"  onclick="familyDirectJoin(${f.id})"><i class="fas fa-door-open" style="margin-right:4px;"></i>Join</button>` : '');
+
+            let actions = '';
+            if (isPending) {
+                // Show cancel button only for the family they applied to
+                actions = `<button class="fam-btn" style="background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.35);color:rgb(255,71,87);" onclick="cancelFamilyApp()"><i class="fas fa-xmark" style="margin-right:4px;"></i>Cancel</button>
+                           <div style="font-size:10px;color:var(--text-muted);margin-top:4px;text-align:right;">Pending review</div>`;
+            } else if (hasPending) {
+                // Other families — disabled
+                actions = (f.applicationsOpen ? `<button class="fam-btn fam-btn-apply" disabled style="opacity:0.3;cursor:not-allowed;"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>` : '') +
+                          (f.invitesOpen      ? `<button class="fam-btn fam-btn-join"  disabled style="opacity:0.3;cursor:not-allowed;"><i class="fas fa-door-open" style="margin-right:4px;"></i>Join</button>` : '');
+                if (!actions) actions = '<span style="font-size:10px;color:var(--text-muted);">Invite only</span>';
+            } else {
+                actions = (f.applicationsOpen ? `<button class="fam-btn fam-btn-apply" onclick="familyApply(${f.id})"><i class="fas fa-paper-plane" style="margin-right:4px;"></i>Apply</button>` : '') +
+                          (f.invitesOpen      ? `<button class="fam-btn fam-btn-join"  onclick="familyDirectJoin(${f.id})"><i class="fas fa-door-open" style="margin-right:4px;"></i>Join</button>` : '');
+                if (!actions) actions = '<span style="font-size:10px;color:var(--text-muted);">Invite only</span>';
+            }
+
+            const cardStyle = isPending
+                ? `border-left-color:${f.color};background:rgba(255,71,87,0.04);`
+                : hasPending && !isPending
+                    ? `border-left-color:${f.color};opacity:0.5;`
+                    : `border-left-color:${f.color};`;
+
             return `
-                <div class="fam-card" style="border-left-color:${f.color};">
+                <div class="fam-card" style="${cardStyle}">
                     <div class="fam-card-info">
                         <div class="fam-card-tag" style="color:${f.color};">[${f.tag}]</div>
-                        <div class="fam-card-name">${f.name}</div>
+                        <div class="fam-card-name">${f.name}${isPending ? ' <span style="font-size:10px;color:rgb(240,196,0);font-weight:600;"><i class="fas fa-clock" style="margin-right:3px;"></i>Applied</span>' : ''}</div>
                         ${f.description ? `<div class="fam-card-desc">${f.description}</div>` : ''}
                         <div class="fam-card-meta">${f.memberCount}/${f.memberCap} members</div>
                         <div class="fam-badges">${badge}</div>
                     </div>
-                    <div class="fam-card-actions">${actions || '<span style="font-size:10px;color:var(--text-muted);">Invite only</span>'}</div>
+                    <div class="fam-card-actions">${actions}</div>
                 </div>`;
         }).join('');
     }
@@ -1819,7 +2088,7 @@
 
     // ── Member view ───────────────────────────────────────────────────────
     function renderFamilyMemberView(el, fam) {
-        const manageTab = fam.isOwner ? `<div class="fam-subtab ${_famSubTab==='manage'?'active':''}" onclick="setFamSub('manage')">Manage<span class="fam-notif-dot${fam.applications&&fam.applications.length?' show':''}" id="fam-app-dot"></span></div>` : '';
+        const manageTab = fam.isOwner ? `<div class="fam-subtab ${_famSubTab==='manage'?'active':''}" onclick="setFamSub('manage')"><i class="fas fa-cog" style="margin-right:4px;"></i>Manage${fam.applications&&fam.applications.length?` <span style="background:var(--danger);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;margin-left:4px;">${fam.applications.length}</span>`:''}</div>` : '';
         el.innerHTML = `
             <div class="fam-subtabs">
                 <div class="fam-subtab ${_famSubTab==='info'?'active':''}" onclick="setFamSub('info')"><i class="fas fa-info-circle" style="margin-right:4px;"></i>Info</div>
@@ -1841,18 +2110,24 @@
         if (viewEl) viewEl.classList.add('active');
     }
 
+    function hexToRgb(hex) {
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return `${r},${g},${b}`;
+    }
+
     function buildFamInfoHTML(fam) {
-        const hexNoHash = fam.color.replace('#','');
         const rankColor = fam.rankColor || fam.color;
+        const famRgb = hexToRgb(fam.color);
+        const rankRgb = hexToRgb(rankColor);
         return `
-            <div class="fam-info-banner" style="background:linear-gradient(135deg,${fam.color}18,${fam.color}06);border-left:3px solid ${fam.color};">
-                <div class="fam-info-tag" style="color:${fam.color};">[${fam.tag}]</div>
-                <div class="fam-info-name" style="color:${fam.color};">${fam.name}</div>
+            <div class="fam-info-banner" style="background:linear-gradient(135deg,rgba(${famRgb},0.1),rgba(${famRgb},0.03));border-left:3px solid rgb(${famRgb});">
+                <div class="fam-info-tag" style="color:rgb(${famRgb});">[${fam.tag}]</div>
+                <div class="fam-info-name" style="color:rgb(${famRgb});">${fam.name}</div>
                 ${fam.description ? `<div class="fam-info-desc">${fam.description}</div>` : ''}
             </div>
-            <div class="fam-my-rank-badge" style="border-color:${rankColor}33;">
-                <i class="fas fa-shield-halved" style="color:${rankColor};"></i>
-                <span style="font-size:13px;font-weight:700;color:${rankColor};">${fam.rankName}</span>
+            <div class="fam-my-rank-badge" style="border-color:rgba(${rankRgb},0.2);">
+                <i class="fas fa-shield-halved" style="color:rgb(${rankRgb});"></i>
+                <span style="font-size:13px;font-weight:700;color:rgb(${rankRgb});">${fam.rankName}</span>
                 <span style="font-size:11px;color:var(--text-muted);">Rank ${fam.rank}</span>
             </div>
             <div class="fam-info-grid">
@@ -1866,12 +2141,44 @@
                 </div>
                 <div class="fam-stat-card" style="grid-column:span 2;">
                     <div class="fam-stat-label"><i class="fas fa-home" style="margin-right:4px;"></i>HQ</div>
-                    <div class="fam-stat-val" style="font-size:13px;">${fam.hqHouseId ? `House #${fam.hqHouseId} <span style="font-size:11px;color:var(--success);">● Active</span>` : '<span style="font-size:12px;color:var(--text-muted);">Not set</span>'}</div>
+                    <div class="fam-stat-val" style="font-size:13px;">${fam.hqHouseId ? `House #${fam.hqHouseId} <span style="font-size:11px;color:rgb(46,204,113);">● Active</span>` : '<span style="font-size:12px;color:var(--text-muted);">Not set</span>'}</div>
                 </div>
             </div>
             <div class="fam-section-title">Ranks</div>
             <div class="fam-rank-strip">
-                ${(fam.ranks||[]).map(r => `<div class="fam-rank-pill" style="color:${r.color};border-color:${r.color}33;"><strong>${r.rank}</strong> — ${r.name}</div>`).join('')}
+                ${(fam.ranks||[]).map(r => {const rgb=hexToRgb(r.color);return `<div class="fam-rank-pill" style="color:rgb(${rgb});border-color:rgba(${rgb},0.2);"><strong>${r.rank}</strong> — ${r.name}</div>`;}).join('')}
+            </div>
+
+            <div class="tab-cols" style="margin-top:16px;">
+                <div>
+                    <div class="sec-block">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-piggy-bank"></i></span>
+                            <span class="sec-head-title">Deposit</span>
+                        </div>
+                        <div style="padding:12px 16px;">
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Contribute to the family bank</div>
+                            <div style="display:flex;gap:8px;">
+                                <input class="input-sm" id="fam-deposit-amt" type="number" placeholder="Amount..." style="flex:1;">
+                                <button class="btn-inline success" onclick="famDeposit()"><i class="fas fa-arrow-down"></i> Deposit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="sec-block">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-bolt"></i></span>
+                            <span class="sec-head-title">Quick Actions</span>
+                        </div>
+                        <div style="padding:12px 16px;">
+                            <div class="btn-row">
+                                <button class="btn-inline warning" onclick="mp.trigger('client:family:spawn')"><i class="fas fa-location-dot"></i> Spawn at HQ</button>
+                                <button class="btn-inline danger" onclick="confirmLeave()"><i class="fas fa-right-from-bracket"></i> Leave Family</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>`;
     }
 
@@ -1879,7 +2186,11 @@
         const members = fam.members || [];
         const isOwner = fam.isOwner;
         if (!members.length) return '<div class="fam-empty">No members found.</div>';
-        return members.map(m => {
+        const onlineCount = members.filter(m => m.online).length;
+        let html = `<div style="padding:8px 12px;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(0,0,0,0.1);">
+            <i class="fas fa-circle" style="color:#2ecc71;font-size:7px;margin-right:5px;"></i>${onlineCount} online — ${members.length} total
+        </div>`;
+        html += members.map(m => {
             const rankColor = m.rankColor || '#fff';
             const ownerActions = (isOwner && m.userId !== (window._myDbId||0)) ? `
                 <div class="fam-member-actions">
@@ -1895,122 +2206,248 @@
                     ${ownerActions}
                 </div>`;
         }).join('');
+        return html;
     }
 
     function buildFamManageHTML(fam) {
         const apps = fam.applications || [];
+        const famRgb = hexToRgb(fam.color);
         return `
-            <div class="fam-section-title"><i class="fas fa-envelope-open" style="margin-right:5px;"></i>Applications (${apps.length})</div>
-            ${apps.length ? apps.map(a => `
-                <div class="fam-app-row">
-                    <span class="fam-app-name">${a.username}</span>
-                    <span class="fam-app-date">${new Date(a.appliedAt).toLocaleDateString()}</span>
-                    <button class="fam-action-btn" style="color:var(--success);" onclick="mp.trigger('client:family:acceptApp',${a.userId})"><i class="fas fa-check"></i></button>
-                    <button class="fam-action-btn danger" onclick="mp.trigger('client:family:rejectApp',${a.userId})"><i class="fas fa-xmark"></i></button>
-                </div>`).join('') : '<div class="fam-empty">No pending applications.</div>'}
-
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-sliders" style="margin-right:5px;"></i>Settings</div>
-            <div class="fam-toggle-row">
-                <div class="fam-toggle-info">Open Applications<small>Players can apply via the menu</small></div>
-                <label class="fam-toggle">
-                    <input type="checkbox" id="fam-tog-apps" ${fam.applicationsOpen?'checked':''} onchange="mp.trigger('client:family:toggleApplications')">
-                    <span class="fam-slider"></span>
-                </label>
-            </div>
-            <div class="fam-toggle-row">
-                <div class="fam-toggle-info">Open Direct Join<small>Anyone can join without invite</small></div>
-                <label class="fam-toggle">
-                    <input type="checkbox" id="fam-tog-join" ${fam.invitesOpen?'checked':''} onchange="mp.trigger('client:family:toggleInvites')">
-                    <span class="fam-slider"></span>
-                </label>
-            </div>
-
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-tag" style="margin-right:5px;"></i>Family Tag</div>
-            <div class="fam-bank-row">
-                <input class="fam-bank-input" id="fam-tag-input" type="text" maxlength="4" placeholder="ABCD"
-                    value="${fam.tag||''}"
-                    style="flex:0 0 80px;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center;"
-                    oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-                <button class="fam-bank-btn dep" style="flex:1;" onclick="changeTag()"><i class="fas fa-check" style="margin-right:4px;"></i>Save Tag</button>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;">Current tag shown in chat and above players: <strong style="color:${fam.color};">[${fam.tag}]</strong></div>
-
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-palette" style="margin-right:5px;"></i>Family Colors</div>
-            <div style="margin-bottom:12px;">
-                <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Main Family Color</div>
-                <div class="fam-bank-row">
-                    <input class="fam-bank-input" id="fam-main-color-input" type="color" value="${fam.color}" style="flex:0 0 80px;height:40px;padding:4px;">
-                    <input class="fam-bank-input" id="fam-main-color-hex" type="text" maxlength="7" placeholder="#FFFFFF" value="${fam.color}" 
-                        style="flex:1;text-transform:uppercase;font-family:monospace;"
-                        oninput="this.value=this.value.toUpperCase(); document.getElementById('fam-main-color-input').value=this.value;">
-                    <button class="fam-bank-btn dep" onclick="saveMainColor()"><i class="fas fa-check" style="margin-right:4px;"></i>Save</button>
-                </div>
-                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">This color is used for the family tag in chat and on the map.</div>
-            </div>
-            <div style="margin-bottom:12px;">
-                <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Rank Colors</div>
-                ${(fam.ranks||[]).map((r, i) => `
-                    <div class="fam-bank-row" style="margin-bottom:8px;">
-                        <span style="flex:0 0 60px;font-size:11px;color:var(--text-dim);">Rank ${r.rank}</span>
-                        <input class="fam-bank-input" id="fam-rank-color-${r.rank}" type="color" value="${r.color}" style="flex:0 0 60px;height:32px;padding:4px;">
-                        <input class="fam-bank-input" type="text" readonly value="${r.name}" style="flex:1;background:rgba(255,255,255,0.02);cursor:default;">
-                        <button class="fam-bank-btn dep" style="flex:0 0 60px;" onclick="saveRankColor(${r.rank})"><i class="fas fa-check"></i></button>
+            <div class="manage-grid">
+                <!-- Left Column: Settings + Applications -->
+                <div>
+                    <!-- Family Settings -->
+                    <div class="sec-block" style="margin-bottom:16px;">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-sliders"></i></span>
+                            <span class="sec-head-title">Settings</span>
+                        </div>
+                        <div class="compact-setting">
+                            <div class="compact-setting-left">
+                                <span class="compact-setting-icon"><i class="fas fa-envelope"></i></span>
+                                <div class="compact-setting-text">
+                                    <div class="compact-setting-name">Applications</div>
+                                    <div class="compact-setting-desc">Players can apply via menu</div>
+                                </div>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="fam-tog-apps" ${fam.applicationsOpen?'checked':''} onchange="mp.trigger('client:family:toggleApplications')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="compact-setting">
+                            <div class="compact-setting-left">
+                                <span class="compact-setting-icon"><i class="fas fa-door-open"></i></span>
+                                <div class="compact-setting-text">
+                                    <div class="compact-setting-name">Direct Join</div>
+                                    <div class="compact-setting-desc">Anyone can join instantly</div>
+                                </div>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="fam-tog-join" ${fam.invitesOpen?'checked':''} onchange="mp.trigger('client:family:toggleInvites')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
-                `).join('')}
-                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Rank colors are shown next to member names in the family menu.</div>
-            </div>
 
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-piggy-bank" style="margin-right:5px;"></i>Family Bank — $${(fam.bank||0).toLocaleString()}</div>
-            <div class="fam-bank-row">
-                <input class="fam-bank-input" id="fam-bank-amt" type="number" placeholder="Amount...">
-                <button class="fam-bank-btn dep" onclick="famBankAction('deposit')"><i class="fas fa-arrow-down" style="margin-right:4px;"></i>Deposit</button>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">All members can deposit to the family bank.</div>
+                    <!-- Applications -->
+                    <div class="sec-block">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-envelope-open-text"></i></span>
+                            <span class="sec-head-title">Applications</span>
+                            <span class="sec-head-badge">${apps.length}</span>
+                        </div>
+                        ${apps.length ? apps.map(a => `
+                            <div class="compact-setting">
+                                <div class="compact-setting-left">
+                                    <span class="compact-setting-icon"><i class="fas fa-user"></i></span>
+                                    <div class="compact-setting-text">
+                                        <div class="compact-setting-name">${a.username}</div>
+                                        <div class="compact-setting-desc">${new Date(a.appliedAt).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                                <div class="compact-setting-right">
+                                    <button class="btn-inline success" onclick="acceptApp(${a.userId},'${a.username}')"><i class="fas fa-check"></i></button>
+                                    <button class="btn-inline danger" onclick="rejectApp(${a.userId},'${a.username}')"><i class="fas fa-xmark"></i></button>
+                                </div>
+                            </div>`).join('') : '<div style="padding:14px 16px;font-size:12px;color:var(--text-muted);"><i class="fas fa-inbox" style="margin-right:6px;opacity:0.4;"></i>No pending applications</div>'}
+                    </div>
+                </div>
 
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-house" style="margin-right:5px;"></i>Headquarters</div>
-            <button class="fam-hq-btn" onclick="mp.trigger('client:family:setHQ')">
-                <i class="fas fa-flag" style="margin-right:6px;"></i>Set My House as HQ${fam.hqHouseId?` (Current: #${fam.hqHouseId})`:''}
-            </button>
+                <!-- Right Column: Appearance -->
+                <div>
+                    <div class="sec-block" style="margin-bottom:16px;">
+                        <div class="sec-head">
+                            <span class="sec-head-icon" style="color:rgb(${famRgb});"><i class="fas fa-palette"></i></span>
+                            <span class="sec-head-title">Appearance</span>
+                        </div>
+                        <!-- Tag -->
+                        <div class="inline-edit">
+                            <span class="inline-edit-label"><i class="fas fa-tag" style="margin-right:5px;"></i>Tag</span>
+                            <input class="input-sm mono center" id="fam-tag-input" type="text" maxlength="4" placeholder="ABCD"
+                                value="${fam.tag||''}" style="width:64px;"
+                                oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+                            <span style="font-size:10px;color:var(--text-muted);">Current: <strong style="color:rgb(${famRgb});">[${fam.tag}]</strong></span>
+                            <button class="btn-inline primary" onclick="changeTag()" style="margin-left:auto;"><i class="fas fa-check"></i> Save</button>
+                        </div>
+                        <!-- Main Color -->
+                        <div class="inline-edit">
+                            <span class="inline-edit-label"><i class="fas fa-droplet" style="margin-right:5px;"></i>Color</span>
+                            <div class="color-dot" style="background:rgb(${famRgb});"></div>
+                            <input class="input-sm mono" id="fam-main-color-hex" type="text" maxlength="7" placeholder="#RRGGBB" value="${fam.color}" style="width:88px;">
+                            <button class="btn-inline primary" onclick="saveMainColor()" style="margin-left:auto;"><i class="fas fa-check"></i> Save</button>
+                        </div>
+                        <!-- Rank Colors -->
+                        ${(fam.ranks||[]).map(r => {
+                            const rgb = hexToRgb(r.color);
+                            return `
+                            <div class="inline-edit">
+                                <div class="color-dot" style="background:rgb(${rgb});"></div>
+                                <span style="font-size:11px;color:rgb(${rgb});font-weight:600;min-width:80px;">${r.name}</span>
+                                <span style="font-size:10px;color:var(--text-muted);">R${r.rank}</span>
+                                <input class="input-sm mono" id="fam-rank-color-${r.rank}" type="text" value="${r.color}" maxlength="7" style="width:80px;margin-left:auto;">
+                                <button class="btn-inline primary" onclick="saveRankColor(${r.rank})" style="padding:5px 10px;"><i class="fas fa-check"></i></button>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
 
-            <div class="fam-section-title" style="margin-top:16px;"><i class="fas fa-arrow-up" style="margin-right:5px;"></i>Upgrade</div>
-            <button class="fam-upgrade-btn" onclick="mp.trigger('client:family:upgrade')">
-                <i class="fas fa-plus-circle" style="margin-right:6px;"></i>+10 Member Slots — $${(fam.upgradeCost||75000).toLocaleString()} (Current: ${fam.memberCap})
-            </button>
+                <!-- Full Width: HQ & Upgrade -->
+                <div class="manage-full">
+                    <div class="sec-block" style="margin-bottom:16px;">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-building"></i></span>
+                            <span class="sec-head-title">Headquarters & Growth</span>
+                        </div>
+                        <div style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn-inline warning" onclick="mp.trigger('client:family:setHQ')">
+                                <i class="fas fa-flag"></i> Set My House as HQ${fam.hqHouseId ? ` (#${fam.hqHouseId})` : ''}
+                            </button>
+                            <button class="btn-inline primary" onclick="mp.trigger('client:family:upgrade')">
+                                <i class="fas fa-plus-circle"></i> Upgrade +10 Slots — $${(fam.upgradeCost||75000).toLocaleString()}
+                            </button>
+                            <span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Capacity: ${fam.memberCap}</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="fam-danger-zone">
-                <p>Disbanding is permanent. All members will be removed.</p>
-                <button class="fam-danger-btn" onclick="confirmDisband()">
-                    <i class="fas fa-triangle-exclamation" style="margin-right:6px;"></i>Disband Family
-                </button>
+                <!-- Full Width: Danger Zone -->
+                <div class="manage-full">
+                    <div class="sec-block" style="border-color:rgba(255,71,87,0.2);background:rgba(255,71,87,0.03);">
+                        <div class="sec-head" style="background:rgba(255,71,87,0.06);">
+                            <span class="sec-head-icon" style="color:var(--danger);"><i class="fas fa-triangle-exclamation"></i></span>
+                            <span class="sec-head-title" style="color:var(--danger);">Danger Zone</span>
+                        </div>
+                        <div style="padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:11px;color:var(--text-muted);flex:1;">Disbanding is permanent. All members will be removed immediately.</span>
+                            <button class="btn-inline danger" onclick="confirmDisband()">
+                                <i class="fas fa-skull-crossbones"></i> Disband Family
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>`;
     }
 
     // ── Action helpers ────────────────────────────────────────────────────
-    function familyApply(id)      { mp.trigger('client:family:apply', id); }
+    function familyApply(id) {
+        mp.trigger('client:family:apply', id);
+        // Optimistic UI: mark as pending immediately
+        if (_famData) { _famData.pendingApplicationFamilyId = id; renderFamilyList(_famData.families || [], ''); }
+        showToast('Application sent! Waiting for review.', 'info');
+    }
     function familyDirectJoin(id) { mp.trigger('client:family:directJoin', id); }
+    function cancelFamilyApp() {
+        mp.trigger('client:family:cancelApplication');
+        if (_famData) { _famData.pendingApplicationFamilyId = null; renderFamilyList(_famData.families || [], ''); }
+        showToast('Application cancelled.', 'warning');
+    }
+
+    // Custom confirm overlay to avoid CEF freeze from native confirm()
+    let _pendingConfirm = null;
+    function famConfirm(message, onYes) {
+        _pendingConfirm = onYes;
+        const overlay = document.getElementById('fam-confirm-overlay');
+        document.getElementById('fam-confirm-msg').innerText = message;
+        if (overlay) overlay.style.display = 'flex';
+    }
+    function famConfirmYes() {
+        document.getElementById('fam-confirm-overlay').style.display = 'none';
+        if (_pendingConfirm) { _pendingConfirm(); _pendingConfirm = null; }
+    }
+    function famConfirmNo() {
+        document.getElementById('fam-confirm-overlay').style.display = 'none';
+        _pendingConfirm = null;
+    }
 
     function promptPromote(userId, name, currentRank) {
         const newRank = Math.min(5, currentRank + 1);
-        if (confirm(`Promote ${name} to Rank ${newRank}?`)) {
+        if (newRank === currentRank) { showToast(`${name} is already at the highest rank.`, 'warning'); return; }
+        famConfirm(`Promote ${name} to Rank ${newRank}?`, () => {
             mp.trigger('client:family:setRank', userId, newRank);
-        }
+            if (_famData) { const m = (_famData.members||[]).find(m=>m.userId===userId); if(m){m.rank=newRank;m.rankName=_famData.ranks?.[newRank-1]?.name||'';m.rankColor=_famData.ranks?.[newRank-1]?.color||'#fff';} renderFamilyTab(_famData); setFamSub('members'); }
+            showToast(`${name} promoted to Rank ${newRank}.`, 'success');
+        });
     }
     function promptDemote(userId, name, currentRank) {
-        if (currentRank <= 1) return alert('Already at lowest rank.');
+        if (currentRank <= 1) { showToast(`${name} is already at the lowest rank.`, 'warning'); return; }
         const newRank = currentRank - 1;
-        if (confirm(`Demote ${name} to Rank ${newRank}?`)) {
+        famConfirm(`Demote ${name} to Rank ${newRank}?`, () => {
             mp.trigger('client:family:setRank', userId, newRank);
-        }
+            if (_famData) { const m = (_famData.members||[]).find(m=>m.userId===userId); if(m){m.rank=newRank;m.rankName=_famData.ranks?.[newRank-1]?.name||'';m.rankColor=_famData.ranks?.[newRank-1]?.color||'#fff';} renderFamilyTab(_famData); setFamSub('members'); }
+            showToast(`${name} demoted to Rank ${newRank}.`, 'warning');
+        });
     }
     function confirmKick(userId, name) {
-        if (confirm(`Kick ${name} from the family?`)) {
+        famConfirm(`Kick ${name} from the family?`, () => {
             mp.trigger('client:family:kick', userId);
-        }
+            if (_famData) { _famData.members = (_famData.members||[]).filter(m=>m.userId!==userId); _famData.memberCount=Math.max(0,(_famData.memberCount||1)-1); renderFamilyTab(_famData); setFamSub('members'); }
+            showToast(`${name} was kicked from the family.`, 'error');
+        });
     }
     function confirmDisband() {
-        if (confirm('Are you sure? This cannot be undone.\nAll members will be removed permanently.')) {
+        famConfirm('Disband family? This is permanent and cannot be undone.', () => {
             mp.trigger('client:family:disband');
+            showToast('Family disbanded.', 'error');
+        });
+    }
+    function confirmLeave() {
+        famConfirm('Leave this family? You will lose your rank and history.', () => {
+            mp.trigger('client:family:leave');
+            showToast('You left the family.', 'warning');
+        });
+    }
+    function famDeposit() {
+        const amt = parseInt(document.getElementById('fam-deposit-amt')?.value);
+        if (!amt || amt <= 0) { showToast('Enter a valid amount.', 'error'); return; }
+        mp.trigger('client:family:bankDeposit', amt);
+        showToast(`$${amt.toLocaleString()} deposited to family bank.`, 'success');
+        const inp = document.getElementById('fam-deposit-amt');
+        if (inp) inp.value = '';
+    }
+    function acceptApp(userId, username) {
+        mp.trigger('client:family:acceptApp', userId);
+        // Optimistic: remove from applications list immediately
+        if (_famData && _famData.applications) {
+            _famData.applications = _famData.applications.filter(a => a.userId !== userId);
+            // Add to members list optimistically
+            _famData.members = _famData.members || [];
+            _famData.members.push({ userId, username, rank: 1, rankName: _famData.ranks?.[0]?.name || 'Recruit', rankColor: _famData.ranks?.[0]?.color || '#aaa', online: false });
+            _famData.memberCount = (_famData.memberCount || 0) + 1;
+            renderFamilyTab(_famData);
+            setFamSub('manage');
         }
+        showToast(`${username} accepted into the family!`, 'success');
+    }
+    function rejectApp(userId, username) {
+        mp.trigger('client:family:rejectApp', userId);
+        // Optimistic: remove from applications list immediately
+        if (_famData && _famData.applications) {
+            _famData.applications = _famData.applications.filter(a => a.userId !== userId);
+            renderFamilyTab(_famData);
+            setFamSub('manage');
+        }
+        showToast(`${username}'s application rejected.`, 'warning');
     }
     function famBankAction(action) {
         const amt = parseInt(document.getElementById('fam-bank-amt')?.value);
@@ -2091,28 +2528,28 @@
     function changeTag() {
         const tagEl = document.getElementById('fam-tag-input');
         const tag = tagEl?.value?.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4);
-        if (!tag || tag.length < 1) return;
+        if (!tag || tag.length < 1) { showToast('Enter a valid tag (1–4 characters).', 'error'); return; }
         mp.trigger('client:family:setTag', tag);
+        showToast(`Tag changed to [${tag}].`, 'success');
     }
 
+    function syncColorPreview(inputId, previewId, val) {
+        // no-op if preview element doesn't exist
+    }
     function saveMainColor() {
-        const colorInput = document.getElementById('fam-main-color-input');
-        const color = colorInput?.value;
-        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
-            alert('Invalid color format. Must be #RRGGBB');
-            return;
-        }
+        const colorInput = document.getElementById('fam-main-color-hex');
+        const color = colorInput?.value?.trim();
+        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) { showToast('Invalid color. Use #RRGGBB format.', 'error'); return; }
         mp.trigger('client:family:setMainColor', color);
+        showToast('Main color updated.', 'success');
     }
 
     function saveRankColor(rank) {
         const colorInput = document.getElementById(`fam-rank-color-${rank}`);
-        const color = colorInput?.value;
-        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
-            alert('Invalid color format. Must be #RRGGBB');
-            return;
-        }
+        const color = colorInput?.value?.trim();
+        if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) { showToast('Invalid color. Use #RRGGBB format.', 'error'); return; }
         mp.trigger('client:family:setRankColor', rank, color);
+        showToast(`Rank ${rank} color updated.`, 'success');
     }
 
     function submitCreateFamily() {

@@ -81,3 +81,23 @@ mp.events.add('client:family:setMainColor', (color) => {
 mp.events.add('client:family:setRankColor', (rank, color) => {
     mp.events.callRemote('server:family:setRankColor', rank, color);
 });
+mp.events.add('client:family:cancelApplication', () => {
+    mp.events.callRemote('server:family:cancelApplication');
+});
+
+// Server-triggered refresh: re-request full playerMenu data
+mp.events.add('client:family:refresh', () => {
+    mp.events.callRemote('server:playerMenu:getData');
+});
+
+// Server → client: show a toast inside the playerMenu
+mp.events.add('client:family:notify', (jsonStr) => {
+    const browser = mp.browsers.toArray().find(b => b.url && b.url.includes('playerMenu'));
+    if (browser) browser.execute(`famNotify(${JSON.stringify(jsonStr)})`);
+});
+
+// Server → client: push fresh family data without full reload
+mp.events.add('client:family:pushData', (jsonStr) => {
+    const browser = mp.browsers.toArray().find(b => b.url && b.url.includes('playerMenu'));
+    if (browser) browser.execute(`famRefresh(${JSON.stringify(jsonStr)})`);
+});

@@ -352,13 +352,24 @@ class FamilyManager {
                 owner.outputChatBox(`!{00FF00}${rows[0].username} has been accepted into the family.`);
             } catch (err) { console.error(err); }
         }
+        // Push fresh family data instantly to owner's browser
+        try {
+            const freshData = await this.getPlayerMenuData(owner);
+            owner.call('client:family:pushData', [JSON.stringify(freshData)]);
+        } catch(e) { mp.events.call('server:playerMenu:getData', owner); }
     }
 
     async rejectApplication(owner, applicantUserId) {
         const fam = this.getFamilyByPlayer(owner);
         if (!fam || fam.ownerId !== owner.data.dbId) return owner.outputChatBox('!{FF0000}Only the family owner can manage applications.');
+        const [rows] = await db.query('SELECT username FROM family_applications WHERE family_id = ? AND user_id = ?', [fam.id, applicantUserId]);
         await db.query('DELETE FROM family_applications WHERE family_id = ? AND user_id = ?', [fam.id, applicantUserId]);
-        owner.outputChatBox('!{FF4444}Application rejected.');
+        const name = rows.length ? rows[0].username : 'Applicant';
+        // Push fresh family data instantly to owner's browser
+        try {
+            const freshData = await this.getPlayerMenuData(owner);
+            owner.call('client:family:pushData', [JSON.stringify(freshData)]);
+        } catch(e) { mp.events.call('server:playerMenu:getData', owner); }
     }
 
     // ── Internal add member ───────────────────────────────────────────────────
@@ -394,6 +405,7 @@ class FamilyManager {
         this._clearPlayerVars(player);
         player.outputChatBox('!{FFFF00}You left the family.');
         this._broadcastToFamily(fam, `!{FFAA00}[Family] ${player.name} left the family.`, []);
+        mp.events.call('server:playerMenu:getData', player);
     }
 
     async kickMember(owner, targetUserId) {
@@ -412,6 +424,7 @@ class FamilyManager {
             this._clearPlayerVars(target);
             target.outputChatBox('!{FF4444}You were kicked from the family.');
         }
+        await this._pushFreshData(owner);
     }
 
     async _removeMember(userId, family) {
@@ -475,6 +488,7 @@ class FamilyManager {
             this._applyPlayerVars(target, fam, newRank);
             target.outputChatBox(`!{FFAA00}Your family rank changed to ${rankInfo.name} (Rank ${newRank}).`);
         }
+        await this._pushFreshData(owner);
     }
 
     // ── Family Bank ───────────────────────────────────────────────────────────
@@ -492,6 +506,7 @@ class FamilyManager {
         
         player.outputChatBox(`!{00FF00}Deposited $${amount.toLocaleString()} into the family bank. Balance: $${fam.bank.toLocaleString()}`);
         this._broadcastToFamily(fam, `!{FFAA00}[Family] ${player.name} deposited $${amount.toLocaleString()} to the bank.`, [player.data.dbId]);
+        await this._pushFreshData(player);
     }
 
     // ── HQ ────────────────────────────────────────────────────────────────────
@@ -516,6 +531,7 @@ class FamilyManager {
         owner.outputChatBox(`!{00FF00}House #${house.id} is now the family HQ!`);
         owner.outputChatBox(`!{FFFF00}Members will be able to spawn here and non-members are locked out.`);
         this._broadcastToFamily(fam, `!{FFAA00}[Family] HQ has been set at House #${house.id}!`, [owner.data.dbId]);
+        await this._pushFreshData(owner);
     }
 
     // ── Upgrade Cap ───────────────────────────────────────────────────────────
@@ -535,6 +551,7 @@ class FamilyManager {
         
         owner.outputChatBox(`!{00FF00}Member cap upgraded to ${fam.memberCap}! Cost: $${UPGRADE_COST.toLocaleString()} (from family bank)`);
         this._broadcastToFamily(fam, `!{FFAA00}[Family] Member capacity upgraded to ${fam.memberCap}!`, [owner.data.dbId]);
+        await this._pushFreshData(owner);
     }
 
     // ── Toggle Settings ───────────────────────────────────────────────────────
@@ -544,6 +561,7 @@ class FamilyManager {
         fam.applicationsOpen = !fam.applicationsOpen;
         await db.query('UPDATE families SET applications_open = ? WHERE id = ?', [fam.applicationsOpen ? 1 : 0, fam.id]);
         owner.outputChatBox(`!{FFAA00}Applications are now ${fam.applicationsOpen ? '!{00FF00}OPEN' : '!{FF0000}CLOSED'}.`);
+        await this._pushFreshData(owner);
     }
 
     async toggleInvites(owner) {
@@ -552,6 +570,7 @@ class FamilyManager {
         fam.invitesOpen = !fam.invitesOpen;
         await db.query('UPDATE families SET invites_open = ? WHERE id = ?', [fam.invitesOpen ? 1 : 0, fam.id]);
         owner.outputChatBox(`!{FFAA00}Direct joins are now ${fam.invitesOpen ? '!{00FF00}OPEN' : '!{FF0000}CLOSED'}.`);
+        await this._pushFreshData(owner);
     }
 
     // ── Change Tag ────────────────────────────────────────────────────────────
@@ -577,6 +596,7 @@ class FamilyManager {
         const clr = fam.color.replace('#', '');
         owner.outputChatBox(`!{00FF00}Family tag updated to !{${clr}}[${newTag}]!{00FF00}.`);
         this._broadcastToFamily(fam, `!{${clr}}[Family] !{FFFFFF}Tag changed to !{${clr}}[${newTag}]!{FFFFFF}.`, [owner.data.dbId]);
+        await this._pushFreshData(owner);
     }
 
     // ── Change Main Color ─────────────────────────────────────────────────────
@@ -603,8 +623,7 @@ class FamilyManager {
         owner.outputChatBox(`!{00FF00}Family color updated to !{${clr}}${fam.color}!{00FF00}.`);
         this._broadcastToFamily(fam, `!{${clr}}[Family] !{FFFFFF}Main color changed to !{${clr}}${fam.color}!{FFFFFF}.`, [owner.data.dbId]);
         
-        // Refresh playerMenu for owner
-        mp.events.call('server:playerMenu:getData', owner);
+        await this._pushFreshData(owner);
     }
 
     // ── Change Rank Color ─────────────────────────────────────────────────────
@@ -629,8 +648,7 @@ class FamilyManager {
         const clr = rankObj.color.replace('#', '');
         owner.outputChatBox(`!{00FF00}Rank ${rank} (${rankObj.name}) color updated to !{${clr}}${rankObj.color}!{00FF00}.`);
         
-        // Refresh playerMenu for owner
-        mp.events.call('server:playerMenu:getData', owner);
+        await this._pushFreshData(owner);
     }
 
     // ── Disband ───────────────────────────────────────────────────────────────
@@ -665,6 +683,7 @@ class FamilyManager {
         this._clearPlayerVars(owner);
         owner.outputChatBox(`!{FF4444}Family "${fam.name}" has been disbanded.`);
         console.log(`[FamilyManager] Family "${fam.name}" (ID: ${fam.id}) disbanded by ${owner.name}.`);
+        mp.events.call('server:playerMenu:getData', owner);
     }
 
     // ── Family Chat ───────────────────────────────────────────────────────────
@@ -679,12 +698,29 @@ class FamilyManager {
     }
 
     // ── PlayerMenu Data ───────────────────────────────────────────────────────
+
+    async cancelApplication(player) {
+        if (this.getFamilyByPlayer(player)) return;
+        await db.query('DELETE FROM family_applications WHERE user_id = ?', [player.data.dbId]);
+        mp.events.call('server:playerMenu:getData', player);
+    }
     async getPlayerMenuData(player) {
         const fam = this.getFamilyByPlayer(player);
 
         if (!fam) {
+            // Check if this player has a pending application
+            let pendingApplicationFamilyId = null;
+            try {
+                const [pendRows] = await db.query(
+                    'SELECT family_id FROM family_applications WHERE user_id = ? LIMIT 1',
+                    [player.data.dbId]
+                );
+                if (pendRows.length) pendingApplicationFamilyId = pendRows[0].family_id;
+            } catch(e) {}
+
             return {
                 inFamily: false,
+                pendingApplicationFamilyId,
                 families: Array.from(this.families.values()).map(f => ({
                     id:               f.id,
                     name:             f.name,
@@ -759,6 +795,15 @@ class FamilyManager {
             }
         });
     }
+
+    async _pushFreshData(player) {
+        try {
+            const freshData = await this.getPlayerMenuData(player);
+            player.call('client:family:pushData', [JSON.stringify(freshData)]);
+        } catch(e) {
+            mp.events.call('server:playerMenu:getData', player);
+        }
+    }
 }
 
 const instance = new FamilyManager();
@@ -795,6 +840,11 @@ mp.events.add('server:family:directJoin', async (player, familyId) => {
 mp.events.add('server:family:apply', async (player, familyId) => {
     if (!player.logged) return;
     await instance.apply(player, parseInt(familyId));
+});
+
+mp.events.add('server:family:cancelApplication', async (player) => {
+    if (!player.logged) return;
+    await instance.cancelApplication(player);
 });
 
 mp.events.add('server:family:acceptApp', async (player, applicantUserId) => {
