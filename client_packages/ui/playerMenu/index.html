@@ -13,14 +13,15 @@
             --success: #2ecc71;
             --warning: #f0c400;
             --danger: #ff4757;
-            --bg-panel: rgba(12, 14, 20, 0.97);
+            --bg-panel: rgba(10, 12, 18, 0.98);
+            --bg-sidebar: rgba(7, 9, 14, 0.99);
             --bg-card: rgba(255, 255, 255, 0.04);
             --bg-card-hover: rgba(255, 255, 255, 0.07);
             --border: rgba(255, 255, 255, 0.06);
             --text: #ffffff;
             --text-dim: #8a8f9c;
             --text-muted: #555a66;
-            --sidebar-width: 220px;
+            --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,58 +35,89 @@
             overflow: hidden;
             user-select: none;
             display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         /* ── Main Panel ── */
         .panel {
-            width: 960px;
-            height: 580px;
+            width: 100vw;
+            height: 100vh;
             background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
             display: flex;
             overflow: hidden;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.03);
-            animation: panelIn 0.35s ease-out;
+            animation: panelIn 0.3s ease-out;
         }
 
         @keyframes panelIn {
-            from { opacity: 0; transform: scale(0.96) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* ── Sidebar ── */
         .sidebar {
             width: var(--sidebar-width);
-            background: rgba(0, 0, 0, 0.25);
+            background: var(--bg-sidebar);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 20px 0;
+            padding: 0;
             flex-shrink: 0;
         }
 
         .sidebar-header {
-            padding: 0 20px 20px;
+            padding: 28px 24px 22px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-brand-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--primary-dim);
+            border: 1px solid rgba(0,168,255,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--primary);
+        }
+
+        .sidebar-brand-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-brand-sub {
+            font-size: 10px;
+            color: var(--text-muted);
         }
 
         .sidebar-title {
-            font-size: 13px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--text-muted);
+            margin-bottom: 4px;
         }
 
         .sidebar-name {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--text);
-            margin-top: 4px;
+            margin-top: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -95,23 +127,32 @@
             font-size: 11px;
             color: var(--primary);
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .nav-items {
             flex: 1;
-            padding: 8px 10px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 3px;
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            padding: 10px 10px 6px;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            border-radius: 8px;
+            gap: 14px;
+            padding: 11px 14px;
+            border-radius: 9px;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
@@ -132,26 +173,26 @@
             top: 50%;
             transform: translateY(-50%);
             width: 3px;
-            height: 20px;
+            height: 22px;
             background: var(--primary);
             border-radius: 0 3px 3px 0;
         }
 
         .nav-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 14px;
             flex-shrink: 0;
         }
 
         .nav-item.active .nav-icon {
             background: var(--primary);
             color: #fff;
-            box-shadow: 0 0 12px var(--primary-glow);
+            box-shadow: 0 0 14px var(--primary-glow);
         }
 
         .nav-item:not(.active) .nav-icon {
@@ -186,6 +227,11 @@
             min-width: 0;
         }
 
+        .sidebar-footer {
+            padding: 16px 14px;
+            border-top: 1px solid var(--border);
+        }
+
         /* ── Content Area ── */
         .content-area {
             flex: 1;
@@ -198,21 +244,22 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 18px 24px;
+            padding: 22px 32px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
+            background: rgba(0,0,0,0.1);
         }
 
         .content-title {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .close-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
             background: var(--bg-card);
             border: 1px solid var(--border);
             color: var(--text-dim);
@@ -220,7 +267,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             transition: all 0.2s;
         }
 
@@ -232,7 +279,7 @@
 
         .content-body {
             flex: 1;
-            padding: 20px 24px;
+            padding: 28px 32px;
             overflow-y: auto;
             overflow-x: hidden;
         }
@@ -249,70 +296,70 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Overview Tab ── */
-        .overview-top {
+        /* ════════════════════════════════════════════════
+           TWO-COLUMN SECTION LAYOUT (shared by all tabs)
+           ════════════════════════════════════════════════ */
+        .tab-cols {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 24px;
+            align-items: start;
         }
-
-        .stat-card {
+        .sec-block {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px 16px;
-            position: relative;
+            border-radius: 12px;
             overflow: hidden;
+            margin-bottom: 16px;
         }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
+        .sec-block:last-child { margin-bottom: 0; }
+        .sec-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.15);
         }
-
-        .stat-card.blue::before { background: var(--primary); }
-        .stat-card.green::before { background: var(--success); }
-        .stat-card.yellow::before { background: var(--warning); }
-        .stat-card.red::before { background: var(--danger); }
-
-        .stat-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
+        .sec-head-icon { font-size: 12px; color: var(--primary); width: 15px; text-align: center; flex-shrink: 0; }
+        .sec-head-title { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; flex: 1; }
+        .sec-head-badge { font-size: 10px; font-weight: 700; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 20px; }
+        .sec-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 16px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
         }
+        .sec-row:last-child { border-bottom: none; }
+        .sec-row:hover { background: rgba(255,255,255,0.02); }
+        .sec-row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .sec-row-icon { font-size: 11px; color: var(--text-muted); width: 13px; text-align: center; flex-shrink: 0; }
+        .sec-row-label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+        .sec-row-val { font-size: 12px; font-weight: 600; color: var(--text); text-align: right; white-space: nowrap; }
+        .sec-row-val.green  { color: var(--success); }
+        .sec-row-val.blue   { color: var(--primary); }
+        .sec-row-val.yellow { color: var(--warning); }
+        .sec-row-val.red    { color: var(--danger); }
+        .sec-row-val.muted  { color: var(--text-muted); }
+        .sec-xp-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .sec-xp-row:last-child { border-bottom: none; }
+        .sec-xp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+        .sec-xp-label { font-size: 12px; color: var(--text-dim); }
+        .sec-xp-val { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 
-        .stat-value {
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .stat-value.blue { color: var(--primary); }
-        .stat-value.green { color: var(--success); }
-        .stat-value.yellow { color: var(--warning); }
-        .stat-value.red { color: var(--danger); }
-
-        .stat-sub {
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-top: 4px;
+        /* ── Overview Tab ── */
+        .stat-card {
+            display: none; /* replaced by sec-block system */
         }
 
         /* Progress bar */
         .progress-track {
             width: 100%;
-            height: 6px;
+            height: 5px;
             background: rgba(255,255,255,0.06);
             border-radius: 3px;
-            margin-top: 8px;
             overflow: hidden;
         }
 
@@ -323,187 +370,18 @@
             width: 0%;
         }
 
-        .progress-fill.blue { background: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
-        .progress-fill.green { background: var(--success); }
+        .progress-fill.blue   { background: var(--primary); box-shadow: 0 0 6px var(--primary-glow); }
+        .progress-fill.green  { background: var(--success); }
         .progress-fill.yellow { background: var(--warning); }
-        .progress-fill.red { background: var(--danger); }
-
-        /* Level card */
-        .level-card {
-            grid-column: 1 / -1;
-        }
-
-        .level-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .level-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .level-num {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: var(--primary-dim);
-            border: 1px solid rgba(0, 168, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--primary);
-        }
-
-        .level-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .level-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .level-xp {
-            font-size: 11px;
-            color: var(--text-dim);
-        }
-
-        .xp-pct {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        /* Info tiles */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
-
-        .info-tile {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            text-align: center;
-        }
-
-        .info-tile .info-icon {
-            font-size: 16px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .info-tile .info-val {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .info-tile .info-label {
-            font-size: 10px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-        }
-
-        /* ── Careers Tab ── */
-        .jobs-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .job-row {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            transition: background 0.2s;
-        }
-
-        .job-row:hover {
-            background: var(--bg-card-hover);
-        }
-
-        .job-icon-box {
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
-            background: var(--primary-dim);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            color: var(--primary);
-            flex-shrink: 0;
-        }
-
-        .job-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .job-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .job-progress-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 6px;
-        }
-
-        .job-progress-row .progress-track {
-            flex: 1;
-            margin-top: 0;
-        }
-
-        .job-pct {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text-dim);
-            white-space: nowrap;
-        }
-
-        .job-lvl {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--warning);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
+        .progress-fill.red    { background: var(--danger); }
 
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 32px 20px;
             color: var(--text-muted);
         }
-
-        .empty-state i {
-            font-size: 32px;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .empty-state span {
-            font-size: 13px;
-        }
+        .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+        .empty-state span { font-size: 12px; }
 
         /* ── Objectives Tab ── */
         .section-label {
@@ -654,7 +532,7 @@
         .objectives-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 28px;
         }
 
         .objectives-left .quest-list {
@@ -854,46 +732,35 @@
         }
 
         /* ── Settings Tab ── */
-        .settings-group {
-            margin-bottom: 20px;
-        }
+        .settings-group { margin-bottom: 0; }
 
         .setting-row {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            padding: 9px 16px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
         }
+        .setting-row:last-child { border-bottom: none; }
 
         .setting-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .setting-icon {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            background: var(--bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: var(--text-dim);
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 13px;
+            text-align: center;
         }
 
-        .setting-text {
-            display: flex;
-            flex-direction: column;
-        }
+        .setting-text { display: flex; flex-direction: column; }
 
         .setting-name {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text);
         }
@@ -1015,36 +882,28 @@
         .prop-grid {
             display: flex;
             flex-direction: column;
-            gap: 8px;
         }
 
         .prop-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: background 0.2s;
+            padding: 9px 16px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
         }
-
-        .prop-card:hover { background: var(--bg-card-hover); }
+        .prop-card:last-child { border-bottom: none; }
+        .prop-card:hover { background: rgba(255,255,255,0.02); }
 
         .prop-card-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
+            font-size: 12px;
+            width: 13px;
+            text-align: center;
             flex-shrink: 0;
         }
-
-        .prop-card-icon.house { background: var(--primary-dim); color: var(--primary); }
-        .prop-card-icon.apt   { background: rgba(46,204,113,0.12); color: var(--success); }
-        .prop-card-icon.biz   { background: rgba(240,196,0,0.12); color: var(--warning); }
+        .prop-card-icon.house { color: var(--primary); }
+        .prop-card-icon.apt   { color: var(--success); }
+        .prop-card-icon.biz   { color: var(--warning); }
 
         .prop-card-body {
             flex: 1;
@@ -1052,7 +911,7 @@
         }
 
         .prop-card-name {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text);
         }
@@ -1060,7 +919,7 @@
         .prop-card-sub {
             font-size: 10px;
             color: var(--text-dim);
-            margin-top: 3px;
+            margin-top: 2px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -1069,26 +928,24 @@
         .prop-status {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 1px 7px;
+            gap: 3px;
+            padding: 1px 6px;
             border-radius: 4px;
             font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-
         .prop-status.locked   { background: rgba(255,71,87,0.15); color: var(--danger); }
         .prop-status.unlocked { background: rgba(46,204,113,0.15); color: var(--success); }
 
         .prop-gps-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 7px;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
             background: var(--primary-dim);
             border: 1px solid rgba(0,168,255,0.2);
             color: var(--primary);
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -1096,22 +953,13 @@
             transition: all 0.2s;
             flex-shrink: 0;
         }
-
-        .prop-gps-btn:hover {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 0 10px var(--primary-glow);
-        }
+        .prop-gps-btn:hover { background: var(--primary); color: #fff; }
 
         .prop-empty {
-            text-align: center;
-            padding: 16px;
+            padding: 14px 16px;
             color: var(--text-muted);
             font-size: 11px;
             font-style: italic;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
         }
 
         /* ══ FAMILIES TAB ══════════════════════════════════════════════════ */
@@ -1230,12 +1078,20 @@
     <!-- ─── Sidebar ─── -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">Player Profile</div>
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon"><i class="fas fa-gamepad"></i></div>
+                <div>
+                    <div class="sidebar-brand-name">Player Menu</div>
+                    <div class="sidebar-brand-sub">RageMP Server</div>
+                </div>
+            </div>
+            <div class="sidebar-title">Logged in as</div>
             <div class="sidebar-name" id="player-name">Loading...</div>
             <div class="sidebar-id">ID: <span id="player-id">-</span></div>
         </div>
 
         <div class="nav-items">
+            <div class="nav-section-label">Profile</div>
             <div class="nav-item active" onclick="setTab('overview')">
                 <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
                 <div class="nav-text">
@@ -1257,6 +1113,7 @@
                     <div class="nav-desc">Your owned properties</div>
                 </div>
             </div>
+            <div class="nav-section-label">Social</div>
             <div class="nav-item" onclick="setTab('families')">
                 <div class="nav-icon"><i class="fas fa-users"></i></div>
                 <div class="nav-text">
@@ -1264,6 +1121,7 @@
                     <div class="nav-desc">Clans & groups</div>
                 </div>
             </div>
+            <div class="nav-section-label">Activity</div>
             <div class="nav-item" onclick="setTab('objectives')">
                 <div class="nav-icon"><i class="fas fa-clipboard-list"></i></div>
                 <div class="nav-text">
@@ -1271,11 +1129,22 @@
                     <div class="nav-desc">Quests & exploration</div>
                 </div>
             </div>
+            <div class="nav-section-label">System</div>
             <div class="nav-item" onclick="setTab('settings')">
                 <div class="nav-icon"><i class="fas fa-cog"></i></div>
                 <div class="nav-text">
                     <div class="nav-label">Settings</div>
                     <div class="nav-desc">Audio & interface</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="mp.trigger('client:closePlayerMenu')" style="background:rgba(255,71,87,0.08); border: 1px solid rgba(255,71,87,0.15);">
+                <div class="nav-icon" style="background:rgba(255,71,87,0.15); color: var(--danger);"><i class="fas fa-xmark"></i></div>
+                <div class="nav-text">
+                    <div class="nav-label" style="color: var(--danger);">Close Menu</div>
+                    <div class="nav-desc">Press O to toggle</div>
                 </div>
             </div>
         </div>
@@ -1285,87 +1154,120 @@
     <div class="content-area">
         <div class="content-header">
             <div class="content-title" id="content-title">Overview</div>
-            <div class="close-btn" onclick="mp.trigger('client:closePlayerMenu')"><i class="fas fa-xmark"></i></div>
         </div>
 
         <div class="content-body">
             <!-- ═══ OVERVIEW ═══ -->
             <div class="tab-content active" id="tab-overview">
-                <!-- Level Card -->
-                <div class="stat-card blue level-card" style="margin-bottom: 12px;">
-                    <div class="level-row">
-                        <div class="level-badge">
-                            <div class="level-num" id="lvl-num">1</div>
-                            <div class="level-info">
-                                <div class="level-title">Player Level</div>
-                                <div class="level-xp"><span id="xp-val">0</span> / <span id="xp-max">1,000</span> XP</div>
+                <div class="tab-cols">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Account -->
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-user"></i></span>
+                                <span class="sec-head-title">Account</span>
+                            </div>
+                            <div class="sec-xp-row">
+                                <div class="sec-xp-top">
+                                    <span class="sec-xp-label"><i class="fas fa-star" style="margin-right:6px;color:var(--primary);font-size:10px;"></i>Level <span id="lvl-num" style="color:var(--primary);font-weight:700;">1</span></span>
+                                    <span class="sec-xp-val"><span id="xp-val">0</span> / <span id="xp-max">1,000</span> XP &nbsp;<span id="xp-pct" style="color:var(--primary);">0%</span></span>
+                                </div>
+                                <div class="progress-track"><div class="progress-fill blue" id="xp-fill"></div></div>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-clock"></i></span><span class="sec-row-label">Online Time</span></div>
+                                <span class="sec-row-val" id="hours-played">0h</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-calendar-plus"></i></span><span class="sec-row-label">Registered</span></div>
+                                <span class="sec-row-val muted" id="reg-date">-</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-hourglass-half"></i></span><span class="sec-row-label">This Payday</span></div>
+                                <span class="sec-row-val" id="payday-val">60m</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-stopwatch"></i></span><span class="sec-row-label">Played Today</span></div>
+                                <span class="sec-row-val" id="played-today">0m</span>
                             </div>
                         </div>
-                        <div class="xp-pct" id="xp-pct">0%</div>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill blue" id="xp-fill"></div>
-                    </div>
-                </div>
 
-                <!-- Stat Cards -->
-                <div class="overview-top">
-                    <div class="stat-card green">
-                        <div class="stat-label">Cash</div>
-                        <div class="stat-value green">$<span id="cash-val">0</span></div>
-                    </div>
-                    <div class="stat-card blue">
-                        <div class="stat-label">Bank</div>
-                        <div class="stat-value blue">$<span id="bank-val">0</span></div>
-                    </div>
-                    <div class="stat-card yellow">
-                        <div class="stat-label">Vehicles</div>
-                        <div class="stat-value yellow"><span id="veh-count">0</span><span style="font-size:13px;color:var(--text-dim);font-weight:500;"> / <span id="veh-max">5</span></span></div>
-                        <div class="stat-sub">Personal vehicles owned</div>
-                    </div>
-                    <div class="stat-card red">
-                        <div class="stat-label">Backpack</div>
-                        <div class="stat-value"><span id="inv-weight" style="color:var(--text)">0.0</span><span style="font-size:12px;color:var(--text-dim);font-weight:500;"> / <span id="inv-max">40.0</span> kg</span></div>
-                        <div class="progress-track">
-                            <div class="progress-fill red" id="weight-fill"></div>
+                        <!-- Finances -->
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-wallet"></i></span>
+                                <span class="sec-head-title">Finances</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-money-bill"></i></span><span class="sec-row-label">Cash</span></div>
+                                <span class="sec-row-val green">$<span id="cash-val">0</span></span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-building-columns"></i></span><span class="sec-row-label">Bank</span></div>
+                                <span class="sec-row-val blue">$<span id="bank-val">0</span></span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Info Tiles -->
-                <div class="info-grid">
-                    <div class="info-tile">
-                        <div class="info-icon"><i class="fas fa-clock"></i></div>
-                        <div class="info-val" id="hours-played">0h</div>
-                        <div class="info-label">Play Time</div>
-                    </div>
-                    <div class="info-tile">
-                        <div class="info-icon"><i class="fas fa-calendar"></i></div>
-                        <div class="info-val" id="reg-date">-</div>
-                        <div class="info-label">Registered</div>
-                    </div>
-                    <div class="info-tile">
-                        <div class="info-icon"><i class="fas fa-hourglass-half"></i></div>
-                        <div class="info-val" id="payday-val">60m</div>
-                        <div class="info-label">Next Payday</div>
-                    </div>
-                    <div class="info-tile">
-                        <div class="info-icon"><i class="fas fa-stopwatch"></i></div>
-                        <div class="info-val" id="played-today">0m</div>
-                        <div class="info-label">Played Today</div>
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Inventory -->
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-box"></i></span>
+                                <span class="sec-head-title">Inventory</span>
+                            </div>
+                            <div class="sec-xp-row">
+                                <div class="sec-xp-top">
+                                    <span class="sec-xp-label"><i class="fas fa-weight-hanging" style="margin-right:6px;font-size:10px;color:var(--text-muted);"></i>Backpack Weight</span>
+                                    <span class="sec-xp-val"><span id="inv-weight">0.0</span> / <span id="inv-max">40.0</span> kg</span>
+                                </div>
+                                <div class="progress-track"><div class="progress-fill red" id="weight-fill"></div></div>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-car"></i></span><span class="sec-row-label">Vehicles Owned</span></div>
+                                <span class="sec-row-val yellow"><span id="veh-count">0</span> <span style="color:var(--text-muted);font-weight:400;">/ <span id="veh-max">5</span></span></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- ═══ PROPERTIES ═══ -->
             <div id="tab-properties" class="tab-content">
-                <!-- ── Residential ── -->
-                <div class="section-label">Residential</div>
-                <div class="prop-grid" id="houseContent"></div>
+                <div class="tab-cols">
+                    <div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-house"></i></span>
+                                <span class="sec-head-title">Properties</span>
+                            </div>
+                            <div class="prop-grid" id="houseContent"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <!-- placeholder right column — expand later -->
+                    </div>
+                </div>
             </div>
 
             <!-- ═══ CAREERS ═══ -->
             <div class="tab-content" id="tab-careers">
-                <div class="jobs-grid" id="jobs-container"></div>
+                <div class="tab-cols">
+                    <div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-briefcase"></i></span>
+                                <span class="sec-head-title">Job Skills</span>
+                            </div>
+                            <div id="jobs-container"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <!-- right col — empty for now -->
+                    </div>
+                </div>
             </div>
 
             <!-- ═══ OBJECTIVES ═══ -->
@@ -1457,72 +1359,83 @@
             </div>
 
             <div class="tab-content" id="tab-settings">
-                <div class="settings-group">
-                    <div class="section-label">Interface</div>
-                    <div class="setting-row">
-                        <div class="setting-left">
-                            <div class="setting-icon"><i class="fas fa-tag"></i></div>
-                            <div class="setting-text">
-                                <div class="setting-name">Show Own Nametag</div>
-                                <div class="setting-desc">Toggle your name above your head</div>
+                <div class="tab-cols">
+                    <!-- Left: Interface + Audio -->
+                    <div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-display"></i></span>
+                                <span class="sec-head-title">Interface</span>
                             </div>
-                        </div>
-                        <label class="toggle">
-                            <input type="checkbox" id="toggle-self-tag" onchange="updateNametagSetting(this)">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="settings-group">
-                    <div class="section-label">Audio</div>
-                    <div class="setting-row">
-                        <div class="setting-left">
-                            <div class="setting-icon"><i class="fas fa-microphone"></i></div>
-                            <div class="setting-text">
-                                <div class="setting-name">Voice Chat</div>
-                                <div class="setting-desc">Enable proximity voice chat</div>
-                            </div>
-                        </div>
-                        <label class="toggle">
-                            <input type="checkbox" id="voice-toggle" checked onchange="toggleVoice(this.checked)">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div class="setting-left">
-                                <div class="setting-icon"><i class="fas fa-volume-high"></i></div>
-                                <div class="setting-text">
-                                    <div class="setting-name">Master Volume</div>
+                            <div class="setting-row">
+                                <div class="setting-left">
+                                    <span class="setting-icon"><i class="fas fa-tag"></i></span>
+                                    <div class="setting-text">
+                                        <div class="setting-name">Show Own Nametag</div>
+                                        <div class="setting-desc">Toggle your name above your head</div>
+                                    </div>
                                 </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="toggle-self-tag" onchange="updateNametagSetting(this)">
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
-                            <span class="vol-val" id="vol-display">100%</span>
                         </div>
-                        <div class="vol-row">
-                            <input type="range" id="vol-slider" min="0" max="100" value="100" class="vol-slider" oninput="updateVolume(this.value)">
+
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-volume-high"></i></span>
+                                <span class="sec-head-title">Audio</span>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-left">
+                                    <span class="setting-icon"><i class="fas fa-microphone"></i></span>
+                                    <div class="setting-text">
+                                        <div class="setting-name">Voice Chat</div>
+                                        <div class="setting-desc">Enable proximity voice chat</div>
+                                    </div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="voice-toggle" checked onchange="toggleVoice(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div class="setting-left">
+                                        <span class="setting-icon"><i class="fas fa-volume-high"></i></span>
+                                        <div class="setting-text"><div class="setting-name">Master Volume</div></div>
+                                    </div>
+                                    <span style="font-size:12px;font-weight:700;color:var(--primary);" id="vol-display">100%</span>
+                                </div>
+                                <input type="range" id="vol-slider" min="0" max="100" value="100" class="vol-slider" oninput="updateVolume(this.value)" style="margin-left:23px;">
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="settings-group">
-                    <div class="section-label">Controls</div>
-                    <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-                        <div class="keybind-row">
-                            <div class="keybind-key">N</div>
-                            <div class="keybind-label">Push-to-Talk</div>
-                        </div>
-                        <div class="keybind-row">
-                            <div class="keybind-key">O</div>
-                            <div class="keybind-label">Player Menu</div>
-                        </div>
-                        <div class="keybind-row">
-                            <div class="keybind-key">I</div>
-                            <div class="keybind-label">Inventory</div>
-                        </div>
-                        <div class="keybind-row">
-                            <div class="keybind-key">T</div>
-                            <div class="keybind-label">Chat</div>
+                    <!-- Right: Keybinds -->
+                    <div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-keyboard"></i></span>
+                                <span class="sec-head-title">Controls</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-microphone"></i></span><span class="sec-row-label">Push-to-Talk</span></div>
+                                <span class="keybind-key">N</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-user"></i></span><span class="sec-row-label">Player Menu</span></div>
+                                <span class="keybind-key">O</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-box"></i></span><span class="sec-row-label">Inventory</span></div>
+                                <span class="keybind-key">I</span>
+                            </div>
+                            <div class="sec-row">
+                                <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-comment"></i></span><span class="sec-row-label">Chat</span></div>
+                                <span class="keybind-key">T</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1653,14 +1566,10 @@
 
             houseContainer.innerHTML = `
                 <div class="prop-card">
-                    <div class="prop-card-icon house"><i class="fas fa-house-user"></i></div>
+                    <span class="prop-card-icon house"><i class="fas fa-house-user"></i></span>
                     <div class="prop-card-body">
                         <div class="prop-card-name">House #${data.house.id}</div>
-                        <div class="prop-card-sub">
-                            $${data.house.price.toLocaleString()}
-                            &nbsp;·&nbsp;
-                            ${statusHtml}
-                        </div>
+                        <div class="prop-card-sub">$${data.house.price.toLocaleString()} &nbsp;·&nbsp; ${statusHtml}</div>
                     </div>
                     <button class="prop-gps-btn" onclick="setRoute()" title="Set GPS Route">
                         <i class="fas fa-location-dot"></i>
@@ -1669,7 +1578,7 @@
             `;
         } else {
             housePosition = null;
-            houseContainer.innerHTML = `<div class="prop-empty"><i class="fas fa-bed" style="margin-right:6px;opacity:0.4;"></i>No house owned — visit a green marker to buy one.</div>`;
+            houseContainer.innerHTML = `<div class="prop-empty"><i class="fas fa-bed" style="margin-right:6px;opacity:0.4;"></i>No house owned.</div>`;
         }
 
         // ── Jobs ──
@@ -1683,18 +1592,12 @@
                 const progress = job.xp - job.prevXp;
                 let pct = Math.max(0, Math.min(100, (progress / range) * 100));
                 jc.innerHTML += `
-                    <div class="job-row">
-                        <div class="job-icon-box"><i class="fas fa-briefcase"></i></div>
-                        <div class="job-info">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span class="job-name">${job.name}</span>
-                                <span class="job-lvl">LVL ${job.level}</span>
-                            </div>
-                            <div class="job-progress-row">
-                                <div class="progress-track"><div class="progress-fill yellow" style="width:${pct}%"></div></div>
-                                <span class="job-pct">${Math.floor(pct)}%</span>
-                            </div>
+                    <div class="sec-xp-row">
+                        <div class="sec-xp-top">
+                            <span class="sec-xp-label"><i class="fas fa-briefcase" style="margin-right:6px;color:var(--text-muted);font-size:10px;"></i>${job.name}</span>
+                            <span class="sec-xp-val" style="color:var(--warning);font-weight:700;">LVL ${job.level} &nbsp;<span style="color:var(--text-muted);font-weight:400;">${Math.floor(pct)}%</span></span>
                         </div>
+                        <div class="progress-track"><div class="progress-fill yellow" style="width:${pct}%"></div></div>
                     </div>
                 `;
             });
