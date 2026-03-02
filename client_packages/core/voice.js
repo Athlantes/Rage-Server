@@ -15,7 +15,7 @@ try {
 
 // 1. Configuration
 mp.voiceChat.muted = true;
-mp.gui.chat.show(true);
+mp.gui.chat.show(false);
 
 // --- EVENT: Volume Slider ---
 mp.events.add('client:voice:setVolume', (percentage) => {

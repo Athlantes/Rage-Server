@@ -64,7 +64,7 @@ mp.events.add('client:closeFuelBrowser', () => {
     }
     global.isFuelOpen = false;
     mp.gui.chat.activate(true);
-    mp.gui.chat.show(true);
+    mp.gui.chat.show(false);
     mp.gui.cursor.show(false, false);
 });
 

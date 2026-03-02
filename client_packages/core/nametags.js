@@ -22,10 +22,13 @@ mp.events.add('client:nametags:toggleSelf', (enabled) => {
 // Helper: convert 6-char hex string → [r, g, b]
 function hexStrToRgb(hex) {
     if (!hex || hex.length < 6) return [255, 255, 255];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
     return [
-        parseInt(hex.slice(0, 2), 16) || 255,
-        parseInt(hex.slice(2, 4), 16) || 255,
-        parseInt(hex.slice(4, 6), 16) || 255,
+        isNaN(r) ? 255 : r,
+        isNaN(g) ? 255 : g,
+        isNaN(b) ? 255 : b,
     ];
 }
 
@@ -77,18 +80,29 @@ mp.events.add('render', () => {
         const familyNametagColor = player.getVariable('familyNametagColor');
 
         if (familyName && familyNametagColor) {
-            const [r, g, b] = familyNametagColor;
-            // Replaced `[${familyTag}]` with familyName and removed brackets
+            // Coerce to integers and clamp 0-255 (handles variables that arrive as strings)
+            const fr = Math.min(255, Math.max(0, parseInt(familyNametagColor[0], 10) || 0));
+            const fg = Math.min(255, Math.max(0, parseInt(familyNametagColor[1], 10) || 0));
+            const fb = Math.min(255, Math.max(0, parseInt(familyNametagColor[2], 10) || 0));
             mp.game.graphics.drawText(familyName, [pPos.x, pPos.y, pPos.z + 0.75], {
                 font:    FONT_ID,
-                color:   [r, g, b, 210],
+                color:   [fr, fg, fb, 210],
                 scale:   [scale * 0.85, scale * 0.85],
                 outline: true,
                 centre:  true,
             });
         }
 
+        // Name color: prefer faction duty color when available, otherwise default white
+        const factionNametagColor = player.getVariable('factionNametagColor');
         let nameColor = [255, 255, 255, 255]; // default: white
+        if (factionNametagColor && Array.isArray(factionNametagColor) && factionNametagColor.length >= 3) {
+            const fr = Math.min(255, Math.max(0, parseInt(factionNametagColor[0], 10) || 0));
+            const fg = Math.min(255, Math.max(0, parseInt(factionNametagColor[1], 10) || 0));
+            const fb = Math.min(255, Math.max(0, parseInt(factionNametagColor[2], 10) || 0));
+            const fa = factionNametagColor[3] !== undefined ? Math.min(255, Math.max(0, parseInt(factionNametagColor[3], 10) || 0)) : 255;
+            nameColor = [fr, fg, fb, fa];
+        }
 
         // ── Draw nametag ──────────────────────────────────────────────────────
         mp.game.graphics.drawText(nameText, [pPos.x, pPos.y, pPos.z + 0.6], {

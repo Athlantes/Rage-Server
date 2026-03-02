@@ -48,6 +48,21 @@ function checkRank(player, minRank) {
     return true;
 }
 
+// Colour helper (same shape as familyManager.hexToRgbArr)
+function hexToRgbArr(hex) {
+    if (!hex) return [255,255,255,255];
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0,2), 16);
+    const g = parseInt(h.slice(2,4), 16);
+    const b = parseInt(h.slice(4,6), 16);
+    return [
+        isNaN(r) ? 255 : r,
+        isNaN(g) ? 255 : g,
+        isNaN(b) ? 255 : b,
+        255
+    ];
+}
+
 // ----------------------------------------------------------------------------
 // GENERAL ROLEPLAY COMMANDS (Existing)
 // ----------------------------------------------------------------------------
@@ -201,6 +216,14 @@ mp.events.addCommand('duty', (player) => {
         
         // Optional: If they are LSPD, you might want to give them weapons or a uniform here later
         // if (faction.type === "LEO") { ... }
+        // Set nametag color for on-duty players (if faction defines a color)
+        try {
+            if (faction.color) {
+                player.setVariable('factionNametagColor', hexToRgbArr(faction.color));
+            }
+        } catch (e) {
+            console.error('[Duty] Failed to apply faction nametag color:', e);
+        }
     } else {
         player.outputChatBox("!{#ff0000}You are now OFF duty.");
         
@@ -210,6 +233,8 @@ mp.events.addCommand('duty', (player) => {
             player.factionVehicle = null;
             player.outputChatBox("!{#ffcc00}Your faction vehicle has been returned to the garage.");
         }
+        // Clear any faction nametag color when off duty
+        try { player.setVariable('factionNametagColor', null); } catch(e) {}
     }
 });
 

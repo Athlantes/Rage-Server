@@ -395,6 +395,174 @@ mp.events.add('client:phone:appCallback', (appName, funcName) => {
     }
 });
 
+// --- MAPS / GPS APP ---
+mp.events.add('client:phone:requestMapBlips', () => {
+    // Send player position along with the request so server can calculate distances
+    const pos = mp.players.local.position;
+    mp.events.callRemote('server:phone:requestGPS', pos.x, pos.y, pos.z);
+});
+
+mp.events.add('client:phone:receiveGPS', (locationsJson) => {
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.mapsApp.loadBlips(${locationsJson})`);
+        // Also feed GPS data to the Taxi app
+        phoneBrowser.execute(`if(app.taxiApp) app.taxiApp.loadLocations(${locationsJson})`);
+    }
+});
+
+mp.events.add('client:phone:setGPSRoute', (dataJson) => {
+    const data = JSON.parse(dataJson);
+
+    // Clear any previous route
+    clearLocationBlip();
+
+    const destName = data.name || 'GPS Destination';
+
+    // Create red blip at destination
+    locationBlip = mp.blips.new(1, new mp.Vector3(data.x, data.y, data.z), {
+        name: destName,
+        color: 1, // Red
+        shortRange: false,
+        scale: 1.0
+    });
+
+    // Enable GPS route line to the blip
+    locationBlip.setRoute(true);
+
+    // Force route colour to red
+    try { mp.game.invoke('0x837155CD2F63DA09', locationBlip.handle, 1); } catch(e) {}
+
+    // Create colshape for arrival detection (20m radius)
+    locationColshape = mp.colshapes.newCircle(data.x, data.y, 20.0);
+
+    mp.events.call('showNotification', 'Maps', `Route set to ${destName}.`);
+});
+
+// --- TAXI APP ---
+mp.events.add('client:phone:requestTaxiData', () => {
+    mp.events.callRemote('server:taxi:requestAppData');
+    // Also request GPS locations for the taxi app (same data as Maps)
+    const pos = mp.players.local.position;
+    mp.events.callRemote('server:phone:requestGPS', pos.x, pos.y, pos.z);
+});
+
+mp.events.add('client:taxi:receiveAppData', (dataJson) => {
+    if (phoneBrowser) {
+        const data = JSON.parse(dataJson);
+        phoneBrowser.execute(`app.taxiApp.loadAppData(${JSON.stringify(data)})`);
+    }
+});
+
+// Waypoint check for "My Waypoint" button
+mp.events.add('client:phone:getWaypoint', () => {
+    const wpHandle = mp.game.ui.getFirstBlipInfoId(8);
+    if (!wpHandle || wpHandle === 0) {
+        if (phoneBrowser) phoneBrowser.execute(`app.taxiApp.onWaypointResult({ error: 'Set a waypoint on map first.' })`);
+        return;
+    }
+
+    const coords = mp.game.ui.getBlipInfoIdCoord(wpHandle);
+    if (!coords || (Math.abs(coords.x) < 1.0 && Math.abs(coords.y) < 1.0)) {
+        if (phoneBrowser) phoneBrowser.execute(`app.taxiApp.onWaypointResult({ error: 'Set a waypoint on map first.' })`);
+        return;
+    }
+
+    let zoneName = 'Custom Location';
+    try {
+        const key = mp.game.zone.getNameOfZone(coords.x, coords.y, coords.z);
+        zoneName = mp.game.gxt.get(key) || 'Custom Location';
+    } catch (_) {}
+
+    // Calculate distance from player to waypoint
+    const pos = mp.players.local.position;
+    const dx = coords.x - pos.x;
+    const dy = coords.y - pos.y;
+    const dist = Math.round(Math.sqrt(dx * dx + dy * dy) / 100) / 10; // km
+
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onWaypointResult(${JSON.stringify({
+            name: zoneName,
+            x: coords.x,
+            y: coords.y,
+            z: coords.z,
+            dist: dist
+        })})`);
+    }
+});
+
+// Call taxi from phone
+mp.events.add('client:phone:callTaxi', (dataJson) => {
+    const data = JSON.parse(dataJson);
+
+    // Resolve the caller's current zone name for the pickup location
+    const pos = mp.players.local.position;
+    let pickupZone = 'Unknown Area';
+    try {
+        const zoneKey = mp.game.zone.getNameOfZone(pos.x, pos.y, pos.z);
+        pickupZone = mp.game.gxt.get(zoneKey) || 'Unknown Area';
+    } catch (_) {}
+
+    mp.events.callRemote('server:taxi:callFromPhone', data.name, data.x, data.y, data.z, pickupZone);
+});
+
+// Taxi call placed confirmation
+mp.events.add('client:taxi:callPlaced', (dataJson) => {
+    const data = JSON.parse(dataJson);
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onCallPlaced(${JSON.stringify(data)})`);
+    }
+    mp.events.call('showNotification', 'Taxi', 'Ride request sent! A driver will accept shortly.');
+});
+
+// Taxi call error
+mp.events.add('client:taxi:callError', (message) => {
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onCallError(${JSON.stringify(message)})`);
+    }
+});
+
+// Taxi progress updates (phase changes)
+mp.events.add('client:taxi:phoneProgress', (dataJson) => {
+    const data = JSON.parse(dataJson);
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.updateProgress(${JSON.stringify(data)})`);
+    }
+
+    // Show notifications for key events
+    if (data.phase === 1) {
+        mp.events.call('showNotification', 'Taxi', `${data.driverName || 'A driver'} accepted your ride!`);
+    } else if (data.phase === 2) {
+        mp.events.call('showNotification', 'Taxi', 'Your driver has arrived! Get in the taxi.');
+    } else if (data.phase === 3) {
+        mp.events.call('showNotification', 'Taxi', 'On the way to your destination.');
+    } else if (data.phase === 4) {
+        mp.events.call('showNotification', 'Taxi', "You've arrived! Rate your ride.");
+    }
+});
+
+// Cancel taxi from phone
+mp.events.add('client:phone:cancelTaxi', () => {
+    mp.events.callRemote('server:taxi:cancelCall');
+});
+
+mp.events.add('client:taxi:callCancelled', () => {
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onCallCancelled()`);
+    }
+});
+
+// Submit rating
+mp.events.add('client:phone:submitTaxiRating', (stars) => {
+    mp.events.callRemote('server:taxi:submitRating', stars);
+});
+
+mp.events.add('client:taxi:ratingSubmitted', () => {
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onCallCancelled()`);
+    }
+    mp.events.call('showNotification', 'Taxi', 'Thanks for your rating!');
+});
+
 mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson, contactsJson, messagesJson) => {
     mp.gui.chat.push(`[Phone Debug] Init Data Received.`);
 

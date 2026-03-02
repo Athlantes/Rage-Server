@@ -1,14 +1,14 @@
 // packages/factions/taxi/taxiDispatch.js
 const dispatchManager = require('../dispatch/dispatchManager');
 const DISPATCH_CONFIGS = require('../dispatch/dispatchConfig');
+const taxiCommand = require('./taxiCommand');
 
 // Phase 2 – Driver arrived at pickup
 mp.events.add('server:dispatch:driverArrived', (driver) => {
     const a = dispatchManager.getAssignment(driver.id);
-    if (!a || a.factionId !== 1) return; // Ignore if not a taxi assignment (Faction 1)
+    if (!a || a.factionId !== 1) return;
 
     a.phase = 2;
-    // Refresh vehicle ID in case driver spawned a new cab after accepting
     a.driverVehicleId = driver.vehicle ? driver.vehicle.id : null;
 
     const config = DISPATCH_CONFIGS[1];
@@ -17,6 +17,8 @@ mp.events.add('server:dispatch:driverArrived', (driver) => {
         if (caller && mp.players.exists(caller)) {
             caller.outputChatBox(`!{${config.accentColor}}${config.chatTag} !{#ffffff}${config.messages.arrived}`);
         }
+        // Notify phone app
+        taxiCommand.onDriverArrived(a.callerServerId);
     }
 
     console.log('[Dispatch] Taxi driver ' + driver.name + ' arrived at pickup for call #' + a.callId);
@@ -24,31 +26,44 @@ mp.events.add('server:dispatch:driverArrived', (driver) => {
 
 // Phase 3 – Caller boarded (detected via playerEnterVehicle server event)
 mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
-    // Only care about passenger seats (seat -1 = driver)
     if (seat === -1 || !player.logged) return;
 
-    // Check if this player is a caller waiting for a taxi
     const { assignment, driverId } = dispatchManager.getAssignmentByCaller(player.id);
     if (!assignment || assignment.factionId !== 1) return;
 
-    // Only proceed if the driver has already arrived (phase 2) and they enter the correct vehicle
     if (assignment.phase === 2 && assignment.driverVehicleId === vehicle.id) {
         assignment.phase = 3;
 
-        // Tell the driver their HUD should advance to phase 3
         const driver = mp.players.at(driverId);
-        if (driver && mp.players.exists(driver)) {
-            driver.call('client:taxi:callerBoarded', []);
+
+        // Notify phone app (handles fare deduction)
+        taxiCommand.onCallerBoarded(player.id);
+
+        // Phone-booked ride: destination is pre-set, send directly to driver
+        if (assignment.destCoords) {
+            // Skip waypoint prompt — send destination to driver immediately
+            assignment.phase = 4;
+
+            if (driver && mp.players.exists(driver)) {
+                driver.call('client:taxi:setDestination', [JSON.stringify({
+                    coords: assignment.destCoords,
+                    location: assignment.destLocation || 'Destination',
+                })]);
+            }
+
+            console.log('[Dispatch] Phone-booked ride: auto-routing driver to ' + (assignment.destLocation || 'destination'));
+        } else {
+            // Legacy support: prompt caller for waypoint
+            if (driver && mp.players.exists(driver)) {
+                driver.call('client:taxi:callerBoarded', []);
+            }
+            player.call('client:taxi:promptWaypoint', []);
+            console.log('[Dispatch] Caller boarded, waiting for waypoint');
         }
-
-        // Prompt the caller to set a waypoint
-        player.call('client:taxi:promptWaypoint', []);
-
-        console.log('[Dispatch] Caller boarded for taxi call #' + assignment.callId + ', waiting for waypoint');
     }
 });
 
-// Phase 4 – Caller set waypoint, send destination to driver
+// Phase 4 – Caller set waypoint (legacy flow only, phone rides skip this)
 mp.events.add('server:dispatch:waypointSet', (caller, x, y, z, location) => {
     const { assignment, driverId } = dispatchManager.getAssignmentByCaller(caller.id);
     if (!assignment || assignment.factionId !== 1) return;
@@ -73,15 +88,17 @@ mp.events.add('server:dispatch:rideComplete', (driver) => {
     const a = dispatchManager.getAssignment(driver.id);
     if (!a || a.factionId !== 1) return;
 
-    dispatchManager.removeAssignment(driver.id); // Clear them from the active list
-
-    const config = DISPATCH_CONFIGS[1];
+    // Notify phone app (handles final fare + rating prompt)
     if (a.callerServerId !== null) {
+        taxiCommand.onRideComplete(a.callerServerId);
+
+        const config = DISPATCH_CONFIGS[1];
         const caller = mp.players.at(a.callerServerId);
         if (caller && mp.players.exists(caller)) {
             caller.outputChatBox(`!{${config.accentColor}}${config.chatTag} !{#ffffff}${config.messages.completed}`);
         }
     }
 
+    dispatchManager.removeAssignment(driver.id);
     console.log('[Dispatch] Taxi ride #' + a.callId + ' completed by ' + driver.name);
 });

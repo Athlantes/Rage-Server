@@ -6,7 +6,7 @@ const factionsManager = require('../factionsManager');
 
 class TaxiFaction extends Faction {
     constructor() {
-        super(1, "Los Santos Transit", "PEACEFUL", ["Trainee", "Cabbie", "Dispatcher", "Manager", "Owner"]);
+        super(1, "Los Santos Transit", "PEACEFUL", ["Trainee", "Cabbie", "Dispatcher", "Manager", "Owner"], '#ffc300');
 
         this.hq = {
             exterior: new mp.Vector3(895.0, -179.0, 74.7),     
@@ -61,6 +61,9 @@ factionsManager.registerFaction(instance);
 require('./events/vehicleManager')(instance);
 
 mp.events.add("faction:taxi:enter", (player) => {
+    if (!player.factionId || player.factionId !== instance.id) {
+        return player.outputChatBox('!{#ff4757}You are not a member of this faction.');
+    }
     player.position = instance.hq.interior;
     player.dimension = instance.hq.dimension;
 });

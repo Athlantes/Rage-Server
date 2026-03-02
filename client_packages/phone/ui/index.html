@@ -11,6 +11,17 @@
 
     <div id="phone-shell" class="hidden">
         <div class="screen-content">
+
+            <!-- In-App Notification Banner -->
+            <div id="inapp-banner" class="inapp-banner">
+                <div class="inapp-banner-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="inapp-banner-text">
+                    <div class="inapp-banner-title">Title</div>
+                    <div class="inapp-banner-msg">Message</div>
+                </div>
+            </div>
             
             <div class="status-bar">
                 <span id="clock-small">12:00</span>
@@ -91,6 +102,18 @@
                             <i class="fas fa-camera"></i>
                         </div>
                         <span class="app-name">Camera</span>
+                    </div>
+                    <div class="app-icon" onclick="app.open('maps')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #ff4757, #ff6b81);">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <span class="app-name">Maps</span>
+                    </div>
+                    <div class="app-icon" onclick="app.open('taxi')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #ffc300, #f39c12);">
+                            <i class="fas fa-taxi"></i>
+                        </div>
+                        <span class="app-name">Taxi</span>
                     </div>
                     <div class="app-icon" onclick="app.open('phone-app')">
                         <div class="icon-box" style="background: linear-gradient(135deg, #4cd964, #2ecc71);">
@@ -517,6 +540,130 @@
                             <span class="sell-price" id="detail-sell-price">$0</span>
                         </div>
                         <button class="sell-btn" id="btn-sell" onclick="app.sellVehicle()"><i class="fas fa-dollar-sign"></i> Sell</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-maps" class="view hidden">
+                <div class="app-header">
+                    <button class="back-btn" onclick="app.mapsApp.goBack()"><i class="fas fa-chevron-left"></i></button>
+                    <span id="maps-title">Maps</span>
+                </div>
+                <div class="maps-search-wrap">
+                    <div class="maps-search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="maps-search-input" placeholder="Search locations..." oninput="app.mapsApp.search(this.value)">
+                    </div>
+                </div>
+                <div id="maps-content" class="scrollable-content" style="background: #f5f5f8;">
+                    <div id="maps-categories"></div>
+                    <div id="maps-locations" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- TAXI APP -->
+            <div id="view-taxi" class="view hidden">
+                <div class="app-header" style="background: #ffc300; color: #1a1a2e;">
+                    <button class="back-btn" onclick="app.taxiApp.goBack()" style="color: #1a1a2e;"><i class="fas fa-chevron-left"></i></button>
+                    <span id="taxi-title">Taxi</span>
+                    <div class="taxi-drivers-badge" id="taxi-drivers-badge">
+                        <i class="fas fa-user-tie"></i>
+                        <span id="taxi-driver-count">0</span>
+                    </div>
+                </div>
+
+                <!-- Location Selection View -->
+                <div id="taxi-browse" class="scrollable-content" style="background: #f5f5f8;">
+                    <!-- My Waypoint Card -->
+                    <div id="taxi-waypoint-card" class="taxi-waypoint-card" onclick="app.taxiApp.useWaypoint()">
+                        <div class="taxi-wp-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="taxi-wp-info">
+                            <div class="taxi-wp-title">My Waypoint</div>
+                            <div class="taxi-wp-sub">Use your map waypoint as destination</div>
+                        </div>
+                        <div class="taxi-wp-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+
+                    <div class="taxi-search-wrap">
+                        <div class="taxi-search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="taxi-search-input" placeholder="Where to?" oninput="app.taxiApp.search(this.value)">
+                        </div>
+                    </div>
+
+                    <div id="taxi-categories"></div>
+                    <div id="taxi-locations" class="hidden"></div>
+                </div>
+
+                <!-- Confirm / Call View -->
+                <div id="taxi-confirm" class="hidden" style="background: #f5f5f8;">
+                    <div class="taxi-confirm-card">
+                        <div class="taxi-confirm-icon"><i class="fas fa-map-pin"></i></div>
+                        <div class="taxi-confirm-dest" id="taxi-confirm-dest">Destination</div>
+                        <div class="taxi-confirm-fare" id="taxi-confirm-fare">$0</div>
+                        <div class="taxi-confirm-info" id="taxi-confirm-info">0 km · $50/km</div>
+                        <div class="taxi-confirm-split">50% upfront · 50% on arrival</div>
+                        <button class="taxi-call-btn" id="taxi-call-btn" onclick="app.taxiApp.confirmCall()">
+                            <i class="fas fa-phone-alt"></i> Call Taxi
+                        </button>
+                        <button class="taxi-cancel-link" onclick="app.taxiApp.backToBrowse()">Choose another location</button>
+                    </div>
+                </div>
+
+                <!-- Progress View -->
+                <div id="taxi-progress" class="hidden" style="background: #f5f5f8;">
+                    <div class="taxi-progress-card">
+                        <div class="taxi-progress-dest" id="taxi-progress-dest">Heading to...</div>
+                        <div class="taxi-progress-fare-badge" id="taxi-progress-fare">$0</div>
+                        <div class="taxi-stepper" id="taxi-stepper">
+                            <div class="taxi-step" data-step="0">
+                                <div class="taxi-step-dot"></div>
+                                <div class="taxi-step-line"></div>
+                                <div class="taxi-step-label">Looking for a driver</div>
+                            </div>
+                            <div class="taxi-step" data-step="1">
+                                <div class="taxi-step-dot"></div>
+                                <div class="taxi-step-line"></div>
+                                <div class="taxi-step-label">Driver on the way</div>
+                            </div>
+                            <div class="taxi-step" data-step="2">
+                                <div class="taxi-step-dot"></div>
+                                <div class="taxi-step-line"></div>
+                                <div class="taxi-step-label">Driver arrived</div>
+                            </div>
+                            <div class="taxi-step" data-step="3">
+                                <div class="taxi-step-dot"></div>
+                                <div class="taxi-step-line"></div>
+                                <div class="taxi-step-label">On the way</div>
+                            </div>
+                            <div class="taxi-step" data-step="4">
+                                <div class="taxi-step-dot"></div>
+                                <div class="taxi-step-line"></div>
+                                <div class="taxi-step-label">Arrived!</div>
+                            </div>
+                        </div>
+                        <button class="taxi-cancel-btn" id="taxi-cancel-btn" onclick="app.taxiApp.cancelCall()">
+                            <i class="fas fa-times"></i> Cancel Ride
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rating View -->
+                <div id="taxi-rating" class="hidden" style="background: #f5f5f8;">
+                    <div class="taxi-rating-card">
+                        <div class="taxi-rating-check"><i class="fas fa-check-circle"></i></div>
+                        <div class="taxi-rating-title">Ride Complete!</div>
+                        <div class="taxi-rating-driver" id="taxi-rating-driver">Your driver</div>
+                        <div class="taxi-rating-total" id="taxi-rating-total">$0</div>
+                        <div class="taxi-rating-label">Rate your ride</div>
+                        <div class="taxi-stars" id="taxi-stars">
+                            <i class="fas fa-star" data-star="1" onclick="app.taxiApp.selectStar(1)"></i>
+                            <i class="fas fa-star" data-star="2" onclick="app.taxiApp.selectStar(2)"></i>
+                            <i class="fas fa-star" data-star="3" onclick="app.taxiApp.selectStar(3)"></i>
+                            <i class="fas fa-star" data-star="4" onclick="app.taxiApp.selectStar(4)"></i>
+                            <i class="fas fa-star" data-star="5" onclick="app.taxiApp.selectStar(5)"></i>
+                        </div>
+                        <button class="taxi-submit-rating" id="taxi-submit-rating" onclick="app.taxiApp.submitRating()">Submit Rating</button>
                     </div>
                 </div>
             </div>

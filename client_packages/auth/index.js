@@ -67,7 +67,7 @@ mp.events.add('client:auth:destroy', () => {
     if (authCam)     { authCam.destroy();     authCam = null;     }
 });
 
-mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos, familyHQPos) => {
+mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos, familyHQPos, factionHQPos) => {
     isAuthOpen = false;
 
     if (authBrowser) { authBrowser.destroy(); authBrowser = null; }
@@ -75,7 +75,7 @@ mp.events.add('client:auth:success', (shouldSpawnSelector, lastPos, housePos, fa
     if (shouldSpawnSelector) {
         // Hand off to spawn selector — radar stays hidden until spawn confirms
         mp.gui.cursor.show(false, false);
-        mp.events.call('client:spawn:openMenu', lastPos, housePos, familyHQPos);
+        mp.events.call('client:spawn:openMenu', lastPos, housePos, familyHQPos, factionHQPos);
     } else {
         // Auto-spawn at last location — re-enable everything now
         mp.gui.cursor.show(false, false);

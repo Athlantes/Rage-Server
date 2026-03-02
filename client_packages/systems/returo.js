@@ -79,7 +79,7 @@ mp.events.add('client:closeReturoBrowser', () => {
     
     // 4. Re-enable Controls
     mp.gui.chat.activate(true);
-    mp.gui.chat.show(true);
+    mp.gui.chat.show(false);
     mp.gui.cursor.show(false, false);
 });
 

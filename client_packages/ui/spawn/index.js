@@ -10,7 +10,7 @@ const spawnLocations = [
 
 // ── Open Spawn Menu ───────────────────────────────────────────────────────────
 
-mp.events.add('client:spawn:openMenu', (lastPos, housePos, familyHQPos) => {
+mp.events.add('client:spawn:openMenu', (lastPos, housePos, familyHQPos, factionHQPos) => {
     if (spawnBrowser) return;
 
     // Overhead cinematic camera
@@ -31,6 +31,7 @@ mp.events.add('client:spawn:openMenu', (lastPos, housePos, familyHQPos) => {
             spawnBrowser.execute(`window.addLastLocation(${JSON.stringify(lastPos)});`);
             if (housePos) spawnBrowser.execute(`window.addHouseLocation(${JSON.stringify(housePos)});`);
             if (familyHQPos) spawnBrowser.execute(`window.addFamilyHQLocation(${JSON.stringify(familyHQPos)});`);
+            if (factionHQPos) spawnBrowser.execute(`window.addFactionHQLocation(${JSON.stringify(factionHQPos)});`);
         }
     }, 350);
 });

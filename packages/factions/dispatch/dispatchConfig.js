@@ -27,11 +27,12 @@ const DISPATCH_CONFIGS = {
 
         // Columns rendered in the dispatch table (in order)
         columns: [
-            { key: 'callerName',   label: 'Caller',    width: '22%' },
-            { key: 'location',     label: 'Location',  width: '30%' },
-            { key: 'distance',     label: 'Distance',  width: '16%' },
-            { key: 'waitTime',     label: 'Waiting',   width: '16%' },
-            { key: 'action',       label: 'Action',    width: '16%' },
+            { key: 'callerName',   label: 'Caller',      width: '18%' },
+            { key: 'location',     label: 'Pickup',      width: '20%' },
+            { key: 'destLocation', label: 'Destination',  width: '20%' },
+            { key: 'distance',     label: 'Distance',    width: '14%' },
+            { key: 'waitTime',     label: 'Waiting',     width: '14%' },
+            { key: 'action',       label: 'Action',      width: '14%' },
         ],
 
         // Action button that appears per row

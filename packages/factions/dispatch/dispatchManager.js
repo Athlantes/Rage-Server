@@ -35,6 +35,11 @@ class DispatchManager {
             callType:       callData.callType        || null,
             createdAt:      Date.now(),
             acceptedBy:     null,
+            // Extended data (taxi etc.)
+            destCoords:     callData.destCoords     || null,
+            destLocation:   callData.destLocation   || null,
+            fare:           callData.fare           || 0,
+            distKm:         callData.distKm         || 0,
         };
 
         this.calls.get(factionId).set(callId, call);
@@ -86,6 +91,11 @@ class DispatchManager {
             coords:         call.coords,
             phase:          1,   // starts at 1 (en-route to caller)
             driverVehicleId: driver.vehicle ? driver.vehicle.id : null,
+            // Extended taxi data
+            destCoords:     call.destCoords || null,
+            destLocation:   call.destLocation || null,
+            fare:           call.fare || 0,
+            distKm:         call.distKm || 0,
         });
 
         driver.call('client:dispatch:accepted', [JSON.stringify({
@@ -101,12 +111,15 @@ class DispatchManager {
             if (caller && mp.players.exists(caller)) {
                 // E.g. "[TAXI] A taxi driver is on the way to you!" or "[911] An officer is responding."
                 caller.outputChatBox(`!{${config.accentColor || '#ffffff'}}${config.chatTag || '[DISPATCH]'} !{#ffffff}${config.messages.onWay}`);
-                
-                // Keep the original taxi HUD notification trigger if it's the taxi faction
-                if (factionId === 1) {
-                    caller.call('client:dispatch:callerNotified', [driver.name]);
-                }
             }
+        }
+
+        // Hook: Notify taxi phone app when driver accepts
+        if (factionId === 1) {
+            try {
+                const taxiCommand = require('../taxi/taxiCommand');
+                taxiCommand.onDriverAccepted(call.callerServerId, driver.id, driver.name.replace(/_/g, ' '));
+            } catch (e) {}
         }
 
         this._broadcastToFaction(factionId);
@@ -157,6 +170,12 @@ class DispatchManager {
 
     clearFaction(factionId) {
         this.calls.delete(factionId);
+        this._broadcastToFaction(factionId);
+    }
+
+    removePendingCall(factionId, callId) {
+        if (!this.calls.has(factionId)) return;
+        this.calls.get(factionId).delete(callId);
         this._broadcastToFaction(factionId);
     }
 
@@ -233,6 +252,8 @@ class DispatchManager {
                 callerName:  call.callerName,
                 location:    call.location,
                 callType:    call.callType,
+                destLocation: call.destLocation || '',
+                fare:        call.fare || 0,
                 distanceRaw: distMeters,
                 distance:    distMeters >= 1000
                                  ? (distMeters / 1000).toFixed(1) + ' km'

@@ -1804,3 +1804,637 @@ input:checked + .slider:before { transform: translateX(20px); }
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- IN-APP NOTIFICATION BANNER --- */
+.inapp-banner {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(30, 30, 40, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transform: translateY(-120%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.inapp-banner.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.inapp-banner-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: white;
+    flex-shrink: 0;
+    background: #636366;
+}
+
+.inapp-banner-text {
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.inapp-banner-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.inapp-banner-msg {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+/* --- MAPS / GPS APP --- */
+
+.maps-search-wrap {
+    background: #ffffff;
+    padding: 0 15px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+}
+
+.maps-search-bar {
+    display: flex;
+    align-items: center;
+    background: #f0f0f5;
+    border-radius: 10px;
+    padding: 8px 12px;
+    gap: 8px;
+}
+
+.maps-search-bar i {
+    color: rgba(0,0,0,0.3);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.maps-search-bar input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+}
+
+.maps-search-bar input::placeholder {
+    color: rgba(0,0,0,0.35);
+}
+
+#maps-categories {
+    padding: 10px;
+}
+
+.maps-category-item {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
+.maps-category-item:active {
+    transform: scale(0.98);
+    background: #f8f8fb;
+}
+
+.maps-cat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-right: 14px;
+    flex-shrink: 0;
+}
+
+.maps-cat-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.maps-cat-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+}
+
+.maps-cat-count {
+    font-size: 12px;
+    color: rgba(0,0,0,0.4);
+    margin-top: 2px;
+}
+
+.maps-cat-chevron {
+    color: rgba(0,0,0,0.2);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+#maps-locations {
+    padding: 10px;
+}
+
+.maps-location-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
+.maps-location-item:active {
+    transform: scale(0.98);
+    background: #f8f8fb;
+}
+
+.maps-loc-icon {
+    font-size: 16px;
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.maps-loc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.maps-loc-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.maps-loc-cat {
+    font-size: 11px;
+    color: rgba(0,0,0,0.35);
+    margin-top: 2px;
+}
+
+.maps-loc-go {
+    color: #ff4757;
+    font-size: 16px;
+    margin-left: 10px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.maps-location-item:hover .maps-loc-go {
+    opacity: 1;
+}
+
+.maps-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(0,0,0,0.3);
+}
+
+.maps-empty i {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.maps-empty span {
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ─── TAXI APP ─────────────────────────────────────────────────────────────── */
+
+/* Driver count badge in header */
+.taxi-drivers-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.12);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-left: auto;
+}
+.taxi-drivers-badge i {
+    font-size: 11px;
+}
+
+/* My Waypoint card */
+.taxi-waypoint-card {
+    display: flex;
+    align-items: center;
+    margin: 10px;
+    padding: 14px;
+    background: linear-gradient(135deg, #f39c12, #ffc300 );
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    color: #fff;
+}
+.taxi-waypoint-card:active {
+    transform: scale(0.97);
+}
+.taxi-wp-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-right: 14px;
+    flex-shrink: 0;
+}
+.taxi-wp-info { flex: 1; }
+.taxi-wp-title {
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+}
+.taxi-wp-sub {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 2px;
+}
+.taxi-wp-arrow {
+    font-size: 13px;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+/* Search bar */
+.taxi-search-wrap {
+    background: #ffffff;
+    padding: 0 15px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.taxi-search-bar {
+    display: flex;
+    align-items: center;
+    background: #f0f0f5;
+    border-radius: 10px;
+    padding: 8px 12px;
+    gap: 8px;
+}
+.taxi-search-bar i {
+    color: rgba(0,0,0,0.3);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.taxi-search-bar input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+}
+.taxi-search-bar input::placeholder {
+    color: rgba(0,0,0,0.35);
+}
+
+/* Reuse maps category/location styles with taxi prefix */
+#taxi-categories { padding: 10px; }
+#taxi-locations { padding: 10px; }
+
+/* ── Confirm View ──────────────────────────────────────────────────────────── */
+#taxi-confirm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100% - 44px);
+    padding: 20px;
+}
+.taxi-confirm-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px 24px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+}
+.taxi-confirm-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffc300, #f39c12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #fff;
+    margin: 0 auto 14px;
+}
+.taxi-confirm-dest {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 6px;
+}
+.taxi-confirm-fare {
+    font-weight: 800;
+    font-size: 28px;
+    color: #ffc300;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 4px;
+}
+.taxi-confirm-info {
+    font-size: 12px;
+    color: rgba(0,0,0,0.4);
+    margin-bottom: 4px;
+}
+.taxi-confirm-split {
+    font-size: 11px;
+    color: rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+}
+.taxi-call-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffc300, #f39c12);
+    color: #1a1a2e;
+    font-weight: 700;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+}
+.taxi-call-btn:active { transform: scale(0.97); }
+.taxi-call-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.taxi-cancel-link {
+    display: block;
+    margin-top: 14px;
+    background: none;
+    border: none;
+    color: rgba(0,0,0,0.4);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    text-decoration: underline;
+}
+
+/* ── Progress View ─────────────────────────────────────────────────────────── */
+#taxi-progress {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    height: calc(100% - 44px);
+    padding: 20px;
+    overflow-y: auto;
+}
+.taxi-progress-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+}
+.taxi-progress-dest {
+    font-weight: 700;
+    font-size: 15px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    margin-bottom: 6px;
+}
+.taxi-progress-fare-badge {
+    text-align: center;
+    font-weight: 800;
+    font-size: 22px;
+    color: #ffc300;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 24px;
+}
+
+/* Vertical stepper */
+.taxi-stepper {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 24px;
+}
+.taxi-step {
+    position: relative;
+    padding-bottom: 22px;
+    padding-left: 18px;
+}
+.taxi-step:last-child {
+    padding-bottom: 0;
+}
+.taxi-step-dot {
+    position: absolute;
+    left: -24px;
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    border: 3px solid #f5f5f8;
+    z-index: 2;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.taxi-step-line {
+    position: absolute;
+    left: -18px;
+    top: 16px;
+    width: 2px;
+    height: calc(100% - 14px);
+    background: #e0e0e0;
+    z-index: 1;
+    transition: background 0.3s;
+}
+.taxi-step:last-child .taxi-step-line {
+    display: none;
+}
+.taxi-step-label {
+    font-size: 13px;
+    color: rgba(0,0,0,0.3);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    transition: color 0.3s;
+    line-height: 18px;
+}
+
+/* Active step */
+.taxi-step.active .taxi-step-dot {
+    background: #ffc300;
+    box-shadow: 0 0 0 4px rgba(255,195,0,0.25);
+}
+.taxi-step.active .taxi-step-label {
+    color: #1a1a2e;
+    font-weight: 700;
+}
+
+/* Completed step */
+.taxi-step.completed .taxi-step-dot {
+    background: #4cd964;
+}
+.taxi-step.completed .taxi-step-line {
+    background: #4cd964;
+}
+.taxi-step.completed .taxi-step-label {
+    color: rgba(0,0,0,0.5);
+}
+
+.taxi-cancel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,59,48,0.08);
+    color: #ff3b30;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.taxi-cancel-btn:hover { background: rgba(255,59,48,0.15); }
+.taxi-cancel-btn.hidden { display: none; }
+
+/* ── Rating View ───────────────────────────────────────────────────────────── */
+#taxi-rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100% - 44px);
+    padding: 20px;
+}
+.taxi-rating-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px 24px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+}
+.taxi-rating-check {
+    font-size: 48px;
+    color: #4cd964;
+    margin-bottom: 12px;
+}
+.taxi-rating-title {
+    font-weight: 700;
+    font-size: 20px;
+    color: #1a1a2e;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 6px;
+}
+.taxi-rating-driver {
+    font-size: 13px;
+    color: rgba(0,0,0,0.4);
+    margin-bottom: 4px;
+}
+.taxi-rating-total {
+    font-weight: 800;
+    font-size: 22px;
+    color: #ffc300;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 20px;
+}
+.taxi-rating-label {
+    font-size: 12px;
+    color: rgba(0,0,0,0.35);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+.taxi-stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+.taxi-stars i {
+    font-size: 32px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: color 0.15s, transform 0.15s;
+}
+.taxi-stars i:hover { transform: scale(1.15); }
+.taxi-stars i.selected {
+    color: #ffc300;
+}
+.taxi-submit-rating {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffc300, #f39c12);
+    color: #1a1a2e;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+    opacity: 0.4;
+    pointer-events: none;
+}
+.taxi-submit-rating.enabled {
+    opacity: 1;
+    pointer-events: auto;
+}
+.taxi-submit-rating.enabled:active { transform: scale(0.97); }

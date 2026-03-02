@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 require('./dispatchManager');  // Registers server:dispatch:* events
-require('../taxi/taxiCommand');       // Registers /calltaxi command
+require('../taxi/taxiCommand');       // Registers taxi phone app server events
 // require('./policeCommand');  // Future: /callcops, /911, etc.
 
 console.log('[Dispatch] Dispatch system loaded.');

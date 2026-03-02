@@ -260,6 +260,18 @@ mp.events.add('server:spawn:player', (player, index) => {
             }
         }
         pos = spawnPoints[0];
+    } else if (index === -4) {
+        const FactionsManager = require('../factions/factionsManager');
+        if (player.factionId && player.factionId > 0) {
+            const faction = FactionsManager.getFaction(player.factionId);
+            if (faction && faction.hq && faction.hq.exterior) {
+                pos = faction.hq.exterior;
+            } else {
+                pos = spawnPoints[0];
+            }
+        } else {
+            pos = spawnPoints[0];
+        }
     } else {
         if (index < 0 || index >= spawnPoints.length) return;
         pos = spawnPoints[index];

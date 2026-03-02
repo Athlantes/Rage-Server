@@ -7,11 +7,14 @@ const NOTIFICATION_APPS = {
     'quickeats': { color: '#ff9500', icon: 'fas fa-hamburger', title: 'QuickEats' },
     'vehicles':  { color: '#f1c40f', icon: 'fas fa-car', title: 'Vehicles' },
     'system':    { color: '#636366', icon: 'fas fa-cog', title: 'System' },
+    'maps':      { color: '#ff4757', icon: 'fas fa-map-marked-alt', title: 'Maps' },
+    'taxi':      { color: '#ffc300', icon: 'fas fa-taxi', title: 'Taxi' },
 };
 
 const app = {
     isLocked: true, 
     toastTimeout: null,
+    bannerTimeout: null,
     currentVehicleId: null,
     mediaBaseUrl: '',
     photos: [],
@@ -68,6 +71,14 @@ const app = {
 
         if (appName === 'bank') {
             if('mp' in window) mp.trigger('client:proxyAction', 'requestBankData', 0);
+        }
+
+        if (appName === 'maps') {
+            if('mp' in window) mp.trigger('client:phone:requestMapBlips');
+        }
+
+        if (appName === 'taxi') {
+            if('mp' in window) mp.trigger('client:phone:requestTaxiData');
         }
 
         if (appName === 'settings-wallpapers') {
@@ -185,9 +196,41 @@ const app = {
         const phoneShell = document.getElementById('phone-shell');
         const isPhoneHidden = phoneShell.classList.contains('hidden');
         
-        if (isPhoneHidden && !app.settings.data.is_dnd) {
+        if (app.settings.data.is_dnd) return;
+
+        if (isPhoneHidden) {
+            // Phone closed — show phantom toast below the phone
             app.showToast(config, title, message);
+        } else if (!app.isLocked) {
+            // Phone open & unlocked — show in-app banner overlay
+            app.showBanner(config, title, message);
         }
+    },
+
+    showBanner: (config, title, message) => {
+        const banner = document.getElementById('inapp-banner');
+        if (!banner) return;
+
+        const iconEl  = banner.querySelector('.inapp-banner-icon');
+        const titleEl = banner.querySelector('.inapp-banner-title');
+        const msgEl   = banner.querySelector('.inapp-banner-msg');
+
+        if (iconEl) {
+            iconEl.innerHTML = `<i class="${config.icon}"></i>`;
+            iconEl.style.background = config.color;
+        }
+        if (titleEl) titleEl.innerText = config.title;
+        if (msgEl)   msgEl.innerText = `${title}: ${message}`;
+
+        // Reset animation
+        banner.classList.remove('active');
+        void banner.offsetWidth; // force reflow
+        banner.classList.add('active');
+
+        if (app.bannerTimeout) clearTimeout(app.bannerTimeout);
+        app.bannerTimeout = setTimeout(() => {
+            banner.classList.remove('active');
+        }, 4000);
     },
 
     showToast: (config, title, message) => {
@@ -854,6 +897,612 @@ const app = {
     // Global wrapper
     receiveSMS: (senderNumber, body, type) => {
         app.phoneApp.receiveMessageRaw(senderNumber, body, type);
+    },
+
+    // --- MAPS / GPS APP ---
+    mapsApp: {
+        blips: [],
+        categories: {},
+        currentCategory: null,
+        isSearching: false,
+
+        CATEGORY_CONFIG: {
+            'Houses':       { icon: 'fas fa-home',           color: '#4cd964' },
+            'Dealerships':  { icon: 'fas fa-car',            color: '#ff9500' },
+            'Businesses':   { icon: 'fas fa-store',          color: '#5856d6' },
+            'Faction HQs':  { icon: 'fas fa-shield-alt',     color: '#ff3b30' },
+            'Gas Stations': { icon: 'fas fa-gas-pump',       color: '#ffcc00' },
+            'ATMs & Banks': { icon: 'fas fa-university',     color: '#1abc9c' },
+            'Food & Drink': { icon: 'fas fa-utensils',       color: '#ff6b6b' },
+            'Garages':      { icon: 'fas fa-warehouse',      color: '#00a8ff' },
+            'Jobs':         { icon: 'fas fa-briefcase',      color: '#8e8e93' },
+            'Other':        { icon: 'fas fa-map-marker-alt', color: '#636e72' },
+        },
+
+        loadBlips: (blipData) => {
+            app.mapsApp.blips = blipData || [];
+            app.mapsApp.categories = {};
+
+            blipData.forEach(blip => {
+                const cat = blip.category || 'Other';
+                if (!app.mapsApp.categories[cat]) app.mapsApp.categories[cat] = [];
+                app.mapsApp.categories[cat].push(blip);
+            });
+
+            // Sort each category by distance
+            for (const cat in app.mapsApp.categories) {
+                app.mapsApp.categories[cat].sort((a, b) => (a.dist || 999) - (b.dist || 999));
+            }
+
+            app.mapsApp.currentCategory = null;
+            app.mapsApp.isSearching = false;
+            app.mapsApp.renderCategories();
+        },
+
+        renderCategories: () => {
+            const container = document.getElementById('maps-categories');
+            const locContainer = document.getElementById('maps-locations');
+            container.innerHTML = '';
+            locContainer.classList.add('hidden');
+            locContainer.innerHTML = '';
+            container.classList.remove('hidden');
+            app.mapsApp.currentCategory = null;
+            app.mapsApp.isSearching = false;
+
+            document.getElementById('maps-title').innerText = 'Maps';
+            document.getElementById('maps-search-input').value = '';
+
+            const catKeys = Object.keys(app.mapsApp.categories);
+
+            if (catKeys.length === 0) {
+                container.innerHTML = '<div class="maps-empty"><i class="fas fa-map"></i><span>No locations found</span></div>';
+                return;
+            }
+
+            const order = ['Houses', 'Dealerships', 'Businesses', 'Faction HQs', 'Gas Stations', 'ATMs & Banks', 'Food & Drink', 'Garages', 'Jobs', 'Other'];
+
+            const sortedKeys = catKeys.sort((a, b) => {
+                const ai = order.indexOf(a);
+                const bi = order.indexOf(b);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+
+            sortedKeys.forEach(cat => {
+                const config = app.mapsApp.CATEGORY_CONFIG[cat] || app.mapsApp.CATEGORY_CONFIG['Other'];
+                const count = app.mapsApp.categories[cat].length;
+                const nearest = app.mapsApp.categories[cat][0];
+                const nearestDist = (nearest && nearest.dist !== undefined) ? nearest.dist + ' km' : '';
+                const div = document.createElement('div');
+                div.className = 'maps-category-item';
+                div.onclick = () => app.mapsApp.openCategory(cat);
+                div.innerHTML = `
+                    <div class="maps-cat-icon" style="background: ${config.color}20; color: ${config.color};">
+                        <i class="${config.icon}"></i>
+                    </div>
+                    <div class="maps-cat-info">
+                        <div class="maps-cat-name">${cat}</div>
+                        <div class="maps-cat-count">${count} location${count !== 1 ? 's' : ''}${nearestDist ? ' · Nearest: ' + nearestDist : ''}</div>
+                    </div>
+                    <div class="maps-cat-chevron"><i class="fas fa-chevron-right"></i></div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        openCategory: (catName) => {
+            app.mapsApp.currentCategory = catName;
+            app.mapsApp.isSearching = false;
+            document.getElementById('maps-categories').classList.add('hidden');
+            const locContainer = document.getElementById('maps-locations');
+            locContainer.classList.remove('hidden');
+            document.getElementById('maps-title').innerText = catName;
+            document.getElementById('maps-search-input').value = '';
+
+            const locations = app.mapsApp.categories[catName] || [];
+            app.mapsApp.renderLocations(locations);
+        },
+
+        renderLocations: (locations) => {
+            const container = document.getElementById('maps-locations');
+            container.innerHTML = '';
+
+            if (locations.length === 0) {
+                container.innerHTML = '<div class="maps-empty"><i class="fas fa-map-pin"></i><span>No locations found</span></div>';
+                return;
+            }
+
+            locations.forEach(loc => {
+                const config = app.mapsApp.CATEGORY_CONFIG[loc.category] || app.mapsApp.CATEGORY_CONFIG['Other'];
+                const distText = (loc.dist !== undefined) ? loc.dist + ' km' : '';
+                const div = document.createElement('div');
+                div.className = 'maps-location-item';
+                div.onclick = () => app.mapsApp.selectLocation(loc);
+                div.innerHTML = `
+                    <div class="maps-loc-icon" style="color: ${config.color};">
+                        <i class="fas fa-map-pin"></i>
+                    </div>
+                    <div class="maps-loc-info">
+                        <div class="maps-loc-name">${loc.name}</div>
+                        <div class="maps-loc-cat">${loc.category}${distText ? ' · ' + distText : ''}</div>
+                    </div>
+                    <div class="maps-loc-go"><i class="fas fa-directions"></i></div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        selectLocation: (loc) => {
+            app.openConfirmModal(
+                'Set GPS Route',
+                `Navigate to "${loc.name}"?`,
+                () => {
+                    if ('mp' in window) {
+                        mp.trigger('client:phone:setGPSRoute', JSON.stringify({
+                            x: parseFloat(loc.x),
+                            y: parseFloat(loc.y),
+                            z: parseFloat(loc.z),
+                            name: loc.name
+                        }));
+                    }
+                }
+            );
+        },
+
+        search: (query) => {
+            if (!query || query.trim() === '') {
+                if (app.mapsApp.currentCategory) {
+                    app.mapsApp.openCategory(app.mapsApp.currentCategory);
+                } else {
+                    app.mapsApp.renderCategories();
+                }
+                return;
+            }
+
+            app.mapsApp.isSearching = true;
+
+            const lower = query.toLowerCase();
+            const results = app.mapsApp.blips.filter(b =>
+                b.name.toLowerCase().includes(lower) ||
+                (b.category && b.category.toLowerCase().includes(lower))
+            );
+
+            document.getElementById('maps-categories').classList.add('hidden');
+            document.getElementById('maps-locations').classList.remove('hidden');
+            document.getElementById('maps-title').innerText = 'Search Results';
+
+            app.mapsApp.renderLocations(results);
+        },
+
+        goBack: () => {
+            const searchInput = document.getElementById('maps-search-input');
+
+            if (app.mapsApp.isSearching) {
+                searchInput.value = '';
+                if (app.mapsApp.currentCategory) {
+                    app.mapsApp.openCategory(app.mapsApp.currentCategory);
+                } else {
+                    app.mapsApp.renderCategories();
+                }
+            } else if (app.mapsApp.currentCategory) {
+                searchInput.value = '';
+                app.mapsApp.renderCategories();
+            } else {
+                app.goHome();
+            }
+        }
+    },
+
+    // ── TAXI APP ──────────────────────────────────────────────────────────────
+    taxiApp: {
+        blips: [],
+        categories: {},
+        currentCategory: null,
+        isSearching: false,
+        driversOnDuty: 0,
+        selectedLocation: null,
+        selectedRating: 0,
+        activeCall: null, // { phase, destName, fare, distKm, driverName }
+
+        CATEGORY_CONFIG: {
+            'Houses':       { icon: 'fas fa-home',           color: '#4cd964' },
+            'Dealerships':  { icon: 'fas fa-car',            color: '#ff9500' },
+            'Businesses':   { icon: 'fas fa-store',          color: '#5856d6' },
+            'Faction HQs':  { icon: 'fas fa-shield-alt',     color: '#ff3b30' },
+            'Gas Stations': { icon: 'fas fa-gas-pump',       color: '#ffcc00' },
+            'ATMs & Banks': { icon: 'fas fa-university',     color: '#1abc9c' },
+            'Food & Drink': { icon: 'fas fa-utensils',       color: '#ff6b6b' },
+            'Garages':      { icon: 'fas fa-warehouse',      color: '#00a8ff' },
+            'Jobs':         { icon: 'fas fa-briefcase',      color: '#8e8e93' },
+            'Other':        { icon: 'fas fa-map-marker-alt', color: '#636e72' },
+        },
+
+        // Called when app data arrives from server
+        loadAppData: (data) => {
+            const t = app.taxiApp;
+            t.driversOnDuty = data.driversOnDuty || 0;
+            document.getElementById('taxi-driver-count').innerText = t.driversOnDuty;
+
+            // If there's an active call, restore the progress view
+            if (data.activeCall) {
+                t.activeCall = data.activeCall;
+                t.showProgress(data.activeCall.phase, data.activeCall);
+                return;
+            }
+
+            // Show browse view
+            t.showBrowse();
+        },
+
+        loadLocations: (locData) => {
+            const t = app.taxiApp;
+            t.blips = locData || [];
+            t.categories = {};
+
+            locData.forEach(blip => {
+                const cat = blip.category || 'Other';
+                if (!t.categories[cat]) t.categories[cat] = [];
+                t.categories[cat].push(blip);
+            });
+
+            for (const cat in t.categories) {
+                t.categories[cat].sort((a, b) => (a.dist || 999) - (b.dist || 999));
+            }
+
+            t.currentCategory = null;
+            t.isSearching = false;
+            t.renderCategories();
+        },
+
+        showBrowse: () => {
+            document.getElementById('taxi-browse').classList.remove('hidden');
+            document.getElementById('taxi-confirm').classList.add('hidden');
+            document.getElementById('taxi-progress').classList.add('hidden');
+            document.getElementById('taxi-rating').classList.add('hidden');
+            document.getElementById('taxi-title').innerText = 'Taxi';
+        },
+
+        renderCategories: () => {
+            const t = app.taxiApp;
+            const container = document.getElementById('taxi-categories');
+            const locContainer = document.getElementById('taxi-locations');
+            container.innerHTML = '';
+            locContainer.classList.add('hidden');
+            locContainer.innerHTML = '';
+            container.classList.remove('hidden');
+            t.currentCategory = null;
+            t.isSearching = false;
+            document.getElementById('taxi-title').innerText = 'Taxi';
+            document.getElementById('taxi-search-input').value = '';
+
+            const catKeys = Object.keys(t.categories);
+            if (catKeys.length === 0) {
+                container.innerHTML = '<div class="maps-empty"><i class="fas fa-taxi"></i><span>Loading locations...</span></div>';
+                return;
+            }
+
+            const order = ['Houses', 'Dealerships', 'Businesses', 'Faction HQs', 'Gas Stations', 'ATMs & Banks', 'Food & Drink', 'Garages', 'Jobs', 'Other'];
+            const sortedKeys = catKeys.sort((a, b) => {
+                const ai = order.indexOf(a);
+                const bi = order.indexOf(b);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+
+            sortedKeys.forEach(cat => {
+                const config = t.CATEGORY_CONFIG[cat] || t.CATEGORY_CONFIG['Other'];
+                const count = t.categories[cat].length;
+                const nearest = t.categories[cat][0];
+                const nearestDist = (nearest && nearest.dist !== undefined) ? nearest.dist + ' km' : '';
+                const div = document.createElement('div');
+                div.className = 'maps-category-item';
+                div.onclick = () => t.openCategory(cat);
+                div.innerHTML = `
+                    <div class="maps-cat-icon" style="background: ${config.color}20; color: ${config.color};">
+                        <i class="${config.icon}"></i>
+                    </div>
+                    <div class="maps-cat-info">
+                        <div class="maps-cat-name">${cat}</div>
+                        <div class="maps-cat-count">${count} location${count !== 1 ? 's' : ''}${nearestDist ? ' · Nearest: ' + nearestDist : ''}</div>
+                    </div>
+                    <div class="maps-cat-chevron"><i class="fas fa-chevron-right"></i></div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        openCategory: (catName) => {
+            const t = app.taxiApp;
+            t.currentCategory = catName;
+            t.isSearching = false;
+            document.getElementById('taxi-categories').classList.add('hidden');
+            const locContainer = document.getElementById('taxi-locations');
+            locContainer.classList.remove('hidden');
+            document.getElementById('taxi-title').innerText = catName;
+            document.getElementById('taxi-search-input').value = '';
+
+            const locations = t.categories[catName] || [];
+            t.renderLocations(locations);
+        },
+
+        renderLocations: (locations) => {
+            const t = app.taxiApp;
+            const container = document.getElementById('taxi-locations');
+            container.innerHTML = '';
+
+            if (locations.length === 0) {
+                container.innerHTML = '<div class="maps-empty"><i class="fas fa-map-pin"></i><span>No locations found</span></div>';
+                return;
+            }
+
+            locations.forEach(loc => {
+                const config = t.CATEGORY_CONFIG[loc.category] || t.CATEGORY_CONFIG['Other'];
+                const distText = (loc.dist !== undefined) ? loc.dist + ' km' : '';
+                const div = document.createElement('div');
+                div.className = 'maps-location-item';
+                div.onclick = () => t.selectLocation(loc);
+                div.innerHTML = `
+                    <div class="maps-loc-icon" style="color: ${config.color};">
+                        <i class="fas fa-map-pin"></i>
+                    </div>
+                    <div class="maps-loc-info">
+                        <div class="maps-loc-name">${loc.name}</div>
+                        <div class="maps-loc-cat">${loc.category}${distText ? ' · ' + distText : ''}</div>
+                    </div>
+                    <div class="maps-loc-go" style="color: #ffc300;"><i class="fas fa-taxi"></i></div>
+                `;
+                container.appendChild(div);
+            });
+        },
+
+        selectLocation: (loc) => {
+            const t = app.taxiApp;
+            t.selectedLocation = loc;
+
+            document.getElementById('taxi-browse').classList.add('hidden');
+            document.getElementById('taxi-confirm').classList.remove('hidden');
+
+            document.getElementById('taxi-confirm-dest').innerText = loc.name;
+
+            // Calculate estimated fare ($50/km)
+            const dist = loc.dist || 0;
+            const fare = Math.round(dist * 50);
+            const minDist = 0.5;
+
+            document.getElementById('taxi-confirm-fare').innerText = dist < minDist ? 'Too close' : '$' + fare;
+            document.getElementById('taxi-confirm-info').innerText = dist + ' km · $50/km';
+
+            const callBtn = document.getElementById('taxi-call-btn');
+            if (t.driversOnDuty === 0) {
+                callBtn.classList.add('disabled');
+                callBtn.innerHTML = '<i class="fas fa-phone-slash"></i> No drivers available';
+            } else if (dist < minDist) {
+                callBtn.classList.add('disabled');
+                callBtn.innerHTML = '<i class="fas fa-times"></i> Min distance: 0.5 km';
+            } else {
+                callBtn.classList.remove('disabled');
+                callBtn.innerHTML = '<i class="fas fa-phone-alt"></i> Call Taxi';
+            }
+        },
+
+        useWaypoint: () => {
+            // Ask the client to check for a GTA waypoint
+            if ('mp' in window) mp.trigger('client:phone:getWaypoint');
+        },
+
+        onWaypointResult: (data) => {
+            const t = app.taxiApp;
+            if (!data || data.error) {
+                app.notify('taxi', 'Taxi', data ? data.error : 'Set a waypoint on map first.');
+                return;
+            }
+            // data = { name, x, y, z, dist }
+            t.selectLocation({
+                name: data.name || 'Custom Waypoint',
+                x: data.x,
+                y: data.y,
+                z: data.z,
+                dist: data.dist,
+                category: 'Waypoint'
+            });
+        },
+
+        confirmCall: () => {
+            const t = app.taxiApp;
+            if (!t.selectedLocation) return;
+            const loc = t.selectedLocation;
+
+            if ('mp' in window) {
+                mp.trigger('client:phone:callTaxi', JSON.stringify({
+                    name: loc.name,
+                    x: parseFloat(loc.x),
+                    y: parseFloat(loc.y),
+                    z: parseFloat(loc.z)
+                }));
+            }
+        },
+
+        onCallPlaced: (data) => {
+            const t = app.taxiApp;
+            t.activeCall = {
+                phase: 0,
+                destName: data.destName,
+                fare: data.fare,
+                distKm: data.distKm,
+                driverName: null
+            };
+            t.showProgress(0, t.activeCall);
+        },
+
+        onCallError: (message) => {
+            app.notify('taxi', 'Taxi', message);
+        },
+
+        showProgress: (phase, data) => {
+            const t = app.taxiApp;
+
+            document.getElementById('taxi-browse').classList.add('hidden');
+            document.getElementById('taxi-confirm').classList.add('hidden');
+            document.getElementById('taxi-progress').classList.remove('hidden');
+            document.getElementById('taxi-rating').classList.add('hidden');
+
+            if (data) {
+                document.getElementById('taxi-progress-dest').innerText = data.destName || 'Your destination';
+                document.getElementById('taxi-progress-fare').innerText = '$' + (data.fare || 0);
+                if (data.driverName) t.activeCall.driverName = data.driverName;
+            }
+
+            // Update stepper
+            const steps = document.querySelectorAll('#taxi-stepper .taxi-step');
+            steps.forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                if (stepNum < phase) {
+                    step.classList.add('completed');
+                } else if (stepNum === phase) {
+                    step.classList.add('active');
+                }
+            });
+
+            // Hide cancel button once boarded (phase 3+)
+            const cancelBtn = document.getElementById('taxi-cancel-btn');
+            if (phase >= 3) {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+            }
+
+            // Phase 4 = finished → show rating
+            if (phase === 4) {
+                setTimeout(() => {
+                    t.showRating(data);
+                }, 1500);
+            }
+        },
+
+        showRating: (data) => {
+            const t = app.taxiApp;
+
+            document.getElementById('taxi-browse').classList.add('hidden');
+            document.getElementById('taxi-confirm').classList.add('hidden');
+            document.getElementById('taxi-progress').classList.add('hidden');
+            document.getElementById('taxi-rating').classList.remove('hidden');
+
+            document.getElementById('taxi-rating-driver').innerText = (t.activeCall && t.activeCall.driverName) ? t.activeCall.driverName : 'Your driver';
+            document.getElementById('taxi-rating-total').innerText = '$' + ((data && data.fare) || (t.activeCall && t.activeCall.fare) || 0);
+
+            // Reset stars
+            t.selectedRating = 0;
+            document.querySelectorAll('#taxi-stars i').forEach(star => star.classList.remove('selected'));
+            document.getElementById('taxi-submit-rating').classList.remove('enabled');
+        },
+
+        selectStar: (num) => {
+            const t = app.taxiApp;
+            t.selectedRating = num;
+            document.querySelectorAll('#taxi-stars i').forEach(star => {
+                const sn = parseInt(star.dataset.star);
+                if (sn <= num) star.classList.add('selected');
+                else star.classList.remove('selected');
+            });
+            document.getElementById('taxi-submit-rating').classList.add('enabled');
+        },
+
+        submitRating: () => {
+            const t = app.taxiApp;
+            if (t.selectedRating < 1) return;
+            if ('mp' in window) mp.trigger('client:phone:submitTaxiRating', t.selectedRating);
+            t.activeCall = null;
+            t.selectedRating = 0;
+            t.selectedLocation = null;
+            t.showBrowse();
+        },
+
+        cancelCall: () => {
+            if ('mp' in window) mp.trigger('client:phone:cancelTaxi');
+        },
+
+        onCallCancelled: () => {
+            const t = app.taxiApp;
+            t.activeCall = null;
+            t.selectedLocation = null;
+            t.showBrowse();
+            app.notify('taxi', 'Taxi', 'Your ride has been cancelled.');
+        },
+
+        backToBrowse: () => {
+            const t = app.taxiApp;
+            t.selectedLocation = null;
+            document.getElementById('taxi-confirm').classList.add('hidden');
+            document.getElementById('taxi-browse').classList.remove('hidden');
+        },
+
+        search: (query) => {
+            const t = app.taxiApp;
+            if (!query || query.trim() === '') {
+                if (t.currentCategory) {
+                    t.openCategory(t.currentCategory);
+                } else {
+                    t.renderCategories();
+                }
+                return;
+            }
+
+            t.isSearching = true;
+            const lower = query.toLowerCase();
+            const results = t.blips.filter(b =>
+                b.name.toLowerCase().includes(lower) ||
+                (b.category && b.category.toLowerCase().includes(lower))
+            );
+
+            document.getElementById('taxi-categories').classList.add('hidden');
+            document.getElementById('taxi-locations').classList.remove('hidden');
+            document.getElementById('taxi-title').innerText = 'Search Results';
+
+            t.renderLocations(results);
+        },
+
+        goBack: () => {
+            const t = app.taxiApp;
+
+            // If showing rating, can't go back
+            if (!document.getElementById('taxi-rating').classList.contains('hidden')) return;
+
+            // If showing progress, do nothing (use cancel button)
+            if (!document.getElementById('taxi-progress').classList.contains('hidden')) return;
+
+            // If showing confirm, go back to browse
+            if (!document.getElementById('taxi-confirm').classList.contains('hidden')) {
+                t.backToBrowse();
+                return;
+            }
+
+            const searchInput = document.getElementById('taxi-search-input');
+            if (t.isSearching) {
+                searchInput.value = '';
+                if (t.currentCategory) {
+                    t.openCategory(t.currentCategory);
+                } else {
+                    t.renderCategories();
+                }
+            } else if (t.currentCategory) {
+                searchInput.value = '';
+                t.renderCategories();
+            } else {
+                app.goHome();
+            }
+        },
+
+        // Update progress from server events
+        updateProgress: (data) => {
+            const t = app.taxiApp;
+            if (!t.activeCall) {
+                t.activeCall = { phase: 0, destName: '', fare: 0, distKm: 0, driverName: null };
+            }
+            if (data.driverName) t.activeCall.driverName = data.driverName;
+            if (data.destName) t.activeCall.destName = data.destName;
+            if (data.fare) t.activeCall.fare = data.fare;
+            t.activeCall.phase = data.phase;
+            t.showProgress(data.phase, t.activeCall);
+        }
     },
 
     scooter: {

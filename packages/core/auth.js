@@ -310,6 +310,20 @@ async function startSession(player, userData) {
         console.error('[Family] Error getting HQ position:', e);
     }
     
+    // 3. Get Faction HQ Data
+    let factionHQPos = null;
+    try {
+        if (player.factionId && player.factionId > 0) {
+            const faction = FactionsManager.getFaction(player.factionId);
+            if (faction && faction.hq && faction.hq.exterior) {
+                const ext = faction.hq.exterior;
+                factionHQPos = { x: ext.x, y: ext.y, z: ext.z };
+            }
+        }
+    } catch (e) {
+        console.error('[Faction] Error getting HQ position:', e);
+    }
+
     let showSpawnSelector = true; 
     let lastPos = null;
 
@@ -326,8 +340,8 @@ async function startSession(player, userData) {
         showSpawnSelector = false; 
     }
 
-    // Pass housePos and familyHQPos to the client event
-    player.call('client:auth:success', [showSpawnSelector, lastPos, housePos, familyHQPos]);
+    // Pass housePos, familyHQPos, and factionHQPos to the client event
+    player.call('client:auth:success', [showSpawnSelector, lastPos, housePos, familyHQPos, factionHQPos]);
     player.outputChatBox(`!{00FF00}Welcome back, ${userData.username}!`);
 
     // --- INITIAL TIMER UPDATE ---
