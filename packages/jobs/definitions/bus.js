@@ -24,15 +24,15 @@ const REWARD_CONFIG = {
     finishBonus: 250
 };
 
-// TIMING CONFIG — Updated to allow the staggered AI tasks to finish without overlapping
+// TIMING CONFIG — V3 Queue System Timings
 const TIMING = {
-    settleDelay: 1000,       // Wait for bus to visually stop before anything
-    doorOpenTime: 800,       // Time for doors to swing open before peds move
-    exitingTime: 6000,       // Increased: Window for exit peds exit animation
-    boardingDelay: 1000,     // Gap to ensure exiting peds clear the door area
-    boardingTime: 10000,     // Increased: Time for peds to walk to bus + enter sequentially
-    doorCloseDelay: 500,     // Pause before closing doors
-    totalStopTime: 19300     // 1000 + 800 + 6000 + 1000 + 10000 + 500
+    settleDelay: 1000,       // Wait for bus to visually stop
+    doorOpenTime: 1000,      // Time for doors to swing open
+    exitingTime: 6000,       // Time allocated for peds inside to step out
+    boardingDelay: 500,      // Small pause before crowd starts boarding
+    boardingTime: 12000,     // Time for the queue to orderly walk in one by one
+    doorCloseDelay: 1000,    // Pause before closing doors
+    totalStopTime: 21500     // Total automatic stop duration (~21 seconds)
 };
 
 // State storage
