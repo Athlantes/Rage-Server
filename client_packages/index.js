@@ -34,6 +34,9 @@ require('./systems/photoHunt');
 require('./systems/cablecar.js');
 require('./systems/carCrafting.js');
 
+// 5. Head-to-Head Race
+require('./systems/h2hRace.js');
+
 // 4. Jobs
 require('./jobs/manager.js');
 require('./jobs/garbage.js');

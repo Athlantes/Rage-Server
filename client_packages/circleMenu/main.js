@@ -87,8 +87,12 @@ function openMenu(entity) {
 
     // --- CARS ---
     if (entityType === 'vehicle') {
-        if (mp.players.local.vehicle) return; 
-        menuItems = getExternalVehicleOptions(entity);
+        if (mp.players.local.vehicle) {
+            // Player is driving — show race options for other vehicles
+            menuItems = getDriverVehicleOptions(entity);
+        } else {
+            menuItems = getExternalVehicleOptions(entity);
+        }
     } 
     // --- PLAYERS ---
     else if (entityType === 'player') {
@@ -143,6 +147,14 @@ mp.events.add('circleMenu:onSelect', (ident) => {
             mp.events.callRemote('playAnimation', 'dance'); // Example
             break;
             
+        case 'h2h_race':
+            if (target && target.type === 'vehicle') {
+                mp.events.callRemote('h2h:invite', target.remoteId);
+            }
+            break;
+        case 'honk':
+            // Small honk feedback
+            break;
         case 'close':
             break;
     }
@@ -215,6 +227,16 @@ function getExternalVehicleOptions(veh) {
         { title: 'Info', description: 'Inspect plate', icon: 'fa-info-circle', ident: 'veh_info' },
         { title: 'Close', description: 'Close Menu', icon: 'fa-times', ident: 'close' }
     ];
+}
+
+function getDriverVehicleOptions(veh) {
+    // Options when YOU are driving and click on ANOTHER vehicle
+    const items = [
+        { title: 'Head to Head', description: 'Challenge driver to a race!', icon: 'fa-flag-checkered', ident: 'h2h_race' },
+        { title: 'Honk', description: 'Honk at vehicle', icon: 'fa-bullhorn', ident: 'honk' },
+        { title: 'Close', description: 'Close Menu', icon: 'fa-times', ident: 'close' }
+    ];
+    return items;
 }
 
 function getPlayerOptions(ply) {

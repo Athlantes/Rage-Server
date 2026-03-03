@@ -15,3 +15,4 @@ require('./dealership');
 require('./tuning');
 require('./repoJob');
 require('./carCrafting');
+require('./h2hRace');
