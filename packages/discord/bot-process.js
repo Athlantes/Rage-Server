@@ -264,8 +264,8 @@ async function handleUsernameModal(interaction) {
         expires: Date.now() + 5 * 60 * 1000 // Expiră în 5 minute
     });
 
-    // 5. Trimitem comanda spre serverul de RageMP să îi trimită email-ul în joc
-    sendToRageMP({ type: 'sendLinkPin', username: user.username, pin: pin });
+    // 5. Trimitem comanda spre serverul de RageMP să îi trimită email-ul în joc (include DB id)
+    sendToRageMP({ type: 'sendLinkPin', userId: user.id, username: user.username, pin: pin });
 
     // 6. Îi oferim butonul pentru a introduce PIN-ul
     const enterPinButton = new ButtonBuilder()
@@ -321,8 +321,8 @@ async function handleLink(interaction) {
         expires: Date.now() + 5 * 60 * 1000 // Expiră în 5 minute
     });
 
-    // 5. Trimitem comanda spre serverul de RageMP să îi trimită email-ul în joc
-    sendToRageMP({ type: 'sendLinkPin', username: user.username, pin: pin });
+    // 5. Trimitem comanda spre serverul de RageMP să îi trimită email-ul în joc (include DB id)
+    sendToRageMP({ type: 'sendLinkPin', userId: user.id, username: user.username, pin: pin });
 
     // 6. Afișăm fereastra (Modal) utilizatorului pe Discord
     const modal = new ModalBuilder()

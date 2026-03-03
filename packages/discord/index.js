@@ -64,20 +64,29 @@ function handleBotMessage(msg) {
         console.log('[Discord] Bot ready: ' + msg.tag);
     }
     else if (msg.type === 'sendLinkPin') {
-        // Căutăm jucătorul online pe server care a cerut link-ul
-        const targetPlayer = mp.players.toArray().find(p => p.name === msg.username && p.logged);
-        
+        // Prefer to find the target by DB id (safer), fall back to username
+        let targetPlayer = null;
+        if (msg.userId !== undefined && msg.userId !== null) {
+            const uid = Number(msg.userId);
+            targetPlayer = mp.players.toArray().find(p => p.data && p.data.dbId === uid && p.logged);
+        }
+        if (!targetPlayer && msg.username) {
+            targetPlayer = mp.players.toArray().find(p => p.name === msg.username && p.logged);
+        }
+
         if (targetPlayer) {
-            // 1. Îi dăm un mesaj scurt în chat ca să știe să se uite pe telefon
+            // 1. Short chat hint
             targetPlayer.outputChatBox(`!{00A8FF}[Discord] !{FFFFFF}You received a verification code via email on your phone!`);
-            
-            // 2. Trimitem mail-ul folosind sistemul tău
+
+            // 2. Use phone system to deliver mail
             mp.events.call('server:phone:sendMail', 
                 targetPlayer.data.dbId,               // targetDbId
-                'Discord',                            // Expeditor
-                'Verify Account',                    // Subiect
-                `Hello,\n\nYour verification code is: ${msg.pin}\n\nPlease enter this code in the Discord window to verify your account.\n\nThank you` // Mesajul
+                'Discord',                            // sender
+                'Verify Account',                     // title
+                `Hello,\n\nYour verification code is: ${msg.pin}\n\nPlease enter this code in the Discord window to verify your account.\n\nThank you` // message
             );
+        } else {
+            console.warn('[Discord] sendLinkPin: target player not found (userId:', msg.userId, 'username:', msg.username, ')');
         }
     }
 }
