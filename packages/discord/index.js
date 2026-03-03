@@ -63,6 +63,23 @@ function handleBotMessage(msg) {
         botReady = true;
         console.log('[Discord] Bot ready: ' + msg.tag);
     }
+    else if (msg.type === 'sendLinkPin') {
+        // Căutăm jucătorul online pe server care a cerut link-ul
+        const targetPlayer = mp.players.toArray().find(p => p.name === msg.username && p.logged);
+        
+        if (targetPlayer) {
+            // 1. Îi dăm un mesaj scurt în chat ca să știe să se uite pe telefon
+            targetPlayer.outputChatBox(`!{00A8FF}[Discord] !{FFFFFF}You received a verification code via email on your phone!`);
+            
+            // 2. Trimitem mail-ul folosind sistemul tău
+            mp.events.call('server:phone:sendMail', 
+                targetPlayer.data.dbId,               // targetDbId
+                'Discord',                            // Expeditor
+                'Verify Account',                    // Subiect
+                `Hello,\n\nYour verification code is: ${msg.pin}\n\nPlease enter this code in the Discord window to verify your account.\n\nThank you` // Mesajul
+            );
+        }
+    }
 }
 
 // ── Send messages to bot via stdin ───────────────────────────────────────────
@@ -79,11 +96,12 @@ function sendToBot(data) {
 function syncPlayerList() {
     const players = [];
     mp.players.forEach(p => {
-        if (p.data && p.data.loggedIn) {
+        // FIX: Folosim p.logged conform sistemului tău de Auth
+        if (p.logged) {
             players.push({
                 id: p.id,
                 name: p.name,
-                level: p.data.level || 1,
+                level: (p.data && p.data.level) ? p.data.level : 1,
             });
         }
     });
@@ -135,5 +153,6 @@ module.exports = {
     logBan: logBan,
     logKick: logKick,
     sendToBot: sendToBot,
+    syncPlayerList: syncPlayerList, // Permite actualizarea instantă a jucătorilor (ex: direct la login)
     isReady: function() { return botReady; },
 };

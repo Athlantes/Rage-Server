@@ -16,10 +16,13 @@ module.exports = {
     // ── Channel IDs ──
     STATUS_CHANNEL_ID:    '1478516481670119526',     // Channel for auto-updating player count embed
     ADMIN_LOG_CHANNEL_ID: '1478516834838909050',  // Channel for admin/mod notifications
-    LINK_LOG_CHANNEL_ID:  '1478516926111027442',   // Channel for account link logs
+    LINK_LOG_CHANNEL_ID:  '1478529101177290897',   // Channel for account link logs
 
     // ── Role IDs (assigned when a player links their Discord) ──
     LINKED_ROLE_ID:   '1478517014518562846',            // Role given to linked players
+
+    // ── Channel where a permanent "Link to Rage" message will be posted
+    LINK_RAGE_CHANNEL_ID: '1478529383827247174',
 
     // ── OAuth2 (for RAGE:MP mp.discord.requestOAuth2) ──
     OAUTH2_REDIRECT:  'http://localhost:3008/api/discord/callback',  // Must match in Discord Developer Portal
