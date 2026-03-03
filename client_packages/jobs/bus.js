@@ -1,7 +1,7 @@
 let busBrowser = null;
 
 // ============================================================
-//  V7 PED SYSTEM — NATIVE ENGINE & SMART MONITORING
+//  V7 PED SYSTEM — GHOST CROWDS, UNDERGROUND SPAWNS & UNBREAKABLE DOORS
 // ============================================================
 
 let waitingPeds  = [];
@@ -15,7 +15,6 @@ const PED_MODELS = [
 ];
 
 const PASSENGER_DOORS = [1, 3]; 
-const SEATS = [1, 2, 4, 5, 6];
 
 // ============================================================
 // MENU
@@ -40,13 +39,17 @@ mp.events.add('client:bus:select', (index) => {
 });
 
 // ============================================================
-// DOOR CONTROL
+// DOOR CONTROL & BREAK PREVENTION
 // ============================================================
 mp.events.add('client:bus:controlDoors', (vehId, open) => {
     const veh = mp.vehicles.atRemoteId(vehId);
     if (!veh || !mp.vehicles.exists(veh)) return;
+    
     PASSENGER_DOORS.forEach(doorId => {
         try {
+            // NATIVE: Prevent doors from being physically broken off
+            mp.game.invoke('0x17DBAB6CBCEAE0EE', veh.handle, doorId, false);
+
             if (open) veh.setDoorOpen(doorId, false, false);
             else      veh.setDoorShut(doorId, false);
         } catch (e) {}
@@ -56,6 +59,20 @@ mp.events.add('client:bus:controlDoors', (vehId, open) => {
 // ============================================================
 // UTILITIES
 // ============================================================
+function getSafeDoorOffset(veh, rightOffset, forwardOffset) {
+    try {
+        const pos = veh.getOffsetFromInWorldCoords(rightOffset, forwardOffset, 0.0);
+        return new mp.Vector3(pos.x, pos.y, veh.position.z);
+    } catch (e) {
+        const h = veh.getHeading() * Math.PI / 180;
+        return new mp.Vector3(
+            veh.position.x + (-Math.sin(h)) * forwardOffset + Math.cos(h) * (-rightOffset),
+            veh.position.y +   Math.cos(h)  * forwardOffset + Math.sin(h) * (-rightOffset),
+            veh.position.z
+        );
+    }
+}
+
 function posOffset(pos, heading, forward, right) {
     const h = heading * Math.PI / 180;
     return new mp.Vector3(
@@ -73,12 +90,16 @@ function removeAllPeds() {
     processingPeds = [];
 }
 
-async function createBusPed(pos, heading) {
+// Added spawnUnderground parameter!
+async function createBusPed(pos, heading, spawnUnderground = false) {
     const hash = mp.game.joaat(PED_MODELS[Math.floor(Math.random() * PED_MODELS.length)]);
     mp.game.streaming.requestModel(hash);
     while (!mp.game.streaming.hasModelLoaded(hash)) await wait(50);
 
-    const spawnPos = new mp.Vector3(pos.x, pos.y, pos.z + 1.0); // +1.0 prevents ground clipping
+    // If underground is true, spawn them at Z - 50. Otherwise, +1.0 for sidewalk.
+    const zPos = spawnUnderground ? pos.z - 50.0 : pos.z + 1.0;
+    const spawnPos = new mp.Vector3(pos.x, pos.y, zPos);
+    
     const ped = mp.peds.new(hash, spawnPos, heading, mp.players.local.dimension);
     
     await wait(250);
@@ -92,7 +113,7 @@ async function createBusPed(pos, heading) {
 }
 
 // ============================================================
-// PRE-SPAWN WAITING PEDS
+// PRE-SPAWN WAITING PEDS (SIDEWALK)
 // ============================================================
 mp.events.add('client:bus:spawnWaitingPeds', async (stopX, stopY, stopZ, heading) => {
     removeAllPeds();
@@ -101,66 +122,75 @@ mp.events.add('client:bus:spawnWaitingPeds', async (stopX, stopY, stopZ, heading
 
     for (let i = 0; i < count; i++) {
         const fwd = -2.0 + i * 1.5;
-        const right = 2.5 + Math.random() * 1.5; 
+        const right = 3.5 + Math.random() * 1.5; 
         const pos = posOffset(stopPos, heading, fwd, right);
         const facing = (heading + 180) % 360;
 
-        const ped = await createBusPed(pos, facing);
+        const ped = await createBusPed(pos, facing, false);
         if (ped) waitingPeds.push(ped);
     }
 });
 
 // ============================================================
-// NATIVE EXITING (Using Flag 256)
+// EXITS (UNDERGROUND SPAWN -> SEAT -> SIMULTANEOUS WALK)
 // ============================================================
 mp.events.add('client:bus:handleExiting', async (vehId) => {
     const veh = mp.vehicles.atRemoteId(vehId);
     if (!veh || !mp.vehicles.exists(veh)) return;
 
-    const count = 1 + Math.floor(Math.random() * 2);
+    const count = 2 + Math.floor(Math.random() * 2);
+    const newPeds = [];
 
+    // 1. Spawn everyone underground first
     for (let i = 0; i < count; i++) {
-        const ped = await createBusPed(veh.position, 0);
+        const ped = await createBusPed(veh.position, veh.getHeading(), true); // true = UNDERGROUND
         if (!ped) continue;
 
         processingPeds.push(ped);
-        const seat = i === 0 ? 1 : 2; 
+        newPeds.push(ped);
+
+        // Turn off collision between the ped and the bus so they don't break doors
+        mp.game.entity.setEntityNoCollisionEntity(ped.handle, veh.handle, false);
+        
         ped.setAlpha(0, false);
+        
+        // Warp them from underground directly into the seat
+        const seat = (i % 2 === 0) ? 1 : 2; 
         ped.setIntoVehicle(veh.handle, seat);
-        
-        await wait(200);
-        if (!mp.peds.exists(ped) || !mp.vehicles.exists(veh)) continue;
-
-        ped.setAlpha(255, false);
-        
-        // FLAG 256: Normal exit but does not close the door. Perfect for bus.
-        ped.taskLeaveVehicle(veh.handle, 256);
-
-        // Monitor until they are out of the vehicle
-        let checks = 0;
-        while (checks < 30) { 
-            await wait(300);
-            if (!mp.peds.exists(ped)) break;
-            
-            // 0 means they are completely on foot
-            if (ped.getVehicleIsIn(false) === 0) break; 
-            checks++;
-        }
-
-        // Walk to the sidewalk
-        if (mp.peds.exists(ped) && mp.vehicles.exists(veh)) {
-            const walkTarget = posOffset(ped.position, veh.getHeading(), -5 - (Math.random() * 4), 5 + Math.random() * 2);
-            ped.taskFollowNavMeshToCoord(walkTarget.x, walkTarget.y, walkTarget.z, 1.0, 10000, 0.5, false, 0);
-            
-            setTimeout(() => { if (mp.peds.exists(ped)) ped.destroy(); }, 7000);
-        }
-        
-        await wait(1500); // Give them time to step down before the next person tries
     }
+
+    await wait(200);
+
+    // 2. Command them all to exit the vehicle at the exact same time
+    newPeds.forEach(ped => {
+        if (mp.peds.exists(ped)) {
+            ped.setAlpha(255, false);
+            ped.taskLeaveVehicle(veh.handle, 0);
+        }
+    });
+
+    // 3. Wait for the exit animation to finish, then walk away simultaneously
+    setTimeout(() => {
+        newPeds.forEach((ped, i) => {
+            if (mp.peds.exists(ped)) {
+                const fwdOffset = i % 2 === 0 ? 3.0 : -1.5;
+                // Scatter their walk targets so they don't group up
+                const walkTarget = getSafeDoorOffset(veh, 6.0 + Math.random() * 2, fwdOffset + (Math.random() * 2 - 1));
+                
+                // taskGoStraightToCoord ignores queuing completely
+                ped.taskGoStraightToCoord(walkTarget.x, walkTarget.y, walkTarget.z, 1.0, 10000, veh.getHeading(), 0.0);
+            }
+        });
+    }, 2200); // Wait ~2.2 seconds for them to stand up from the seat
+
+    // 4. Cleanup
+    setTimeout(() => {
+        newPeds.forEach(ped => { if (mp.peds.exists(ped)) ped.destroy(); });
+    }, 9000);
 });
 
 // ============================================================
-// NATIVE BOARDING (With Smart Fallback Monitoring)
+// BOARDING (SIMULTANEOUS GHOST WALK)
 // ============================================================
 mp.events.add('client:bus:handleBoarding', async (vehId) => {
     const veh = mp.vehicles.atRemoteId(vehId);
@@ -169,59 +199,45 @@ mp.events.add('client:bus:handleBoarding', async (vehId) => {
     const pedsToBoard = [...waitingPeds];
     waitingPeds = [];
 
-    for (let i = 0; i < pedsToBoard.length; i++) {
-        const ped = pedsToBoard[i];
-        if (!mp.peds.exists(ped)) continue;
-        
+    pedsToBoard.forEach((ped, i) => {
+        if (!mp.peds.exists(ped)) return;
         processingPeds.push(ped);
-        ped.setBlockingOfNonTemporaryEvents(false);
+        ped.setBlockingOfNonTemporaryEvents(true);
         ped.clearTasksImmediately();
 
-        const seat = SEATS[i % SEATS.length];
+        // Turn off collision between the ped and the bus
+        mp.game.entity.setEntityNoCollisionEntity(ped.handle, veh.handle, false);
+
+        const fwdOffset = i % 2 === 0 ? 3.0 : -1.5;
         
-        // Mode 1: Walk normally to the vehicle and enter
-        ped.taskEnterVehicle(veh.handle, 15000, seat, 1.0, 1, 0);
+        // Give each ped a slightly different target point near the door
+        const targetPos = getSafeDoorOffset(veh, 1.5 + (Math.random() * 0.5), fwdOffset + (Math.random() * 1.5 - 0.75));
+        ped.boardTarget = targetPos;
 
-        let checks = 0;
-        let successfullyEntered = false;
+        // taskGoStraightToCoord ignores queuing completely
+        ped.taskGoStraightToCoord(targetPos.x, targetPos.y, targetPos.z, 1.0, 15000, veh.getHeading(), 0.0);
+    });
 
-        // Smart Monitor Loop
-        while (checks < 40) { 
-            await wait(300);
-            if (!mp.peds.exists(ped) || !mp.vehicles.exists(veh)) break;
-            
-            // 1. Are they officially inside?
-            if (ped.getVehicleIsIn(false) === veh.handle) {
-                successfullyEntered = true;
-                break;
-            }
-
-            // 2. Are they stuck/giving up?
-            const tryingVeh = ped.getVehicleIsTryingToEnter();
-            if (tryingVeh === 0 && checks > 10) {
-                // If 3 seconds have passed and they aren't even trying to enter a vehicle anymore, they are stuck.
-                break; 
-            }
-
-            checks++;
+    let ticks = 0;
+    const monitor = setInterval(() => {
+        ticks++;
+        if (ticks > 40 || !mp.vehicles.exists(veh)) { 
+            clearInterval(monitor);
+            pedsToBoard.forEach(p => { if (mp.peds.exists(p)) p.destroy(); });
+            return;
         }
 
-        if (mp.peds.exists(ped) && mp.vehicles.exists(veh)) {
-            if (!successfullyEntered) {
-                // FALLBACK: Mode 16 (Teleports directly into vehicle)
-                // If they got stuck on the stairs or stopped trying, this forces them safely into the seat so the job doesn't break
-                ped.taskEnterVehicle(veh.handle, 2000, seat, 1.0, 16, 0);
-                await wait(500); 
+        pedsToBoard.forEach(ped => {
+            if (mp.peds.exists(ped) && ped.getAlpha() === 255) {
+                const dist = mp.game.system.vdist(ped.position.x, ped.position.y, ped.position.z, ped.boardTarget.x, ped.boardTarget.y, ped.boardTarget.z);
+                
+                if (dist < 1.2) {
+                    ped.setAlpha(0, false);
+                    setTimeout(() => { if (mp.peds.exists(ped)) ped.destroy(); }, 300);
+                }
             }
-
-            // They are inside! Make invisible and delete
-            ped.setAlpha(0, false);
-            setTimeout(() => { if (mp.peds.exists(ped)) ped.destroy(); }, 500);
-        }
-
-        // Wait for Ped 1 to clear the door before telling Ped 2 to walk
-        await wait(1200); 
-    }
+        });
+    }, 250);
 });
 
 mp.events.add('client:bus:cleanupPeds', () => removeAllPeds());
