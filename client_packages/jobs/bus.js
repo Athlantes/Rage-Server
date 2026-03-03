@@ -1,21 +1,7 @@
 let busBrowser = null;
 
 // ============================================================
-//  V2 PED SYSTEM — MINIMAL FLAGS, MAXIMUM RELIABILITY
-//
-//  Root cause of ALL previous failures:
-//  - setSeeingRange(0), setHearingRange(0), setAlertness(0),
-//    setConfigFlag(32), setCombatAttributes(46), freezePosition(true),
-//    setBlockingOfNonTemporaryEvents(true), setKeepTask(true)
-//    ALL put the ped AI into a dormant state where navigation
-//    tasks (taskEnterVehicle, taskLeaveVehicle, navmesh walk)
-//    are silently ignored. Only taskPlayAnim worked because it
-//    animates the skeleton without needing AI pathfinding.
-//
-//  V2 FIX: Only 3 safety flags (invincible, no target, no ragdoll).
-//  The ped AI is completely free to process any task.
-//  clearTasks() and new tasks are on SEPARATE game frames.
-//  taskLeaveVehicle uses flag 0 (normal exit) not 256 (warp).
+//  V2 PED SYSTEM — FIXED TIMINGS & AI PATHING
 // ============================================================
 
 // --- Tracking ---
@@ -47,9 +33,9 @@ const IDLE_ANIMS = [
     null
 ];
 
-// --- Seat indices ---
-const EXIT_SEATS  = [0, 3];       // seat 0 = front door, seat 3 = middle/rear door
-const BOARD_SEATS = [0, 1, 2, 3];
+// --- Seat indices (Spread out to avoid pathing collisions) ---
+const EXIT_SEATS  = [1, 2, 3];       
+const BOARD_SEATS = [1, 2, 4, 5, 6];
 
 // ============================================================
 // MENU
@@ -152,10 +138,7 @@ function removeAllPeds() {
 }
 
 // ============================================================
-// V2 PED CREATION
-//
-// ONLY 3 safety flags. Nothing else. The ped's full AI and
-// pathfinding system remains active and unblocked.
+// PED CREATION
 // ============================================================
 async function spawnPed(position, heading) {
     const hash = await loadModel(randomModel());
@@ -164,15 +147,13 @@ async function spawnPed(position, heading) {
         const ped = mp.peds.new(hash, position, heading, mp.players.local.dimension);
         if (!ped) return null;
 
-        // Wait for entity to FULLY register in the game engine
         await new Promise(r => setTimeout(r, 500));
         if (!mp.peds.exists(ped)) return null;
 
-        // Safety flags ONLY — does NOT touch AI, tasks, or movement
         ped.setInvincible(true);
         ped.setCanBeTargetted(false);
         ped.setCanRagdoll(false);
-        ped.freezePosition(false);  // CRITICAL: RAGE:MP defaults new peds to frozen
+        ped.freezePosition(false); 
 
         mp.game.streaming.setModelAsNoLongerNeeded(hash);
         return ped;
@@ -190,8 +171,6 @@ async function playIdleAnim(ped) {
 
 // ============================================================
 // PRE-SPAWN WAITING PEDS
-// Called when a new checkpoint is created. Player sees NPCs
-// standing at the stop while driving toward it.
 // ============================================================
 mp.events.add('client:bus:spawnWaitingPeds', async (stopX, stopY, stopZ, heading) => {
     destroyPedList(exitingPeds);
@@ -210,20 +189,12 @@ mp.events.add('client:bus:spawnWaitingPeds', async (stopX, stopY, stopZ, heading
         if (!ped) continue;
         waitingPeds.push(ped);
 
-        // Idle animation after a brief tick
         addTimer(() => playIdleAnim(ped), 150 + i * 100);
     }
 });
 
 // ============================================================
 // EXITING PASSENGERS
-//
-// Flow: spawn underground (invisible) → setIntoVehicle (warp to
-// seat) → make visible → taskLeaveVehicle flag 0 (REAL exit
-// animation) → after exit completes, walk to sidewalk.
-//
-// The ped has NO flags blocking AI, so taskLeaveVehicle will
-// play the full stepping-out animation.
 // ============================================================
 mp.events.add('client:bus:handleExiting', async (vehId) => {
     const veh = mp.vehicles.atRemoteId(vehId);
@@ -235,26 +206,15 @@ mp.events.add('client:bus:handleExiting', async (vehId) => {
         const vNow = mp.vehicles.atRemoteId(vehId);
         if (!vNow || !mp.vehicles.exists(vNow)) return;
 
-        // Spawn underground — ped is below the world, safe from collisions
-        const safePos = new mp.Vector3(
-            vNow.position.x,
-            vNow.position.y,
-            vNow.position.z - 50
-        );
+        const safePos = new mp.Vector3(vNow.position.x, vNow.position.y, vNow.position.z - 50);
         const ped = await spawnPed(safePos, vNow.getHeading());
         if (!ped) continue;
         exitingPeds.push(ped);
 
         const seat = EXIT_SEATS[i % EXIT_SEATS.length];
-
-        // Hide while positioning
         ped.setAlpha(0, false);
-
-        // Warp into bus seat (works instantly regardless of ped position)
         ped.setIntoVehicle(vNow.handle, seat);
 
-        // FRAME B (400ms later): make visible + real exit animation
-        // Flag 0 = normal exit with full animation (NOT 256 which warps)
         addTimer(() => {
             if (!mp.peds.exists(ped)) return;
             const v = mp.vehicles.atRemoteId(vehId);
@@ -265,15 +225,8 @@ mp.events.add('client:bus:handleExiting', async (vehId) => {
             ped.taskLeaveVehicle(v.handle, 0);
         }, 400);
 
-        // After exit animation (~4s): lock AI so ambient behavior can't override,
-        // clear tasks, then give walk on a separate frame
-        addTimer(() => {
-            if (!mp.peds.exists(ped)) return;
-            ped.setBlockingOfNonTemporaryEvents(true);
-            ped.clearTasks();
-        }, 4500 + i * 300);
-
-        // SEPARATE FRAME (350ms later): walk to sidewalk
+        // DELAYED WALK: Increased to 5500ms to let the exit animation naturally finish.
+        // REMOVED clearTasks() because it breaks the exit flow.
         addTimer(() => {
             if (!mp.peds.exists(ped)) return;
             const v = mp.vehicles.atRemoteId(vehId);
@@ -291,9 +244,8 @@ mp.events.add('client:bus:handleExiting', async (vehId) => {
                     1.0, 14000, 0.5, true, 0
                 );
             } catch (e) {}
-        }, 4850 + i * 300);
+        }, 5500 + i * 500);
 
-        // Safety-net despawn
         addTimer(() => {
             destroyPed(ped);
             exitingPeds = exitingPeds.filter(p => p !== ped);
@@ -303,16 +255,6 @@ mp.events.add('client:bus:handleExiting', async (vehId) => {
 
 // ============================================================
 // BOARDING PASSENGERS
-//
-// Flow: clearTasks (stop idle anim) on frame A → 350ms later
-// on frame B, taskEnterVehicle (walks to nearest door + enters).
-//
-// CRITICAL: clearTasks and taskEnterVehicle MUST be on different
-// game frames. Previous versions did both in one frame which
-// caused the engine to clear the new task too.
-//
-// The ped has NO freezePosition, NO setBlockingOfNonTemporary-
-// Events — the AI is free to pathfind and execute vehicle tasks.
 // ============================================================
 mp.events.add('client:bus:handleBoarding', (vehId) => {
     const veh = mp.vehicles.atRemoteId(vehId);
@@ -327,32 +269,28 @@ mp.events.add('client:bus:handleBoarding', (vehId) => {
         boardingPeds.push(ped);
 
         const seat = BOARD_SEATS[i % BOARD_SEATS.length];
+        
+        // STAGGER FIX: Increased to 1500ms so peds don't pile up and block each other at the door
+        const staggerDelay = i * 1500;
 
-        // FRAME A: stop the idle animation (staggered per ped)
         addTimer(() => {
             if (!mp.peds.exists(ped)) return;
             ped.clearTasks();
-        }, i * 500);
+        }, staggerDelay);
 
-        // FRAME B (350ms after clearTasks): walk to bus + enter
-        // mode 1 = walk to vehicle door and get in, speed 1.0 = walk
         addTimer(() => {
             if (!mp.peds.exists(ped)) return;
             const v = mp.vehicles.atRemoteId(vehId);
             if (!v || !mp.vehicles.exists(v)) return;
             ped.taskEnterVehicle(v.handle, 12000, seat, 1.0, 1, 0);
-        }, 350 + i * 500);
+        }, 250 + staggerDelay);
 
-        // Despawn after walk + enter animation
         addTimer(() => {
             destroyPed(ped);
             boardingPeds = boardingPeds.filter(p => p !== ped);
-        }, 8500 + i * 500);
+        }, 9000 + staggerDelay);
     });
 });
 
-// ============================================================
-// CLEANUP
-// ============================================================
 mp.events.add('client:bus:cleanupPeds', () => removeAllPeds());
 mp.events.add('playerDeath', () => removeAllPeds());

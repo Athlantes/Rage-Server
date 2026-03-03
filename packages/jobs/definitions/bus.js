@@ -24,15 +24,15 @@ const REWARD_CONFIG = {
     finishBonus: 250
 };
 
-// TIMING CONFIG — V2: real vehicle enter/exit animations need more time
+// TIMING CONFIG — Updated to allow the staggered AI tasks to finish without overlapping
 const TIMING = {
     settleDelay: 1000,       // Wait for bus to visually stop before anything
     doorOpenTime: 800,       // Time for doors to swing open before peds move
-    exitingTime: 5000,       // Window for exit peds exit animation
-    boardingDelay: 500,      // Gap between exit and boarding phases
-    boardingTime: 7500,      // Time for peds to walk to bus + enter
+    exitingTime: 6000,       // Increased: Window for exit peds exit animation
+    boardingDelay: 1000,     // Gap to ensure exiting peds clear the door area
+    boardingTime: 10000,     // Increased: Time for peds to walk to bus + enter sequentially
     doorCloseDelay: 500,     // Pause before closing doors
-    totalStopTime: 15300     // settleDelay + doorOpenTime + exitingTime + boardingDelay + boardingTime + doorCloseDelay
+    totalStopTime: 19300     // 1000 + 800 + 6000 + 1000 + 10000 + 500
 };
 
 // State storage
