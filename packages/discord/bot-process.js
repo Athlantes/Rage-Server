@@ -7,7 +7,7 @@
 const { 
     Client, GatewayIntentBits, EmbedBuilder, ActivityType, REST, Routes, 
     SlashCommandBuilder, ChannelType, ModalBuilder, TextInputBuilder, 
-    TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle 
+    TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags 
 } = require('discord.js');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs'); // Nu mai este strict necesar pentru /link, dar îl păstrăm dacă vrei pe viitor
@@ -149,119 +149,66 @@ async function registerCommands() {
 // ─────────────────────────────────────────────────────────────────────────────
 client.on('interactionCreate', async (interaction) => {
     try {
-        // Button click to start link flow
-        if (interaction.isButton() && interaction.customId === 'rage_link_button') {
-            const usernameModal = new ModalBuilder()
-                .setCustomId('link_username_modal')
-                .setTitle('Link In-Game Account');
-
-            const usernameInput = new TextInputBuilder()
-                .setCustomId('link_username_input')
-                .setLabel('Enter your in-game username')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            const row = new ActionRowBuilder().addComponents(usernameInput);
-            usernameModal.addComponents(row);
-            try {
-                await interaction.showModal(usernameModal);
-                console.log('[Discord] Opened username modal for', interaction.user.tag);
-            } catch (e) {
-                console.error('[Discord] Failed to open username modal:', e);
-                await interaction.reply({ content: '❌ Could not open modal. Please try again or use `/link`.', ephemeral: true }).catch(() => {});
-            }
-            return;
-        }
-
-        // Modal submit for username -> send PIN and then prompt for PIN entry
-        if (interaction.isModalSubmit() && interaction.customId === 'link_username_modal') {
-            const username = interaction.fields.getTextInputValue('link_username_input');
-            const [rows] = await pool.query('SELECT id, username, discord_id FROM users WHERE username = ?', [username]);
-            if (rows.length === 0) {
-                return interaction.reply({ content: '❌ This in-game account does not exist on the server.', ephemeral: true });
-            }
-
-            const user = rows[0];
-            if (user.discord_id && user.discord_id !== interaction.user.id) {
-                return interaction.reply({ content: '❌ This in-game account is already linked to another Discord account.', ephemeral: true });
-            }
-
-            // Verify player is online
-            const isOnline = onlinePlayers.find(p => p.name.toLowerCase() === username.toLowerCase());
-            if (!isOnline) {
-                return interaction.reply({ content: `❌ The player **${username}** is not online. You must be online in-game to receive the verification code! If you just connected, please wait a few seconds and try again.`, ephemeral: true });
-            }
-
-            // Generate PIN and store pending link
-            const pin = Math.floor(100000 + Math.random() * 900000).toString();
-            pendingLinks.set(interaction.user.id, {
-                userId: user.id,
-                username: user.username,
-                pin: pin,
-                expires: Date.now() + 5 * 60 * 1000
-            });
-
-            // Send PIN to RAGE:MP server to be delivered in-game
-            sendToRageMP({ type: 'sendLinkPin', username: user.username, pin: pin });
-
-            // Provide an ephemeral button to open the PIN modal (can't open a modal from a modal submit)
-            const enterPinButton = new ButtonBuilder()
-                .setCustomId('rage_enter_pin')
-                .setLabel('Enter verification code')
-                .setStyle(ButtonStyle.Primary);
-
-            const rowPin = new ActionRowBuilder().addComponents(enterPinButton);
-            await interaction.reply({ content: `✅ A verification code was sent to **${user.username}** in-game. Click the button below to enter it.`, components: [rowPin], ephemeral: true }).catch(() => {});
-            return;
-        }
-
         if (interaction.isChatInputCommand()) {
             switch (interaction.commandName) {
                 case 'status':  return await handleStatus(interaction);
                 case 'link':    return await handleLink(interaction);
                 case 'unlink':  return await handleUnlink(interaction);
                 case 'profile': return await handleProfile(interaction);
-
-                // Button click to open PIN modal (triggered after username modal flows)
-                if (interaction.isButton() && interaction.customId === 'rage_enter_pin') {
-                    console.log('[Discord] rage_enter_pin clicked by', interaction.user.tag);
-
-                    // Ensure there is a pending link request for this user
-                    const pending = pendingLinks.get(interaction.user.id);
-                    if (!pending) {
-                        await interaction.reply({ content: '❌ No pending verification found. Click the Link button again or use `/link`.', ephemeral: true }).catch(() => {});
-                        return;
-                    }
-
-                    const pinModal = new ModalBuilder()
-                        .setCustomId('link_modal')
-                        .setTitle('Enter verification code');
-                    const pinInput = new TextInputBuilder()
-                        .setCustomId('pin_input')
-                        .setLabel('6-digit code received in-game')
-                        .setStyle(TextInputStyle.Short)
-                        .setMinLength(6)
-                        .setMaxLength(6)
-                        .setRequired(true);
-                    pinModal.addComponents(new ActionRowBuilder().addComponents(pinInput));
-                    try {
-                        await interaction.showModal(pinModal);
-                        console.log('[Discord] Opened PIN modal via button for', interaction.user.tag);
-                    } catch (e) {
-                        console.error('[Discord] Failed to open PIN modal via button:', e.stack || e);
-                        await interaction.reply({ content: '❌ Could not open verification modal. Try `/link`.', ephemeral: true }).catch(() => {});
-                    }
-                    return;
-                }
             }
-        } else if (interaction.isModalSubmit()) {
+        } 
+        else if (interaction.isModalSubmit()) {
+            // Când introduce codul PIN
             if (interaction.customId === 'link_modal') {
                 return await handleLinkModal(interaction);
+            }
+            // Când introduce numele din joc (din buton)
+            if (interaction.customId === 'ask_username_modal') {
+                return await handleUsernameModal(interaction);
+            }
+        } 
+        else if (interaction.isButton()) {
+            // 1. Când apasă pe butonul mare pus pe canal
+            if (interaction.customId === 'rage_link_button') {
+                const modal = new ModalBuilder()
+                    .setCustomId('ask_username_modal')
+                    .setTitle('Link In-Game Account');
+
+                const usernameInput = new TextInputBuilder()
+                    .setCustomId('username_input')
+                    .setLabel('Your in-game name (e.g. John_Doe)')
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                const actionRow = new ActionRowBuilder().addComponents(usernameInput);
+                modal.addComponents(actionRow);
+
+                await interaction.showModal(modal);
+            }
+
+            // 2. Când apasă pe butonul intermediar să bage PIN-ul
+            if (interaction.customId === 'rage_enter_pin') {
+                const modal = new ModalBuilder()
+                    .setCustomId('link_modal')
+                    .setTitle('Verify In-Game Account');
+
+                const pinInput = new TextInputBuilder()
+                    .setCustomId('pin_input')
+                    .setLabel('The 6-digit code received on your phone')
+                    .setStyle(TextInputStyle.Short)
+                    .setMinLength(6)
+                    .setMaxLength(6)
+                    .setRequired(true);
+
+                const firstActionRow = new ActionRowBuilder().addComponents(pinInput);
+                modal.addComponents(firstActionRow);
+
+                await interaction.showModal(modal);
             }
         }
     } catch (err) {
         console.error(`[Discord] Interaction error:`, err);
-        const reply = { content: '❌ An error occurred. Please try again.', ephemeral: true };
+        const reply = { content: '❌ An error occurred. Please try again.', flags: MessageFlags.Ephemeral };
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp(reply).catch(() => {});
         } else {
@@ -279,6 +226,63 @@ async function handleStatus(interaction) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  Procesare Nume din Buton (înlocuiește parțial comanda /link)
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleUsernameModal(interaction) {
+    const username  = interaction.fields.getTextInputValue('username_input');
+    const discordId = interaction.user.id;
+
+    // 1. Verificăm dacă Discord-ul e deja conectat
+    const [existing] = await pool.query('SELECT id, username FROM users WHERE discord_id = ?', [discordId]);
+    if (existing.length > 0) {
+        return interaction.reply({ content: `⚠️ Your Discord account is already linked to **${existing[0].username}**. Use \`/unlink\` first to unlink it.`, flags: MessageFlags.Ephemeral });
+    }
+
+    // 2. Verificăm dacă username-ul există și dacă nu e deja legat
+    const [rows] = await pool.query('SELECT id, username, discord_id FROM users WHERE username = ?', [username]);
+    if (rows.length === 0) {
+        return interaction.reply({ content: '❌ This in-game account does not exist on the server.', flags: MessageFlags.Ephemeral });
+    }
+
+    const user = rows[0];
+    if (user.discord_id && user.discord_id !== discordId) {
+        return interaction.reply({ content: '❌ This in-game account is already linked to another Discord account.', flags: MessageFlags.Ephemeral });
+    }
+
+    // 3. Verificăm dacă jucătorul este ONLINE acum
+    const isOnline = onlinePlayers.find(p => p.name.toLowerCase() === username.toLowerCase());
+    if (!isOnline) {
+        return interaction.reply({ content: `❌ The player **${username}** is not online. You must be online in-game to receive the verification code on your phone!`, flags: MessageFlags.Ephemeral });
+    }
+
+    // 4. Generăm un PIN de 6 cifre și îl stocăm temporar
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    pendingLinks.set(discordId, {
+        userId: user.id,
+        username: user.username,
+        pin: pin,
+        expires: Date.now() + 5 * 60 * 1000 // Expiră în 5 minute
+    });
+
+    // 5. Trimitem comanda spre serverul de RageMP să îi trimită email-ul în joc
+    sendToRageMP({ type: 'sendLinkPin', username: user.username, pin: pin });
+
+    // 6. Îi oferim butonul pentru a introduce PIN-ul
+    const enterPinButton = new ButtonBuilder()
+        .setCustomId('rage_enter_pin')
+        .setLabel('Enter verification code')
+        .setStyle(ButtonStyle.Primary);
+
+    const row = new ActionRowBuilder().addComponents(enterPinButton);
+
+    await interaction.reply({ 
+        content: `✅ An email with a 6-digit code has been sent to your in-game phone for **${user.username}**.\nClick the button below to enter it.`, 
+        components: [row],
+        flags: MessageFlags.Ephemeral // Mesajul îl vede doar el
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  /link — Initiază procesul și trimite PIN-ul în joc
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleLink(interaction) {
@@ -288,24 +292,24 @@ async function handleLink(interaction) {
     // 1. Verificăm dacă Discord-ul e deja conectat
     const [existing] = await pool.query('SELECT id, username FROM users WHERE discord_id = ?', [discordId]);
     if (existing.length > 0) {
-        return interaction.reply({ content: `⚠️ Your Discord account is already linked to **${existing[0].username}**. Use \`/unlink\` first to unlink it.`, ephemeral: true });
+        return interaction.reply({ content: `⚠️ Your Discord account is already linked to **${existing[0].username}**. Use \`/unlink\` first to unlink it.`, flags: MessageFlags.Ephemeral });
     }
 
     // 2. Verificăm dacă username-ul există și dacă nu e deja legat
     const [rows] = await pool.query('SELECT id, username, discord_id FROM users WHERE username = ?', [username]);
     if (rows.length === 0) {
-        return interaction.reply({ content: '❌ This in-game account does not exist on the server.', ephemeral: true });
+        return interaction.reply({ content: '❌ This in-game account does not exist on the server.', flags: MessageFlags.Ephemeral });
     }
 
     const user = rows[0];
     if (user.discord_id && user.discord_id !== discordId) {
-        return interaction.reply({ content: '❌ This in-game account is already linked to another Discord account.', ephemeral: true });
+        return interaction.reply({ content: '❌ This in-game account is already linked to another Discord account.', flags: MessageFlags.Ephemeral });
     }
 
     // 3. Verificăm dacă jucătorul este ONLINE acum
     const isOnline = onlinePlayers.find(p => p.name.toLowerCase() === username.toLowerCase());
     if (!isOnline) {
-        return interaction.reply({ content: `❌ The player **${username}** is not online. You must be online in-game to receive the verification code on your phone!`, ephemeral: true });
+        return interaction.reply({ content: `❌ The player **${username}** is not online. You must be online in-game to receive the verification code on your phone!`, flags: MessageFlags.Ephemeral });
     }
 
     // 4. Generăm un PIN de 6 cifre și îl stocăm temporar
@@ -348,20 +352,20 @@ async function handleLinkModal(interaction) {
     const pending = pendingLinks.get(discordId);
     
     if (!pending) {
-        return interaction.reply({ content: '❌ The session expired or you don\'t have a pending link request.', ephemeral: true });
+        return interaction.reply({ content: '❌ The session expired or you don\'t have a pending link request.', flags: MessageFlags.Ephemeral });
     }
 
     if (Date.now() > pending.expires) {
         pendingLinks.delete(discordId);
-        return interaction.reply({ content: '❌ The code expired. Please use `/link` again.', ephemeral: true });
+        return interaction.reply({ content: '❌ The code expired. Please use `/link` again.', flags: MessageFlags.Ephemeral });
     }
 
     if (submittedPin !== pending.pin) {
-        return interaction.reply({ content: '❌ Wrong code. Try again!', ephemeral: true });
+        return interaction.reply({ content: '❌ Wrong code. Try again!', flags: MessageFlags.Ephemeral });
     }
 
     // Codul este corect! Legăm conturile.
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     await pool.query('UPDATE users SET discord_id = ? WHERE id = ?', [discordId, pending.userId]);
 
@@ -385,7 +389,7 @@ async function handleLinkModal(interaction) {
 //  /unlink
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleUnlink(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const discordId = interaction.user.id;
     const [rows] = await pool.query('SELECT id, username FROM users WHERE discord_id = ?', [discordId]);
@@ -414,7 +418,7 @@ async function handleUnlink(interaction) {
 //  /profile
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleProfile(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const discordId = interaction.user.id;
     const [rows] = await pool.query(
