@@ -38,7 +38,6 @@ require('./systems/carCrafting.js');
 require('./jobs/manager.js');
 require('./jobs/garbage.js');
 require('./jobs/farmer.js');
-require('./jobs/bus.js');
 require('./jobs/preview.js');
 
 require('./creator/index.js');

@@ -3,4 +3,3 @@ require('./definitions/courier');
 require('./definitions/garbage');
 require('./definitions/foodDelivery');
 require('./definitions/farmer');
-require('./definitions/bus');
