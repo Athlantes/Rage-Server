@@ -4,7 +4,7 @@
 //  Receives events from RAGE:MP via stdin (line-delimited JSON).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const path = require('path');
@@ -56,7 +56,7 @@ process.stdin.on('data', (chunk) => {
     }
 });
 
-function handleIPC(msg) {
+async function handleIPC(msg) {
     switch (msg.type) {
         case 'playerJoin':
             sendLogEmbed('join', `📥 **${msg.name}** connected to the server.`);
@@ -66,6 +66,12 @@ function handleIPC(msg) {
             break;
         case 'playerList':
             onlinePlayers = msg.players || [];
+            // Immediately refresh the status embed and channel name when player list is pushed
+            try {
+                updateStatusEmbed();
+            } catch (e) {
+                console.warn('[Discord] Failed to update status on playerList IPC:', e.message);
+            }
             break;
         case 'adminLog':
             sendLogEmbed('admin', msg.message, msg.fields || []);
@@ -314,6 +320,34 @@ async function updateStatusEmbed() {
                 statusMessage = await channel.send({ embeds: [embed] });
             }
         }
+        // Also attempt to rename the channel to show the current online count
+        // Build a human-readable channel name like "12 Online In-Game"
+        const count = (onlinePlayers && onlinePlayers.length) || 0;
+        const safeName = `${count} Online In-Game`;
+
+        try {
+            const guild = await client.guilds.fetch(config.GUILD_ID);
+            const statusChannel = await guild.channels.fetch(config.STATUS_CHANNEL_ID);
+            if (statusChannel && typeof statusChannel.setName === 'function') {
+                // Only rename if this is a voice-type channel (spaces allowed) or otherwise permitted
+                const isVoice = statusChannel.type === ChannelType.GuildVoice || statusChannel.type === ChannelType.GuildStageVoice;
+                if (isVoice) {
+                    // Only attempt rename if the name actually differs
+                    if (statusChannel.name !== safeName) {
+                        await statusChannel.setName(safeName);
+                    }
+                } else {
+                    // For non-voice channels, keep hyphenated safe name to avoid invalid characters
+                    const altName = `${count}-online-in-game`;
+                    if (statusChannel.name !== altName) {
+                        await statusChannel.setName(altName);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[Discord] Could not rename status channel:', e.message);
+        }
+
     } catch (err) {
         console.error('[Discord] Status embed update failed:', err.message);
     }

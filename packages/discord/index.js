@@ -95,6 +95,8 @@ mp.events.add('playerJoin', (player) => {
     // Note: playerJoin fires on connection, before login.
     // We log it for early visibility; detailed info comes via admin logs.
     sendToBot({ type: 'playerJoin', name: player.name });
+    // Sync player list shortly after join to ensure logged-in state is reflected
+    setTimeout(syncPlayerList, 1000);
 });
 
 mp.events.add('playerQuit', (player) => {
@@ -103,6 +105,8 @@ mp.events.add('playerQuit', (player) => {
         name: player.name,
         level: (player.data && player.data.level) || 0,
     });
+    // Immediate sync on quit
+    syncPlayerList();
 });
 
 // ── Public API (for other server modules) ────────────────────────────────────
