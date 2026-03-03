@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H2H Race</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ── COUNTDOWN OVERLAY ── -->
+    <div id="countdown-overlay" class="hidden">
+        <div id="countdown-container">
+            <div id="countdown-label">HEAD TO HEAD</div>
+            <div id="countdown-number"></div>
+            <div id="countdown-sub">Get Ready</div>
+        </div>
+    </div>
+
+    <!-- ── GO! FLASH OVERLAY ── -->
+    <div id="go-overlay" class="hidden">
+        <div id="go-text">GO!</div>
+    </div>
+
+    <!-- ── RACE HUD ── -->
+    <div id="race-hud" class="hidden">
+        <div id="hud-panel">
+            <div id="hud-accent"></div>
+            <div id="hud-content">
+                <div id="hud-label">HEAD TO HEAD</div>
+                <div id="hud-stats">
+                    <div class="stat-box">
+                        <div class="stat-label">DISTANCE</div>
+                        <div class="stat-value" id="hud-distance">0 m</div>
+                    </div>
+                    <div class="stat-sep">·</div>
+                    <div class="stat-box">
+                        <div class="stat-label">TIME</div>
+                        <div class="stat-value" id="hud-time">0.0s</div>
+                    </div>
+                </div>
+                <div id="hud-dest">
+                    <span class="dest-label">DESTINATION</span>
+                    <span class="dest-sep">·</span>
+                    <span class="dest-name" id="hud-dest-name">---</span>
+                </div>
+                <div id="hud-progress-track">
+                    <div id="hud-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RESULT OVERLAY ── -->
+    <div id="result-overlay" class="hidden">
+        <div id="result-container">
+            <div id="result-accent"></div>
+            <div id="result-text">YOU WIN!</div>
+            <div id="result-time"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

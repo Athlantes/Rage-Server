@@ -65,7 +65,7 @@ mp.events.add('h2h:invite', (player, targetVehicleId) => {
     if (!player.vehicle) {
         return player.outputChatBox(`${COLORS.ERROR}You must be driving a vehicle.`);
     }
-    if (player.seat !== -1 && player.seat !== 0) {
+    if (player.seat !== -1 && player.seat !== 0) { 
         return player.outputChatBox(`${COLORS.ERROR}You must be the driver.`);
     }
 
@@ -317,16 +317,27 @@ function endRace(raceId, winner, message) {
         }
     });
 
-    // Announce to nearby players
-    const midX = (race.challenger.position.x + race.target.position.x) / 2;
-    const midY = (race.challenger.position.y + race.target.position.y) / 2;
-    const midZ = (race.challenger.position.z + race.target.position.z) / 2;
+    // Fixed: Announce to nearby players securely in case one player disconnected
+    let midPos = null;
+    if (mp.players.exists(race.challenger) && mp.players.exists(race.target)) {
+        midPos = {
+            x: (race.challenger.position.x + race.target.position.x) / 2,
+            y: (race.challenger.position.y + race.target.position.y) / 2,
+            z: (race.challenger.position.z + race.target.position.z) / 2
+        };
+    } else if (mp.players.exists(race.challenger)) {
+        midPos = race.challenger.position;
+    } else if (mp.players.exists(race.target)) {
+        midPos = race.target.position;
+    }
 
-    mp.players.forEachInRange({ x: midX, y: midY, z: midZ }, 100, (p) => {
-        if (p.id !== race.challenger.id && p.id !== race.target.id) {
-            p.outputChatBox(`${COLORS.RACE}🏁 ${message}`);
-        }
-    });
+    if (midPos) {
+        mp.players.forEachInRange(new mp.Vector3(midPos.x, midPos.y, midPos.z), 100, (p) => {
+            if (p.id !== race.challenger.id && p.id !== race.target.id) {
+                p.outputChatBox(`${COLORS.RACE}🏁 ${message}`);
+            }
+        });
+    }
 
     activeRaces.delete(raceId);
 }
@@ -336,7 +347,6 @@ function endRace(raceId, winner, message) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function findVehicleDriver(vehicle) {
-    // Find the player sitting in the driver seat (-1 or 0)
     let driver = null;
     mp.players.forEach(p => {
         if (p.vehicle && p.vehicle.id === vehicle.id && (p.seat === -1 || p.seat === 0)) {
