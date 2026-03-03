@@ -3,6 +3,7 @@ require('./taxiDispatch');
 
 const Faction = require('../Faction');
 const factionsManager = require('../factionsManager');
+const wardrobeManager = require('../wardrobe/wardrobeManager');
 
 class TaxiFaction extends Faction {
     constructor() {
@@ -11,7 +12,8 @@ class TaxiFaction extends Faction {
         this.hq = {
             exterior: new mp.Vector3(895.0, -179.0, 74.7),     
             interior: new mp.Vector3(266.1, -1007.6, -101.0),  
-            dutyPoint: new mp.Vector3(268.0, -1007.0, -101.0), 
+            dutyPoint: new mp.Vector3(268.0, -1007.0, -101.0),
+            wardrobePoint: new mp.Vector3(264.49, -996.82, -99.01),
             dimension: 101 
         };
 
@@ -33,7 +35,121 @@ class TaxiFaction extends Faction {
             ]
         };
 
+        this.registerWardrobe();
         this.createWorldEntities();
+    }
+
+    // ── Wardrobe: Register taxi uniform options ───────────────────────────────
+    registerWardrobe() {
+        wardrobeManager.registerUniforms(this.id, {
+            name: 'Taxi Wardrobe',
+            wardrobePoint: this.hq.wardrobePoint,
+            wardrobeDimension: this.hq.dimension,
+            uniforms: {
+                // ── Male Uniforms (4) ─────────────────────────────────────────
+                male: [
+                    {
+                        name: 'Classic Cabbie',
+                        description: 'Yellow polo shirt with dark trousers',
+                        components: [
+                            { id: 11, drawable: 230, texture: 5 },  // Top: polo yellow
+                            { id: 3,  drawable: 11,  texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt: none
+                            { id: 4,  drawable: 35,  texture: 0 },  // Legs: dark trousers
+                            { id: 6,  drawable: 10,  texture: 0 },  // Shoes: black shoes
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Professional Driver',
+                        description: 'White dress shirt with black pants',
+                        components: [
+                            { id: 11, drawable: 31,  texture: 0 },  // Top: dress shirt
+                            { id: 3,  drawable: 4,   texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt
+                            { id: 4,  drawable: 28,  texture: 0 },  // Legs: black pants
+                            { id: 6,  drawable: 10,  texture: 0 },  // Shoes: loafers
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Casual Transit',
+                        description: 'Branded t-shirt with jeans',
+                        components: [
+                            { id: 11, drawable: 15,  texture: 0 },  // Top: t-shirt
+                            { id: 3,  drawable: 15,  texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt
+                            { id: 4,  drawable: 0,   texture: 5 },  // Legs: jeans
+                            { id: 6,  drawable: 1,   texture: 0 },  // Shoes: sneakers
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Formal Chauffeur',
+                        description: 'Full suit with tie — executive look',
+                        components: [
+                            { id: 11, drawable: 29,  texture: 0 },  // Top: suit jacket
+                            { id: 3,  drawable: 4,   texture: 0 },  // Torso
+                            { id: 8,  drawable: 31,  texture: 0 },  // Undershirt: shirt + tie
+                            { id: 4,  drawable: 28,  texture: 0 },  // Legs: suit trousers
+                            { id: 6,  drawable: 10,  texture: 0 },  // Shoes: dress shoes
+                        ],
+                        props: []
+                    },
+                ],
+                // ── Female Uniforms (4) ───────────────────────────────────────
+                female: [
+                    {
+                        name: 'Classic Cabbie',
+                        description: 'Yellow polo shirt with dark trousers',
+                        components: [
+                            { id: 11, drawable: 230, texture: 5 },  // Top: polo yellow
+                            { id: 3,  drawable: 7,   texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt
+                            { id: 4,  drawable: 34,  texture: 0 },  // Legs: dark trousers
+                            { id: 6,  drawable: 29,  texture: 0 },  // Shoes: black shoes
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Professional Driver',
+                        description: 'White blouse with black pants',
+                        components: [
+                            { id: 11, drawable: 7,   texture: 0 },  // Top: blouse
+                            { id: 3,  drawable: 3,   texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt
+                            { id: 4,  drawable: 34,  texture: 0 },  // Legs: black pants
+                            { id: 6,  drawable: 29,  texture: 0 },  // Shoes: heels
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Casual Transit',
+                        description: 'Branded t-shirt with jeans',
+                        components: [
+                            { id: 11, drawable: 15,  texture: 0 },  // Top: t-shirt
+                            { id: 3,  drawable: 15,  texture: 0 },  // Torso
+                            { id: 8,  drawable: 15,  texture: 0 },  // Undershirt
+                            { id: 4,  drawable: 1,   texture: 5 },  // Legs: jeans
+                            { id: 6,  drawable: 3,   texture: 0 },  // Shoes: sneakers
+                        ],
+                        props: []
+                    },
+                    {
+                        name: 'Formal Chauffeur',
+                        description: 'Business suit — executive look',
+                        components: [
+                            { id: 11, drawable: 7,   texture: 2 },  // Top: suit jacket
+                            { id: 3,  drawable: 3,   texture: 0 },  // Torso
+                            { id: 8,  drawable: 31,  texture: 0 },  // Undershirt: blouse
+                            { id: 4,  drawable: 34,  texture: 0 },  // Legs: suit trousers
+                            { id: 6,  drawable: 29,  texture: 0 },  // Shoes: dress shoes
+                        ],
+                        props: []
+                    },
+                ],
+            }
+        });
     }
 
     createWorldEntities() {
@@ -46,6 +162,11 @@ class TaxiFaction extends Faction {
         exitCol.setVariable('interaction', { title: "Downtown Cab Co.", text: "Exit HQ", event: "faction:taxi:exit", requireOnFoot: true });
 
         mp.markers.new(1, new mp.Vector3(this.hq.dutyPoint.x, this.hq.dutyPoint.y, this.hq.dutyPoint.z - 1.0), 1.0, { color: [0, 255, 0, 150], dimension: this.hq.dimension });
+
+        // Wardrobe marker & colshape
+        mp.markers.new(1, new mp.Vector3(this.hq.wardrobePoint.x, this.hq.wardrobePoint.y, this.hq.wardrobePoint.z - 1.0), 1.0, { color: [0, 150, 255, 150], dimension: this.hq.dimension });
+        let wardrobeCol = mp.colshapes.newSphere(this.hq.wardrobePoint.x, this.hq.wardrobePoint.y, this.hq.wardrobePoint.z, 1.5, this.hq.dimension);
+        wardrobeCol.setVariable('interaction', { title: "Wardrobe", text: "Select Uniform", event: "faction:wardrobe:open", requireOnFoot: true });
 
         mp.markers.new(36, this.garage.menuPoint, 1.0, { color: [255, 204, 0, 200], dimension: 0 }); 
         let garageCol = mp.colshapes.newSphere(this.garage.menuPoint.x, this.garage.menuPoint.y, this.garage.menuPoint.z, 1.5, 0);

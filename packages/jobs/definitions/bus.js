@@ -24,14 +24,15 @@ const REWARD_CONFIG = {
     finishBonus: 250
 };
 
-// TIMING CONFIG - Increased for smooth NPC animations
+// TIMING CONFIG — V2: real vehicle enter/exit animations need more time
 const TIMING = {
-    doorOpenDelay: 500,      // Wait before opening doors
-    exitingTime: 4000,       // Time for NPCs to exit bus
-    boardingDelay: 2000,     // Delay before boarding starts (let exiters clear)
-    boardingTime: 8000,      // Time for NPCs to board
-    doorCloseDelay: 1000,    // Wait before closing doors
-    totalStopTime: 15500     // Total time at stop (sum of above)
+    settleDelay: 1000,       // Wait for bus to visually stop before anything
+    doorOpenTime: 800,       // Time for doors to swing open before peds move
+    exitingTime: 5000,       // Window for exit peds exit animation
+    boardingDelay: 500,      // Gap between exit and boarding phases
+    boardingTime: 7500,      // Time for peds to walk to bus + enter
+    doorCloseDelay: 500,     // Pause before closing doors
+    totalStopTime: 15300     // settleDelay + doorOpenTime + exitingTime + boardingDelay + boardingTime + doorCloseDelay
 };
 
 // State storage
@@ -126,24 +127,24 @@ function startRoute(player, routeIndex) {
         currentStop: 0,
         bus: bus,
         totalStops: route.stops.length,
-        isBoarding: false,
-        stopCheckInterval: null
+        isBoarding: false
     });
 
     player.call('showNotification', ['Bus Driver', `Route: ${route.name} started.`]);
-    setNextStop(player);
+
+    // Small delay so the client is fully ready (player warp + ped pre-spawn)
+    setTimeout(() => {
+        if (mp.players.exists(player) && activeJobs.has(player.id)) setNextStop(player);
+    }, 600);
 }
 
 function setNextStop(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
 
-    if (job.stopCheckInterval) {
-        clearInterval(job.stopCheckInterval);
-        job.stopCheckInterval = null;
-    }
-
     if (job.currentStop >= job.totalStops) {
+        // Clean up any remaining peds before depot return
+        player.call('client:bus:cleanupPeds');
 
         jobManager.createObjective(player, DEPOT_RETURN, "Return Bus to Terminal", 5.0, (p) => {
             finishJob(p);
@@ -154,14 +155,21 @@ function setNextStop(player) {
 
     const stopData = job.route.stops[job.currentStop];
     
-    // Pass bus heading to client for proper sidewalk positioning
-    const busHeading = mp.vehicles.exists(job.bus) ? job.bus.heading : 0;
-    const stopWithHeading = { 
-        x: stopData.x, 
-        y: stopData.y, 
-        z: stopData.z, 
-        heading: busHeading 
-    };
+    // Compute a heading for the stop so peds spawn on the sidewalk.
+    // Use the heading from the previous stop → this stop as an estimate of road direction.
+    let stopHeading = 0;
+    if (job.currentStop > 0) {
+        const prev = job.route.stops[job.currentStop - 1];
+        const dx = stopData.x - prev.x;
+        const dy = stopData.y - prev.y;
+        stopHeading = Math.atan2(-dx, dy) * 180 / Math.PI;
+        if (stopHeading < 0) stopHeading += 360;
+    } else if (mp.vehicles.exists(job.bus)) {
+        stopHeading = job.bus.heading;
+    }
+
+    // Pre-spawn waiting peds at this stop (also cleans up old exiting peds)
+    player.call('client:bus:spawnWaitingPeds', [stopData.x, stopData.y, stopData.z, stopHeading]);
 
     jobManager.createObjective(player, stopData, `Stop ${job.currentStop + 1}`, 3.5, (p) => {
         handleStopArrival(p);
@@ -183,40 +191,19 @@ async function handleStopArrival(player) {
         return player.call('showNotification', ["Error", "You must be in your assigned bus!"]);
     }
 
-    const velocity = player.vehicle.velocity;
-    const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
-    
-    // Check speed. If moving, start watcher.
-    if (speed > 0.1) {
-        if (!job.stopCheckInterval) {
-            player.call('showNotification', ["Bus Driver", "~o~Stop completely to board passengers."]);
-            
-            job.stopCheckInterval = setInterval(() => {
-                if (!mp.players.exists(player) || !activeJobs.has(player.id)) {
-                    if (job.stopCheckInterval) clearInterval(job.stopCheckInterval);
-                    return;
-                }
-
-                if (!player.vehicle) {
-                    clearInterval(job.stopCheckInterval);
-                    job.stopCheckInterval = null;
-                    return;
-                }
-
-                const v = player.vehicle.velocity;
-                const s = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-
-                if (s <= 0.1) {
-                    clearInterval(job.stopCheckInterval);
-                    job.stopCheckInterval = null;
-                    processBoardingSequence(player);
-                }
-            }, 500);
-        }
-        return;
+    // Auto-stop the bus immediately
+    if (mp.vehicles.exists(job.bus)) {
+        job.bus.frozen = true;
+        job.bus.engine = false;
+        job.bus.setVariable('engine', false);
     }
 
-    processBoardingSequence(player);
+    // Wait for bus to visually come to a full stop before opening doors
+    setTimeout(() => {
+        if (mp.players.exists(player) && activeJobs.has(player.id)) {
+            processBoardingSequence(player);
+        }
+    }, TIMING.settleDelay);
 }
 
 async function processBoardingSequence(player) {
@@ -236,27 +223,26 @@ async function processBoardingSequence(player) {
     bus.engine = false;
     bus.setVariable('engine', false);
 
-    player.call('client:showJobSubtitle', ["~o~Passengers exiting... Please wait.", TIMING.exitingTime + TIMING.doorOpenDelay]);
+    player.call('client:showJobSubtitle', ["~o~Passengers exiting... Please wait.", TIMING.doorOpenTime + TIMING.exitingTime]);
     
-    // Step 1: Open doors
-    setTimeout(() => {
-        if (!mp.vehicles.exists(bus)) return;
+    // Step 1: Open doors immediately (bus is already fully stopped)
+    if (mp.vehicles.exists(bus)) {
         player.call('client:bus:controlDoors', [bus.id, true]);
-    }, TIMING.doorOpenDelay);
+    }
 
-    // Step 2: Handle exiting passengers
+    // Step 2: Handle exiting passengers AFTER doors have swung open
     setTimeout(() => {
         if (!mp.vehicles.exists(bus)) return;
         player.call('client:bus:handleExiting', [bus.id]);
-    }, TIMING.doorOpenDelay + 500);
+    }, TIMING.doorOpenTime);
 
-    // Step 3: Start boarding
+    // Step 3: Start boarding after exiting is done
     setTimeout(() => {
         if (!mp.vehicles.exists(bus)) return;
         player.call('client:showJobSubtitle', ["~y~Passengers boarding... Please wait.", TIMING.boardingTime]);
         player.call('client:bus:handleBoarding', [bus.id]);
         player.call('playSound', ['Bus_Schedule_Pickup', 'DLC_PRISON_BREAK_HEIST_SOUNDS']);
-    }, TIMING.doorOpenDelay + TIMING.exitingTime + TIMING.boardingDelay);
+    }, TIMING.doorOpenTime + TIMING.exitingTime + TIMING.boardingDelay);
 
     // Step 4: Close doors and continue
     setTimeout(async () => {
@@ -306,12 +292,8 @@ function cleanupJob(player) {
     const job = activeJobs.get(player.id);
     if (!job) return;
 
-    if (job.stopCheckInterval) {
-        clearInterval(job.stopCheckInterval);
-        job.stopCheckInterval = null;
-    }
-
     if (job.bus && mp.vehicles.exists(job.bus)) job.bus.destroy();
+    player.call('client:bus:cleanupPeds');
     jobManager.clearObjective(player);
     activeJobs.delete(player.id);
 }

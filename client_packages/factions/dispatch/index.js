@@ -168,6 +168,55 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DRIVER — AUTO-ASSIGN: passenger already in taxi, skip pickup phases
+// ─────────────────────────────────────────────────────────────────────────────
+mp.events.add('client:taxi:autoAssignRide', (dataJson) => {
+    let data;
+    try { data = JSON.parse(dataJson); }
+    catch (e) { console.error('[Taxi] Bad JSON in autoAssignRide:', e); return; }
+    if (!data || !data.coords) return;
+
+    cleanupRide();
+
+    ride.callerName = data.callerName || 'Passenger';
+    ride.phase = 4;
+
+    const pos = new mp.Vector3(data.coords.x, data.coords.y, data.coords.z);
+    const dim = mp.players.local.dimension;
+
+    ride.destBlip = mp.blips.new(38, pos, {
+        name: `Drop off: ${ride.callerName}`, color: 1, scale: 1.0, shortRange: false,
+    });
+    ride.destBlip.setRoute(true);
+
+    ride.destMarker = mp.markers.new(1,
+        new mp.Vector3(pos.x, pos.y, mp.players.local.position.z - 1.0), 3.0,
+        { color: [255, 50, 50, 200], visible: true, dimension: dim }
+    );
+
+    notify('Taxi', `${ride.callerName} set a destination: ${data.location || 'Unknown'}. Head there now!`);
+
+    ride.tick = setInterval(() => {
+        if (ride.phase !== 4) { clearRideTick(); return; }
+
+        const pPos = mp.players.local.position;
+
+        if (ride.destMarker) {
+            try {
+                ride.destMarker.position = new mp.Vector3(pos.x, pos.y, pPos.z - 1.0);
+            } catch (_) {}
+        }
+
+        if (dist2(pPos, pos) <= 50.0) {
+            clearRideTick();
+            mp.events.callRemote('server:dispatch:rideComplete');
+            notify('Taxi', 'You have arrived at the destination. Ride complete!');
+            cleanupRide();
+        }
+    }, 500);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DRIVER — PHASE 2→3: server confirmed caller boarded (legacy flow only)
 // ─────────────────────────────────────────────────────────────────────────────
 mp.events.add('client:taxi:callerBoarded', () => {
@@ -215,7 +264,7 @@ mp.events.add('client:taxi:setDestination', (dataJson) => {
             } catch (_) {}
         }
 
-        if (dist2(pPos, pos) <= 20.0) {
+        if (dist2(pPos, pos) <= 50.0) {
             clearRideTick();
             mp.events.callRemote('server:dispatch:rideComplete');
             notify('Taxi', 'You have arrived at the destination. Ride complete!');

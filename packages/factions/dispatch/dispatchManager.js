@@ -29,14 +29,14 @@ class DispatchManager {
             id:             callId,
             factionId,
             callerName:     callData.callerName     || 'Unknown',
-            callerServerId: callData.callerServerId || null,
+            callerServerId: callData.callerServerId ?? null,
             coords:         callData.coords,
             location:       callData.location       || 'Unknown Area',
-            callType:       callData.callType        || null,
+            callType:       callData.callType       || null,
             createdAt:      Date.now(),
             acceptedBy:     null,
             // Extended data (taxi etc.)
-            destCoords:     callData.destCoords     || null,
+            destCoords:     callData.destCoords     ?? null,
             destLocation:   callData.destLocation   || null,
             fare:           callData.fare           || 0,
             distKm:         callData.distKm         || 0,
@@ -119,7 +119,9 @@ class DispatchManager {
             try {
                 const taxiCommand = require('../taxi/taxiCommand');
                 taxiCommand.onDriverAccepted(call.callerServerId, driver.id, driver.name.replace(/_/g, ' '));
-            } catch (e) {}
+            } catch (e) {
+                console.error('[Dispatch] Error in taxi onDriverAccepted hook:', e);
+            }
         }
 
         this._broadcastToFaction(factionId);
@@ -188,7 +190,7 @@ class DispatchManager {
     openForPlayer(player) {
         const factionId = player.factionId;
 
-        if (!factionId || factionId === 0) {
+        if (!factionId) {
             player.outputChatBox('!{#ff4757}You are not in a faction.');
             return false;
         }

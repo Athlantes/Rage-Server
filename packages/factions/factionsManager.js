@@ -51,8 +51,11 @@ class FactionsManager {
 
                 player.setVariable('factionId', player.factionId);
                 console.log(`[Factions] Loaded data for ${player.name}: Faction ${player.factionId}, Rank ${player.factionRank}`);
+
+                // Notify other systems (e.g. wardrobe) that faction data is ready
+                mp.events.call('factionDataLoaded', player);
             } else {
-                player.factionId = 0;
+                player.factionId = null;
             }
         } catch (e) {
             console.error(`[Factions] Error loading player ${player.name} data:`, e);
@@ -72,7 +75,7 @@ mp.events.addCommand('f', (player, fullText) => {
         return player.outputChatBox('!{#ff4757}Usage: /f <message>');
     }
 
-    if (!player.factionId || player.factionId === 0) {
+    if (!player.factionId) {
         return player.outputChatBox('!{#ff4757}You are not in a faction.');
     }
 

@@ -558,9 +558,9 @@ mp.events.add('client:phone:submitTaxiRating', (stars) => {
 
 mp.events.add('client:taxi:ratingSubmitted', () => {
     if (phoneBrowser) {
-        phoneBrowser.execute(`app.taxiApp.onCallCancelled()`);
+        phoneBrowser.execute(`app.taxiApp.onRatingConfirmed()`);
     }
-    mp.events.call('showNotification', 'Taxi', 'Thanks for your rating!');
+    mp.events.call('showNotification', 'Taxi', 'Ride completed! Thanks for your rating!');
 });
 
 mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, settingsJson, contactsJson, messagesJson) => {

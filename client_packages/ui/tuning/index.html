@@ -2,2060 +2,1182 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vehicle Tuning</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Tuning Shop</title>
 <style>
-:root {
-    --primary: #00a8ff;
-    --primary-dim: #0080c0;
-    --danger: #ff4757;
-    --success: #2ecc71;
-    --warning: #f39c12;
-    --bg: rgba(10, 12, 18, 0.92);
-    --border: rgba(255, 255, 255, 0.06);
-    --text: #e8e8e8;
-    --text-dim: #8a8fa6;
-    --glass: rgba(255, 255, 255, 0.03);
+/* ═══ Reset ═══ */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:transparent;color:#e4e6eb;user-select:none;cursor:default}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.15)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
 
-    --rarity-common:    #a0a0a0;
-    --rarity-uncommon:  #2ecc71;
-    --rarity-rare:      #3498db;
-    --rarity-epic:      #9b59b6;
-    --rarity-legendary: #f39c12;
-
-    --grade-s: #ff4757; --grade-a: #ff6b35; --grade-b: #f39c12;
-    --grade-c: #2ecc71; --grade-d: #00a8ff; --grade-e: #8a8fa6; --grade-f: #555;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
-    font-family: 'Poppins', sans-serif;
-    background: none !important;
-    background-color: transparent !important;
-    color: var(--text);
-    overflow: hidden;
-    width: 100vw; height: 100vh;
-    user-select: none; -webkit-user-select: none;
+/* ═══ Variables ═══ */
+:root{
+    --bg:rgba(12,14,18,.94);--bg2:rgba(20,23,30,.96);
+    --card:rgba(28,32,42,.95);--card-h:rgba(38,44,58,.95);--card-sel:rgba(0,168,255,.07);
+    --bdr:rgba(255,255,255,.06);--bdr-h:rgba(255,255,255,.12);
+    --txt:#e4e6eb;--txt2:#a0a5b8;--txt3:#6b7084;
+    --accent:#00a8ff;--ok:#2ecc71;--danger:#ff4757;--warn:#f0a500;
+    --grip:#00a8ff;--power:#ff4757;--drift:#ff6b35;
+    --r:10px;--rs:6px;
+    --sidebar-w:270px;--panel-w:420px;--topbar-h:56px;
 }
 
 /* ═══ TOP BAR ═══ */
-.top-bar {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    width: calc(100% - 60px); max-width: 900px;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 20px;
-    background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
-    z-index: 10;
-    animation: fadeDown .3s ease both;
-}
-@keyframes fadeDown { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+.top-bar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;gap:14px;background:var(--bg);border-bottom:1px solid var(--bdr);z-index:100}
+.shop-logo{font-size:20px;opacity:.65}
+.shop-title{font-size:15px;font-weight:700;letter-spacing:.5px}
+.divider{width:1px;height:24px;background:var(--bdr-h)}
+.tab-group{display:flex;gap:3px}
+.tab-btn{padding:8px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--txt3);border:1px solid transparent;transition:.15s}
+.tab-btn:hover{color:var(--txt2);background:rgba(255,255,255,.04)}
+.tab-btn.active{color:var(--accent);background:rgba(0,168,255,.08);border-color:rgba(0,168,255,.15)}
+.spacer{flex:1}
+.pi-badge{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.pi-label{color:var(--txt3);font-size:12px}
+.pi-class{padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;color:#fff}
+.tendency-badge{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.06)}
+.tend-icon{font-size:14px}
+.tend-pct{opacity:.55;font-size:11px}
+.cash-display{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--ok)}
+.close-btn{width:34px;height:34px;border:none;border-radius:var(--rs);background:rgba(255,75,87,.1);color:var(--danger);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.close-btn:hover{background:rgba(255,75,87,.25)}
 
-.top-bar .title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
-.top-bar .title .grade-badge {
-    font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 5px; color: #fff;
-}
-.top-bar .top-info { display: flex; gap: 16px; align-items: center; }
-.top-bar .info-item { font-size: 11px; color: var(--text-dim); }
-.top-bar .info-item .val { color: var(--success); font-weight: 600; }
+/* ═══ TAB CONTENT ═══ */
+.tab-content{display:none}
+.tab-content.visible{display:block}
 
-.close-btn {
-    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 14px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s;
-}
-.close-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+/* ═══ LEFT SIDEBAR ═══ */
+.sidebar{position:fixed;left:10px;top:calc(var(--topbar-h) + 8px);bottom:10px;width:var(--sidebar-w);overflow-y:auto;overflow-x:hidden;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr);z-index:90}
+.group-label{padding:16px 16px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--txt3)}
+.cat-item{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .12s;border-left:3px solid transparent}
+.cat-item:hover{background:rgba(255,255,255,.03)}
+.cat-item.active{background:var(--card-sel);border-left-color:var(--accent)}
+.cat-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:13px;font-weight:600;display:block;margin-bottom:3px}
+.cat-meta{display:flex;align-items:center;gap:7px}
+.cat-bar{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;max-width:80px}
+.cat-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s}
+.cat-stage{font-size:11px;color:var(--txt3);font-weight:600;white-space:nowrap}
+.cat-brand{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap}
 
-/* ═══ LEFT PANEL — Category Tabs ═══ */
-.left-panel {
-    position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
-    width: 200px; max-height: calc(100vh - 180px);
-    display: flex; flex-direction: column; gap: 6px;
-    background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
-    padding: 14px; overflow-y: auto; z-index: 10;
-    animation: fadeRight .3s ease .05s both;
-}
-@keyframes fadeRight { from { opacity:0; transform:translateY(-50%) translateX(-15px); } to { opacity:1; transform:translateY(-50%) translateX(0); } }
-.left-panel::-webkit-scrollbar { width: 3px; }
-.left-panel::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
+/* ═══ MAIN PANEL (right) ═══ */
+.main-panel{position:fixed;right:10px;top:calc(var(--topbar-h) + 8px);bottom:10px;width:var(--panel-w);overflow-y:auto;overflow-x:hidden;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr);z-index:90;display:flex;flex-direction:column}
+.empty-state{display:flex;align-items:center;justify-content:center;flex:1;color:var(--txt3);font-size:14px}
 
-/* Tab bar */
-.tab-bar {
-    display: flex; gap: 0; border-bottom: 1px solid var(--border);
-    margin: -14px -14px 8px -14px; padding: 0;
-    border-radius: 12px 12px 0 0; overflow: hidden;
-}
-.tab-btn {
-    flex: 1; padding: 10px 0; border: none; background: transparent;
-    color: var(--text-dim); font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 1.2px;
-    cursor: pointer; transition: all .2s; font-family: 'Poppins', sans-serif;
-    border-bottom: 2px solid transparent; position: relative;
-}
-.tab-btn:hover { color: #fff; background: rgba(255,255,255,0.02); }
-.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(0,168,255,0.04); }
-.tab-content { display: none; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
-.tab-content.active { display: flex; }
-.tab-content::-webkit-scrollbar { width: 3px; }
-.tab-content::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
+/* Part header */
+.part-header{display:flex;align-items:center;gap:10px;padding:20px 22px 14px;border-bottom:1px solid var(--bdr)}
+.ph-icon{font-size:26px}
+.ph-name{font-size:20px;font-weight:700;flex:1}
+.ph-stage{font-size:13px;font-weight:700;padding:5px 12px;border-radius:5px;background:rgba(0,168,255,.1);color:var(--accent)}
+.ph-stage.maxed{background:rgba(240,165,0,.1);color:var(--warn)}
+.ph-stage.stock{background:rgba(255,255,255,.05);color:var(--txt3)}
 
-.section-label {
-    font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
-    color: var(--text-dim); margin-bottom: 2px; margin-top: 6px;
-}
+/* Part description */
+.part-desc{padding:14px 22px;font-size:13px;color:var(--txt2);line-height:1.55;border-bottom:1px solid var(--bdr)}
 
-.cat-btn {
-    padding: 9px 12px; border-radius: 8px; border: 1px solid transparent;
-    background: var(--glass); color: var(--text-dim); font-size: 11px; font-weight: 500;
-    cursor: pointer; transition: all .2s; text-align: left; font-family: 'Poppins', sans-serif;
-    display: flex; align-items: center; justify-content: space-between;
-    min-height: 38px;
-}
-.cat-btn .cat-name { font-size: 11px; font-weight: 500; }
-.cat-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.cat-btn.active { background: rgba(0,168,255,0.12); border-color: var(--primary); color: #fff; }
-.cat-btn .cat-stage {
-    font-size: 9px; color: var(--text-dim); font-weight: 600;
-}
-.cat-btn .cat-stage.maxed { color: var(--success); }
+/* Stage progress */
+.progress-section{padding:14px 22px;border-bottom:1px solid var(--bdr)}
+.progress-bar{width:100%;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s ease}
+.progress-fill.maxed{background:var(--warn)}
+.progress-labels{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--txt3);font-weight:500}
 
-/* ═══ RIGHT PANEL — Details ═══ */
-.right-panel {
-    position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
-    width: 320px; max-height: calc(100vh - 180px);
-    display: flex; flex-direction: column; gap: 10px;
-    background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
-    padding: 16px; overflow-y: auto; z-index: 10;
-    animation: fadeLeft .3s ease .1s both;
-}
-@keyframes fadeLeft { from { opacity:0; transform:translateY(-50%) translateX(15px); } to { opacity:1; transform:translateY(-50%) translateX(0); } }
-.right-panel::-webkit-scrollbar { width: 3px; }
-.right-panel::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
+/* ═══ BRAND SELECTION ═══ */
+.brand-section{padding:20px 22px}
+.bs-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.bs-subtitle{font-size:12px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
+.brand-card{width:100%;padding:16px 18px;margin-bottom:10px;background:var(--card);border-radius:var(--rs);border:2px solid var(--bdr);cursor:pointer;transition:all .15s}
+.brand-card:last-child{margin-bottom:0}
+.brand-card:hover{background:var(--card-h);border-color:var(--bdr-h)}
+.brand-card.selected{border-color:var(--accent);background:var(--card-sel)}
+.bc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.bc-name{font-size:15px;font-weight:700;flex:1}
+.bc-tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.bc-surcharge{font-size:11px;color:var(--warn);font-weight:700}
+.bc-desc{font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:10px}
+.bc-cost{display:flex;align-items:center;gap:14px;font-size:13px}
+.bc-money{color:var(--ok);font-weight:700}
+.bc-parts{color:var(--txt2);font-weight:500}
 
-.no-selection { display: flex; align-items: center; justify-content: center;
-    padding: 40px 0; color: var(--text-dim); font-size: 11px; font-style: italic; }
+/* ═══ LOCKED BRAND ═══ */
+.locked-section{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--bdr);background:rgba(255,255,255,.015)}
+.lock-icon{font-size:15px;color:var(--txt3)}
+.lock-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lock-name{font-size:14px;font-weight:700;flex:1}
+.lock-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.lock-reset{font-size:11px;color:var(--txt3);cursor:pointer;padding:5px 12px;border-radius:4px;border:1px solid var(--bdr);background:transparent;transition:.15s}
+.lock-reset:hover{color:var(--danger);border-color:rgba(255,75,87,.3);background:rgba(255,75,87,.06)}
+.lock-reset.confirm{color:#fff;border-color:var(--danger);background:var(--danger)}
 
-/* ── Performance Detail ── */
-.perf-detail { display: flex; flex-direction: column; gap: 12px; }
-.perf-header { display: flex; align-items: center; gap: 8px; }
-.perf-header .perf-name { font-size: 16px; font-weight: 800; color: #fff; }
+/* ═══ SLIDERS ═══ */
+.slider-section{padding:18px 22px;border-bottom:1px solid var(--bdr)}
+.ss-title{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:14px}
+.slider-row{margin-bottom:16px}
+.slider-row:last-child{margin-bottom:0}
+.sr-top{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.sr-icon{font-size:14px}
+.sr-name{font-size:13px;font-weight:600;flex:1}
+.sr-val{font-size:12px;color:var(--accent);font-weight:700}
+.sr-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:5px}
+.slider-track{position:relative;width:100%;height:8px;background:rgba(255,255,255,.07);border-radius:4px;cursor:pointer}
+.slider-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--accent);pointer-events:none;transition:width .05s}
+.slider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:2.5px solid var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+.slider-desc{font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.4}
+.slider-actions{display:flex;gap:8px;margin-top:16px}
+.btn-s{flex:1;padding:9px 0;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.12s}
+.btn-s.save{background:rgba(0,168,255,.15);color:var(--accent)}
+.btn-s.save:hover{background:rgba(0,168,255,.28)}
+.btn-s.reset{background:rgba(255,255,255,.04);color:var(--txt3)}
+.btn-s.reset:hover{background:rgba(255,255,255,.09)}
 
-.stage-progress { display: flex; flex-direction: column; gap: 6px; }
-.stage-bar-row { display: flex; gap: 4px; align-items: center; }
-.stage-pip {
-    flex: 1; height: 8px; border-radius: 4px;
-    background: rgba(255,255,255,0.06); transition: background .3s;
-}
-.stage-pip.filled { background: var(--primary); }
-.stage-pip.filled.maxed { background: var(--success); }
-.stage-label { font-size: 10px; font-weight: 600; color: var(--text-dim); }
-.stage-label .current { color: var(--primary); }
-.stage-label .maxed-text { color: var(--success); }
+/* ═══ UPGRADE SECTION ═══ */
+.upgrade-section{padding:18px 22px;margin-top:auto}
+.us-label{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:10px}
+.us-cost{display:flex;gap:18px;margin-bottom:14px;font-size:13px;flex-wrap:wrap}
+.uc-item{display:flex;align-items:center;gap:6px}
+.uc-lbl{color:var(--txt3);font-size:11px;font-weight:600}
+.uc-val{font-weight:700}
+.uc-val.has{color:var(--ok)}
+.uc-val.miss{color:var(--danger)}
+.btn-upgrade{width:100%;padding:14px 0;border-radius:var(--rs);font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:none;transition:.15s}
+.btn-upgrade.ready{background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff}
+.btn-upgrade.ready:hover{filter:brightness(1.12);transform:scale(1.005)}
+.btn-upgrade.locked{background:rgba(255,255,255,.04);color:var(--txt3);cursor:not-allowed}
+.btn-upgrade.maxed{background:rgba(240,165,0,.08);color:var(--warn);cursor:default;letter-spacing:1px}
+.hint-text{text-align:center;color:var(--txt3);font-size:13px;padding:10px 0}
 
-.stage-desc {
-    font-size: 10px; color: var(--text-dim); padding: 8px 12px;
-    background: var(--glass); border-radius: 8px; border: 1px solid var(--border);
-    line-height: 1.5;
-}
-.stage-desc .desc-current { color: var(--primary); font-weight: 600; }
-.stage-desc .desc-next { color: var(--warning); font-weight: 500; }
+/* ═══ OPTIONS GRID ═══ */
+.opts-header{padding:18px 22px 12px;border-bottom:1px solid var(--bdr)}
+.opts-title{font-size:18px;font-weight:700}
+.opts-sub{font-size:12px;color:var(--txt3);margin-top:3px}
+.option-grid{display:flex;flex-wrap:wrap;gap:8px;padding:16px 22px}
+.opt-card{width:calc(33.33% - 6px);min-height:64px;padding:10px;background:var(--card);border-radius:var(--rs);border:2px solid var(--bdr);cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+.opt-card:hover{background:var(--card-h);border-color:var(--bdr-h)}
+.opt-card.selected{border-color:var(--accent);background:var(--card-sel)}
+.opt-card.installed{border-color:var(--ok);background:rgba(46,204,113,.06)}
+.opt-card.previewing{border-color:var(--warn);background:rgba(240,165,0,.06)}
+.opt-card .oc-name{font-size:12px;font-weight:600}
+.opt-card .oc-price{font-size:11px;color:var(--ok);font-weight:600;margin-top:3px}
+.opt-card .oc-badge{position:absolute;top:3px;right:3px;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px}
+.opt-card.installed .oc-badge{background:rgba(46,204,113,.2);color:var(--ok)}
+.opt-card.previewing .oc-badge{background:rgba(240,165,0,.2);color:var(--warn)}
+.action-footer{padding:16px 22px;border-top:1px solid var(--bdr);margin-top:auto}
 
-/* Requirements box */
-.req-box {
-    display: flex; flex-direction: column; gap: 6px;
-    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-}
-.req-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); }
-.req-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
-.req-row .req-label { color: var(--text-dim); }
-.req-row .req-value { font-weight: 600; }
-.req-row .req-value.has { color: var(--success); }
-.req-row .req-value.missing { color: var(--danger); }
+/* ═══ COLOR GRID ═══ */
+.color-grid{display:flex;flex-wrap:wrap;gap:7px;padding:16px 22px}
+.color-swatch{width:38px;height:38px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:.15s}
+.color-swatch:hover{transform:scale(1.08);border-color:rgba(255,255,255,.25)}
+.color-swatch.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,168,255,.3)}
+.color-info{padding:12px 22px;border-top:1px solid var(--bdr)}
+.ci-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.ci-price{font-size:13px;color:var(--ok);font-weight:600}
 
-.rarity-dot {
-    display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle;
-}
+/* ═══ RGB PICKER ═══ */
+.rgb-section{padding:18px 22px;border-top:1px solid var(--bdr)}
+.rgb-title{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:12px}
+.rgb-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rgb-row:last-child{margin-bottom:0}
+.rgb-label{width:14px;font-size:13px;font-weight:700;text-align:center}
+.rgb-slider-wrap{flex:1;position:relative;height:8px;background:rgba(255,255,255,.07);border-radius:4px;cursor:pointer}
+.rgb-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;pointer-events:none}
+.rgb-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:none}
+.rgb-val{width:36px;font-size:12px;font-weight:600;text-align:right;color:var(--txt2)}
+.rgb-preview{width:100%;height:40px;border-radius:var(--rs);margin-top:12px;border:1px solid var(--bdr)}
+.rgb-hex{text-align:center;margin-top:6px;font-size:12px;color:var(--txt3);font-weight:600}
 
-.upgrade-btn {
-    padding: 10px; border-radius: 9px; border: none; font-family: 'Poppins', sans-serif;
-    font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase;
-    letter-spacing: 1px; transition: all .25s; width: 100%;
-    background: var(--primary); color: #fff;
-}
-.upgrade-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
-.upgrade-btn:active { transform: translateY(0); }
-.upgrade-btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; filter: none !important; }
-.upgrade-btn.maxed-btn { background: var(--success); cursor: default; }
+/* ═══ SPECIAL ═══ */
+.spec-toggle{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--bdr)}
+.spec-toggle label{font-size:13px;font-weight:600;flex:1}
+.toggle-box{width:42px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;transition:.2s}
+.toggle-box.on{background:var(--accent)}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:.2s}
+.toggle-box.on .toggle-knob{left:22px}
+.neon-sides{display:flex;gap:8px;padding:14px 22px;border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.neon-btn{padding:8px 14px;border-radius:var(--rs);background:var(--card);border:2px solid var(--bdr);cursor:pointer;font-size:12px;font-weight:600;color:var(--txt2);transition:.15s}
+.neon-btn.on{border-color:var(--accent);color:var(--accent);background:var(--card-sel)}
 
-/* ── Visual Detail ── */
-.visual-detail { display: flex; flex-direction: column; gap: 10px; }
-.visual-header { font-size: 14px; font-weight: 700; color: #fff; }
+/* ═══ TOAST NOTIFICATIONS ═══ */
+.toast-container{position:fixed;top:calc(var(--topbar-h) + 14px);left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{padding:10px 22px;border-radius:var(--rs);font-size:13px;font-weight:600;backdrop-filter:blur(10px);animation:toastIn .3s ease-out;pointer-events:auto;border:1px solid}
+.toast.success{background:rgba(46,204,113,.18);color:#2ecc71;border-color:rgba(46,204,113,.3)}
+.toast.error{background:rgba(255,71,87,.18);color:#ff4757;border-color:rgba(255,71,87,.3)}
+.toast.info{background:rgba(0,168,255,.18);color:#00a8ff;border-color:rgba(0,168,255,.3)}
+.toast.warn{background:rgba(240,165,0,.18);color:#f0a500;border-color:rgba(240,165,0,.3)}
+.toast.fadeOut{animation:toastOut .3s ease-in forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}
 
-.visual-options { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
-.visual-options::-webkit-scrollbar { width: 3px; }
-.visual-options::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
-
-.visual-opt {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--glass); cursor: pointer; transition: all .2s;
-}
-.visual-opt:hover { border-color: var(--primary); background: rgba(0,168,255,0.06); }
-.visual-opt.active { border-color: var(--primary); background: rgba(0,168,255,0.12); }
-.visual-opt.installed { border-color: var(--success); background: rgba(46,204,113,0.08); }
-
-.visual-opt .opt-name { font-size: 11px; font-weight: 500; color: #fff; }
-.visual-opt .opt-price { font-size: 10px; font-weight: 700; color: var(--success); }
-.visual-opt .opt-price.free { color: var(--text-dim); }
-.visual-opt .opt-installed-tag { font-size: 8px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1px; color: var(--success); }
-
-.apply-btn {
-    padding: 9px; border-radius: 9px; border: none; font-family: 'Poppins', sans-serif;
-    font-size: 11px; font-weight: 600; cursor: pointer; transition: all .25s; width: 100%;
-    background: var(--success); color: #fff; text-transform: uppercase; letter-spacing: .5px;
-}
-.apply-btn:hover { filter: brightness(1.15); }
-.apply-btn:disabled { opacity: .35; cursor: not-allowed; filter: none !important; }
-
-/* ═══ COLOR SECTION ═══ */
-.color-detail { display: flex; flex-direction: column; gap: 10px; }
-.color-header { font-size: 14px; font-weight: 700; color: #fff; }
-
-/* Primary / Secondary toggle */
-.color-target-row { display: flex; gap: 6px; }
-.color-target-btn {
-    flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--text-dim); font-size: 10px; font-weight: 600;
-    cursor: pointer; transition: all .2s; text-align: center; font-family: 'Poppins', sans-serif;
-    text-transform: uppercase; letter-spacing: 1px;
-}
-.color-target-btn.active { background: rgba(0,168,255,0.12); border-color: var(--primary); color: #fff; }
-
-/* Paint type row */
-.paint-type-row { display: flex; gap: 4px; flex-wrap: wrap; }
-.paint-type-btn {
-    padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--text-dim); font-size: 9px; font-weight: 500;
-    cursor: pointer; transition: all .2s; font-family: 'Poppins', sans-serif;
-}
-.paint-type-btn:hover { border-color: rgba(255,255,255,0.15); color: #fff; }
-.paint-type-btn.active { border-color: var(--primary); background: rgba(0,168,255,0.12); color: #fff; }
-
-/* Color preview swatch */
-.color-preview-row { display: flex; align-items: center; gap: 10px; }
-.color-swatch {
-    width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15);
-    flex-shrink: 0;
-}
-.color-swatch-label { font-size: 9px; color: var(--text-dim); }
-.color-swatch-label .rgb-val { font-weight: 600; color: var(--text); font-size: 10px; }
-
-/* Preset color grid */
-.preset-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
-    max-height: 120px; overflow-y: auto; padding: 2px;
-}
-.preset-grid::-webkit-scrollbar { width: 3px; }
-.preset-grid::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
-.preset-swatch {
-    width: 100%; aspect-ratio: 1; border-radius: 6px; cursor: pointer;
-    border: 2px solid transparent; transition: all .15s;
-}
-.preset-swatch:hover { border-color: rgba(255,255,255,0.4); transform: scale(1.1); }
-.preset-swatch.active { border-color: var(--primary); box-shadow: 0 0 8px rgba(0,168,255,0.4); }
-
-/* RGB sliders */
-.rgb-sliders { display: flex; flex-direction: column; gap: 6px; }
-.rgb-row { display: flex; align-items: center; gap: 8px; }
-.rgb-label { font-size: 10px; font-weight: 700; width: 14px; text-align: center; }
-.rgb-label.r { color: #ff4757; }
-.rgb-label.g { color: #2ecc71; }
-.rgb-label.b { color: #3498db; }
-.rgb-slider {
-    -webkit-appearance: none; flex: 1; height: 4px;
-    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
-}
-.rgb-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
-    cursor: pointer; border: 2px solid #fff;
-}
-.rgb-slider.r::-webkit-slider-thumb { background: #ff4757; }
-.rgb-slider.g::-webkit-slider-thumb { background: #2ecc71; }
-.rgb-slider.b::-webkit-slider-thumb { background: #3498db; }
-.rgb-value { font-size: 10px; font-weight: 600; color: var(--text); width: 28px; text-align: right; }
-
-/* ═══ BOTTOM BAR — Camera Controls ═══ */
-.bottom-bar {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 18px;
-    background: var(--bg); border-radius: 10px; border: 1px solid var(--border);
-    z-index: 10;
-    animation: fadeUp .3s ease .15s both;
-}
-@keyframes fadeUp { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-
-.cam-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-.cam-slider {
-    -webkit-appearance: none; width: 200px; height: 4px;
-    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
-}
-.cam-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
-    background: var(--primary); cursor: pointer; border: 2px solid #fff;
-}
-
-.g-S { background: var(--grade-s); } .g-A { background: var(--grade-a); }
-.g-B { background: var(--grade-b); } .g-C { background: var(--grade-c); }
-.g-D { background: var(--grade-d); } .g-E { background: var(--grade-e); }
-.g-F { background: var(--grade-f); }
-
-/* ═══ EXTRAS SECTION ═══ */
-.extra-detail { display: flex; flex-direction: column; gap: 10px; }
-.extra-header { font-size: 14px; font-weight: 700; color: #fff; }
-.extra-desc { font-size: 10px; color: var(--text-dim); }
-
-/* Toggle row */
-.toggle-row { display: flex; align-items: center; gap: 10px; }
-.toggle-label { font-size: 11px; color: var(--text-dim); font-weight: 500; }
-.toggle-switch {
-    width: 40px; height: 20px; border-radius: 10px; cursor: pointer;
-    background: rgba(255,255,255,0.1); position: relative; transition: all .2s;
-    border: 1px solid var(--border); flex-shrink: 0;
-}
-.toggle-switch.on { background: rgba(0,168,255,0.3); border-color: var(--primary); }
-.toggle-switch::after {
-    content: ''; position: absolute; top: 2px; left: 2px;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: var(--text-dim); transition: all .2s;
-}
-.toggle-switch.on::after { left: 22px; background: var(--primary); }
-
-/* Wheel type tabs */
-.wheel-type-row { display: flex; gap: 3px; flex-wrap: wrap; }
-.wheel-type-btn {
-    padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--text-dim); font-size: 9px; font-weight: 500;
-    cursor: pointer; transition: all .2s; font-family: 'Poppins', sans-serif;
-}
-.wheel-type-btn:hover { border-color: rgba(255,255,255,0.15); color: #fff; }
-.wheel-type-btn.active { border-color: var(--primary); background: rgba(0,168,255,0.12); color: #fff; }
-
-/* Color swatch grid (for xenon/neon/smoke) */
-.swatch-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-.swatch-item {
-    aspect-ratio: 1; border-radius: 6px; cursor: pointer;
-    border: 2px solid transparent; transition: all .15s;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 7px; color: rgba(255,255,255,0.7); font-weight: 500;
-}
-.swatch-item:hover { border-color: rgba(255,255,255,0.4); transform: scale(1.08); }
-.swatch-item.active { border-color: var(--primary); box-shadow: 0 0 8px rgba(0,168,255,0.4); }
-
-/* Neon side buttons */
-.neon-sides { display: flex; gap: 4px; }
-.neon-side-btn {
-    flex: 1; padding: 6px 4px; border-radius: 6px; border: 1px solid var(--border);
-    background: var(--glass); color: var(--text-dim); font-size: 9px; font-weight: 500;
-    cursor: pointer; transition: all .2s; text-align: center; font-family: 'Poppins', sans-serif;
-}
-.neon-side-btn:hover { border-color: rgba(255,255,255,0.15); }
-.neon-side-btn.on { border-color: var(--primary); background: rgba(0,168,255,0.15); color: #fff; }
-
-/* Plate option list */
-.plate-opt {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--glass); cursor: pointer; transition: all .2s;
-}
-.plate-opt:hover { border-color: var(--primary); background: rgba(0,168,255,0.06); }
-.plate-opt.active { border-color: var(--primary); background: rgba(0,168,255,0.12); }
-.plate-opt.installed { border-color: var(--success); background: rgba(46,204,113,0.08); }
-.plate-opt .opt-name { font-size: 11px; font-weight: 500; color: #fff; }
-
-/* ═══ CART SYSTEM ═══ */
-.cart-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 12px;
-    cursor: pointer; transition: all .2s; font-family: 'Poppins', sans-serif;
-}
-.cart-btn:hover { background: rgba(0,168,255,0.12); color: #fff; border-color: var(--primary); }
-.cart-badge {
-    min-width: 16px; height: 16px; border-radius: 8px;
-    background: var(--primary); color: #fff; font-size: 9px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; padding: 0 4px;
-}
-.cart-overlay {
-    position: fixed; right: 356px; top: 50%; transform: translateY(-50%);
-    width: 300px; max-height: calc(100vh - 200px);
-    background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
-    padding: 14px; z-index: 20; display: flex; flex-direction: column; gap: 8px;
-    overflow-y: auto; animation: fadeLeft .2s ease both;
-}
-.cart-overlay::-webkit-scrollbar { width: 3px; }
-.cart-overlay::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 3px; }
-.cart-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: space-between; }
-.cart-empty { font-size: 10px; color: var(--text-dim); font-style: italic; padding: 12px 0; text-align: center; }
-.cart-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 7px 10px; border-radius: 7px; background: var(--glass); border: 1px solid var(--border);
-}
-.cart-item .ci-label { font-size: 10px; color: #fff; font-weight: 500; flex: 1; }
-.cart-item .ci-price { font-size: 10px; color: var(--success); font-weight: 600; margin: 0 8px; }
-.cart-item .ci-remove {
-    width: 18px; height: 18px; border-radius: 5px; border: none;
-    background: rgba(255,71,87,0.15); color: var(--danger); font-size: 10px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s;
-}
-.cart-item .ci-remove:hover { background: var(--danger); color: #fff; }
-.cart-total {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 0; border-top: 1px solid var(--border); margin-top: 2px;
-    font-size: 11px; font-weight: 600;
-}
-.cart-total .ct-label { color: var(--text-dim); }
-.cart-total .ct-amount { color: var(--success); }
-.cart-buy-btn {
-    padding: 9px; border-radius: 9px; border: none; font-family: 'Poppins', sans-serif;
-    font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase;
-    letter-spacing: .5px; transition: all .25s; width: 100%;
-    background: var(--primary); color: #fff;
-}
-.cart-buy-btn:hover { filter: brightness(1.15); }
-.cart-buy-btn:disabled { opacity: .35; cursor: not-allowed; filter: none !important; }
-.cart-clear-btn {
-    padding: 6px; border-radius: 7px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.03); color: var(--text-dim); font-size: 9px;
-    cursor: pointer; transition: all .2s; font-family: 'Poppins', sans-serif; width: 100%;
-    text-align: center;
-}
-.cart-clear-btn:hover { background: rgba(255,71,87,0.1); color: var(--danger); border-color: var(--danger); }
-.btn-row { display: flex; gap: 6px; }
-.btn-row .apply-btn { flex: 1; }
-.btn-row .upgrade-btn { flex: 1; }
-.btn-cart {
-    padding: 9px 14px; border-radius: 9px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 13px;
-    cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center;
-    font-family: 'Poppins', sans-serif;
-}
-.btn-cart:hover { background: rgba(0,168,255,0.12); color: var(--primary); border-color: var(--primary); }
-.btn-cart:disabled { opacity: .25; cursor: not-allowed; }
+/* ═══ UTILITY ═══ */
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .2s ease-out}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ TOP BAR ══ -->
 <div class="top-bar">
-    <div class="title">
-        Vehicle Tuning
-        <span class="grade-badge g-E" id="gradeBadge">E</span>
+    <span class="shop-logo">⚙</span>
+    <span class="shop-title">LOS SANTOS CUSTOMS</span>
+    <span class="divider"></span>
+    <div class="tab-group">
+        <button class="tab-btn active" data-tab="performance">Performance</button>
+        <button class="tab-btn" data-tab="visual">Visual</button>
+        <button class="tab-btn" data-tab="paint">Paint</button>
+        <button class="tab-btn" data-tab="special">Special</button>
     </div>
-    <div class="top-info">
-        <div class="info-item">Cash: <span class="val" id="playerCash">$0</span></div>
-        <button class="cart-btn" id="cartBtn" onclick="toggleCart()" style="display:none">
-            🛒 <span class="cart-badge" id="cartBadge">0</span>
-        </button>
-        <button class="close-btn" onclick="closeUI()">&times;</button>
+    <span class="spacer"></span>
+    <div class="pi-badge">
+        <span class="pi-label">PI</span>
+        <span id="piValue">—</span>
+        <span class="pi-class" id="piClass">—</span>
     </div>
+    <span class="divider"></span>
+    <div class="tendency-badge" id="tendencyBadge">
+        <span class="tend-icon">⚖</span>
+        <span class="tend-name">Balanced</span>
+        <span class="tend-pct"></span>
+    </div>
+    <span class="divider"></span>
+    <div class="cash-display">$<span id="cashValue">0</span></div>
+    <button class="close-btn" onclick="closeTuning()">✕</button>
 </div>
 
-<!-- CART OVERLAY -->
-<div class="cart-overlay" id="cartOverlay" style="display:none">
-    <div class="cart-title">🛒 Shopping Cart <span id="cartCount">(0)</span></div>
-    <div id="cartItems"><div class="cart-empty">Cart is empty</div></div>
-    <div class="cart-total">
-        <span class="ct-label">Total</span>
-        <span class="ct-amount" id="cartTotal">$0</span>
-    </div>
-    <button class="cart-buy-btn" id="cartBuyBtn" disabled onclick="doBuyAll()">Cart is empty</button>
-    <button class="cart-clear-btn" onclick="clearCart()">Clear Cart</button>
+<!-- ══ PERFORMANCE TAB ══ -->
+<div class="tab-content visible" data-tab="performance">
+    <div class="sidebar" id="perfSidebar"></div>
+    <div class="main-panel" id="perfMain"><div class="empty-state">Select a category to begin</div></div>
 </div>
 
-<!-- LEFT PANEL -->
-<div class="left-panel" id="leftPanel">
-    <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('perf')">Performance</button>
-        <button class="tab-btn" onclick="switchTab('visual')">Visual</button>
-        <button class="tab-btn" onclick="switchTab('extra')">Extras</button>
-    </div>
-    <div class="tab-content active" id="tabPerf"></div>
-    <div class="tab-content" id="tabVisual"></div>
-    <div class="tab-content" id="tabExtra"></div>
+<!-- ══ VISUAL TAB ══ -->
+<div class="tab-content" data-tab="visual">
+    <div class="sidebar" id="visSidebar"></div>
+    <div class="main-panel" id="visMain"><div class="empty-state">Select a mod type</div></div>
 </div>
 
-<!-- RIGHT PANEL -->
-<div class="right-panel" id="rightPanel">
-    <div class="no-selection" id="noSelection">Select a category to begin tuning</div>
-    <div id="detailContent" style="display:none;"></div>
+<!-- ══ PAINT TAB ══ -->
+<div class="tab-content" data-tab="paint">
+    <div class="sidebar" id="paintSidebar"></div>
+    <div class="main-panel" id="paintMain"><div class="empty-state">Choose a color option</div></div>
 </div>
 
-<!-- BOTTOM BAR -->
-<div class="bottom-bar">
-    <span class="cam-label">Rotate Camera</span>
-    <input type="range" class="cam-slider" id="camSlider" min="0" max="360" value="180" oninput="rotateCamera(this.value)">
+<!-- ══ SPECIAL TAB ══ -->
+<div class="tab-content" data-tab="special">
+    <div class="sidebar" id="specSidebar"></div>
+    <div class="main-panel" id="specMain"><div class="empty-state">Select a modification</div></div>
 </div>
 
 <script>
-let perfData = {};
-let visualData = {};
-let visualPricing = {};
-let playerInfo = {};
-let currentMods = {};
-let vehicleDbId = 0;
-let activeCategory = null;
-let activeCatType = null; // 'perf', 'visual', 'color'
-let selectedVisualIndex = null;
+// ═════════════════════════════════════════════════════════════
+// STATE
+// ═════════════════════════════════════════════════════════════
+let DATA = null;
+let activeTab = 'performance';
+// Performance
+let selCat = null, selBrand = null, pendingSliders = {}, resetPending = false;
+// Visual
+let selVisCat = null, selVisIdx = -2; // -2 = none selected, -1 = stock, 0+ = option
+// Paint
+let paintTarget = 'primary', paintState = {prim:{r:0,g:0,b:0},sec:{r:0,g:0,b:0},type:0,pearl:{r:254,g:254,b:254}}, selColorIdx = null;
+let rgbState = {r:128,g:128,b:128};
+// Special
+let selSpecCat = null, selSpecOpt = null;
+// Wheels sub-state
+let wheelType = 0, wheelCount = 0, selWheelIdx = -1, wheelColorIdx = -1;
+// Neon sub-state
+let neonMask = 0, neonColor = {r:255,g:255,b:255};
+// Smoke sub-state
+let smokeOn = false, smokeColor = {r:255,g:255,b:255};
+// Xenon sub-state
+let xenonOn = false, xenonColor = -1;
+// Camber/Track sub-state
+let camberValue = 0, trackWidthValue = 0;
+// Camera orbit
+let isOrbit = false, lmx = 0, lmy = 0;
 
-// Color state
-let paintTypes = [];
-let presetColors = [];
-let colorPricing = {};
-let colorData = { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0 };
-let colorTarget = 'primary'; // 'primary' or 'secondary'
-let editRGB = { r: 0, g: 0, b: 0 };
-let editPaintType = 0;
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const fmt = n => (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function mp_trigger() { try { if (typeof mp !== 'undefined') mp.trigger.apply(mp, arguments); } catch(e) {} }
 
-// Special/extras state
-let specialData = { config: {}, current: {} };
-let editWheelType = 0;
-let editWheelIndex = -1;
-let wheelOptionCount = 0;
-let editXenonEnabled = false;
-let editXenonColor = -1;
-let editPlateStyle = 0;
-let editNeonMask = 0;
-let editNeonColor = { r: 255, g: 255, b: 255 };
-let editSmokeEnabled = false;
-let editSmokeColor = { r: 255, g: 255, b: 255 };
-
-const RARITY_COLORS = {
-    common: '#a0a0a0', uncommon: '#2ecc71', rare: '#3498db', epic: '#9b59b6', legendary: '#f39c12'
-};
-
-function initTuning(perf, visual, pricing, pInfo, mods, vehId, pTypes, pColors, cPricing, cData, sData) {
-    perfData = perf;
-    visualData = visual;
-    visualPricing = pricing;
-    playerInfo = pInfo;
-    currentMods = mods;
-    vehicleDbId = vehId;
-    paintTypes = pTypes || [];
-    presetColors = pColors || [];
-    colorPricing = cPricing || {};
-    colorData = cData && cData.primRGB ? cData : { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0 };
-
-    // Special data
-    specialData = sData && sData.config ? sData : { config: {}, current: {} };
-    const sc = specialData.current || {};
-    editWheelType = sc.wheelType || 0;
-    editWheelIndex = sc.wheelIndex !== undefined ? sc.wheelIndex : -1;
-    editXenonEnabled = !!sc.xenonEnabled;
-    editXenonColor = sc.xenonColor !== undefined ? sc.xenonColor : -1;
-    editPlateStyle = sc.plateStyle || 0;
-    editNeonMask = sc.neonEnabled || 0;
-    editNeonColor = sc.neonColor || { r: 255, g: 255, b: 255 };
-    editSmokeEnabled = !!sc.smokeEnabled;
-    editSmokeColor = sc.smokeColor || { r: 255, g: 255, b: 255 };
-
-    // Init edit state from saved color
-    editPaintType = colorData.paintType || 0;
-    editRGB = { ...colorData.primRGB };
-
-    document.getElementById('playerCash').textContent = '$' + playerInfo.cash.toLocaleString();
-
-    const badge = document.getElementById('gradeBadge');
-    badge.textContent = playerInfo.grade;
-    badge.className = 'grade-badge g-' + playerInfo.grade;
-
-    buildCategories();
-    if (activeCategory && activeCatType) {
-        selectCategory(activeCatType, activeCategory);
-    } else {
-        showNoSelection();
-    }
+// ═════════════════════════════════════════════════════════════
+// TOAST NOTIFICATION SYSTEM
+// ═════════════════════════════════════════════════════════════
+function showToast(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || 2500;
+    const c = $('#toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(function() { t.classList.add('fadeOut'); setTimeout(function() { t.remove(); }, 300); }, duration);
 }
 
-function updateCash(cash) {
-    playerInfo.cash = cash;
-    document.getElementById('playerCash').textContent = '$' + cash.toLocaleString();
+// ═════════════════════════════════════════════════════════════
+// CAMERA — right-click orbit + scroll zoom
+// ═════════════════════════════════════════════════════════════
+document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+document.addEventListener('mousedown', function(e) { if (e.button===2) { isOrbit=true; lmx=e.clientX; lmy=e.clientY; } });
+document.addEventListener('mousemove', function(e) { if (!isOrbit) return; mp_trigger('cef:tuning:orbitCamera', e.clientX-lmx, e.clientY-lmy); lmx=e.clientX; lmy=e.clientY; });
+document.addEventListener('mouseup', function(e) { if (e.button===2) isOrbit=false; });
+document.addEventListener('wheel', function(e) {
+    if (e.target.closest('.sidebar,.main-panel')) return;
+    mp_trigger('cef:tuning:zoomCamera', e.deltaY);
+}, {passive:true});
+
+// ═════════════════════════════════════════════════════════════
+// TABS
+// ═════════════════════════════════════════════════════════════
+$$('.tab-btn').forEach(function(btn) { btn.addEventListener('click', function() {
+    $$('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    $$('.tab-content').forEach(function(tc) { tc.classList.toggle('visible', tc.dataset.tab === activeTab); });
+    mp_trigger('cef:tuning:switchTab', activeTab);
+    if (activeTab==='visual') initVisual();
+    else if (activeTab==='paint') initPaint();
+    else if (activeTab==='special') initSpecial();
+}); });
+
+// ═════════════════════════════════════════════════════════════
+// INIT / UPDATE
+// ═════════════════════════════════════════════════════════════
+function initTuning(json) {
+    DATA = typeof json === 'string' ? JSON.parse(json) : json;
+    selCat = null; selBrand = null; pendingSliders = {}; resetPending = false;
+    renderTopBar();
+    renderPerfSidebar();
+    renderPerfMain();
 }
 
-function buildCategories() {
-    // ─── Performance tab ───
-    const perfDiv = document.getElementById('tabPerf');
-    perfDiv.innerHTML = '';
-    for (const [key, mod] of Object.entries(perfData)) {
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn';
-        btn.dataset.key = key;
-        btn.dataset.type = 'perf';
-
-        const isMaxed = mod.currentStage >= mod.maxStage;
-        const stageText = isMaxed ? 'MAX' : `${mod.currentStage}/${mod.maxStage}`;
-        btn.innerHTML = `
-            <span class="cat-name">${mod.name}</span>
-            <span class="cat-stage ${isMaxed ? 'maxed' : ''}">${stageText}</span>
-        `;
-        btn.onclick = () => selectCategory('perf', key);
-        perfDiv.appendChild(btn);
-    }
-
-    // ─── Visual tab (visual mods + colors) ───
-    const visDiv = document.getElementById('tabVisual');
-    visDiv.innerHTML = '';
-    if (Object.keys(visualData).length === 0) {
-        visDiv.innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:6px;">No visual mods available</div>';
-    } else {
-        for (const [key, mod] of Object.entries(visualData)) {
-            const btn = document.createElement('button');
-            btn.className = 'cat-btn';
-            btn.dataset.key = key;
-            btn.dataset.type = 'visual';
-
-            const installed = currentMods[mod.modType] !== undefined && currentMods[mod.modType] >= 0;
-            btn.innerHTML = `
-                <span class="cat-name">${mod.name}</span>
-                ${installed ? '<span class="cat-stage maxed">&#10003;</span>' : '<span class="cat-stage">' + mod.options + '</span>'}
-            `;
-            btn.onclick = () => selectCategory('visual', key);
-            visDiv.appendChild(btn);
-        }
-    }
-
-    // Color entries inside visual tab
-    const colorCats = [
-        { key: 'paint', name: 'Paint Color' },
-        { key: 'finish', name: 'Paint Finish' }
-    ];
-    for (const cat of colorCats) {
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn';
-        btn.dataset.key = cat.key;
-        btn.dataset.type = 'color';
-        btn.innerHTML = `<span class="cat-name">${cat.name}</span>`;
-        btn.onclick = () => selectCategory('color', cat.key);
-        visDiv.appendChild(btn);
-    }
-
-    // ─── Extras tab ───
-    const extDiv = document.getElementById('tabExtra');
-    extDiv.innerHTML = '';
-    const extraCats = [
-        { key: 'wheels',  name: 'Wheels' },
-        { key: 'xenon',   name: 'Headlights' },
-        { key: 'plate',   name: 'Plate Style' },
-        { key: 'neon',    name: 'Neon Lights' },
-        { key: 'smoke',   name: 'Tyre Smoke' }
-    ];
-    for (const cat of extraCats) {
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn';
-        btn.dataset.key = cat.key;
-        btn.dataset.type = 'extra';
-        btn.innerHTML = `<span class="cat-name">${cat.name}</span>`;
-        btn.onclick = () => selectCategory('extra', cat.key);
-        extDiv.appendChild(btn);
-    }
+function updateTuning(json) {
+    var d = typeof json === 'string' ? JSON.parse(json) : json;
+    Object.assign(DATA, d);
+    renderTopBar();
+    renderPerfSidebar();
+    if (selCat) { selBrand = null; pendingSliders = {}; resetPending = false; renderPerfMain(); }
 }
 
-function switchTab(tab) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-        const tabs = ['perf', 'visual', 'extra'];
-        b.classList.toggle('active', tabs[i] === tab);
-    });
-    // Show/hide tab content
-    document.getElementById('tabPerf').classList.toggle('active', tab === 'perf');
-    document.getElementById('tabVisual').classList.toggle('active', tab === 'visual');
-    document.getElementById('tabExtra').classList.toggle('active', tab === 'extra');
+function updateCash(c) { if (DATA) DATA.playerCash = c; $('#cashValue').textContent = fmt(c); }
+
+function updatePI(pi, cls) {
+    if (DATA) { DATA.pi = pi; DATA.piClass = typeof cls === 'string' ? JSON.parse(cls) : cls; }
+    renderTopBar();
 }
 
-function selectCategory(type, key) {
-    activeCategory = key;
-    activeCatType = type;
-    selectedVisualIndex = null;
-
-    // Auto-switch to correct tab
-    if (type === 'perf') switchTab('perf');
-    else if (type === 'visual' || type === 'color') switchTab('visual');
-    else if (type === 'extra') switchTab('extra');
-
-    document.querySelectorAll('.cat-btn').forEach(b =>
-        b.classList.toggle('active', b.dataset.key === key && b.dataset.type === type)
-    );
-
-    if (type === 'perf') showPerfDetail(key);
-    else if (type === 'visual') showVisualDetail(key);
-    else if (type === 'color') showColorDetail(key);
-    else if (type === 'extra') showExtraDetail(key);
-}
-
-function showNoSelection() {
-    document.getElementById('noSelection').style.display = 'flex';
-    document.getElementById('detailContent').style.display = 'none';
-}
-
-// ─── Performance Detail ───
-function showPerfDetail(key) {
-    const mod = perfData[key];
-    if (!mod) return;
-
-    document.getElementById('noSelection').style.display = 'none';
-    const content = document.getElementById('detailContent');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '10px';
-
-    const isMaxed = mod.currentStage >= mod.maxStage;
-
-    // Stage pips
-    let pipsHtml = '';
-    for (let i = 1; i <= mod.maxStage; i++) {
-        const filled = i <= mod.currentStage;
-        pipsHtml += `<div class="stage-pip ${filled ? 'filled' : ''} ${isMaxed && filled ? 'maxed' : ''}"></div>`;
-    }
-
-    // Description
-    const currentDesc = mod.descriptions[mod.currentStage] || 'Stock';
-    const nextDesc = !isMaxed ? mod.descriptions[mod.currentStage + 1] : null;
-
-    let descHtml = `<span class="desc-current">Current: ${currentDesc}</span>`;
-    if (nextDesc) descHtml += `<br><span class="desc-next">Next: ${nextDesc}</span>`;
-
-    // Requirements
-    let reqHtml = '';
-    if (!isMaxed && mod.nextReq) {
-        const nr = mod.nextReq;
-        const hasMoney = playerInfo.cash >= nr.money;
-        const hasParts = nr.playerHas >= nr.partAmount;
-        const rarityColor = RARITY_COLORS[nr.partType] || '#aaa';
-
-        reqHtml = `
-            <div class="req-box">
-                <div class="req-title">Stage ${nr.stage} Requirements</div>
-                <div class="req-row">
-                    <span class="req-label">Cash</span>
-                    <span class="req-value ${hasMoney ? 'has' : 'missing'}">$${nr.money.toLocaleString()}</span>
-                </div>
-                <div class="req-row">
-                    <span class="req-label"><span class="rarity-dot" style="background:${rarityColor}"></span>${nr.partName}</span>
-                    <span class="req-value ${hasParts ? 'has' : 'missing'}">${nr.playerHas} / ${nr.partAmount}</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // Button
-    let btnHtml = '';
-    if (isMaxed) {
-        btnHtml = `<button class="upgrade-btn maxed-btn" disabled>Fully Upgraded</button>`;
-    } else if (mod.nextReq) {
-        const canUpgrade = playerInfo.cash >= mod.nextReq.money && mod.nextReq.playerHas >= mod.nextReq.partAmount;
-        btnHtml = `<button class="upgrade-btn" ${canUpgrade ? '' : 'disabled'} onclick="doPerformanceUpgrade('${key}')">
-            Upgrade to Stage ${mod.nextReq.stage} — $${mod.nextReq.money.toLocaleString()}
-        </button>`;
-    }
-
-    content.innerHTML = `
-        <div class="perf-detail">
-            <div class="perf-header">
-                <span class="perf-name">${mod.name}</span>
-            </div>
-            <div class="stage-progress">
-                <div class="stage-bar-row">${pipsHtml}</div>
-                <div class="stage-label">
-                    ${isMaxed
-                        ? '<span class="maxed-text">Stage ' + mod.currentStage + ' / ' + mod.maxStage + ' — MAX</span>'
-                        : 'Stage <span class="current">' + mod.currentStage + '</span> / ' + mod.maxStage
-                    }
-                </div>
-            </div>
-            <div class="stage-desc">${descHtml}</div>
-            ${reqHtml}
-            ${btnHtml}
-        </div>
-    `;
-}
-
-// ─── Visual Detail ───
-function showVisualDetail(key) {
-    const mod = visualData[key];
-    if (!mod) return;
-
-    document.getElementById('noSelection').style.display = 'none';
-    const content = document.getElementById('detailContent');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '10px';
-
-    const installedIndex = currentMods[mod.modType] !== undefined ? currentMods[mod.modType] : -1;
-
-    let optionsHtml = '';
-    // Stock option
-    const isStock = installedIndex === -1;
-    optionsHtml += `
-        <div class="visual-opt ${isStock ? 'installed' : ''}" onclick="selectVisualOption('${key}', -1, ${mod.modType})" data-idx="-1">
-            <span class="opt-name">Stock</span>
-            ${isStock ? '<span class="opt-installed-tag">Installed</span>' : '<span class="opt-price free">Free</span>'}
-        </div>
-    `;
-
-    // Mod options
-    for (let i = 0; i < mod.options; i++) {
-        const price = visualPricing.base + (i * visualPricing.perMod);
-        const isInstalled = installedIndex === i;
-        optionsHtml += `
-            <div class="visual-opt ${isInstalled ? 'installed' : ''}" onclick="selectVisualOption('${key}', ${i}, ${mod.modType})" data-idx="${i}">
-                <span class="opt-name">${mod.name} #${i + 1}</span>
-                ${isInstalled ? '<span class="opt-installed-tag">Installed</span>' : '<span class="opt-price">$' + price.toLocaleString() + '</span>'}
-            </div>
-        `;
-    }
-
-    content.innerHTML = `
-        <div class="visual-detail">
-            <div class="visual-header">${mod.name}</div>
-            <div class="visual-options">${optionsHtml}</div>
-            <div class="btn-row">
-                <button class="apply-btn" id="applyVisualBtn" disabled onclick="doVisualMod()">Select a mod to apply</button>
-                <button class="btn-cart" id="cartVisualBtn" disabled onclick="addVisualToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-}
-
-function selectVisualOption(key, index, modType) {
-    selectedVisualIndex = index;
-    const mod = visualData[key];
-    const installedIndex = currentMods[modType] !== undefined ? currentMods[modType] : -1;
-
-    // Highlight
-    document.querySelectorAll('.visual-opt').forEach(opt => {
-        opt.classList.toggle('active', parseInt(opt.dataset.idx) === index && !opt.classList.contains('installed'));
-    });
-
-    // Preview on car
-    try { mp.trigger('cef:tuning:previewVisual', modType, index); } catch(e) {}
-
-    // Update apply button
-    const btn = document.getElementById('applyVisualBtn');
-    if (index === installedIndex) {
-        btn.textContent = 'Already installed';
-        btn.disabled = true;
-    } else if (index === -1) {
-        btn.textContent = 'Revert to Stock (Free)';
-        btn.disabled = false;
-    } else {
-        const price = visualPricing.base + (index * visualPricing.perMod);
-        const canAfford = playerInfo.cash >= price;
-        btn.textContent = canAfford ? `Apply — $${price.toLocaleString()}` : `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = !canAfford;
-    }
-
-    // Sync cart button
-    const cartBtn = document.getElementById('cartVisualBtn');
-    if (cartBtn) cartBtn.disabled = (index === installedIndex);
-}
-
-// ─── Color Detail ───
-function showColorDetail(key) {
-    document.getElementById('noSelection').style.display = 'none';
-    const content = document.getElementById('detailContent');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '10px';
-
-    if (key === 'paint') {
-        showPaintColorDetail();
-    } else if (key === 'finish') {
-        showPaintFinishDetail();
-    }
-}
-
-function showPaintColorDetail() {
-    const content = document.getElementById('detailContent');
-
-    // Get current target color
-    const targetRGB = colorTarget === 'primary' ? colorData.primRGB : colorData.secRGB;
-    editRGB = { ...targetRGB };
-
-    // Preset grid
-    let presetHtml = '';
-    for (let i = 0; i < presetColors.length; i++) {
-        const c = presetColors[i];
-        const isActive = editRGB.r === c.r && editRGB.g === c.g && editRGB.b === c.b;
-        presetHtml += `<div class="preset-swatch ${isActive ? 'active' : ''}" title="${c.name}"
-            style="background: rgb(${c.r},${c.g},${c.b})"
-            onclick="selectPresetColor(${i})"></div>`;
-    }
-
-    const price = colorPricing.preset || 0;
-    const customPrice = colorPricing.custom || 0;
-
-    content.innerHTML = `
-        <div class="color-detail">
-            <div class="color-header">Paint Color</div>
-
-            <!-- Primary / Secondary toggle -->
-            <div class="color-target-row">
-                <button class="color-target-btn ${colorTarget === 'primary' ? 'active' : ''}" onclick="switchColorTarget('primary')">Primary</button>
-                <button class="color-target-btn ${colorTarget === 'secondary' ? 'active' : ''}" onclick="switchColorTarget('secondary')">Secondary</button>
-            </div>
-
-            <!-- Preview swatch -->
-            <div class="color-preview-row">
-                <div class="color-swatch" id="colorSwatch" style="background: rgb(${editRGB.r},${editRGB.g},${editRGB.b})"></div>
-                <div class="color-swatch-label">
-                    Current ${colorTarget}<br>
-                    <span class="rgb-val" id="rgbDisplay">R: ${editRGB.r}  G: ${editRGB.g}  B: ${editRGB.b}</span>
-                </div>
-            </div>
-
-            <!-- Section: Presets -->
-            <div class="section-label" style="margin-top:4px">Preset Colors — $${price.toLocaleString()}</div>
-            <div class="preset-grid" id="presetGrid">${presetHtml}</div>
-
-            <!-- Section: Custom RGB -->
-            <div class="section-label" style="margin-top:4px">Custom RGB — $${customPrice.toLocaleString()}</div>
-            <div class="rgb-sliders">
-                <div class="rgb-row">
-                    <span class="rgb-label r">R</span>
-                    <input type="range" class="rgb-slider r" min="0" max="255" value="${editRGB.r}" oninput="onRGBSlider('r', this.value)">
-                    <span class="rgb-value" id="valR">${editRGB.r}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label g">G</span>
-                    <input type="range" class="rgb-slider g" min="0" max="255" value="${editRGB.g}" oninput="onRGBSlider('g', this.value)">
-                    <span class="rgb-value" id="valG">${editRGB.g}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label b">B</span>
-                    <input type="range" class="rgb-slider b" min="0" max="255" value="${editRGB.b}" oninput="onRGBSlider('b', this.value)">
-                    <span class="rgb-value" id="valB">${editRGB.b}</span>
-                </div>
-            </div>
-
-            <div class="btn-row">
-                <button class="apply-btn" id="applyColorBtn" onclick="doApplyColor()">Apply Color</button>
-                <button class="btn-cart" onclick="addColorToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-}
-
-function showPaintFinishDetail() {
-    const content = document.getElementById('detailContent');
-    editPaintType = colorData.paintType || 0;
-
-    let typesHtml = '';
-    for (const pt of paintTypes) {
-        const isActive = pt.id === editPaintType;
-        typesHtml += `
-            <div class="visual-opt ${isActive ? 'installed' : ''}" onclick="selectPaintType(${pt.id})" data-ptid="${pt.id}">
-                <span class="opt-name">${pt.icon} ${pt.name}</span>
-                ${isActive ? '<span class="opt-installed-tag">Current</span>' : ''}
-            </div>
-        `;
-    }
-
-    const price = colorPricing.paintType || 0;
-
-    content.innerHTML = `
-        <div class="color-detail">
-            <div class="color-header">Paint Finish</div>
-            <div style="font-size:10px; color: var(--text-dim); margin-bottom: 4px;">
-                Changes the surface finish of your vehicle's paint.
-            </div>
-            <div class="visual-options">${typesHtml}</div>
-            <div class="btn-row">
-                <button class="apply-btn" id="applyFinishBtn" disabled onclick="doApplyFinish()">
-                    Select a finish — $${price.toLocaleString()}
-                </button>
-                <button class="btn-cart" id="cartFinishBtn" disabled onclick="addFinishToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-}
-
-// ─── Color Helpers ───
-function switchColorTarget(target) {
-    colorTarget = target;
-    showPaintColorDetail();
-}
-
-function selectPresetColor(index) {
-    const c = presetColors[index];
-    if (!c) return;
-    editRGB = { r: c.r, g: c.g, b: c.b };
-    updateColorPreview();
-
-    // Highlight preset
-    document.querySelectorAll('.preset-swatch').forEach((s, i) => {
-        s.classList.toggle('active', i === index);
-    });
-
-    // Update sliders
-    const sliders = document.querySelectorAll('.rgb-slider');
-    if (sliders.length >= 3) {
-        sliders[0].value = c.r;
-        sliders[1].value = c.g;
-        sliders[2].value = c.b;
-    }
-    document.getElementById('valR').textContent = c.r;
-    document.getElementById('valG').textContent = c.g;
-    document.getElementById('valB').textContent = c.b;
-
-    previewColorOnCar();
-}
-
-function onRGBSlider(channel, val) {
-    editRGB[channel] = parseInt(val);
-    document.getElementById('val' + channel.toUpperCase()).textContent = val;
-    updateColorPreview();
-
-    // Deselect presets
-    document.querySelectorAll('.preset-swatch').forEach(s => s.classList.remove('active'));
-
-    previewColorOnCar();
-}
-
-function updateColorPreview() {
-    const swatch = document.getElementById('colorSwatch');
-    if (swatch) swatch.style.background = `rgb(${editRGB.r},${editRGB.g},${editRGB.b})`;
-    const disp = document.getElementById('rgbDisplay');
-    if (disp) disp.textContent = `R: ${editRGB.r}  G: ${editRGB.g}  B: ${editRGB.b}`;
-}
-
-function previewColorOnCar() {
-    // Build full color with current edit as the active target
-    let prim = colorData.primRGB;
-    let sec = colorData.secRGB;
-
-    if (colorTarget === 'primary') prim = editRGB;
-    else sec = editRGB;
-
-    try {
-        mp.trigger('cef:tuning:previewColor',
-            prim.r, prim.g, prim.b,
-            sec.r, sec.g, sec.b,
-            colorData.paintType
-        );
-    } catch(e) {}
-}
-
-let selectedFinishId = null;
-
-function selectPaintType(id) {
-    selectedFinishId = id;
-    document.querySelectorAll('.visual-opt[data-ptid]').forEach(opt => {
-        const ptid = parseInt(opt.dataset.ptid);
-        opt.classList.remove('active');
-        if (ptid === id && ptid !== (colorData.paintType || 0)) {
-            opt.classList.add('active');
-        }
-    });
-
-    const btn = document.getElementById('applyFinishBtn');
-    if (id === (colorData.paintType || 0)) {
-        btn.textContent = 'Already applied';
-        btn.disabled = true;
-    } else {
-        const price = colorPricing.paintType || 0;
-        const canAfford = playerInfo.cash >= price;
-        btn.textContent = canAfford ? `Apply — $${price.toLocaleString()}` : `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = !canAfford;
-    }
-
-    // Sync cart button
-    const cartBtn = document.getElementById('cartFinishBtn');
-    if (cartBtn) cartBtn.disabled = (id === (colorData.paintType || 0));
-
-    // Preview paint type on car
-    try {
-        mp.trigger('cef:tuning:previewColor',
-            colorData.primRGB.r, colorData.primRGB.g, colorData.primRGB.b,
-            colorData.secRGB.r, colorData.secRGB.g, colorData.secRGB.b,
-            id
-        );
-    } catch(e) {}
-}
-
-// ─── Apply Actions ───
-function doPerformanceUpgrade(key) {
-    try { mp.trigger('cef:tuning:perfUpgrade', key); } catch(e) {}
-}
-
-function doVisualMod() {
-    if (selectedVisualIndex === null || !activeCategory) return;
-    const mod = visualData[activeCategory];
-    if (!mod) return;
-    try { mp.trigger('cef:tuning:visualMod', mod.modType, selectedVisualIndex); } catch(e) {}
-    // Update installed state locally
-    if (selectedVisualIndex === -1) {
-        delete currentMods[mod.modType];
-    } else {
-        currentMods[mod.modType] = selectedVisualIndex;
-    }
-    setTimeout(() => {
-        showVisualDetail(activeCategory);
-        buildCategories();
-        document.querySelectorAll('.cat-btn').forEach(b =>
-            b.classList.toggle('active', b.dataset.key === activeCategory && b.dataset.type === activeCatType)
-        );
-    }, 100);
-}
-
-function doApplyColor() {
-    // Determine if preset or custom
-    let isPreset = false;
-    for (const c of presetColors) {
-        if (c.r === editRGB.r && c.g === editRGB.g && c.b === editRGB.b) {
-            isPreset = true;
+// Called from client after visual mod purchase confirmed
+function visualModConfirmed(modType, modIndex) {
+    if (!DATA || !DATA.visualData) return;
+    for (var vk in DATA.visualData) {
+        var vd = DATA.visualData[vk];
+        if (vd.modType === modType) {
+            vd.current = modIndex;
+            selVisIdx = modIndex;
+            showToast('Mod installed successfully!', 'success');
+            renderVisMain();
+            renderVisSidebar();
             break;
         }
     }
+}
 
-    // Build new color data
-    const newColorData = {
-        primRGB: colorTarget === 'primary' ? { ...editRGB } : { ...colorData.primRGB },
-        secRGB: colorTarget === 'secondary' ? { ...editRGB } : { ...colorData.secRGB },
-        paintType: colorData.paintType,
-        type: isPreset ? 'preset' : 'custom'
+// ═════════════════════════════════════════════════════════════
+// TOP BAR
+// ═════════════════════════════════════════════════════════════
+function renderTopBar() {
+    if (!DATA) return;
+    $('#piValue').textContent = DATA.pi || '—';
+    var pc = DATA.piClass || {label:'—',color:'#555'};
+    var pe = $('#piClass'); pe.textContent = pc.label; pe.style.background = pc.color;
+
+    var t = DATA.tendency || {dominant:'balanced',percentage:0};
+    var tl = (DATA.tendencyLabels||{})[t.dominant] || {name:'Balanced',color:'#8a8fa6',icon:'⚖'};
+    var b = $('#tendencyBadge');
+    b.style.borderColor = tl.color+'30'; b.style.background = tl.color+'10';
+    b.querySelector('.tend-icon').textContent = tl.icon;
+    var nm = b.querySelector('.tend-name'); nm.textContent = tl.name; nm.style.color = tl.color;
+    b.querySelector('.tend-pct').textContent = t.percentage > 0 ? t.percentage+'%' : '';
+
+    $('#cashValue').textContent = fmt(DATA.playerCash);
+}
+
+// ═════════════════════════════════════════════════════════════
+// PERFORMANCE — Sidebar
+// ═════════════════════════════════════════════════════════════
+function renderPerfSidebar() {
+    if (!DATA || !DATA.categories) return;
+    var el = $('#perfSidebar'); el.innerHTML = '';
+    var ord = (DATA.perfGroups||{}).order || ['power','drivetrain','handling','chassis'];
+    var lbl = (DATA.perfGroups||{}).labels || {};
+
+    for (var gi = 0; gi < ord.length; gi++) {
+        var grp = ord[gi];
+        var h = document.createElement('div'); h.className = 'group-label'; h.textContent = lbl[grp] || grp; el.appendChild(h);
+        for (var ck in DATA.categories) {
+            var c = DATA.categories[ck];
+            if (c.group !== grp) continue;
+            var r = document.createElement('div');
+            r.className = 'cat-item' + (ck === selCat ? ' active' : '');
+
+            var pct = c.maxStage > 0 ? Math.round((c.currentStage / c.maxStage) * 100) : 0;
+            var isStock = c.currentStage === 0;
+            var isMax = c.currentStage >= c.maxStage;
+
+            var meta = '';
+            if (isStock) {
+                meta = '<span class="cat-stage" style="color:var(--txt3)">Stock</span>';
+            } else {
+                var brandTag = '';
+                if (c.currentVariant) {
+                    var v = (c.variants||{})[c.currentVariant];
+                    if (v) brandTag = '<span class="cat-brand" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>';
+                }
+                meta = '<div class="cat-bar"><div class="cat-fill" style="width:'+pct+'%;'+(isMax?'background:var(--warn)':'')+'"></div></div>'
+                    + '<span class="cat-stage">'+c.currentStage+'/'+c.maxStage+'</span>' + brandTag;
+            }
+
+            r.innerHTML = '<span class="cat-icon">'+c.icon+'</span>'
+                + '<div class="cat-info"><span class="cat-name">'+c.name+'</span><div class="cat-meta">'+meta+'</div></div>';
+            (function(key) {
+                r.addEventListener('click', function() { selCat = key; selBrand = null; pendingSliders = {}; resetPending = false; renderPerfSidebar(); renderPerfMain(); });
+            })(ck);
+            el.appendChild(r);
+        }
+    }
+}
+
+// ═════════════════════════════════════════════════════════════
+// PERFORMANCE — Main Panel
+// ═════════════════════════════════════════════════════════════
+function renderPerfMain() {
+    var panel = $('#perfMain');
+    if (!DATA || !selCat) { panel.innerHTML = '<div class="empty-state">Select a category to begin</div>'; return; }
+    var c = DATA.categories[selCat];
+    if (!c) return;
+
+    var isStock = c.currentStage === 0;
+    var isMax = c.currentStage >= c.maxStage;
+    var variants = c.variants || {};
+    var vKeys = Object.keys(variants);
+
+    var html = '';
+
+    // ── Header ──
+    var stageLabel = isStock ? 'Stock' : isMax ? '★ MAX' : 'Stage '+c.currentStage+' / '+c.maxStage;
+    var stageClass = isStock ? 'stock' : isMax ? 'maxed' : '';
+    html += '<div class="part-header fade"><span class="ph-icon">'+c.icon+'</span><span class="ph-name">'+c.name+'</span>'
+        + '<span class="ph-stage '+stageClass+'">'+stageLabel+'</span></div>';
+
+    // ── Description ──
+    html += '<div class="part-desc fade">'+ ((c.descriptions || [])[c.currentStage] || '') +'</div>';
+
+    // ── Progress bar ──
+    if (!isStock) {
+        var pct = Math.round((c.currentStage / c.maxStage) * 100);
+        html += '<div class="progress-section fade"><div class="progress-bar"><div class="progress-fill'+(isMax?' maxed':'')+'" style="width:'+pct+'%"></div></div>'
+            + '<div class="progress-labels"><span>Stage 0</span><span>Stage '+c.maxStage+'</span></div></div>';
+    }
+
+    if (isStock) {
+        // ══ BRAND SELECTION ══
+        if (vKeys.length === 1 && !selBrand) selBrand = vKeys[0];
+
+        html += '<div class="brand-section fade"><div class="bs-title">Choose Your Manufacturer</div>'
+            + '<div class="bs-subtitle">This choice locks for this part. You\'ll upgrade through all stages with the selected brand.</div>';
+
+        var req = c.nextReq;
+        for (var vi = 0; vi < vKeys.length; vi++) {
+            var vk = vKeys[vi];
+            var v = variants[vk];
+            var sel = vk === selBrand;
+            var price = req ? Math.round((req.money * (v.surcharge || 1)) / 100) * 100 : 0;
+            var surTxt = v.surcharge > 1 ? '<span class="bc-surcharge">+'+Math.round((v.surcharge-1)*100)+'%</span>' : '';
+
+            html += '<div class="brand-card'+(sel?' selected':'')+'" style="border-left:4px solid '+v.tagColor+'" onclick="pickBrand(\''+vk+'\')">'
+                + '<div class="bc-top"><span class="bc-dot" style="background:'+v.tagColor+'"></span>'
+                + '<span class="bc-name">'+v.name+'</span>'
+                + '<span class="bc-tag" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>'+surTxt+'</div>'
+                + '<div class="bc-desc">'+v.desc+'</div>'
+                + '<div class="bc-cost"><span class="bc-money">$'+fmt(price)+'</span>'
+                + (req ? '<span class="bc-parts">'+req.partAmount+'× '+(req.partName || capitalize(req.partType)+' Parts')+'</span>' : '')
+                + '</div></div>';
+        }
+        html += '</div>';
+
+        // ── Install button ──
+        if (selBrand && req) {
+            var v = variants[selBrand];
+            var price = Math.round((req.money * (v.surcharge || 1)) / 100) * 100;
+            var canM = DATA.playerCash >= price;
+            var hasP = req.playerHas !== undefined ? req.playerHas >= req.partAmount : true;
+            var canBuy = canM && hasP;
+
+            html += '<div class="upgrade-section"><div class="us-cost">'
+                + '<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price)+'</span></div>'
+                + '<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'+(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName || capitalize(req.partType))+'</span></div>'
+                + '</div><button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
+                + (canBuy ? 'Install '+v.name : 'Not enough resources') + '</button></div>';
+        }
+    } else {
+        // ══ LOCKED BRAND ══
+        if (c.currentVariant) {
+            var v = variants[c.currentVariant] || {};
+            html += '<div class="locked-section fade"><span class="lock-icon">🔒</span>'
+                + '<span class="lock-dot" style="background:'+(v.tagColor||'#888')+'"></span>'
+                + '<span class="lock-name" style="color:'+(v.tagColor||'#888')+'">'+(v.name || c.currentVariant)+'</span>'
+                + '<span class="lock-tag" style="background:'+(v.tagColor||'#888')+'18;color:'+(v.tagColor||'#888')+'">'+(v.tag || '')+'</span>'
+                + '<button class="lock-reset'+(resetPending?' confirm':'')+'" onclick="resetPartClick()">'+(resetPending?'⚠ Confirm':'Reset')+'</button></div>';
+        }
+
+        // ── Sliders ──
+        var sliders = (c.sliders || []).filter(function(s) { return c.currentStage >= s.minStage; });
+        if (sliders.length) {
+            var inner = '';
+            for (var si = 0; si < sliders.length; si++) {
+                var sl = sliders[si];
+                var sv = (c.sliderValues || {})[sl.key];
+                var val = pendingSliders[sl.key] !== undefined ? pendingSliders[sl.key] : (sv !== undefined ? sv : sl.default);
+                var pct = Math.round(val * 100);
+                inner += '<div class="slider-row" data-slider="'+sl.key+'">'
+                    + '<div class="sr-top"><span class="sr-icon">'+sl.icon+'</span><span class="sr-name">'+sl.name+'</span><span class="sr-val">'+pct+'%</span></div>'
+                    + '<div class="sr-labels"><span>'+sl.leftLabel+'</span><span>'+sl.rightLabel+'</span></div>'
+                    + '<div class="slider-track" data-key="'+sl.key+'"><div class="slider-fill" style="width:'+pct+'%"></div><div class="slider-thumb" style="left:'+pct+'%"></div></div>'
+                    + '<div class="slider-desc">'+sl.description+'</div></div>';
+            }
+            html += '<div class="slider-section fade"><div class="ss-title">Tuning Adjustments</div>'+inner
+                + '<div class="slider-actions"><button class="btn-s save" onclick="saveSliders()">Save Settings</button>'
+                + '<button class="btn-s reset" onclick="resetSliders()">Reset Defaults</button></div></div>';
+        }
+
+        // ── Upgrade button ──
+        if (!isMax) {
+            var req = c.nextReq;
+            if (req) {
+                var v = variants[c.currentVariant] || {};
+                var price = Math.round((req.money * (v.surcharge || 1)) / 100) * 100;
+                var canM = DATA.playerCash >= price;
+                var hasP = req.playerHas !== undefined ? req.playerHas >= req.partAmount : true;
+                var canBuy = canM && hasP;
+
+                html += '<div class="upgrade-section"><div class="us-label">Upgrade to Stage '+(c.currentStage + 1)+'</div>'
+                    + '<div class="us-cost"><div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price)+'</span></div>'
+                    + '<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'+(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName || capitalize(req.partType))+'</span></div>'
+                    + '</div><button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
+                    + (canBuy ? 'Install Stage '+(c.currentStage+1) : 'Not enough resources') + '</button></div>';
+            }
+        } else {
+            html += '<div class="upgrade-section"><button class="btn-upgrade maxed">★ Fully Upgraded ★</button></div>';
+        }
+    }
+
+    panel.innerHTML = html;
+    bindSliders();
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+function pickBrand(vk) {
+    selBrand = vk;
+    renderPerfMain();
+    mp_trigger('cef:tuning:previewVariant', selCat, vk);
+}
+
+function purchaseUpgrade() {
+    if (!selCat) return;
+    var c = DATA.categories[selCat];
+    if (!c) return;
+    var vk = c.currentStage === 0 ? selBrand : c.currentVariant;
+    if (!vk) return;
+    mp_trigger('cef:tuning:perfUpgrade', selCat, vk);
+}
+
+function resetPartClick() {
+    if (resetPending) {
+        mp_trigger('cef:tuning:resetPart', selCat);
+        resetPending = false;
+    } else {
+        resetPending = true;
+        renderPerfMain();
+    }
+}
+
+// ═════════════════════════════════════════════════════════════
+// SLIDERS
+// ═════════════════════════════════════════════════════════════
+function bindSliders() {
+    $$('.slider-track:not(.stance-slider)').forEach(function(track) {
+        var key = track.dataset.key;
+        function upd(e) {
+            var r = track.getBoundingClientRect();
+            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            pendingSliders[key] = Math.round(p * 100) / 100;
+            track.querySelector('.slider-fill').style.width = (p*100)+'%';
+            track.querySelector('.slider-thumb').style.left = (p*100)+'%';
+            track.closest('.slider-row').querySelector('.sr-val').textContent = Math.round(p*100)+'%';
+            if (selCat) {
+                var all = Object.assign({}, DATA.categories[selCat].sliderValues||{}, pendingSliders);
+                mp_trigger('cef:tuning:previewSliders', selCat, JSON.stringify(all));
+            }
+        }
+        track.addEventListener('mousedown', function(e) {
+            upd(e);
+            var mv = function(ev) { upd(ev); };
+            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup', up);
+        });
+    });
+}
+
+function saveSliders() {
+    if (!selCat || !Object.keys(pendingSliders).length) return;
+    var merged = Object.assign({}, DATA.categories[selCat].sliderValues||{}, pendingSliders);
+    mp_trigger('cef:tuning:saveSliders', selCat, JSON.stringify(merged));
+    DATA.categories[selCat].sliderValues = merged;
+    pendingSliders = {};
+    showToast('Tuning settings saved!', 'success');
+}
+
+function resetSliders() {
+    if (!selCat) return;
+    var c = DATA.categories[selCat];
+    pendingSliders = {};
+    for (var si = 0; si < (c.sliders||[]).length; si++) {
+        var sl = c.sliders[si];
+        if (c.currentStage >= sl.minStage) pendingSliders[sl.key] = sl.default;
+    }
+    renderPerfMain();
+    mp_trigger('cef:tuning:previewSliders', selCat, JSON.stringify(Object.assign({}, c.sliderValues||{}, pendingSliders)));
+}
+
+// ═════════════════════════════════════════════════════════════
+// VISUAL TAB
+// ═════════════════════════════════════════════════════════════
+function initVisual() {
+    if (!DATA || !DATA.visualData) return;
+    renderVisSidebar();
+    renderVisMain();
+}
+
+function renderVisSidebar() {
+    var el = $('#visSidebar'); el.innerHTML = '';
+    var grps = {body:'Body',exterior:'Exterior',enginebay:'Engine Bay',interior:'Interior',livery:'Livery',other:'Other'};
+    for (var g in grps) {
+        var any = false;
+        for (var k in DATA.visualData) { if (DATA.visualData[k].group === g && (DATA.visualData[k].options||0) > 0) { any = true; break; } }
+        if (!any) continue;
+        var h = document.createElement('div'); h.className = 'group-label'; h.textContent = grps[g]; el.appendChild(h);
+        for (var k in DATA.visualData) {
+            var m = DATA.visualData[k];
+            if (m.group !== g || (m.options||0) <= 0) continue;
+            var r = document.createElement('div'); r.className = 'cat-item' + (k === selVisCat ? ' active' : '');
+            var installed = m.current != null && m.current >= 0;
+            r.innerHTML = '<div class="cat-info"><span class="cat-name">'+m.name+'</span>'
+                + '<div class="cat-meta"><span class="cat-stage">'+m.options+' options'+(installed ? ' · ✓' : '')+'</span></div></div>';
+            (function(key) {
+                r.addEventListener('click', function() { selVisCat = key; selVisIdx = -2; renderVisSidebar(); renderVisMain(); });
+            })(k);
+            el.appendChild(r);
+        }
+    }
+}
+
+function renderVisMain() {
+    var panel = $('#visMain');
+    if (!selVisCat || !DATA.visualData) { panel.innerHTML = '<div class="empty-state">Select a mod type</div>'; return; }
+    var vd = DATA.visualData[selVisCat];
+    if (!vd) return;
+    var cnt = vd.options || 0;
+    var currentInstalled = vd.current != null ? vd.current : -1;
+
+    var html = '<div class="opts-header"><div class="opts-title">'+vd.name+'</div><div class="opts-sub">'+cnt+' options · $'+fmt(vd.price||0)+' each</div></div>';
+    html += '<div class="option-grid">';
+    for (var i = -1; i < cnt; i++) {
+        var label = i === -1 ? 'Stock' : 'Option '+(i+1);
+        var isInstalled = i === currentInstalled;
+        var isPreviewing = i === selVisIdx && !isInstalled;
+        var cls = 'opt-card';
+        var badge = '';
+        if (isInstalled) { cls += ' installed'; badge = '<span class="oc-badge">✓ OWNED</span>'; }
+        else if (isPreviewing) { cls += ' previewing'; badge = '<span class="oc-badge">👁 PREVIEW</span>'; }
+
+        html += '<div class="'+cls+'" onclick="prevVisual('+vd.modType+','+i+')">'
+            + badge
+            + '<span class="oc-name">'+label+'</span>'
+            + (i > -1 ? (isInstalled ? '<span class="oc-price" style="color:var(--txt3)">Owned</span>' : '<span class="oc-price">$'+fmt(vd.price||0)+'</span>') : '<span class="oc-price" style="color:var(--txt3)">Free</span>')
+            + '</div>';
+    }
+    html += '</div>';
+
+    var canInstall = selVisIdx !== -2 && selVisIdx !== currentInstalled;
+    var btnLabel = selVisIdx === currentInstalled ? 'Already Installed' : selVisIdx === -2 ? 'Select an Option' : 'Install Selected';
+    var btnClass = canInstall ? 'ready' : 'locked';
+
+    html += '<div class="action-footer"><button class="btn-upgrade '+btnClass+'" '+(canInstall?'onclick="instVisual()"':'disabled')+'>'+btnLabel+'</button></div>';
+    panel.innerHTML = html;
+}
+
+function prevVisual(modType, idx) {
+    selVisIdx = idx;
+    mp_trigger('cef:tuning:previewVisual', modType, idx);
+    renderVisMain();
+    showToast('Previewing '+(idx === -1 ? 'Stock' : 'Option '+(idx+1)), 'info', 1200);
+}
+
+function instVisual() {
+    if (!selVisCat) return;
+    var vd = DATA.visualData[selVisCat];
+    if (!vd) return;
+    if (selVisIdx === (vd.current != null ? vd.current : -1)) {
+        showToast('Already installed!', 'warn');
+        return;
+    }
+    mp_trigger('cef:tuning:visualMod', vd.modType, selVisIdx);
+}
+
+// ═════════════════════════════════════════════════════════════
+// PAINT TAB
+// ═════════════════════════════════════════════════════════════
+function initPaint() {
+    if (!DATA || !DATA.paintData) return;
+    var cur = DATA.paintData.current || {};
+    paintState = {
+        prim: cur.primRGB || {r:0,g:0,b:0},
+        sec: cur.secRGB || {r:0,g:0,b:0},
+        type: cur.paintType || 0,
+        pearl: cur.pearlRGB || {r:254,g:254,b:254}
     };
-
-    try { mp.trigger('cef:tuning:applyColor', JSON.stringify(newColorData)); } catch(e) {}
-
-    // Update local state
-    colorData.primRGB = newColorData.primRGB;
-    colorData.secRGB = newColorData.secRGB;
+    selColorIdx = null;
+    rgbState = {r:128,g:128,b:128};
+    renderPaintSidebar();
+    renderPaintMain();
 }
 
-function doApplyFinish() {
-    if (selectedFinishId === null) return;
-
-    const newColorData = {
-        primRGB: { ...colorData.primRGB },
-        secRGB: { ...colorData.secRGB },
-        paintType: selectedFinishId,
-        type: 'paintType'
-    };
-
-    try { mp.trigger('cef:tuning:applyColor', JSON.stringify(newColorData)); } catch(e) {}
-
-    // Update local state
-    colorData.paintType = selectedFinishId;
-    selectedFinishId = null;
-
-    // Refresh the panel
-    setTimeout(() => showPaintFinishDetail(), 100);
-}
-
-function rotateCamera(val) {
-    try { mp.trigger('cef:tuning:rotateCamera', val); } catch(e) {}
-}
-
-// ═══ EXTRAS DETAIL VIEWS ═══
-
-function showExtraDetail(key) {
-    document.getElementById('noSelection').style.display = 'none';
-    const content = document.getElementById('detailContent');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '10px';
-
-    if (key === 'wheels') showWheelsDetail();
-    else if (key === 'xenon') showXenonDetail();
-    else if (key === 'plate') showPlateDetail();
-    else if (key === 'neon') showNeonDetail();
-    else if (key === 'smoke') showSmokeDetail();
-}
-
-// ─── WHEELS ───
-function showWheelsDetail() {
-    const content = document.getElementById('detailContent');
-    const cfg = specialData.config || {};
-    const wheelTypes = cfg.wheelTypes || [];
-    const prices = cfg.prices || {};
-
-    // Wheel type tabs
-    let typesHtml = '';
-    for (const wt of wheelTypes) {
-        typesHtml += `<button class="wheel-type-btn ${wt.id === editWheelType ? 'active' : ''}"
-            onclick="selectWheelType(${wt.id})">${wt.name}</button>`;
-    }
-
-    content.innerHTML = `
-        <div class="extra-detail">
-            <div class="extra-header">Wheels</div>
-            <div class="extra-desc">Select a wheel type, then pick a wheel design.</div>
-            <div class="section-label">Wheel Type</div>
-            <div class="wheel-type-row">${typesHtml}</div>
-            <div class="section-label">Available Wheels</div>
-            <div class="visual-options" id="wheelOptions">
-                <div style="font-size:10px;color:var(--text-dim);padding:6px;">Select a wheel type to load options...</div>
-            </div>
-            <div class="btn-row">
-                <button class="apply-btn" id="applyWheelBtn" disabled onclick="doApplyWheels()">Select a wheel to apply</button>
-                <button class="btn-cart" id="cartWheelBtn" disabled onclick="addWheelsToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-
-    // Trigger initial wheel type scan
-    try { mp.trigger('cef:tuning:changeWheelType', editWheelType); } catch(e) {}
-}
-
-function selectWheelType(typeId) {
-    editWheelType = typeId;
-    editWheelIndex = -1;
-    document.querySelectorAll('.wheel-type-btn').forEach(b => {
-        b.classList.toggle('active', b.textContent.trim() === ((specialData.config.wheelTypes || []).find(w => w.id === typeId) || {}).name);
-    });
-    // Re-highlight the active wheel type button
-    document.querySelectorAll('.wheel-type-btn').forEach(b => b.classList.remove('active'));
-    const btns = document.querySelectorAll('.wheel-type-btn');
-    const idx = (specialData.config.wheelTypes || []).findIndex(w => w.id === typeId);
-    if (idx >= 0 && btns[idx]) btns[idx].classList.add('active');
-
-    document.getElementById('wheelOptions').innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:6px;">Loading...</div>';
-    try { mp.trigger('cef:tuning:changeWheelType', typeId); } catch(e) {}
-}
-
-// Called from client after wheel type scan
-function updateWheelOptions(wheelType, count) {
-    wheelOptionCount = count;
-    const prices = (specialData.config.prices || {});
-    const installedType = (specialData.current || {}).wheelType || 0;
-    const installedIndex = (specialData.current || {}).wheelIndex !== undefined ? (specialData.current || {}).wheelIndex : -1;
-
-    let html = '';
-    // Stock option
-    const isStock = editWheelIndex === -1;
-    html += `<div class="visual-opt ${installedType === wheelType && installedIndex === -1 ? 'installed' : ''}"
-        onclick="selectWheelOption(-1)" data-idx="-1">
-        <span class="opt-name">Stock</span>
-        ${installedType === wheelType && installedIndex === -1 ? '<span class="opt-installed-tag">Installed</span>' : '<span class="opt-price free">Free</span>'}
-    </div>`;
-
-    for (let i = 0; i < count; i++) {
-        const isInstalled = installedType === wheelType && installedIndex === i;
-        html += `<div class="visual-opt ${isInstalled ? 'installed' : ''}"
-            onclick="selectWheelOption(${i})" data-idx="${i}">
-            <span class="opt-name">Wheel #${i + 1}</span>
-            ${isInstalled ? '<span class="opt-installed-tag">Installed</span>' : '<span class="opt-price">$' + (prices.wheels || 0).toLocaleString() + '</span>'}
-        </div>`;
-    }
-
-    if (count === 0) {
-        html += '<div style="font-size:10px;color:var(--text-dim);padding:6px;">No wheels for this type.</div>';
-    }
-
-    document.getElementById('wheelOptions').innerHTML = html;
-    const btn = document.getElementById('applyWheelBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Select a wheel to apply'; }
-}
-
-function selectWheelOption(index) {
-    editWheelIndex = index;
-    document.querySelectorAll('#wheelOptions .visual-opt').forEach(opt => {
-        const idx = parseInt(opt.dataset.idx);
-        opt.classList.toggle('active', idx === index && !opt.classList.contains('installed'));
-    });
-
-    try { mp.trigger('cef:tuning:previewWheel', index); } catch(e) {}
-
-    const prices = (specialData.config.prices || {});
-    const installedType = (specialData.current || {}).wheelType || 0;
-    const installedIndex = (specialData.current || {}).wheelIndex !== undefined ? (specialData.current || {}).wheelIndex : -1;
-    const btn = document.getElementById('applyWheelBtn');
-
-    if (editWheelType === installedType && index === installedIndex) {
-        btn.textContent = 'Already installed';
-        btn.disabled = true;
-    } else if (index === -1) {
-        btn.textContent = 'Revert to Stock (Free)';
-        btn.disabled = false;
-    } else {
-        const price = prices.wheels || 0;
-        const canAfford = playerInfo.cash >= price;
-        btn.textContent = canAfford ? `Apply — $${price.toLocaleString()}` : `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = !canAfford;
-    }
-
-    // Sync cart button
-    const cartBtn = document.getElementById('cartWheelBtn');
-    if (cartBtn) cartBtn.disabled = (editWheelType === installedType && index === installedIndex);
-}
-
-function doApplyWheels() {
-    try { mp.trigger('cef:tuning:applyWheels', editWheelType, editWheelIndex); } catch(e) {}
-    specialData.current.wheelType = editWheelType;
-    specialData.current.wheelIndex = editWheelIndex;
-    setTimeout(() => showWheelsDetail(), 100);
-}
-
-// ─── XENON HEADLIGHTS ───
-function showXenonDetail() {
-    const content = document.getElementById('detailContent');
-    const cfg = specialData.config || {};
-    const xenonColors = cfg.xenonColors || [];
-    const prices = cfg.prices || {};
-
-    // Color swatches
-    let swatchHtml = '';
-    for (const xc of xenonColors) {
-        const isActive = editXenonEnabled && editXenonColor === xc.id;
-        swatchHtml += `<div class="swatch-item ${isActive ? 'active' : ''}"
-            style="background:${xc.hex};" title="${xc.name}"
-            onclick="selectXenonColor(${xc.id})"></div>`;
-    }
-
-    content.innerHTML = `
-        <div class="extra-detail">
-            <div class="extra-header">Xenon Headlights</div>
-            <div class="extra-desc">Enable xenon headlights and choose a color.</div>
-
-            <div class="toggle-row">
-                <span class="toggle-label">Xenon Lights</span>
-                <div class="toggle-switch ${editXenonEnabled ? 'on' : ''}" id="xenonToggle"
-                    onclick="toggleXenon()"></div>
-            </div>
-
-            <div class="section-label">Xenon Color</div>
-            <div class="swatch-grid" id="xenonSwatches">${swatchHtml}</div>
-
-            <div class="btn-row">
-                <button class="apply-btn" id="applyXenonBtn" onclick="doApplyXenon()">
-                    Apply — $${((editXenonEnabled ? prices.xenon || 0 : 0) + (editXenonEnabled ? prices.xenonColor || 0 : 0)).toLocaleString()}
-                </button>
-                <button class="btn-cart" id="cartXenonBtn" disabled onclick="addXenonToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-    updateXenonBtn();
-}
-
-function toggleXenon() {
-    editXenonEnabled = !editXenonEnabled;
-    const tog = document.getElementById('xenonToggle');
-    if (tog) tog.classList.toggle('on', editXenonEnabled);
-    try { mp.trigger('cef:tuning:previewXenon', editXenonEnabled ? 'true' : 'false', editXenonColor); } catch(e) {}
-    updateXenonBtn();
-}
-
-function selectXenonColor(id) {
-    editXenonColor = id;
-    if (!editXenonEnabled) {
-        editXenonEnabled = true;
-        const tog = document.getElementById('xenonToggle');
-        if (tog) tog.classList.add('on');
-    }
-    document.querySelectorAll('#xenonSwatches .swatch-item').forEach((s, i) => {
-        const xenonColors = (specialData.config.xenonColors || []);
-        s.classList.toggle('active', xenonColors[i] && xenonColors[i].id === id);
-    });
-    try { mp.trigger('cef:tuning:previewXenon', 'true', id); } catch(e) {}
-    updateXenonBtn();
-}
-
-function updateXenonBtn() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const wasEnabled = !!sc.xenonEnabled;
-    const oldColor = sc.xenonColor !== undefined ? sc.xenonColor : -1;
-
-    let price = 0;
-    if (editXenonEnabled && !wasEnabled) price += prices.xenon || 0;
-    if (editXenonEnabled && editXenonColor !== oldColor) price += prices.xenonColor || 0;
-    if (!editXenonEnabled && !wasEnabled) price = 0;
-
-    const btn = document.getElementById('applyXenonBtn');
-    if (!btn) return;
-
-    if (!editXenonEnabled && !wasEnabled) {
-        btn.textContent = 'Already off';
-        btn.disabled = true;
-    } else if (editXenonEnabled && wasEnabled && editXenonColor === oldColor) {
-        btn.textContent = 'No changes';
-        btn.disabled = true;
-    } else if (price > 0 && playerInfo.cash < price) {
-        btn.textContent = `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = true;
-    } else {
-        btn.textContent = price > 0 ? `Apply — $${price.toLocaleString()}` : 'Apply';
-        btn.disabled = false;
-    }
-
-    // Sync cart button
-    const cartBtn = document.getElementById('cartXenonBtn');
-    if (cartBtn) cartBtn.disabled = btn.disabled;
-}
-
-function doApplyXenon() {
-    try { mp.trigger('cef:tuning:applyXenon', editXenonEnabled ? 'true' : 'false', editXenonColor); } catch(e) {}
-    specialData.current.xenonEnabled = editXenonEnabled;
-    specialData.current.xenonColor = editXenonColor;
-    setTimeout(() => showXenonDetail(), 100);
-}
-
-// ─── PLATE STYLE ───
-function showPlateDetail() {
-    const content = document.getElementById('detailContent');
-    const cfg = specialData.config || {};
-    const plateStyles = cfg.plateStyles || [];
-    const prices = cfg.prices || {};
-
-    let html = '';
-    for (const ps of plateStyles) {
-        const isInstalled = editPlateStyle === ps.id;
-        html += `<div class="plate-opt ${isInstalled ? 'installed' : ''}" onclick="selectPlateOption(${ps.id})" data-pid="${ps.id}">
-            <span class="opt-name">${ps.name}</span>
-            ${isInstalled ? '<span class="opt-installed-tag">Current</span>' : '<span class="opt-price">$' + (prices.plate || 0).toLocaleString() + '</span>'}
-        </div>`;
-    }
-
-    content.innerHTML = `
-        <div class="extra-detail">
-            <div class="extra-header">🪪 Plate Style</div>
-            <div class="extra-desc">Change the style of your license plate.</div>
-            <div class="visual-options">${html}</div>
-            <div class="btn-row">
-                <button class="apply-btn" id="applyPlateBtn" disabled onclick="doApplyPlate()">Select a plate style</button>
-                <button class="btn-cart" id="cartPlateBtn" disabled onclick="addPlateToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-}
-
-let selectedPlateId = null;
-
-function selectPlateOption(id) {
-    selectedPlateId = id;
-    document.querySelectorAll('.plate-opt').forEach(opt => {
-        const pid = parseInt(opt.dataset.pid);
-        opt.classList.remove('active');
-        if (pid === id && pid !== editPlateStyle) opt.classList.add('active');
-    });
-
-    try { mp.trigger('cef:tuning:previewPlate', id); } catch(e) {}
-
-    const prices = (specialData.config.prices || {});
-    const btn = document.getElementById('applyPlateBtn');
-    if (id === editPlateStyle) {
-        btn.textContent = 'Already applied';
-        btn.disabled = true;
-    } else {
-        const price = prices.plate || 0;
-        const canAfford = playerInfo.cash >= price;
-        btn.textContent = canAfford ? `Apply — $${price.toLocaleString()}` : `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = !canAfford;
-    }
-
-    // Sync cart button
-    const cartPlateBtn = document.getElementById('cartPlateBtn');
-    if (cartPlateBtn) cartPlateBtn.disabled = (id === editPlateStyle);
-}
-
-function doApplyPlate() {
-    if (selectedPlateId === null) return;
-    try { mp.trigger('cef:tuning:applyPlate', selectedPlateId); } catch(e) {}
-    editPlateStyle = selectedPlateId;
-    specialData.current.plateStyle = selectedPlateId;
-    selectedPlateId = null;
-    setTimeout(() => showPlateDetail(), 100);
-}
-
-// ─── NEON LIGHTS ───
-function showNeonDetail() {
-    const content = document.getElementById('detailContent');
-    const cfg = specialData.config || {};
-    const neonPresets = cfg.neonPresets || [];
-    const prices = cfg.prices || {};
-
-    const sides = ['Left', 'Right', 'Front', 'Back'];
-    let sidesHtml = '';
-    for (let i = 0; i < 4; i++) {
-        const isOn = (editNeonMask & (1 << i)) !== 0;
-        sidesHtml += `<button class="neon-side-btn ${isOn ? 'on' : ''}" onclick="toggleNeonSide(${i})">${sides[i]}</button>`;
-    }
-
-    // Preset swatches
-    let presetHtml = '';
-    for (let i = 0; i < neonPresets.length; i++) {
-        const p = neonPresets[i];
-        const isActive = editNeonColor.r === p.r && editNeonColor.g === p.g && editNeonColor.b === p.b;
-        presetHtml += `<div class="swatch-item ${isActive ? 'active' : ''}"
-            style="background:rgb(${p.r},${p.g},${p.b})" title="${p.name}"
-            onclick="selectNeonPreset(${i})"></div>`;
-    }
-
-    content.innerHTML = `
-        <div class="extra-detail">
-            <div class="extra-header">Neon Lights</div>
-            <div class="extra-desc">Enable underglow on each side and pick a color.</div>
-
-            <div class="section-label">Sides</div>
-            <div class="neon-sides" id="neonSides">${sidesHtml}</div>
-
-            <div class="section-label">Color Presets</div>
-            <div class="swatch-grid" id="neonPresets">${presetHtml}</div>
-
-            <div class="section-label">Custom RGB</div>
-            <div class="rgb-sliders">
-                <div class="rgb-row">
-                    <span class="rgb-label r">R</span>
-                    <input type="range" class="rgb-slider r" min="0" max="255" value="${editNeonColor.r}" oninput="onNeonRGB('r', this.value)">
-                    <span class="rgb-value" id="neonValR">${editNeonColor.r}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label g">G</span>
-                    <input type="range" class="rgb-slider g" min="0" max="255" value="${editNeonColor.g}" oninput="onNeonRGB('g', this.value)">
-                    <span class="rgb-value" id="neonValG">${editNeonColor.g}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label b">B</span>
-                    <input type="range" class="rgb-slider b" min="0" max="255" value="${editNeonColor.b}" oninput="onNeonRGB('b', this.value)">
-                    <span class="rgb-value" id="neonValB">${editNeonColor.b}</span>
-                </div>
-            </div>
-
-            <div class="color-preview-row">
-                <div class="color-swatch" id="neonSwatch" style="background:rgb(${editNeonColor.r},${editNeonColor.g},${editNeonColor.b})"></div>
-                <div class="color-swatch-label">Neon Color<br><span class="rgb-val" id="neonRgbDisp">R: ${editNeonColor.r}  G: ${editNeonColor.g}  B: ${editNeonColor.b}</span></div>
-            </div>
-
-            <div class="btn-row">
-                <button class="apply-btn" id="applyNeonBtn" onclick="doApplyNeon()">Apply</button>
-                <button class="btn-cart" id="cartNeonBtn" disabled onclick="addNeonToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-    updateNeonBtn();
-}
-
-function toggleNeonSide(index) {
-    editNeonMask ^= (1 << index);
-    const btns = document.querySelectorAll('#neonSides .neon-side-btn');
-    for (let i = 0; i < 4; i++) {
-        if (btns[i]) btns[i].classList.toggle('on', (editNeonMask & (1 << i)) !== 0);
-    }
-    previewNeon();
-    updateNeonBtn();
-}
-
-function selectNeonPreset(index) {
-    const presets = (specialData.config.neonPresets || []);
-    const p = presets[index];
-    if (!p) return;
-    editNeonColor = { r: p.r, g: p.g, b: p.b };
-    updateNeonColorUI();
-    previewNeon();
-
-    document.querySelectorAll('#neonPresets .swatch-item').forEach((s, i) => s.classList.toggle('active', i === index));
-    updateNeonBtn();
-}
-
-function onNeonRGB(ch, val) {
-    editNeonColor[ch] = parseInt(val);
-    document.getElementById('neonVal' + ch.toUpperCase()).textContent = val;
-    updateNeonColorUI();
-    previewNeon();
-    document.querySelectorAll('#neonPresets .swatch-item').forEach(s => s.classList.remove('active'));
-    updateNeonBtn();
-}
-
-function updateNeonColorUI() {
-    const swatch = document.getElementById('neonSwatch');
-    if (swatch) swatch.style.background = `rgb(${editNeonColor.r},${editNeonColor.g},${editNeonColor.b})`;
-    const disp = document.getElementById('neonRgbDisp');
-    if (disp) disp.textContent = `R: ${editNeonColor.r}  G: ${editNeonColor.g}  B: ${editNeonColor.b}`;
-
-    // Update sliders
-    const sliders = document.querySelectorAll('.extra-detail .rgb-slider');
-    if (sliders.length >= 3) {
-        sliders[0].value = editNeonColor.r;
-        sliders[1].value = editNeonColor.g;
-        sliders[2].value = editNeonColor.b;
+function renderPaintSidebar() {
+    var el = $('#paintSidebar'); el.innerHTML = '';
+    var h = document.createElement('div'); h.className = 'group-label'; h.textContent = 'Paint'; el.appendChild(h);
+    var items = [
+        {k:'primary',n:'Primary Color'},
+        {k:'secondary',n:'Secondary Color'},
+        {k:'custom',n:'Custom RGB'},
+        {k:'pearlescent',n:'Pearlescent'},
+        {k:'type',n:'Paint Finish'}
+    ];
+    for (var ti = 0; ti < items.length; ti++) {
+        var t = items[ti];
+        var r = document.createElement('div'); r.className = 'cat-item' + (t.k === paintTarget ? ' active' : '');
+        r.innerHTML = '<div class="cat-info"><span class="cat-name">'+t.n+'</span></div>';
+        (function(key) {
+            r.addEventListener('click', function() { paintTarget = key; selColorIdx = null; renderPaintSidebar(); renderPaintMain(); });
+        })(t.k);
+        el.appendChild(r);
     }
 }
 
-function previewNeon() {
-    try { mp.trigger('cef:tuning:previewNeon', editNeonMask, editNeonColor.r, editNeonColor.g, editNeonColor.b); } catch(e) {}
-}
+function renderPaintMain() {
+    var panel = $('#paintMain');
+    if (!DATA || !DATA.paintData) return;
 
-function updateNeonBtn() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const oldMask = sc.neonEnabled || 0;
-    const oldColor = sc.neonColor || { r: 255, g: 255, b: 255 };
-    const oldPacked = (oldColor.r << 16) | (oldColor.g << 8) | oldColor.b;
-    const newPacked = (editNeonColor.r << 16) | (editNeonColor.g << 8) | editNeonColor.b;
-
-    let price = 0;
-    if (editNeonMask !== oldMask) price += prices.neon || 0;
-    if (editNeonMask > 0 && newPacked !== oldPacked) price += prices.neonColor || 0;
-
-    const btn = document.getElementById('applyNeonBtn');
-    if (!btn) return;
-
-    if (editNeonMask === oldMask && (editNeonMask === 0 || newPacked === oldPacked)) {
-        btn.textContent = 'No changes';
-        btn.disabled = true;
-    } else if (price > 0 && playerInfo.cash < price) {
-        btn.textContent = `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = true;
-    } else {
-        btn.textContent = price > 0 ? `Apply — $${price.toLocaleString()}` : 'Apply';
-        btn.disabled = false;
-    }
-
-    // Sync cart button
-    const cartNeonBtn = document.getElementById('cartNeonBtn');
-    if (cartNeonBtn) cartNeonBtn.disabled = btn.disabled;
-}
-
-function doApplyNeon() {
-    try { mp.trigger('cef:tuning:applyNeon', editNeonMask, editNeonColor.r, editNeonColor.g, editNeonColor.b); } catch(e) {}
-    specialData.current.neonEnabled = editNeonMask;
-    specialData.current.neonColor = { ...editNeonColor };
-    setTimeout(() => showNeonDetail(), 100);
-}
-
-// ─── TYRE SMOKE ───
-function showSmokeDetail() {
-    const content = document.getElementById('detailContent');
-    const cfg = specialData.config || {};
-    const neonPresets = cfg.neonPresets || []; // reuse same color presets
-    const prices = cfg.prices || {};
-
-    // Color presets (reuse neon presets)
-    let presetHtml = '';
-    for (let i = 0; i < neonPresets.length; i++) {
-        const p = neonPresets[i];
-        const isActive = editSmokeColor.r === p.r && editSmokeColor.g === p.g && editSmokeColor.b === p.b;
-        presetHtml += `<div class="swatch-item ${isActive ? 'active' : ''}"
-            style="background:rgb(${p.r},${p.g},${p.b})" title="${p.name}"
-            onclick="selectSmokePreset(${i})"></div>`;
-    }
-
-    content.innerHTML = `
-        <div class="extra-detail">
-            <div class="extra-header">Tyre Smoke</div>
-            <div class="extra-desc">Enable coloured tyre smoke when burning out.</div>
-
-            <div class="toggle-row">
-                <span class="toggle-label">Tyre Smoke</span>
-                <div class="toggle-switch ${editSmokeEnabled ? 'on' : ''}" id="smokeToggle"
-                    onclick="toggleSmoke()"></div>
-            </div>
-
-            <div class="section-label">Color Presets</div>
-            <div class="swatch-grid" id="smokePresets">${presetHtml}</div>
-
-            <div class="section-label">Custom RGB</div>
-            <div class="rgb-sliders">
-                <div class="rgb-row">
-                    <span class="rgb-label r">R</span>
-                    <input type="range" class="rgb-slider r" min="0" max="255" value="${editSmokeColor.r}" oninput="onSmokeRGB('r', this.value)">
-                    <span class="rgb-value" id="smokeValR">${editSmokeColor.r}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label g">G</span>
-                    <input type="range" class="rgb-slider g" min="0" max="255" value="${editSmokeColor.g}" oninput="onSmokeRGB('g', this.value)">
-                    <span class="rgb-value" id="smokeValG">${editSmokeColor.g}</span>
-                </div>
-                <div class="rgb-row">
-                    <span class="rgb-label b">B</span>
-                    <input type="range" class="rgb-slider b" min="0" max="255" value="${editSmokeColor.b}" oninput="onSmokeRGB('b', this.value)">
-                    <span class="rgb-value" id="smokeValB">${editSmokeColor.b}</span>
-                </div>
-            </div>
-
-            <div class="color-preview-row">
-                <div class="color-swatch" id="smokeSwatch" style="background:rgb(${editSmokeColor.r},${editSmokeColor.g},${editSmokeColor.b})"></div>
-                <div class="color-swatch-label">Smoke Color<br><span class="rgb-val" id="smokeRgbDisp">R: ${editSmokeColor.r}  G: ${editSmokeColor.g}  B: ${editSmokeColor.b}</span></div>
-            </div>
-
-            <div class="btn-row">
-                <button class="apply-btn" id="applySmokeBtn" onclick="doApplySmoke()">Apply</button>
-                <button class="btn-cart" id="cartSmokeBtn" disabled onclick="addSmokeToCart()" title="Add to Cart">🛒</button>
-            </div>
-        </div>
-    `;
-    updateSmokeBtn();
-}
-
-function toggleSmoke() {
-    editSmokeEnabled = !editSmokeEnabled;
-    const tog = document.getElementById('smokeToggle');
-    if (tog) tog.classList.toggle('on', editSmokeEnabled);
-    previewSmoke();
-    updateSmokeBtn();
-}
-
-function selectSmokePreset(index) {
-    const presets = (specialData.config.neonPresets || []);
-    const p = presets[index];
-    if (!p) return;
-    editSmokeColor = { r: p.r, g: p.g, b: p.b };
-    if (!editSmokeEnabled) {
-        editSmokeEnabled = true;
-        const tog = document.getElementById('smokeToggle');
-        if (tog) tog.classList.add('on');
-    }
-    updateSmokeColorUI();
-    previewSmoke();
-    document.querySelectorAll('#smokePresets .swatch-item').forEach((s, i) => s.classList.toggle('active', i === index));
-    updateSmokeBtn();
-}
-
-function onSmokeRGB(ch, val) {
-    editSmokeColor[ch] = parseInt(val);
-    document.getElementById('smokeVal' + ch.toUpperCase()).textContent = val;
-    updateSmokeColorUI();
-    previewSmoke();
-    document.querySelectorAll('#smokePresets .swatch-item').forEach(s => s.classList.remove('active'));
-    updateSmokeBtn();
-}
-
-function updateSmokeColorUI() {
-    const swatch = document.getElementById('smokeSwatch');
-    if (swatch) swatch.style.background = `rgb(${editSmokeColor.r},${editSmokeColor.g},${editSmokeColor.b})`;
-    const disp = document.getElementById('smokeRgbDisp');
-    if (disp) disp.textContent = `R: ${editSmokeColor.r}  G: ${editSmokeColor.g}  B: ${editSmokeColor.b}`;
-}
-
-function previewSmoke() {
-    try { mp.trigger('cef:tuning:previewSmoke', editSmokeEnabled ? 'true' : 'false', editSmokeColor.r, editSmokeColor.g, editSmokeColor.b); } catch(e) {}
-}
-
-function updateSmokeBtn() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const wasEnabled = !!sc.smokeEnabled;
-    const oldColor = sc.smokeColor || { r: 255, g: 255, b: 255 };
-    const oldPacked = (oldColor.r << 16) | (oldColor.g << 8) | oldColor.b;
-    const newPacked = (editSmokeColor.r << 16) | (editSmokeColor.g << 8) | editSmokeColor.b;
-
-    let price = 0;
-    if (editSmokeEnabled && !wasEnabled) price += prices.smoke || 0;
-    if (editSmokeEnabled && newPacked !== oldPacked) price += prices.smokeColor || 0;
-
-    const btn = document.getElementById('applySmokeBtn');
-    if (!btn) return;
-
-    if (!editSmokeEnabled && !wasEnabled) {
-        btn.textContent = 'Already off';
-        btn.disabled = true;
-    } else if (editSmokeEnabled && wasEnabled && newPacked === oldPacked) {
-        btn.textContent = 'No changes';
-        btn.disabled = true;
-    } else if (!editSmokeEnabled && wasEnabled) {
-        btn.textContent = 'Remove Tyre Smoke';
-        btn.disabled = false;
-    } else if (price > 0 && playerInfo.cash < price) {
-        btn.textContent = `Insufficient cash ($${price.toLocaleString()})`;
-        btn.disabled = true;
-    } else {
-        btn.textContent = price > 0 ? `Apply — $${price.toLocaleString()}` : 'Apply';
-        btn.disabled = false;
-    }
-
-    // Sync cart button
-    const cartSmokeBtn = document.getElementById('cartSmokeBtn');
-    if (cartSmokeBtn) cartSmokeBtn.disabled = btn.disabled;
-}
-
-function doApplySmoke() {
-    try { mp.trigger('cef:tuning:applySmoke', editSmokeEnabled ? 'true' : 'false', editSmokeColor.r, editSmokeColor.g, editSmokeColor.b); } catch(e) {}
-    specialData.current.smokeEnabled = editSmokeEnabled;
-    specialData.current.smokeColor = { ...editSmokeColor };
-    setTimeout(() => showSmokeDetail(), 100);
-}
-
-// ═══ CART SYSTEM ═══
-let cart = [];
-let cartIdCounter = 0;
-let cartVisible = false;
-
-function addToCart(item) {
-    // Deduplicate: replace existing item of same type/sub-type
-    if (item.type === 'visual') {
-        cart = cart.filter(c => !(c.type === 'visual' && c.params.modType === item.params.modType));
-    } else if (item.type === 'color') {
-        // Replace existing color entry only for same target (primary or secondary)
-        cart = cart.filter(c => !(c.type === 'color' && c.colorTarget === item.colorTarget));
-    } else {
-        cart = cart.filter(c => c.type !== item.type);
-    }
-    item.id = ++cartIdCounter;
-    cart.push(item);
-    updateCartUI();
-}
-
-function removeFromCart(id) {
-    cart = cart.filter(i => i.id !== id);
-    updateCartUI();
-}
-
-function clearCart() {
-    cart = [];
-    updateCartUI();
-}
-
-function toggleCart() {
-    cartVisible = !cartVisible;
-    document.getElementById('cartOverlay').style.display = cartVisible ? 'flex' : 'none';
-}
-
-function updateCartUI() {
-    const count = cart.length;
-    const btn = document.getElementById('cartBtn');
-    const badge = document.getElementById('cartBadge');
-
-    if (count > 0) {
-        btn.style.display = 'flex';
-        badge.textContent = count;
-    } else {
-        btn.style.display = 'none';
-        if (cartVisible) { cartVisible = false; document.getElementById('cartOverlay').style.display = 'none'; }
-    }
-
-    // Render items
-    const container = document.getElementById('cartItems');
-    if (count === 0) {
-        container.innerHTML = '<div class="cart-empty">Cart is empty</div>';
-    } else {
-        container.innerHTML = cart.map(item => `
-            <div class="cart-item">
-                <span class="ci-label">${item.label}</span>
-                <span class="ci-price">$${item.price.toLocaleString()}</span>
-                <button class="ci-remove" onclick="removeFromCart(${item.id})">&times;</button>
-            </div>
-        `).join('');
-    }
-
-    // Total
-    const total = cart.reduce((sum, i) => sum + i.price, 0);
-    document.getElementById('cartTotal').textContent = '$' + total.toLocaleString();
-    document.getElementById('cartCount').textContent = `(${count})`;
-
-    const buyBtn = document.getElementById('cartBuyBtn');
-    if (count === 0) {
-        buyBtn.textContent = 'Cart is empty';
-        buyBtn.disabled = true;
-    } else if (total > playerInfo.cash) {
-        buyBtn.textContent = `Insufficient cash ($${total.toLocaleString()})`;
-        buyBtn.disabled = true;
-    } else {
-        buyBtn.textContent = `Buy All — $${total.toLocaleString()}`;
-        buyBtn.disabled = false;
-    }
-}
-
-function doBuyAll() {
-    if (cart.length === 0) return;
-    const total = cart.reduce((sum, i) => sum + i.price, 0);
-    if (total > playerInfo.cash) return;
-
-    // Send cart to server
-    try { mp.trigger('cef:tuning:cartPurchase', JSON.stringify(cart)); } catch(e) {}
-
-    // Update local state for each item
-    for (const item of cart) {
-        if (item.type === 'visual') {
-            if (item.params.modIndex === -1) delete currentMods[item.params.modType];
-            else currentMods[item.params.modType] = item.params.modIndex;
-        } else if (item.type === 'wheels') {
-            specialData.current.wheelType = item.params.wheelType;
-            specialData.current.wheelIndex = item.params.wheelIndex;
-        } else if (item.type === 'xenon') {
-            specialData.current.xenonEnabled = item.params.enabled;
-            specialData.current.xenonColor = item.params.colorId;
-        } else if (item.type === 'plate') {
-            specialData.current.plateStyle = item.params.plateStyle;
-            editPlateStyle = item.params.plateStyle;
-        } else if (item.type === 'neon') {
-            specialData.current.neonEnabled = item.params.bitmask;
-            specialData.current.neonColor = { r: item.params.r, g: item.params.g, b: item.params.b };
-        } else if (item.type === 'smoke') {
-            specialData.current.smokeEnabled = item.params.enabled;
-            specialData.current.smokeColor = { r: item.params.r, g: item.params.g, b: item.params.b };
-        } else if (item.type === 'color') {
-            if (item.params.primRGB) colorData.primRGB = item.params.primRGB;
-            if (item.params.secRGB) colorData.secRGB = item.params.secRGB;
-        } else if (item.type === 'finish') {
-            colorData.paintType = item.params.paintType;
+    if (paintTarget === 'type') {
+        var html = '<div class="opts-header"><div class="opts-title">Paint Finish</div><div class="opts-sub">Change the paint type</div></div>';
+        html += '<div class="option-grid">';
+        var types = DATA.paintData.types || [];
+        for (var ti = 0; ti < types.length; ti++) {
+            var t = types[ti];
+            var sel = t.id === paintState.type;
+            html += '<div class="opt-card'+(sel?' selected':'')+'" onclick="setPaintType('+t.id+')">'
+                + '<span class="oc-name">'+(t.icon||'')+' '+t.name+'</span>'
+                + '<span class="oc-price">$'+fmt(DATA.paintData.typePrice||0)+'</span></div>';
         }
+        html += '</div>';
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyPaint(\'paintType\')">Apply Finish</button></div>';
+        panel.innerHTML = html;
+        return;
     }
 
-    // Deduct cash locally
-    playerInfo.cash -= total;
-    document.getElementById('playerCash').textContent = '$' + playerInfo.cash.toLocaleString();
-
-    // Clear cart
-    cart = [];
-    updateCartUI();
-
-    // Rebuild categories and refresh current panel
-    buildCategories();
-    if (activeCategory && activeCatType) {
-        setTimeout(() => selectCategory(activeCatType, activeCategory), 100);
-    }
-}
-
-// ─── Add-to-Cart Helpers ───
-function addVisualToCart() {
-    if (selectedVisualIndex === null || !activeCategory) return;
-    const mod = visualData[activeCategory];
-    if (!mod) return;
-    const idx = selectedVisualIndex;
-    const installedIdx = currentMods[mod.modType] !== undefined ? currentMods[mod.modType] : -1;
-    if (idx === installedIdx) return;
-    const price = idx === -1 ? 0 : visualPricing.base + (idx * visualPricing.perMod);
-    addToCart({
-        type: 'visual',
-        label: idx === -1 ? `${mod.name} (Stock)` : `${mod.name} #${idx + 1}`,
-        price: price,
-        params: { modType: mod.modType, modIndex: idx }
-    });
-}
-
-function addWheelsToCart() {
-    const prices = (specialData.config.prices || {});
-    const installedType = (specialData.current || {}).wheelType || 0;
-    const installedIdx = (specialData.current || {}).wheelIndex !== undefined ? (specialData.current || {}).wheelIndex : -1;
-    if (editWheelType === installedType && editWheelIndex === installedIdx) return;
-    const price = editWheelIndex === -1 ? 0 : (prices.wheels || 0);
-    addToCart({
-        type: 'wheels',
-        label: editWheelIndex === -1 ? 'Stock Wheels' : `Wheel #${editWheelIndex + 1}`,
-        price: price,
-        params: { wheelType: editWheelType, wheelIndex: editWheelIndex }
-    });
-}
-
-function addXenonToCart() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const wasEnabled = !!sc.xenonEnabled;
-    const oldColor = sc.xenonColor !== undefined ? sc.xenonColor : -1;
-    let price = 0;
-    if (editXenonEnabled && !wasEnabled) price += prices.xenon || 0;
-    if (editXenonEnabled && editXenonColor !== oldColor) price += prices.xenonColor || 0;
-    if (price === 0 && editXenonEnabled === wasEnabled && editXenonColor === oldColor) return;
-    const xenonColors = (specialData.config.xenonColors || []);
-    const colorEntry = xenonColors.find(x => x.id === editXenonColor);
-    addToCart({
-        type: 'xenon',
-        label: editXenonEnabled ? `Xenon ${colorEntry ? colorEntry.name : ''}` : 'Remove Xenon',
-        price: price,
-        params: { enabled: editXenonEnabled, colorId: editXenonColor }
-    });
-}
-
-function addPlateToCart() {
-    if (selectedPlateId === null || selectedPlateId === editPlateStyle) return;
-    const prices = (specialData.config.prices || {});
-    const plateStyles = (specialData.config.plateStyles || []);
-    const style = plateStyles.find(p => p.id === selectedPlateId);
-    addToCart({
-        type: 'plate',
-        label: style ? style.name : `Plate #${selectedPlateId}`,
-        price: prices.plate || 0,
-        params: { plateStyle: selectedPlateId }
-    });
-}
-
-function addNeonToCart() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const oldMask = sc.neonEnabled || 0;
-    const oldColor = sc.neonColor || { r: 255, g: 255, b: 255 };
-    const oldPacked = (oldColor.r << 16) | (oldColor.g << 8) | oldColor.b;
-    const newPacked = (editNeonColor.r << 16) | (editNeonColor.g << 8) | editNeonColor.b;
-    let price = 0;
-    if (editNeonMask !== oldMask) price += prices.neon || 0;
-    if (editNeonMask > 0 && newPacked !== oldPacked) price += prices.neonColor || 0;
-    if (editNeonMask === oldMask && (editNeonMask === 0 || newPacked === oldPacked)) return;
-    const sides = ['L','R','F','B'];
-    let sideStr = '';
-    for (let i = 0; i < 4; i++) { if (editNeonMask & (1 << i)) sideStr += sides[i]; }
-    addToCart({
-        type: 'neon',
-        label: sideStr ? `Neon ${sideStr} (${editNeonColor.r},${editNeonColor.g},${editNeonColor.b})` : 'Neon Off',
-        price: price,
-        params: { bitmask: editNeonMask, r: editNeonColor.r, g: editNeonColor.g, b: editNeonColor.b }
-    });
-}
-
-function addSmokeToCart() {
-    const prices = (specialData.config.prices || {});
-    const sc = specialData.current || {};
-    const wasEnabled = !!sc.smokeEnabled;
-    const oldColor = sc.smokeColor || { r: 255, g: 255, b: 255 };
-    const oldPacked = (oldColor.r << 16) | (oldColor.g << 8) | oldColor.b;
-    const newPacked = (editSmokeColor.r << 16) | (editSmokeColor.g << 8) | editSmokeColor.b;
-    if (!editSmokeEnabled && !wasEnabled) return;
-    if (editSmokeEnabled && wasEnabled && newPacked === oldPacked) return;
-    let price = 0;
-    if (editSmokeEnabled && !wasEnabled) price += prices.smoke || 0;
-    if (editSmokeEnabled && newPacked !== oldPacked) price += prices.smokeColor || 0;
-    addToCart({
-        type: 'smoke',
-        label: editSmokeEnabled ? `Smoke (${editSmokeColor.r},${editSmokeColor.g},${editSmokeColor.b})` : 'Remove Smoke',
-        price: price,
-        params: { enabled: editSmokeEnabled, r: editSmokeColor.r, g: editSmokeColor.g, b: editSmokeColor.b }
-    });
-}
-
-function addColorToCart() {
-    let isPreset = false;
-    for (const c of presetColors) {
-        if (c.r === editRGB.r && c.g === editRGB.g && c.b === editRGB.b) { isPreset = true; break; }
-    }
-    const price = isPreset ? (colorPricing.preset || 0) : (colorPricing.custom || 0);
-    addToCart({
-        type: 'color',
-        colorTarget: colorTarget,
-        label: `${colorTarget === 'primary' ? 'Primary' : 'Secondary'} (${editRGB.r},${editRGB.g},${editRGB.b})`,
-        price: price,
-        params: {
-            primRGB: colorTarget === 'primary' ? { ...editRGB } : { ...colorData.primRGB },
-            secRGB: colorTarget === 'secondary' ? { ...editRGB } : { ...colorData.secRGB },
-            paintType: colorData.paintType,
-            type: isPreset ? 'preset' : 'custom'
+    if (paintTarget === 'custom') {
+        var html = '<div class="opts-header"><div class="opts-title">Custom RGB Color</div><div class="opts-sub">Set any color · $'+fmt(DATA.paintData.customPrice||0)+'</div></div>';
+        html += '<div class="rgb-section">';
+        html += '<div class="rgb-title">Adjust Colors</div>';
+        var channels = [{k:'r',label:'R',color:'#ff4444'},{k:'g',label:'G',color:'#44cc44'},{k:'b',label:'B',color:'#4488ff'}];
+        for (var ci = 0; ci < channels.length; ci++) {
+            var ch = channels[ci];
+            var pct = (rgbState[ch.k]/255)*100;
+            html += '<div class="rgb-row"><span class="rgb-label" style="color:'+ch.color+'">'+ch.label+'</span>'
+                + '<div class="rgb-slider-wrap" data-rgb="'+ch.k+'"><div class="rgb-fill" style="width:'+pct+'%;background:'+ch.color+';opacity:.5"></div><div class="rgb-thumb" style="left:'+pct+'%"></div></div>'
+                + '<span class="rgb-val">'+rgbState[ch.k]+'</span></div>';
         }
-    });
-}
+        html += '<div class="rgb-preview" style="background:rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')"></div>';
+        html += '<div class="rgb-hex">#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2)+'</div>';
+        html += '</div>';
+        html += '<div class="option-grid" style="padding-top:8px">';
+        html += '<div class="opt-card" onclick="applyRGBToPrimary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Primary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div>';
+        html += '<div class="opt-card" onclick="applyRGBToSecondary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Secondary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div>';
+        html += '</div>';
+        panel.innerHTML = html;
+        bindRGBSliders();
+        return;
+    }
 
-function addFinishToCart() {
-    if (selectedFinishId === null || selectedFinishId === (colorData.paintType || 0)) return;
-    const price = colorPricing.paintType || 0;
-    const ptEntry = paintTypes.find(p => p.id === selectedFinishId);
-    addToCart({
-        type: 'finish',
-        label: ptEntry ? `${ptEntry.icon} ${ptEntry.name}` : `Finish #${selectedFinishId}`,
-        price: price,
-        params: {
-            primRGB: { ...colorData.primRGB },
-            secRGB: { ...colorData.secRGB },
-            paintType: selectedFinishId,
-            type: 'paintType'
+    if (paintTarget === 'pearlescent') {
+        var pearls = DATA.paintData.pearls || [];
+        var html = '<div class="opts-header"><div class="opts-title">Pearlescent Color</div>'
+            + '<div class="opts-sub">' + (paintState.type === 2 ? 'Choose pearl overlay · $'+fmt(DATA.paintData.typePrice||0) : '⚠ Set paint finish to Pearl first') + '</div></div>';
+        if (pearls.length) {
+            html += '<div class="color-grid">';
+            for (var i = 0; i < pearls.length; i++) {
+                var c = pearls[i];
+                var sel = selColorIdx === i;
+                html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickPearl('+i+')" title="'+c.name+'"></div>';
+            }
+            html += '</div>';
+            if (selColorIdx !== null && pearls[selColorIdx]) {
+                var c = pearls[selColorIdx];
+                html += '<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.typePrice||0)+'</div></div>';
+            }
+            html += '<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null&&paintState.type===2?'ready':'locked')+'" '+(selColorIdx!==null&&paintState.type===2?'onclick="applyPearl()"':'disabled')+'>Apply Pearlescent</button></div>';
+        } else {
+            html += '<div class="empty-state">Pearl colors not available</div>';
         }
+        panel.innerHTML = html;
+        return;
+    }
+
+    // Primary or Secondary
+    var isPrimary = paintTarget === 'primary';
+    var html = '<div class="opts-header"><div class="opts-title">'+(isPrimary?'Primary':'Secondary')+' Color</div>'
+        + '<div class="opts-sub">Choose a color · $'+fmt(DATA.paintData.presetPrice||0)+'</div></div>';
+    html += '<div class="color-grid">';
+    var presets = DATA.paintData.presets || [];
+    for (var i = 0; i < presets.length; i++) {
+        var c = presets[i];
+        var sel = selColorIdx === i;
+        html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickColor('+i+')" title="'+c.name+'"></div>';
+    }
+    html += '</div>';
+    if (selColorIdx !== null && presets[selColorIdx]) {
+        var c = presets[selColorIdx];
+        html += '<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.presetPrice||0)+'</div></div>';
+    }
+    html += '<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null?'ready':'locked')+'" '+(selColorIdx!==null?'onclick="applyPaint(\'preset\')"':'disabled')+'>Apply Color</button></div>';
+    panel.innerHTML = html;
+}
+
+function pickColor(i) {
+    selColorIdx = i;
+    var c = (DATA.paintData.presets||[])[i]; if (!c) return;
+    if (paintTarget === 'primary') paintState.prim = {r:c.r,g:c.g,b:c.b};
+    else paintState.sec = {r:c.r,g:c.g,b:c.b};
+    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
+    renderPaintMain();
+}
+
+function setPaintType(id) {
+    paintState.type = id;
+    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
+    renderPaintMain();
+}
+
+function pickPearl(i) {
+    selColorIdx = i;
+    var c = (DATA.paintData.pearls||[])[i]; if (!c) return;
+    paintState.pearl = {r:c.r,g:c.g,b:c.b};
+    mp_trigger('cef:tuning:previewPearl', c.gtaIndex);
+    renderPaintMain();
+}
+
+function applyPearl() {
+    if (selColorIdx === null || paintState.type !== 2) return;
+    var c = (DATA.paintData.pearls||[])[selColorIdx]; if (!c) return;
+    var colorData = { primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, pearlRGB: {r:c.r,g:c.g,b:c.b}, pearlIndex: c.gtaIndex, type: 'paintType' };
+    mp_trigger('cef:tuning:applyColor', JSON.stringify(colorData));
+    showToast('Pearlescent applied!', 'success');
+}
+
+function applyPaint(type) {
+    var colorData = { primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: type || 'preset' };
+    mp_trigger('cef:tuning:applyColor', JSON.stringify(colorData));
+    showToast('Color applied!', 'success');
+}
+
+// ═════════════════════════════════════════════════════════════
+// CUSTOM RGB PICKER
+// ═════════════════════════════════════════════════════════════
+function bindRGBSliders() {
+    $$('.rgb-slider-wrap').forEach(function(wrap) {
+        var ch = wrap.dataset.rgb;
+        function upd(e) {
+            var r = wrap.getBoundingClientRect();
+            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            rgbState[ch] = Math.round(p * 255);
+            wrap.querySelector('.rgb-fill').style.width = (p*100)+'%';
+            wrap.querySelector('.rgb-thumb').style.left = (p*100)+'%';
+            wrap.closest('.rgb-row').querySelector('.rgb-val').textContent = rgbState[ch];
+            var prev = document.querySelector('.rgb-preview');
+            if (prev) prev.style.background = 'rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')';
+            var hex = document.querySelector('.rgb-hex');
+            if (hex) hex.textContent = '#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2);
+            mp_trigger('cef:tuning:previewColor', rgbState.r, rgbState.g, rgbState.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
+        }
+        wrap.addEventListener('mousedown', function(e) {
+            upd(e);
+            var mv = function(ev) { upd(ev); };
+            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup', up);
+        });
     });
 }
 
-function closeUI() {
-    try { mp.trigger('cef:tuning:close'); } catch(e) {}
+function applyRGBToPrimary() {
+    paintState.prim = {r:rgbState.r, g:rgbState.g, b:rgbState.b};
+    mp_trigger('cef:tuning:applyColor', JSON.stringify({ primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: 'custom' }));
+    showToast('Custom primary color applied!', 'success');
 }
 
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeUI();
-});
+function applyRGBToSecondary() {
+    paintState.sec = {r:rgbState.r, g:rgbState.g, b:rgbState.b};
+    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, rgbState.r, rgbState.g, rgbState.b, paintState.type);
+    mp_trigger('cef:tuning:applyColor', JSON.stringify({ primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: 'custom' }));
+    showToast('Custom secondary color applied!', 'success');
+}
+
+// ═════════════════════════════════════════════════════════════
+// SPECIAL TAB
+// ═════════════════════════════════════════════════════════════
+function initSpecial() {
+    if (!DATA || !DATA.specialData) return;
+    var sd = DATA.specialData;
+    if (sd.wheels && sd.wheels.current) { wheelType = sd.wheels.current.wheelType||0; selWheelIdx = sd.wheels.current.wheelIndex!=null?sd.wheels.current.wheelIndex:-1; wheelColorIdx = sd.wheels.current.wheelColor||-1; }
+    if (sd.xenon && sd.xenon.current) { xenonOn = !!sd.xenon.current.enabled; xenonColor = sd.xenon.current.colorId||-1; }
+    if (sd.neon && sd.neon.current) { neonMask = sd.neon.current.bitmask||0; neonColor = sd.neon.current.color||{r:255,g:255,b:255}; }
+    if (sd.smoke && sd.smoke.current) { smokeOn = !!sd.smoke.current.enabled; smokeColor = sd.smoke.current.color||{r:255,g:255,b:255}; }
+    if (sd.stance && sd.stance.current) { camberValue = sd.stance.current.camber||0; trackWidthValue = sd.stance.current.trackWidth||0; }
+    renderSpecSidebar();
+    renderSpecMain();
+}
+
+function renderSpecSidebar() {
+    var el = $('#specSidebar'); el.innerHTML = '';
+    var h = document.createElement('div'); h.className = 'group-label'; h.textContent = 'Special Mods'; el.appendChild(h);
+    for (var k in DATA.specialData) {
+        var s = DATA.specialData[k];
+        var r = document.createElement('div'); r.className = 'cat-item' + (k === selSpecCat ? ' active' : '');
+        r.innerHTML = '<div class="cat-info"><span class="cat-name">'+(s.name || k)+'</span><div class="cat-meta"><span class="cat-stage">$'+fmt(s.price||0)+'</span></div></div>';
+        (function(key) {
+            r.addEventListener('click', function() { selSpecCat = key; selSpecOpt = null; renderSpecSidebar(); renderSpecMain(); });
+        })(k);
+        el.appendChild(r);
+    }
+}
+
+function renderSpecMain() {
+    var panel = $('#specMain');
+    if (!selSpecCat || !DATA.specialData) { panel.innerHTML = '<div class="empty-state">Select a modification</div>'; return; }
+    var sp = DATA.specialData[selSpecCat];
+    if (!sp) return;
+
+    var html = '<div class="opts-header"><div class="opts-title">'+sp.name+'</div><div class="opts-sub">$'+fmt(sp.price||0)+'</div></div>';
+
+    if (selSpecCat === 'wheels') {
+        // Wheel type selector
+        html += '<div class="option-grid" style="border-bottom:1px solid var(--bdr)">';
+        var opts = sp.options || [];
+        for (var oi = 0; oi < opts.length; oi++) {
+            var wt = opts[oi];
+            html += '<div class="opt-card'+(wt.id===wheelType?' selected':'')+'" onclick="changeWheelType('+wt.id+')"><span class="oc-name">'+wt.name+'</span></div>';
+        }
+        html += '</div>';
+        // Wheel options with stock/default
+        html += '<div class="option-grid">';
+        html += '<div class="opt-card'+(selWheelIdx===-1?' selected':'')+'" onclick="prevWheel(-1)"><span class="oc-name">Default</span><span class="oc-price" style="color:var(--txt3)">Free</span></div>';
+        if (wheelCount > 0) {
+            for (var i = 0; i < wheelCount; i++) {
+                html += '<div class="opt-card'+(i===selWheelIdx?' selected':'')+'" onclick="prevWheel('+i+')"><span class="oc-name">Wheel '+(i+1)+'</span></div>';
+            }
+        }
+        html += '</div>';
+        // Wheel colors
+        var wColors = sp.wheelColors || [];
+        if (wColors.length) {
+            html += '<div style="padding:6px 22px 0"><div class="ss-title" style="margin-bottom:8px">Wheel Color</div></div>';
+            html += '<div class="color-grid" style="padding-top:0">';
+            for (var i = 0; i < wColors.length; i++) {
+                var wc = wColors[i];
+                var sel = wheelColorIdx === i;
+                var bg = wc.r === -1 ? 'linear-gradient(135deg,#555,#888)' : 'rgb('+wc.r+','+wc.g+','+wc.b+')';
+                html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:'+bg+'" onclick="pickWheelColor('+i+')" title="'+wc.name+'"></div>';
+            }
+            html += '</div>';
+        }
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyWheels()">Install Wheels</button></div>';
+
+    } else if (selSpecCat === 'xenon') {
+        html += '<div class="spec-toggle"><label>Xenon Headlights</label>'
+            + '<div class="toggle-box'+(xenonOn?' on':'')+'" onclick="toggleXenon()"><div class="toggle-knob"></div></div></div>';
+        if (xenonOn && sp.options) {
+            html += '<div class="option-grid">';
+            for (var xi = 0; xi < sp.options.length; xi++) {
+                var x = sp.options[xi];
+                html += '<div class="opt-card'+(x.id===xenonColor?' selected':'')+'" onclick="pickXenon('+x.id+')">'
+                    + '<span class="oc-name" style="color:'+(x.hex||'#fff')+'">'+x.name+'</span></div>';
+            }
+            html += '</div>';
+        }
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyXenon()">Apply Xenon</button></div>';
+
+    } else if (selSpecCat === 'plate') {
+        html += '<div class="option-grid">';
+        var plateOpts = sp.options || [];
+        for (var pi = 0; pi < plateOpts.length; pi++) {
+            var p = plateOpts[pi];
+            var isActivePreview = selSpecOpt === p.id;
+            var isCurrent = p.id === (sp.current || 0);
+            var cls = 'opt-card';
+            var badge = '';
+            if (isCurrent && !isActivePreview) { cls += ' installed'; badge = '<span class="oc-badge">✓ CURRENT</span>'; }
+            else if (isActivePreview) { cls += ' previewing'; badge = '<span class="oc-badge">👁 PREVIEW</span>'; }
+            html += '<div class="'+cls+'" onclick="prevPlate('+p.id+')">'+badge+'<span class="oc-name">'+p.name+'</span></div>';
+        }
+        html += '</div>';
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyPlate()">Apply Plate</button></div>';
+
+    } else if (selSpecCat === 'neon') {
+        html += '<div class="neon-sides">';
+        var sides = ['Left','Right','Front','Rear'];
+        for (var i = 0; i < 4; i++) {
+            var on = (neonMask & (1 << i)) !== 0;
+            html += '<div class="neon-btn'+(on?' on':'')+'" onclick="toggleNeonSide('+i+')">'+sides[i]+'</div>';
+        }
+        html += '</div>';
+        html += '<div class="option-grid">';
+        var nOpts = sp.options || [];
+        for (var ni = 0; ni < nOpts.length; ni++) {
+            var n = nOpts[ni];
+            var r=255,g=255,b=255;
+            var m = (n.hex||'').match(/(\d+)/g);
+            if (m && m.length>=3) { r=parseInt(m[0]); g=parseInt(m[1]); b=parseInt(m[2]); }
+            var isSelected = neonColor.r===r && neonColor.g===g && neonColor.b===b;
+            html += '<div class="opt-card'+(isSelected?' selected':'')+'" onclick="pickNeonColor('+r+','+g+','+b+')" style="border-left:3px solid '+(n.hex||'#fff')+'">'
+                + '<span class="oc-name">'+n.name+'</span></div>';
+        }
+        html += '</div>';
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyNeon()">Apply Neon</button></div>';
+
+    } else if (selSpecCat === 'smoke') {
+        html += '<div class="spec-toggle"><label>Tyre Smoke</label>'
+            + '<div class="toggle-box'+(smokeOn?' on':'')+'" onclick="toggleSmoke()"><div class="toggle-knob"></div></div></div>';
+        if (smokeOn) {
+            html += '<div class="option-grid">';
+            var sOpts = sp.options || [];
+            for (var si = 0; si < sOpts.length; si++) {
+                var n = sOpts[si];
+                var r=255,g=255,b=255;
+                var m = (n.hex||'').match(/(\d+)/g);
+                if (m && m.length>=3) { r=parseInt(m[0]); g=parseInt(m[1]); b=parseInt(m[2]); }
+                var isSelected = smokeColor.r===r && smokeColor.g===g && smokeColor.b===b;
+                html += '<div class="opt-card'+(isSelected?' selected':'')+'" onclick="pickSmokeColor('+r+','+g+','+b+')" style="border-left:3px solid '+(n.hex||'#fff')+'">'
+                    + '<span class="oc-name">'+n.name+'</span></div>';
+            }
+            html += '</div>';
+        }
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applySmoke()">Apply Smoke</button></div>';
+
+    } else if (selSpecCat === 'stance') {
+        // Camber & Track Width sliders
+        html += '<div class="slider-section" style="border-top:none">';
+        html += '<div class="ss-title">Stance Tuning</div>';
+
+        var camPct = Math.round(((camberValue + 1) / 2) * 100);
+        html += '<div class="slider-row"><div class="sr-top"><span class="sr-icon">↕</span><span class="sr-name">Camber</span><span class="sr-val">'+camberValue.toFixed(2)+'</span></div>'
+            + '<div class="sr-labels"><span>Negative</span><span>Positive</span></div>'
+            + '<div class="slider-track stance-slider" data-stance="camber"><div class="slider-fill" style="width:'+camPct+'%"></div><div class="slider-thumb" style="left:'+camPct+'%"></div></div>'
+            + '<div class="slider-desc">Negative = wheels tilt inward at top. Positive = wheels tilt outward.</div></div>';
+
+        var twPct = Math.round(((trackWidthValue + 1) / 2) * 100);
+        html += '<div class="slider-row"><div class="sr-top"><span class="sr-icon">↔</span><span class="sr-name">Wheel Distance</span><span class="sr-val">'+trackWidthValue.toFixed(2)+'</span></div>'
+            + '<div class="sr-labels"><span>Narrower</span><span>Wider</span></div>'
+            + '<div class="slider-track stance-slider" data-stance="trackWidth"><div class="slider-fill" style="width:'+twPct+'%"></div><div class="slider-thumb" style="left:'+twPct+'%"></div></div>'
+            + '<div class="slider-desc">Adjust how wide the wheels sit from the body.</div></div>';
+
+        html += '</div>';
+        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyStance()">Apply Stance · $'+fmt(sp.price||0)+'</button></div>';
+    }
+
+    panel.innerHTML = html;
+    bindStanceSliders();
+}
+
+// ── Wheels ──
+function changeWheelType(typeId) { wheelType = typeId; wheelCount = 0; selWheelIdx = -1; mp_trigger('cef:tuning:changeWheelType', typeId); renderSpecMain(); }
+function updateWheelOptions(type, count) { wheelType = type; wheelCount = count; renderSpecMain(); }
+function prevWheel(idx) { selWheelIdx = idx; mp_trigger('cef:tuning:previewWheel', idx); renderSpecMain(); }
+function pickWheelColor(idx) {
+    wheelColorIdx = idx;
+    var wc = (DATA.specialData.wheels.wheelColors||[])[idx];
+    if (wc) mp_trigger('cef:tuning:previewWheelColor', wc.gtaIndex);
+    renderSpecMain();
+}
+function applyWheels() { mp_trigger('cef:tuning:applyWheels', wheelType, selWheelIdx, wheelColorIdx); }
+
+// ── Xenon ──
+function toggleXenon() { xenonOn = !xenonOn; mp_trigger('cef:tuning:previewXenon', xenonOn?'true':'false', xenonColor); renderSpecMain(); }
+function pickXenon(id) { xenonColor = id; mp_trigger('cef:tuning:previewXenon', 'true', id); renderSpecMain(); }
+function applyXenon() { mp_trigger('cef:tuning:applyXenon', xenonOn?'true':'false', xenonColor); }
+
+// ── Plate ──
+function prevPlate(id) { selSpecOpt = id; mp_trigger('cef:tuning:previewPlate', id); showToast('Previewing plate style', 'info', 1200); renderSpecMain(); }
+function applyPlate() { if (selSpecOpt !== null) mp_trigger('cef:tuning:applyPlate', selSpecOpt); }
+
+// ── Neon ──
+function toggleNeonSide(idx) { neonMask ^= (1 << idx); mp_trigger('cef:tuning:previewNeon', neonMask, neonColor.r, neonColor.g, neonColor.b); renderSpecMain(); }
+function pickNeonColor(r,g,b) { neonColor = {r:r,g:g,b:b}; mp_trigger('cef:tuning:previewNeon', neonMask, r, g, b); renderSpecMain(); }
+function applyNeon() { mp_trigger('cef:tuning:applyNeon', neonMask, neonColor.r, neonColor.g, neonColor.b); }
+
+// ── Smoke ──
+function toggleSmoke() { smokeOn = !smokeOn; mp_trigger('cef:tuning:previewSmoke', smokeOn?'true':'false', smokeColor.r, smokeColor.g, smokeColor.b); renderSpecMain(); }
+function pickSmokeColor(r,g,b) { smokeColor = {r:r,g:g,b:b}; mp_trigger('cef:tuning:previewSmoke', 'true', r, g, b); renderSpecMain(); }
+function applySmoke() { mp_trigger('cef:tuning:applySmoke', smokeOn?'true':'false', smokeColor.r, smokeColor.g, smokeColor.b); }
+
+// ── Stance (Camber & Track Width) ──
+function bindStanceSliders() {
+    $$('.stance-slider').forEach(function(track) {
+        var type = track.dataset.stance;
+        function upd(e) {
+            var r = track.getBoundingClientRect();
+            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            var val = (p * 2) - 1; // 0-1 → -1 to +1
+            if (type === 'camber') camberValue = Math.round(val * 100) / 100;
+            else trackWidthValue = Math.round(val * 100) / 100;
+            track.querySelector('.slider-fill').style.width = (p*100)+'%';
+            track.querySelector('.slider-thumb').style.left = (p*100)+'%';
+            track.closest('.slider-row').querySelector('.sr-val').textContent = val.toFixed(2);
+            mp_trigger('cef:tuning:previewStance', camberValue, trackWidthValue);
+        }
+        track.addEventListener('mousedown', function(e) {
+            upd(e);
+            var mv = function(ev) { upd(ev); };
+            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+            document.addEventListener('mousemove', mv);
+            document.addEventListener('mouseup', up);
+        });
+    });
+}
+
+function applyStance() { mp_trigger('cef:tuning:applyStance', camberValue, trackWidthValue); }
+
+// ═════════════════════════════════════════════════════════════
+// CLOSE
+// ═════════════════════════════════════════════════════════════
+function closeTuning() { mp_trigger('cef:tuning:close'); }
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeTuning(); });
 </script>
 </body>
 </html>

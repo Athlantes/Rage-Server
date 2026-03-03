@@ -81,23 +81,41 @@ mp.events.add('server:taxi:callFromPhone', (player, destName, destX, destY, dest
         return;
     }
 
-    // Check if already in a vehicle
-    if (player.vehicle) {
-        player.call('client:taxi:callError', ['You are already in a vehicle.']);
-        return;
-    }
-
     // Check if already has an active call
     if (activePhoneCalls.has(player.id)) {
         player.call('client:taxi:callError', ['You already have an active taxi request.']);
         return;
     }
 
-    // Check on-duty drivers
-    const driversOnDuty = countOnDutyDrivers();
-    if (driversOnDuty === 0) {
-        player.call('client:taxi:callError', ['No taxi drivers are available right now.']);
-        return;
+    // Detect if passenger is already in a taxi with an on-duty driver
+    let inTaxiDriver = null;
+    if (player.vehicle) {
+        const veh = player.vehicle;
+        const vehFactionId = veh.getVariable('factionId');
+        if (vehFactionId === TAXI_FACTION_ID) {
+            // Find the driver of this vehicle
+            mp.players.forEach(p => {
+                if (p.logged && p.vehicle && p.vehicle.id === veh.id
+                    && p.id !== player.id
+                    && p.factionId === TAXI_FACTION_ID
+                    && p.getVariable('factionDuty')) {
+                    inTaxiDriver = p;
+                }
+            });
+        }
+        if (!inTaxiDriver) {
+            player.call('client:taxi:callError', ['You are already in a vehicle.']);
+            return;
+        }
+    }
+
+    // Check on-duty drivers (skip if already in a taxi with a driver)
+    if (!inTaxiDriver) {
+        const driversOnDuty = countOnDutyDrivers();
+        if (driversOnDuty === 0) {
+            player.call('client:taxi:callError', ['No taxi drivers are available right now.']);
+            return;
+        }
     }
 
     // Parse coordinates
@@ -130,7 +148,93 @@ mp.events.add('server:taxi:callFromPhone', (player, destName, destX, destY, dest
     // Resolve pickup zone name on server (best effort)
     let pickupLocation = pickupZone || 'Unknown Area';
 
-    // Create dispatch call with destination pre-set
+    // ── Auto-assign: passenger is already in a taxi with an on-duty driver ────
+    if (inTaxiDriver) {
+        // Check the driver doesn't already have an active assignment
+        const existingAssignment = dispatchManager.getAssignment(inTaxiDriver.id);
+        if (existingAssignment) {
+            player.call('client:taxi:callError', ['Your driver already has an active fare.']);
+            return;
+        }
+
+        const driverName = inTaxiDriver.name.replace(/_/g, ' ');
+
+        // Create the assignment directly (skip dispatch queue)
+        const callId = dispatchManager._nextCallId++;
+        dispatchManager.activeAssignments.set(inTaxiDriver.id, {
+            callId,
+            factionId: TAXI_FACTION_ID,
+            callerServerId: player.id,
+            callerName: callerName,
+            coords: { x: pickup.x, y: pickup.y, z: pickup.z },
+            phase: 3, // Already boarded
+            driverVehicleId: inTaxiDriver.vehicle ? inTaxiDriver.vehicle.id : null,
+            destCoords: { x: dX, y: dY, z: dZ },
+            destLocation: locationName,
+            fare: fare,
+            distKm: distKm,
+        });
+
+        // Track the active phone call (already at phase 3 — on the way)
+        activePhoneCalls.set(player.id, {
+            callId: callId,
+            destName: locationName,
+            destCoords: { x: dX, y: dY, z: dZ },
+            fare: fare,
+            distKm: distKm,
+            upfrontPaid: false,
+            phase: 3,
+            driverName: driverName,
+            driverId: inTaxiDriver.id,
+        });
+
+        // Initialize driver's client-side ride state (normally done by client:dispatch:accepted)
+        inTaxiDriver.call('client:taxi:autoAssignRide', [JSON.stringify({
+            callerName: callerName,
+            coords: { x: dX, y: dY, z: dZ },
+            location: locationName,
+        })]);
+
+        // Confirm to passenger phone and jump straight to phase 3
+        player.call('client:taxi:callPlaced', [JSON.stringify({
+            destName: locationName,
+            fare: fare,
+            distKm: distKm,
+            phase: 3
+        })]);
+
+        // Immediately show on-the-way progress
+        player.call('client:taxi:phoneProgress', [JSON.stringify({
+            phase: 1,
+            driverName: driverName,
+        })]);
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.call('client:taxi:phoneProgress', [JSON.stringify({ phase: 3, destName: locationName })]);
+            }
+        }, 500);
+
+        // Handle fare (deduct upfront)
+        (async () => {
+            const upfront = Math.ceil(fare / 2);
+            await PlayerManager.removeMoneyAndSave(player, upfront, 'Taxi Fare (Upfront 50%)');
+            activePhoneCalls.get(player.id) && (activePhoneCalls.get(player.id).upfrontPaid = true);
+            player.outputChatBox(`!{#ffc300}[TAXI] !{#ffffff}Upfront fare: !{#ff4757}-$${upfront}`);
+
+            if (mp.players.exists(inTaxiDriver)) {
+                await PlayerManager.addMoneyAndSave(inTaxiDriver, upfront, 'Taxi Fare Income (50%)');
+                inTaxiDriver.outputChatBox(`!{#ffc300}[TAXI] !{#ffffff}Fare income: !{#00ff00}+$${upfront}`);
+            }
+        })();
+
+        player.outputChatBox(`!{#ffc300}[TAXI] !{#ffffff}Ride auto-assigned to your driver, ${driverName}!`);
+        inTaxiDriver.outputChatBox(`!{#ffc300}[TAXI] !{#ffffff}${callerName} set a destination: ${locationName}. Head there now!`);
+
+        console.log(`[Dispatch] Taxi auto-assigned: ${callerName} → driver ${driverName} (already in vehicle)`);
+        return;
+    }
+
+    // ── Normal flow: create dispatch call ─────────────────────────────────────
     const call = dispatchManager.addCall(TAXI_FACTION_ID, {
         callerName,
         callerServerId: player.id,

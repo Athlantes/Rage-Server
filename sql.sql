@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `bank_transactions` (
   `description` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `character_inventory` (
   `metadata` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_char_id` (`character_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=94 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=115 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `character_job_skills` (
   `level` int(11) DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_skill` (`character_id`,`job_key`)
-) ENGINE=InnoDB AUTO_INCREMENT=568 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=644 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -110,6 +110,132 @@ CREATE TABLE IF NOT EXISTS `escootr_spawns` (
   `rotation` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.factions
+CREATE TABLE IF NOT EXISTS `factions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key` varchar(30) NOT NULL,
+  `name` varchar(80) NOT NULL,
+  `type` varchar(20) NOT NULL,
+  `color` varchar(7) NOT NULL DEFAULT '#FFFFFF',
+  `max_members` int(11) NOT NULL DEFAULT 50,
+  `bank` bigint(20) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_key` (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.faction_action_log
+CREATE TABLE IF NOT EXISTS `faction_action_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `faction_id` int(11) NOT NULL,
+  `officer_id` int(11) NOT NULL,
+  `officer_name` varchar(50) NOT NULL,
+  `target_id` int(11) NOT NULL,
+  `target_name` varchar(50) NOT NULL,
+  `action` varchar(30) NOT NULL,
+  `amount` int(11) DEFAULT 0,
+  `reason` varchar(200) DEFAULT '',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_officer` (`officer_id`),
+  KEY `idx_target` (`target_id`),
+  KEY `idx_faction` (`faction_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.faction_applications
+CREATE TABLE IF NOT EXISTS `faction_applications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `faction_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `message` varchar(300) DEFAULT '',
+  `applied_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_app` (`faction_id`,`user_id`),
+  CONSTRAINT `fk_app_faction` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.faction_ranks
+CREATE TABLE IF NOT EXISTS `faction_ranks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `faction_id` int(11) NOT NULL,
+  `rank_index` int(11) NOT NULL,
+  `name` varchar(40) NOT NULL,
+  `salary` int(11) NOT NULL DEFAULT 0,
+  `permissions` varchar(500) DEFAULT '[]',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_faction_rank` (`faction_id`,`rank_index`),
+  CONSTRAINT `faction_ranks_ibfk_1` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.families
+CREATE TABLE IF NOT EXISTS `families` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `tag` varchar(4) NOT NULL,
+  `color` varchar(7) NOT NULL DEFAULT '#FFFFFF',
+  `owner_id` int(11) NOT NULL,
+  `bank` bigint(20) NOT NULL DEFAULT 0,
+  `member_cap` int(11) NOT NULL DEFAULT 25,
+  `hq_house_id` int(11) DEFAULT NULL,
+  `applications_open` tinyint(1) NOT NULL DEFAULT 0,
+  `invites_open` tinyint(1) NOT NULL DEFAULT 1,
+  `description` varchar(200) NOT NULL DEFAULT '',
+  `rank1_name` varchar(30) NOT NULL DEFAULT 'Recruit',
+  `rank2_name` varchar(30) NOT NULL DEFAULT 'Member',
+  `rank3_name` varchar(30) NOT NULL DEFAULT 'Veteran',
+  `rank4_name` varchar(30) NOT NULL DEFAULT 'Officer',
+  `rank5_name` varchar(30) NOT NULL DEFAULT 'Leader',
+  `rank1_color` varchar(7) NOT NULL DEFAULT '#AAAAAA',
+  `rank2_color` varchar(7) NOT NULL DEFAULT '#FFFFFF',
+  `rank3_color` varchar(7) NOT NULL DEFAULT '#00AAFF',
+  `rank4_color` varchar(7) NOT NULL DEFAULT '#FFAA00',
+  `rank5_color` varchar(7) NOT NULL DEFAULT '#FF4444',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.family_applications
+CREATE TABLE IF NOT EXISTS `family_applications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `family_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `applied_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_app` (`family_id`,`user_id`),
+  CONSTRAINT `family_applications_ibfk_1` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.family_members
+CREATE TABLE IF NOT EXISTS `family_members` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `family_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `rank` int(11) NOT NULL DEFAULT 1,
+  `joined_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  KEY `family_id` (`family_id`),
+  CONSTRAINT `family_members_ibfk_1` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -125,7 +251,21 @@ CREATE TABLE IF NOT EXISTS `ground_items` (
   `metadata` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.houses
+CREATE TABLE IF NOT EXISTS `houses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `owner_id` int(11) DEFAULT 0,
+  `price` int(11) NOT NULL DEFAULT 50000,
+  `position` text NOT NULL,
+  `interior_preset` varchar(50) NOT NULL DEFAULT 'motel',
+  `locked` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -169,7 +309,7 @@ CREATE TABLE IF NOT EXISTS `player_daily_quests` (
   PRIMARY KEY (`id`),
   KEY `idx_user_date` (`user_id`,`created_date`),
   CONSTRAINT `player_daily_quests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -183,7 +323,7 @@ CREATE TABLE IF NOT EXISTS `player_mails` (
   `is_read` tinyint(1) DEFAULT 0,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -213,7 +353,7 @@ CREATE TABLE IF NOT EXISTS `player_photos` (
   `image_path` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -227,7 +367,7 @@ CREATE TABLE IF NOT EXISTS `player_photo_hunt` (
   PRIMARY KEY (`id`),
   KEY `fk_user_photo` (`user_id`),
   CONSTRAINT `fk_user_photo` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -259,8 +399,9 @@ CREATE TABLE IF NOT EXISTS `server_vehicles` (
   `dirt_level` float DEFAULT 0,
   `dimension` int(11) DEFAULT 0,
   `parked` tinyint(1) DEFAULT 0,
+  `build_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`build_data`)),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -289,7 +430,18 @@ CREATE TABLE IF NOT EXISTS `users` (
   `total_playtime` int(11) DEFAULT 0,
   `daily_playtime` int(11) DEFAULT 0,
   `daily_playtime_date` date DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  `mugshot` varchar(255) DEFAULT NULL,
+  `wanted_level` int(11) NOT NULL DEFAULT 0,
+  `hunger` int(11) DEFAULT 100,
+  `thirst` int(11) DEFAULT 100,
+  `faction_id` int(11) DEFAULT NULL,
+  `faction_rank` int(11) DEFAULT 0,
+  `faction_warns` int(11) DEFAULT 0,
+  `faction_punish` int(11) DEFAULT 0,
+  `faction_joined_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_user_faction` (`faction_id`),
+  CONSTRAINT `fk_user_faction` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
@@ -316,60 +468,33 @@ CREATE TABLE IF NOT EXISTS `vehicle_mods` (
   `vehicle_id` int(11) NOT NULL,
   `mod_type` int(11) NOT NULL,
   `mod_index` int(11) NOT NULL DEFAULT -1,
+  `variant` varchar(32) DEFAULT NULL,
+  `slider_data` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_mod` (`vehicle_id`,`mod_type`),
   KEY `idx_vehicle` (`vehicle_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
--- 1. Families table — one row per clan/family
-CREATE TABLE IF NOT EXISTS `families` (
-    `id`                INT          AUTO_INCREMENT PRIMARY KEY,
-    `name`              VARCHAR(50)  NOT NULL UNIQUE,
-    `tag`               VARCHAR(4)   NOT NULL,
-    `color`             VARCHAR(7)   NOT NULL DEFAULT '#FFFFFF',
-    `owner_id`          INT          NOT NULL,
-    `bank`              BIGINT       NOT NULL DEFAULT 0,
-    `member_cap`        INT          NOT NULL DEFAULT 25,
-    `hq_house_id`       INT          DEFAULT NULL,
-    `applications_open` TINYINT(1)   NOT NULL DEFAULT 0,
-    `invites_open`      TINYINT(1)   NOT NULL DEFAULT 1,
-    `description`       VARCHAR(200) NOT NULL DEFAULT '',
-    `rank1_name`        VARCHAR(30)  NOT NULL DEFAULT 'Recruit',
-    `rank2_name`        VARCHAR(30)  NOT NULL DEFAULT 'Member',
-    `rank3_name`        VARCHAR(30)  NOT NULL DEFAULT 'Veteran',
-    `rank4_name`        VARCHAR(30)  NOT NULL DEFAULT 'Officer',
-    `rank5_name`        VARCHAR(30)  NOT NULL DEFAULT 'Leader',
-    `rank1_color`       VARCHAR(7)   NOT NULL DEFAULT '#AAAAAA',
-    `rank2_color`       VARCHAR(7)   NOT NULL DEFAULT '#FFFFFF',
-    `rank3_color`       VARCHAR(7)   NOT NULL DEFAULT '#00AAFF',
-    `rank4_color`       VARCHAR(7)   NOT NULL DEFAULT '#FFAA00',
-    `rank5_color`       VARCHAR(7)   NOT NULL DEFAULT '#FF4444',
-    `created_at`        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Dumping structure for table central_db.faction_uniforms
+CREATE TABLE IF NOT EXISTS `faction_uniforms` (
+  `character_id` int(11) NOT NULL,
+  `faction_id` int(11) NOT NULL,
+  `uniform_index` int(11) NOT NULL DEFAULT 0,
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`character_id`,`faction_id`),
+  KEY `idx_faction` (`faction_id`),
+  CONSTRAINT `faction_uniforms_ibfk_1` FOREIGN KEY (`character_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `faction_uniforms_ibfk_2` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- 2. Family members — one row per member (user can only be in one family)
-CREATE TABLE IF NOT EXISTS `family_members` (
-    `id`         INT       AUTO_INCREMENT PRIMARY KEY,
-    `family_id`  INT       NOT NULL,
-    `user_id`    INT       NOT NULL UNIQUE,
-    `username`   VARCHAR(50) NOT NULL,
-    `rank`       INT       NOT NULL DEFAULT 1,
-    `joined_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`family_id`) REFERENCES `families`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Data exporting was unselected.
 
--- 3. Family applications — pending join requests
-CREATE TABLE IF NOT EXISTS `family_applications` (
-    `id`         INT         AUTO_INCREMENT PRIMARY KEY,
-    `family_id`  INT         NOT NULL,
-    `user_id`    INT         NOT NULL,
-    `username`   VARCHAR(50) NOT NULL,
-    `applied_at` TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY `uq_app` (`family_id`, `user_id`),
-    FOREIGN KEY (`family_id`) REFERENCES `families`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ─── Migration: Add variant + slider columns to vehicle_mods ───
+-- Run these on existing databases to support the variant system:
+-- ALTER TABLE `vehicle_mods` ADD COLUMN `variant` varchar(32) DEFAULT NULL;
+-- ALTER TABLE `vehicle_mods` ADD COLUMN `slider_data` text DEFAULT NULL;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

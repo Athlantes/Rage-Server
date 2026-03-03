@@ -45,5 +45,8 @@ require('./creator/index.js');
 require('./core/dealership.js');
 require('./core/tuning.js');
 
+// Factions — Wardrobe system
+require('./factions/wardrobe/index.js');
+
 // Factions — Dispatch system
 require('./factions/dispatch/index.js');

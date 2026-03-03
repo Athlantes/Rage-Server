@@ -4,6 +4,8 @@ const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
 const HouseManager = require('../systems/houseManager');
 const factionsManager = require('../factions/factionsManager');
+const wardrobeManager = require('../factions/wardrobe/wardrobeManager');
+const dispatchManager = require('../factions/dispatch/dispatchManager');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
@@ -188,7 +190,7 @@ mp.events.addCommand('lockhouse', (player) => {
 
 mp.events.addCommand('duty', (player) => {
     // 1. Check if the player is in a faction
-    if (!player.factionId || player.factionId === 0) {
+    if (!player.factionId) {
         return player.outputChatBox("!{#ff0000}You are not in a faction.");
     }
 
@@ -207,15 +209,30 @@ mp.events.addCommand('duty', (player) => {
         return player.outputChatBox("!{#ff0000}You must be at your faction's HQ locker room to go on duty.");
     }
 
-    // 5. Toggle the duty state
+    // 5. Check if the faction has a wardrobe system and require a uniform
+    const hasWardrobe = wardrobeManager.getConfig(player.factionId);
+    if (hasWardrobe) {
+        const hasUniform = wardrobeManager.hasUniformSet(player, player.factionId);
+        if (!hasUniform) {
+            return player.outputChatBox("!{#ff0000}You must select a uniform at the wardrobe before going on duty.");
+        }
+    }
+
+    // 6. Toggle the duty state
     let onDuty = player.getVariable('factionDuty') || false;
     player.setVariable('factionDuty', !onDuty);
 
     if (!onDuty) {
         player.outputChatBox(`!{#00ff00}You are now ON duty for ${faction.name}.`);
         
-        // Optional: If they are LSPD, you might want to give them weapons or a uniform here later
-        // if (faction.type === "LEO") { ... }
+        // Apply faction uniform if wardrobe is configured
+        if (hasWardrobe) {
+            const applied = wardrobeManager.applyUniform(player, player.factionId);
+            if (applied) {
+                player.outputChatBox("!{#00a8ff}Your uniform has been applied.");
+            }
+        }
+
         // Set nametag color for on-duty players (if faction defines a color)
         try {
             if (faction.color) {
@@ -227,6 +244,35 @@ mp.events.addCommand('duty', (player) => {
     } else {
         player.outputChatBox("!{#ff0000}You are now OFF duty.");
         
+        // Remove uniform and restore inventory clothes
+        if (hasWardrobe) {
+            wardrobeManager.removeUniform(player);
+            player.outputChatBox("!{#00a8ff}Your uniform has been removed.");
+        }
+
+        // Cancel any active dispatch assignment for this driver
+        try {
+            const assignment = dispatchManager.getAssignment(player.id);
+            if (assignment) {
+                // Notify the caller that ride was cancelled
+                if (assignment.callerServerId !== null) {
+                    const caller = mp.players.at(assignment.callerServerId);
+                    if (caller && mp.players.exists(caller)) {
+                        caller.outputChatBox('!{#ff4757}[DISPATCH] !{#ffffff}Your driver went off-duty. Please request a new ride.');
+                        caller.call('client:taxi:callCancelled', []);
+                    }
+                    // Clean up the caller's phone call state
+                    try {
+                        const taxiCommand = require('../factions/taxi/taxiCommand');
+                        taxiCommand.activePhoneCalls.delete(assignment.callerServerId);
+                    } catch (e) {}
+                }
+                dispatchManager.cancelAssignment(player.id, 'Driver went off-duty.');
+            }
+        } catch (e) {
+            console.error('[Duty] Error cleaning up dispatch assignment:', e);
+        }
+
         // Optional: Despawn their faction vehicle if they go off duty
         if (player.factionVehicle && mp.vehicles.exists(player.factionVehicle)) {
             player.factionVehicle.destroy();
@@ -551,14 +597,14 @@ mp.events.addCommand('setfaction', async (player, fullText) => {
     if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
     if (isNaN(factionId)) return player.outputChatBox("Usage: /setfaction [id/name] [factionId] [rank]");
 
-    // Verify faction exists if they aren't setting it to 0 (0 = civilian/removal)
+    // Verify faction exists if they aren't removing (0 = civilian/removal)
     if (factionId > 0) {
         const faction = factionsManager.getFaction(factionId);
         if (!faction) return player.outputChatBox(`${COLORS.ERROR}Faction ID ${factionId} does not exist.`);
     }
 
-    // Update the player's memory state
-    target.factionId = factionId;
+    // Update the player's memory state (null = no faction)
+    target.factionId = factionId > 0 ? factionId : null;
     target.factionRank = factionId > 0 ? rank : 0;
     
     // Sync to the client-side for UI purposes (like your inventory or radial menu)
@@ -566,9 +612,9 @@ mp.events.addCommand('setfaction', async (player, fullText) => {
 
     try {
         // Save the changes to the database
-        await db.query("UPDATE users SET faction_id = ?, faction_rank = ? WHERE id = ?", [target.factionId, target.factionRank, target.data.dbId]);
+        await db.query("UPDATE users SET faction_id = ?, faction_rank = ?, faction_joined_at = ? WHERE id = ?", [target.factionId, target.factionRank, target.factionId ? new Date() : null, target.data.dbId]);
         
-        if (factionId === 0) {
+        if (!target.factionId) {
             player.outputChatBox(`${COLORS.SUCCESS}You removed ${target.name} from their faction.`);
             target.outputChatBox(`${COLORS.INFO}You have been removed from your faction by an admin.`);
         } else {

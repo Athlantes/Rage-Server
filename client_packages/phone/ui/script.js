@@ -1428,6 +1428,14 @@ const app = {
             app.notify('taxi', 'Taxi', 'Your ride has been cancelled.');
         },
 
+        onRatingConfirmed: () => {
+            const t = app.taxiApp;
+            t.activeCall = null;
+            t.selectedRating = 0;
+            t.selectedLocation = null;
+            t.showBrowse();
+        },
+
         backToBrowse: () => {
             const t = app.taxiApp;
             t.selectedLocation = null;

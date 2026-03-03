@@ -9,7 +9,12 @@ mp.events.add('server:dispatch:driverArrived', (driver) => {
     if (!a || a.factionId !== 1) return;
 
     a.phase = 2;
-    a.driverVehicleId = driver.vehicle ? driver.vehicle.id : null;
+    // Update vehicle ID, but keep the previous stored ID if driver stepped out momentarily
+    if (driver.vehicle) {
+        a.driverVehicleId = driver.vehicle.id;
+    } else if (!a.driverVehicleId && driver.factionVehicle && mp.vehicles.exists(driver.factionVehicle)) {
+        a.driverVehicleId = driver.factionVehicle.id;
+    }
 
     const config = DISPATCH_CONFIGS[1];
     if (a.callerServerId !== null) {
@@ -31,10 +36,14 @@ mp.events.add('playerEnterVehicle', (player, vehicle, seat) => {
     const { assignment, driverId } = dispatchManager.getAssignmentByCaller(player.id);
     if (!assignment || assignment.factionId !== 1) return;
 
-    if (assignment.phase === 2 && assignment.driverVehicleId === vehicle.id) {
-        assignment.phase = 3;
-
+    if (assignment.phase === 2) {
+        // Match by stored vehicle ID OR by checking the driver is currently in this vehicle
         const driver = mp.players.at(driverId);
+        const vehicleMatch = assignment.driverVehicleId === vehicle.id ||
+            (driver && mp.players.exists(driver) && driver.vehicle && driver.vehicle.id === vehicle.id);
+        if (!vehicleMatch) return;
+
+        assignment.phase = 3;
 
         // Notify phone app (handles fare deduction)
         taxiCommand.onCallerBoarded(player.id);

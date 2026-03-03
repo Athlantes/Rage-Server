@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        :root {
+            --bg-body: rgba(0, 0, 0, 0.85);
+            --bg-card: #141414;
+            --accent: #ffc300;
+            --accent-hover: #ffd740;
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #4caf50;
+            --selected-bg: rgba(255, 195, 0, 0.12);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: transparent;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding-left: 40px;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            background: var(--bg-card);
+            border-top: 4px solid var(--accent);
+            padding: 28px 32px;
+            width: 420px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .header h2 {
+            margin: 0 0 4px 0;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            font-size: 11px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .uniform-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 340px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .uniform-list::-webkit-scrollbar { width: 4px; }
+        .uniform-list::-webkit-scrollbar-track { background: transparent; }
+        .uniform-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .uniform-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .uniform-card:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255, 195, 0, 0.3);
+        }
+
+        .uniform-card.selected {
+            background: var(--selected-bg);
+            border-color: var(--accent);
+        }
+
+        .uniform-card.active-preview {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(255, 195, 0, 0.15);
+        }
+
+        .uniform-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-sub);
+            flex-shrink: 0;
+        }
+
+        .uniform-card.selected .uniform-number {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .uniform-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .uniform-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .uniform-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge-current {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            background: rgba(255, 195, 0, 0.15);
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-confirm:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-confirm:disabled {
+            background: rgba(255, 195, 0, 0.25);
+            color: rgba(0,0,0,0.4);
+            cursor: not-allowed;
+        }
+
+        .btn-close {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+        }
+
+        .btn-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+        }
+
+        .hint {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-top: 12px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 id="title">Wardrobe</h2>
+            <div class="subtitle" id="subtitle">Select your duty uniform</div>
+        </div>
+
+        <div class="uniform-list" id="uniformList">
+            <!-- Filled by JS -->
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-close" onclick="closeWardrobe()">Close</button>
+            <button class="btn btn-confirm" id="btnConfirm" disabled onclick="confirmSelection()">Select Uniform</button>
+        </div>
+
+        <div class="hint">Click a uniform to preview · Right Alt to toggle mouse · ESC to close</div>
+    </div>
+
+    <script>
+        let wardrobeData = null;
+        let previewIndex = null;
+
+        function receiveWardrobeData(rawData) {
+            try {
+                wardrobeData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+            } catch(e) {
+                wardrobeData = rawData;
+            }
+
+            // Update header
+            document.getElementById('title').textContent = wardrobeData.factionName || 'Wardrobe';
+            document.getElementById('subtitle').textContent = 'Select your duty uniform';
+
+            // Build uniform cards
+            const list = document.getElementById('uniformList');
+            list.innerHTML = '';
+
+            wardrobeData.uniforms.forEach((u, i) => {
+                const card = document.createElement('div');
+                card.className = 'uniform-card' + (u.selected ? ' selected' : '');
+                card.setAttribute('data-index', u.index);
+                card.onclick = () => previewUniform(u.index);
+
+                card.innerHTML = `
+                    <div class="uniform-number">${u.index + 1}</div>
+                    <div class="uniform-info">
+                        <div class="uniform-name">${u.name}</div>
+                        ${u.description ? `<div class="uniform-desc">${u.description}</div>` : ''}
+                    </div>
+                    ${u.selected ? '<div class="badge-current">Current</div>' : ''}
+                `;
+
+                list.appendChild(card);
+            });
+
+            // If there's a current selection, mark it as the active preview
+            if (wardrobeData.currentIndex !== null) {
+                previewIndex = wardrobeData.currentIndex;
+            }
+
+            updateConfirmButton();
+        }
+
+        function previewUniform(index) {
+            previewIndex = index;
+
+            // Update visual state
+            document.querySelectorAll('.uniform-card').forEach(card => {
+                card.classList.remove('active-preview');
+                if (parseInt(card.getAttribute('data-index')) === index) {
+                    card.classList.add('active-preview');
+                }
+            });
+
+            updateConfirmButton();
+
+            // Tell client to preview
+            try { mp.trigger('cef:wardrobe:preview', index); } catch(e) {}
+        }
+
+        function updateConfirmButton() {
+            const btn = document.getElementById('btnConfirm');
+            const isNewSelection = previewIndex !== null && previewIndex !== wardrobeData.currentIndex;
+            btn.disabled = previewIndex === null;
+            btn.textContent = isNewSelection ? 'Select Uniform' : (previewIndex !== null ? 'Already Selected' : 'Select Uniform');
+        }
+
+        function confirmSelection() {
+            if (previewIndex === null) return;
+            try { mp.trigger('cef:wardrobe:select', previewIndex); } catch(e) {}
+        }
+
+        function closeWardrobe() {
+            try { mp.trigger('cef:wardrobe:close'); } catch(e) {}
+        }
+
+        // ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeWardrobe();
+        });
+    </script>
+</body>
+</html>

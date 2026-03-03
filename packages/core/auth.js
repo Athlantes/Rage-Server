@@ -313,7 +313,7 @@ async function startSession(player, userData) {
     // 3. Get Faction HQ Data
     let factionHQPos = null;
     try {
-        if (player.factionId && player.factionId > 0) {
+        if (player.factionId) {
             const faction = FactionsManager.getFaction(player.factionId);
             if (faction && faction.hq && faction.hq.exterior) {
                 const ext = faction.hq.exterior;
