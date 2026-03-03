@@ -431,6 +431,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `daily_playtime` int(11) DEFAULT 0,
   `daily_playtime_date` date DEFAULT NULL,
   `mugshot` varchar(255) DEFAULT NULL,
+  `discord_id` varchar(32) DEFAULT NULL,
   `wanted_level` int(11) NOT NULL DEFAULT 0,
   `hunger` int(11) DEFAULT 100,
   `thirst` int(11) DEFAULT 100,

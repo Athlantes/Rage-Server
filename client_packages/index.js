@@ -16,6 +16,7 @@ require('./core/interaction.js');
 require('./core/keys.js');
 require('./core/overlay.js');
 require('./core/events.js');
+require('./core/discord.js');
 require('./systems/questTracker.js');
 
 // 2. Complex Subsystems (Phone)

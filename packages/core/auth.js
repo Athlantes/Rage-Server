@@ -374,6 +374,9 @@ async function startSession(player, userData) {
     }, 2000); 
 
     mp.events.call('server:loadAccount', player);
+
+    // Update Discord Rich Presence with player info
+    player.call('client:discord:setLoggedIn', [player.name, player.data.level || 1]);
 }
 
 mp.events.add('server:auth:finalized', async (player) => {

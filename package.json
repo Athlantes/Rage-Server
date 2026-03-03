@@ -1,8 +1,11 @@
 {
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
+    "discord.js": "^14.25.1",
     "fs": "^0.0.1-security",
-    "imgur": "^2.5.0"
+    "imgur": "^2.5.0",
+    "mysql2": "^3.18.2"
   }
 }

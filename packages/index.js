@@ -18,4 +18,7 @@ require('./zones');
 
 require('./factions/index');
 
+// 5. Discord Bot
+require('./discord');
+
 console.log("[Server] Packages loaded successfully.");

@@ -1,0 +1,381 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  Discord Bot — Standalone Process (packages/discord/bot-process.js)
+//  Runs with system Node.js (spawned by RAGE:MP via child_process).
+//  Receives events from RAGE:MP via stdin (line-delimited JSON).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, REST, Routes, SlashCommandBuilder } = require('discord.js');
+const mysql = require('mysql2');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+
+// ── Load config (same file used by RAGE:MP side) ─────────────────────────────
+const config = require('./config');
+
+// ── Database connection (direct — not through RAGE:MP) ───────────────────────
+const pool = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'central_db',
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+}).promise();
+
+// ── Create Discord client ────────────────────────────────────────────────────
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+    ]
+});
+
+let statusMessage = null;
+let onlinePlayers = []; // Updated via IPC from RAGE:MP
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  IPC: Receive events from RAGE:MP via stdin
+// ─────────────────────────────────────────────────────────────────────────────
+let buffer = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+    buffer += chunk;
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // Keep incomplete line in buffer
+
+    for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+            const msg = JSON.parse(line);
+            handleIPC(msg);
+        } catch (e) {
+            console.error('[Discord-IPC] Invalid JSON:', line);
+        }
+    }
+});
+
+function handleIPC(msg) {
+    switch (msg.type) {
+        case 'playerJoin':
+            sendLogEmbed('join', `📥 **${msg.name}** connected to the server.`);
+            break;
+        case 'playerQuit':
+            sendLogEmbed('leave', `📤 **${msg.name}** disconnected. (Level ${msg.level || '?'})`);
+            break;
+        case 'playerList':
+            onlinePlayers = msg.players || [];
+            break;
+        case 'adminLog':
+            sendLogEmbed('admin', msg.message, msg.fields || []);
+            break;
+        case 'banLog':
+            sendLogEmbed('ban', msg.message, msg.fields || []);
+            break;
+        case 'kickLog':
+            sendLogEmbed('kick', msg.message, msg.fields || []);
+            break;
+    }
+}
+
+// Send a message back to RAGE:MP via stdout
+function sendToRageMP(data) {
+    process.stdout.write(JSON.stringify(data) + '\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BOT READY
+// ─────────────────────────────────────────────────────────────────────────────
+client.once('ready', async () => {
+    console.log(`[Discord] Bot logged in as ${client.user.tag}`);
+    sendToRageMP({ type: 'ready', tag: client.user.tag });
+
+    client.user.setActivity(`${config.SERVER_NAME}`, { type: ActivityType.Watching });
+
+    await registerCommands();
+
+    updateStatusEmbed();
+    setInterval(updateStatusEmbed, config.STATUS_UPDATE_INTERVAL);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SLASH COMMANDS REGISTRATION
+// ─────────────────────────────────────────────────────────────────────────────
+async function registerCommands() {
+    const commands = [
+        new SlashCommandBuilder()
+            .setName('status')
+            .setDescription('Show current server status and online players'),
+        new SlashCommandBuilder()
+            .setName('link')
+            .setDescription('Link your Discord account to your in-game account')
+            .addStringOption(opt =>
+                opt.setName('username')
+                    .setDescription('Your in-game username')
+                    .setRequired(true)
+            )
+            .addStringOption(opt =>
+                opt.setName('password')
+                    .setDescription('Your in-game password')
+                    .setRequired(true)
+            ),
+        new SlashCommandBuilder()
+            .setName('unlink')
+            .setDescription('Unlink your Discord account from your in-game account'),
+        new SlashCommandBuilder()
+            .setName('profile')
+            .setDescription('View your linked in-game profile'),
+    ].map(cmd => cmd.toJSON());
+
+    try {
+        const rest = new REST({ version: '10' }).setToken(config.BOT_TOKEN);
+        await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: commands });
+        console.log('[Discord] Slash commands registered.');
+    } catch (err) {
+        console.error('[Discord] Failed to register commands:', err);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SLASH COMMAND HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    try {
+        switch (interaction.commandName) {
+            case 'status':  return await handleStatus(interaction);
+            case 'link':    return await handleLink(interaction);
+            case 'unlink':  return await handleUnlink(interaction);
+            case 'profile': return await handleProfile(interaction);
+        }
+    } catch (err) {
+        console.error(`[Discord] Command error (${interaction.commandName}):`, err);
+        const reply = { content: '❌ An error occurred. Please try again.', ephemeral: true };
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(reply);
+        } else {
+            await interaction.reply(reply);
+        }
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  /status
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleStatus(interaction) {
+    const embed = buildStatusEmbed(onlinePlayers);
+    await interaction.reply({ embeds: [embed] });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  /link
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleLink(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const username  = interaction.options.getString('username');
+    const password  = interaction.options.getString('password');
+    const discordId = interaction.user.id;
+
+    const [existing] = await pool.query('SELECT id, username FROM users WHERE discord_id = ?', [discordId]);
+    if (existing.length > 0) {
+        return interaction.editReply(`⚠️ Your Discord is already linked to **${existing[0].username}**. Use \`/unlink\` first.`);
+    }
+
+    const [rows] = await pool.query('SELECT id, username, password, discord_id FROM users WHERE username = ?', [username]);
+    if (rows.length === 0) {
+        return interaction.editReply('❌ Account not found.');
+    }
+
+    const user = rows[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+        return interaction.editReply('❌ Incorrect password.');
+    }
+
+    if (user.discord_id && user.discord_id !== discordId) {
+        return interaction.editReply('❌ This in-game account is already linked to another Discord account.');
+    }
+
+    await pool.query('UPDATE users SET discord_id = ? WHERE id = ?', [discordId, user.id]);
+
+    try {
+        const guild = await client.guilds.fetch(config.GUILD_ID);
+        const member = await guild.members.fetch(discordId);
+        if (config.LINKED_ROLE_ID && !config.LINKED_ROLE_ID.startsWith('PASTE_')) {
+            await member.roles.add(config.LINKED_ROLE_ID);
+        }
+    } catch (e) {
+        console.warn('[Discord] Could not assign linked role:', e.message);
+    }
+
+    sendLogEmbed('link', `🔗 **${interaction.user.tag}** linked to in-game account **${user.username}**`);
+    await interaction.editReply(`✅ Your Discord is now linked to **${user.username}**!`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  /unlink
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleUnlink(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const discordId = interaction.user.id;
+    const [rows] = await pool.query('SELECT id, username FROM users WHERE discord_id = ?', [discordId]);
+
+    if (rows.length === 0) {
+        return interaction.editReply('⚠️ Your Discord is not linked to any account.');
+    }
+
+    await pool.query('UPDATE users SET discord_id = NULL WHERE discord_id = ?', [discordId]);
+
+    try {
+        const guild = await client.guilds.fetch(config.GUILD_ID);
+        const member = await guild.members.fetch(discordId);
+        if (config.LINKED_ROLE_ID && !config.LINKED_ROLE_ID.startsWith('PASTE_')) {
+            await member.roles.remove(config.LINKED_ROLE_ID);
+        }
+    } catch (e) {
+        console.warn('[Discord] Could not remove linked role:', e.message);
+    }
+
+    sendLogEmbed('link', `🔓 **${interaction.user.tag}** unlinked from in-game account **${rows[0].username}**`);
+    await interaction.editReply(`✅ Unlinked from **${rows[0].username}**.`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  /profile
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleProfile(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const discordId = interaction.user.id;
+    const [rows] = await pool.query(
+        'SELECT username, level, money, bank_money, total_playtime, created_at, mugshot FROM users WHERE discord_id = ?',
+        [discordId]
+    );
+
+    if (rows.length === 0) {
+        return interaction.editReply('⚠️ No linked account. Use `/link` to connect your in-game account.');
+    }
+
+    const u = rows[0];
+    const hours = Math.floor((u.total_playtime || 0) / 60);
+    const regDate = u.created_at
+        ? new Date(u.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'Unknown';
+
+    const embed = new EmbedBuilder()
+        .setColor(config.EMBED_COLOR)
+        .setTitle(`🎮 ${u.username}`)
+        .addFields(
+            { name: '📊 Level',      value: `${u.level || 1}`,                          inline: true },
+            { name: '💵 Cash',       value: `$${(u.money || 0).toLocaleString()}`,       inline: true },
+            { name: '🏦 Bank',       value: `$${(u.bank_money || 0).toLocaleString()}`,  inline: true },
+            { name: '⏱️ Playtime',  value: `${hours}h`,                                 inline: true },
+            { name: '📅 Registered', value: regDate,                                     inline: true },
+        )
+        .setFooter({ text: config.SERVER_NAME })
+        .setTimestamp();
+
+    if (u.mugshot) {
+        embed.setThumbnail(`http://26.170.61.66:3008/photos/mugshots/${u.mugshot}`);
+    }
+
+    await interaction.editReply({ embeds: [embed] });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  STATUS CHANNEL — Auto-updating embed
+// ─────────────────────────────────────────────────────────────────────────────
+async function updateStatusEmbed() {
+    if (!config.STATUS_CHANNEL_ID || config.STATUS_CHANNEL_ID.startsWith('PASTE_')) return;
+
+    try {
+        const channel = await client.channels.fetch(config.STATUS_CHANNEL_ID);
+        if (!channel) return;
+
+        const embed = buildStatusEmbed(onlinePlayers);
+
+        if (statusMessage) {
+            try {
+                await statusMessage.edit({ embeds: [embed] });
+            } catch (e) {
+                statusMessage = await channel.send({ embeds: [embed] });
+            }
+        } else {
+            const messages = await channel.messages.fetch({ limit: 10 });
+            const existingMsg = messages.find(m => m.author.id === client.user.id && m.embeds.length > 0);
+            if (existingMsg) {
+                statusMessage = existingMsg;
+                await statusMessage.edit({ embeds: [embed] });
+            } else {
+                statusMessage = await channel.send({ embeds: [embed] });
+            }
+        }
+    } catch (err) {
+        console.error('[Discord] Status embed update failed:', err.message);
+    }
+}
+
+function buildStatusEmbed(players) {
+    const playerList = players.length > 0
+        ? players.map(p => `\`${p.id}\` **${p.name}** — Lvl ${p.level}`).join('\n')
+        : '*No players online*';
+
+    const truncated = playerList.length > 1024
+        ? playerList.substring(0, 1000) + `\n... and ${players.length - 20} more`
+        : playerList;
+
+    const embed = new EmbedBuilder()
+        .setColor(config.EMBED_COLOR)
+        .setTitle(`🌆 ${config.SERVER_NAME} — Server Status`)
+        .addFields(
+            { name: '👥 Online Players', value: `**${players.length}** / 100`, inline: true },
+            { name: '🟢 Status',         value: '**Online**',                  inline: true },
+        )
+        .addFields({ name: '📋 Player List', value: truncated })
+        .setFooter({ text: 'Last updated' })
+        .setTimestamp();
+
+    if (config.SERVER_ICON_URL) embed.setThumbnail(config.SERVER_ICON_URL);
+    return embed;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ADMIN LOG — Send events to Discord channels
+// ─────────────────────────────────────────────────────────────────────────────
+const LOG_COLORS = {
+    join:  0x2ECC71, leave: 0xE74C3C, ban: 0xFF0000,
+    kick:  0xFFA500, admin: 0xFFFF00, link: 0x00A8FF, info: 0xAAAAAA,
+};
+
+function sendLogEmbed(type, message, fields = []) {
+    const channelId = type === 'link' ? config.LINK_LOG_CHANNEL_ID : config.ADMIN_LOG_CHANNEL_ID;
+    if (!channelId || channelId.startsWith('PASTE_')) return;
+
+    client.channels.fetch(channelId).then(channel => {
+        if (!channel) return;
+        const embed = new EmbedBuilder()
+            .setColor(LOG_COLORS[type] || LOG_COLORS.info)
+            .setDescription(message)
+            .setTimestamp();
+        if (fields.length > 0) embed.addFields(fields);
+        channel.send({ embeds: [embed] }).catch(console.error);
+    }).catch(() => {});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  START
+// ─────────────────────────────────────────────────────────────────────────────
+if (!config.BOT_TOKEN || config.BOT_TOKEN.startsWith('PASTE_')) {
+    console.log('[Discord] Bot token not configured. Edit packages/discord/config.js');
+    process.exit(0);
+}
+
+console.log('[Discord] Starting bot process...');
+client.login(config.BOT_TOKEN).catch(err => {
+    console.error('[Discord] Login failed:', err.message);
+    process.exit(1);
+});
