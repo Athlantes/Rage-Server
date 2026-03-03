@@ -75,7 +75,7 @@ const app = createApp({
                 <div class="avatar-circle">
                   <img
                     v-if="acc.mugshot"
-                    :src="\`http://26.170.61.66:3008/photos/\${acc.mugshot}\`"
+                    :src="\`http://26.170.61.66:3008/photos/mugshots/\${acc.mugshot}\`"
                     class="mugshot-img"
                     @error="acc.mugshot = null"
                   />

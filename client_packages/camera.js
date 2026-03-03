@@ -133,10 +133,12 @@ function takePhoto() {
 
 // --- UPLOAD HANDLERS ---
 
-mp.events.add('client:photo:startUpload', (totalChunks) => {
-    mp.gui.chat.push(`~y~Starting upload (${totalChunks} chunks)...`);
-    // IMPORTANT: Send the specific filename to server so they match
-    mp.events.callRemote('server:photo:initUpload', totalChunks, lastTakenPhotoName);
+mp.events.add('client:photo:startUpload', (totalChunks, filename) => {
+    const resolvedName = filename || lastTakenPhotoName;
+    mp.gui.chat.push(`~y~Starting upload (${totalChunks} chunks) file: ${resolvedName}`);
+    mp.console.logInfo(`[Upload] client:photo:startUpload -> chunks=${totalChunks}, filename=${resolvedName}`);
+    // Use filename from CEF if provided (supports both camera and mugshot)
+    mp.events.callRemote('server:photo:initUpload', totalChunks, resolvedName);
 });
 
 mp.events.add('client:photo:sendChunk', (chunkData, index) => {

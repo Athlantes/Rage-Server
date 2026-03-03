@@ -3,7 +3,7 @@ require('./chat/index.js');
 require('./ui/spawn/index.js');
 require('./core/voice.js');
 require('./camera.js');
-
+require('./mugshot.js');
 require('./core/cayo/heistisland.js');
 // 1. Core Utilities & Managers
 require('./core/nametags.js');

@@ -753,6 +753,15 @@ body {
     color: #00a8ff;
     margin-right: 15px;
     border: 1px solid rgba(0, 168, 255, 0.15);
+    overflow: hidden;
+}
+
+.settings-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 12px;
 }
 
 /* TOGGLE SWITCH */

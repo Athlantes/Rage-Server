@@ -135,13 +135,47 @@ function showResult(isWin, timeStr) {
 
     resultTime.textContent = timeStr || '';
 
-    // Auto-hide after 4.5 seconds
+    // Hide XP section until server sends it
+    document.getElementById('result-xp').classList.add('hidden');
+
+    // Auto-hide after 8 seconds (extended for XP display)
     setTimeout(() => {
         resultContainer.classList.add('result-exit');
         setTimeout(() => {
             resultOverlay.classList.add('hidden');
         }, 500);
-    }, 4500);
+    }, 8000);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  XP GAIN (called by server after result)
+// ══════════════════════════════════════════════════════════════════════
+
+function showXpGain(xpGain, raceLevel, raceXp, nextLevelXp, leveledUp, cashBonus) {
+    const xpSection = document.getElementById('result-xp');
+    xpSection.classList.remove('hidden');
+
+    document.getElementById('xp-gain-text').textContent = '+' + xpGain + ' XP';
+    document.getElementById('xp-lvl').textContent = raceLevel;
+
+    const pct = nextLevelXp > 0 ? Math.min(100, (raceXp / nextLevelXp) * 100) : 100;
+    document.getElementById('xp-bar-fill').style.width = pct + '%';
+    document.getElementById('xp-bar-val').textContent = raceXp + ' / ' + nextLevelXp;
+
+    const lvlUp = document.getElementById('xp-levelup');
+    if (leveledUp) {
+        lvlUp.classList.remove('hidden');
+    } else {
+        lvlUp.classList.add('hidden');
+    }
+
+    const cashEl = document.getElementById('xp-cash');
+    if (cashBonus > 0) {
+        cashEl.textContent = '+$' + cashBonus.toLocaleString();
+        cashEl.classList.remove('hidden');
+    } else {
+        cashEl.classList.add('hidden');
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════

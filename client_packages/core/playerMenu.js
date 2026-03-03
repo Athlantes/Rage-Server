@@ -87,3 +87,15 @@ mp.events.add('client:playerMenu:receiveData', (json) => {
 mp.events.add('client:closePlayerMenu', () => {
     mp.events.call('client:toggleplayerMenu', true);
 });
+
+// ── Mugshot Reset (Settings tab) ──
+mp.events.add('client:mugshot:reset', () => {
+    mp.events.callRemote('server:mugshot:reset');
+});
+
+mp.events.add('client:mugshot:resetDone', () => {
+    if (playerMenuBrowser && isplayerMenuOpen) {
+        playerMenuBrowser.execute('mugshotResetDone()');
+    }
+    mp.gui.chat.push('~y~Mugshot reset. Rejoin the server to take a new one.');
+});

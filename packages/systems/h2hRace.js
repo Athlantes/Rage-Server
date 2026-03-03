@@ -3,12 +3,22 @@
 //  HEAD-TO-HEAD RACE SYSTEM  — Server Side
 // ============================================================================
 
+const db = require('../core/database');
+
 const INVITE_TIMEOUT_MS   = 60_000;   // 60 seconds to accept
 const MIN_DISTANCE        = 5.0;      // Players must be within 5 m to start
 const COUNTDOWN_SECONDS   = 3;        // 3-second countdown before GO
 const MIN_CHECKPOINT_DIST = 800;      // Minimum distance of checkpoint from racers
 const MAX_CHECKPOINT_DIST = 4000;     // Maximum distance of checkpoint from racers
 const CHECKPOINT_RADIUS   = 15.0;     // Radius for finish colshape
+
+// ── Race XP / Level config ──
+const DAILY_XP_CAP          = 500;
+const OPPONENT_COOLDOWN_MS  = 15 * 60 * 1000; // 15 min
+const MIN_RACE_DISTANCE_M   = 1500;
+const MIN_RACE_DURATION_S   = 45;
+const HOURLY_RACE_THRESHOLD = 3;   // Diminishing returns after 3/hour
+const MAX_RACE_LEVEL        = 25;
 
 const COLORS = {
     RACE:    '!{FFD700}',  // Gold
@@ -209,7 +219,7 @@ function startRace(challenger, target) {
         return;
     }
 
-    // Store race
+    // Store race (save start midpoint for XP distance calculation)
     const race = {
         raceId,
         challenger,
@@ -218,6 +228,7 @@ function startRace(challenger, target) {
         colshape: null,
         startTime: null,
         finished: false,
+        startMidPos: midPos,
     };
     activeRaces.set(raceId, race);
 
@@ -296,7 +307,7 @@ mp.events.add('playerEnterColshape', (player, colshape) => {
 //  6. END / CLEANUP
 // ═══════════════════════════════════════════════════════════════════════════
 
-function endRace(raceId, winner, message) {
+async function endRace(raceId, winner, message) {
     const race = activeRaces.get(raceId);
     if (!race) return;
 
@@ -307,33 +318,49 @@ function endRace(raceId, winner, message) {
         race.colshape.destroy();
     }
 
-    // Notify players
+    // ── Compute XP BEFORE notifying clients so data arrives with the result ──
+    let xpResults = {};
+    if (winner && race.startTime) {
+        try {
+            xpResults = await awardRaceXP(race, winner);
+        } catch (e) {
+            console.error('[H2H XP]', e);
+        }
+    }
+
+    // Notify players with bundled XP data
     const players = [race.challenger, race.target];
     players.forEach(p => {
         if (p && mp.players.exists(p)) {
             p.outputChatBox(`${COLORS.RACE}🏁 ${message}`);
-            p.call('h2h:end', [winner ? winner.id : -1]);
+            const xpData = xpResults[p.id] || null;
+            p.call('h2h:end', [winner ? winner.id : -1, JSON.stringify(xpData)]);
             delete p.h2hRaceId;
         }
     });
 
-    // Fixed: Announce to nearby players securely in case one player disconnected
-    let midPos = null;
-    if (mp.players.exists(race.challenger) && mp.players.exists(race.target)) {
-        midPos = {
+    // Announce to nearby players (safe access for disconnected racers)
+    let announcePos = null;
+    const chExists = race.challenger && mp.players.exists(race.challenger);
+    const tgExists = race.target && mp.players.exists(race.target);
+
+    if (chExists && tgExists) {
+        announcePos = {
             x: (race.challenger.position.x + race.target.position.x) / 2,
             y: (race.challenger.position.y + race.target.position.y) / 2,
             z: (race.challenger.position.z + race.target.position.z) / 2
         };
-    } else if (mp.players.exists(race.challenger)) {
-        midPos = race.challenger.position;
-    } else if (mp.players.exists(race.target)) {
-        midPos = race.target.position;
+    } else if (chExists) {
+        announcePos = race.challenger.position;
+    } else if (tgExists) {
+        announcePos = race.target.position;
     }
 
-    if (midPos) {
-        mp.players.forEachInRange(new mp.Vector3(midPos.x, midPos.y, midPos.z), 100, (p) => {
-            if (p.id !== race.challenger.id && p.id !== race.target.id) {
+    if (announcePos) {
+        const chId = chExists ? race.challenger.id : -999;
+        const tgId = tgExists ? race.target.id : -999;
+        mp.players.forEachInRange(new mp.Vector3(announcePos.x, announcePos.y, announcePos.z), 100, (p) => {
+            if (p.id !== chId && p.id !== tgId) {
                 p.outputChatBox(`${COLORS.RACE}🏁 ${message}`);
             }
         });
@@ -462,5 +489,156 @@ mp.events.add('playerExitVehicle', (player, vehicle) => {
         }
     }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RACE XP / LEVEL SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+
+function getRaceLevelXp(level) {
+    return level * 100;
+}
+
+async function awardRaceXP(race, winner) {
+    const results = {};
+    const elapsed = (Date.now() - race.startTime) / 1000;
+    const cp = race.checkpoint;
+    // Use stored start positions (current positions are at checkpoint = distance ~0)
+    const midPos = race.startMidPos;
+    const dx = cp.x - midPos.x;
+    const dy = cp.y - midPos.y;
+    const distMeters = Math.sqrt(dx * dx + dy * dy);
+
+    // Anti-abuse: minimum distance & duration
+    if (distMeters < MIN_RACE_DISTANCE_M || elapsed < MIN_RACE_DURATION_S) {
+        return results; // No XP for trivial races
+    }
+
+    const loser = (winner.id === race.challenger.id) ? race.target : race.challenger;
+    const players = [winner, loser];
+
+    for (const p of players) {
+        if (!p || !mp.players.exists(p) || !p.data.dbId) continue;
+
+        const isWin = (p.id === winner.id);
+        const opponentId = isWin ? loser.data.dbId : winner.data.dbId;
+
+        // Fetch current race stats
+        const [rows] = await db.query(
+            `SELECT race_xp, race_level, race_wins, race_losses,
+                    daily_race_xp, daily_race_xp_date,
+                    last_race_opponent, last_race_opponent_time,
+                    races_this_hour, races_hour_start
+             FROM users WHERE id = ?`, [p.data.dbId]
+        );
+        if (!rows.length) continue;
+        const u = rows[0];
+
+        let raceXp    = u.race_xp || 0;
+        let raceLevel  = u.race_level || 1;
+        let raceWins   = u.race_wins || 0;
+        let raceLosses = u.race_losses || 0;
+
+        // ── Daily cap check ──
+        const today = new Date().toISOString().split('T')[0];
+        let dailyXp = 0;
+        if (u.daily_race_xp_date) {
+            const dbDate = new Date(u.daily_race_xp_date);
+            const dbStr = dbDate.toISOString().split('T')[0];
+            if (dbStr === today) dailyXp = u.daily_race_xp || 0;
+        }
+        if (dailyXp >= DAILY_XP_CAP) {
+            p.outputChatBox(`${COLORS.INFO}Daily race XP cap reached (${DAILY_XP_CAP} XP).`);
+            continue;
+        }
+
+        // ── Same opponent cooldown ──
+        if (u.last_race_opponent === opponentId && u.last_race_opponent_time) {
+            const lastTime = new Date(u.last_race_opponent_time).getTime();
+            if (Date.now() - lastTime < OPPONENT_COOLDOWN_MS) {
+                p.outputChatBox(`${COLORS.INFO}Wait before racing the same opponent for XP.`);
+                continue;
+            }
+        }
+
+        // ── Hourly diminishing returns ──
+        let racesThisHour = 0;
+        if (u.races_hour_start) {
+            const hrStart = new Date(u.races_hour_start).getTime();
+            if (Date.now() - hrStart < 3600000) {
+                racesThisHour = u.races_this_hour || 0;
+            }
+        }
+        const diminish = racesThisHour >= HOURLY_RACE_THRESHOLD ? 0.5 : 1.0;
+
+        // ── Calculate XP ──
+        const distKm = distMeters / 1000;
+        let baseXp = Math.round(distKm * 10);
+        if (isWin) baseXp = Math.round(baseXp * 1.5);
+        // Close finish bonus (margin < 5s implied by both being near checkpoint)
+        if (elapsed < 180) baseXp = Math.round(baseXp * 1.25); // Short intense race bonus
+
+        let xpGain = Math.round(baseXp * diminish);
+        xpGain = Math.min(xpGain, DAILY_XP_CAP - dailyXp); // Respect daily cap
+        if (xpGain <= 0) continue;
+
+        // ── Apply XP & check level up ──
+        raceXp += xpGain;
+        if (isWin) raceWins++; else raceLosses++;
+
+        let leveledUp = false;
+        let cashBonus = 0;
+        while (raceLevel < MAX_RACE_LEVEL && raceXp >= getRaceLevelXp(raceLevel)) {
+            raceXp -= getRaceLevelXp(raceLevel);
+            raceLevel++;
+            leveledUp = true;
+            cashBonus += 500 * raceLevel;
+        }
+
+        // Milestone bonuses
+        if (leveledUp && [5, 10, 15, 20, 25].includes(raceLevel)) {
+            cashBonus += 2500 * (raceLevel / 5);
+        }
+
+        // Update hourly counter
+        let newHourStart = u.races_hour_start;
+        let newRacesHour = racesThisHour + 1;
+        if (!u.races_hour_start || (Date.now() - new Date(u.races_hour_start).getTime()) >= 3600000) {
+            newHourStart = new Date();
+            newRacesHour = 1;
+        }
+
+        // ── Save to DB ──
+        await db.query(
+            `UPDATE users SET
+                race_xp = ?, race_level = ?, race_wins = ?, race_losses = ?,
+                daily_race_xp = ?, daily_race_xp_date = ?,
+                last_race_opponent = ?, last_race_opponent_time = NOW(),
+                races_this_hour = ?, races_hour_start = ?
+             WHERE id = ?`,
+            [raceXp, raceLevel, raceWins, raceLosses,
+             dailyXp + xpGain, today,
+             opponentId,
+             newRacesHour, newHourStart,
+             p.data.dbId]
+        );
+
+        // Give cash bonus
+        if (cashBonus > 0) {
+            p.data.money = (p.data.money || 0) + cashBonus;
+            await db.query('UPDATE users SET money = ? WHERE id = ?', [p.data.money, p.data.dbId]);
+        }
+
+        // ── Store result for bundled delivery to client ──
+        results[p.id] = { xpGain, raceLevel, raceXp, nextLevelXp: getRaceLevelXp(raceLevel), leveledUp, cashBonus };
+
+        // Chat messages
+        p.outputChatBox(`${COLORS.INFO}🏎️ +${xpGain} Race XP${diminish < 1 ? ' (diminished)' : ''}`);
+        if (leveledUp) {
+            p.outputChatBox(`${COLORS.SUCCESS}🏆 Racing Level ${raceLevel}! +$${cashBonus.toLocaleString()} bonus!`);
+        }
+    }
+
+    return results;
+}
 
 console.log('[H2H Race] Head-to-Head race system loaded.');

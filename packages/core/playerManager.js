@@ -280,6 +280,16 @@ mp.events.add('server:spawn:player', (player, index) => {
     player.spawn(new mp.Vector3(pos.x, pos.y, pos.z));
     player.dimension = 0;
     player.health = 100;
+
+    // Auto-mugshot if player doesn't have one yet
+    if (!player.data.mugshot) {
+        const webServer = require('../webserver');
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.call('prepareScreenshot', [webServer.mugshotUploadUrl, player.data.dbId]);
+            }
+        }, 5000);
+    }
 });
 
 mp.events.add('server:kickPlayer', (player) => {

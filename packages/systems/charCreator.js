@@ -118,10 +118,13 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         player.logged = true;
 
         // Signal client to capture mugshot once the player spawns.
-        // Must be called BEFORE server:auth:finalized so the flag is set
-        // before client:auth:success arrives and opens the spawn selector.
-        console.log(`[Mugshot] New character created — sending client:mugshot:capture to ${player.data.username}`);
-        player.call('client:mugshot:capture', []);
+        // Delay to let the character model fully render after creator finishes.
+        const webServer = require('../webserver');
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.call('prepareScreenshot', [webServer.mugshotUploadUrl, player.data.dbId]);
+            }
+        }, 5000);
 
         mp.events.call('server:auth:finalized', player);
 

@@ -1722,6 +1722,7 @@ const app = {
                 app.settings.data.is_dnd = !!serverData.is_dnd;
                 app.settings.data.is_flight_mode = !!serverData.is_flight_mode;
                 app.settings.data.zoom_level = serverData.zoom_level || 100;
+                app.settings.data.mugshot = serverData.mugshot || null;
             }
             app.settings.applyAll();
             setTimeout(() => { if(app.settings.renderWallpapers) app.settings.renderWallpapers(); }, 100);
@@ -1738,6 +1739,16 @@ const app = {
             app.settings.toggleFlightUI(app.settings.data.is_flight_mode);
             const numEl = document.getElementById('setting-my-number');
             if (numEl) numEl.innerText = app.settings.data.phone_number;
+
+            // Mugshot avatar
+            const avatarEl = document.getElementById('settings-avatar');
+            if (avatarEl) {
+                if (app.settings.data.mugshot) {
+                    avatarEl.innerHTML = `<img src="${app.settings.data.mugshot}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>'" />`;
+                } else {
+                    avatarEl.innerHTML = '<i class="fas fa-user"></i>';
+                }
+            }
         },
 
         renderWallpapers: () => {

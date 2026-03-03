@@ -1,4 +1,5 @@
 require('./webserver');             // Starts the image hosting
+require('./mugshot');                // Handles player headshot uploads
 require('./core/phone/phoneManager');
 
 require('./chat');

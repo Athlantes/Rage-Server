@@ -130,6 +130,40 @@
             margin-top: 3px;
         }
 
+        .sidebar-identity {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .sidebar-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 20px;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 2px solid rgba(100, 180, 255, 0.2);
+        }
+
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            border-radius: 50%;
+        }
+
+        .sidebar-identity-info {
+            min-width: 0;
+        }
+
         .nav-items {
             flex: 1;
             padding: 10px 14px;
@@ -526,6 +560,261 @@
             font-size: 12px;
             color: var(--text-dim);
             font-weight: 500;
+        }
+
+        /* ── Careers Grid Layout ── */
+        .careers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .careers-grid .sec-block { margin: 0; }
+
+        /* ── Race Battle Pass Track ── */
+        .bp-wrapper {
+            padding: 10px 0 6px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,168,255,0.3) transparent;
+        }
+        .bp-wrapper::-webkit-scrollbar { height: 3px; }
+        .bp-wrapper::-webkit-scrollbar-thumb { background: rgba(0,168,255,0.3); border-radius: 2px; }
+        .bp-wrapper::-webkit-scrollbar-track { background: transparent; }
+
+        .bp-track {
+            display: flex;
+            align-items: flex-end;
+            gap: 0;
+            padding: 0 10px;
+            position: relative;
+            min-width: max-content;
+        }
+
+        .bp-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 72px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Reward card */
+        .bp-card {
+            width: 64px;
+            height: 64px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+        }
+        .bp-node.reached .bp-card {
+            border-color: var(--primary);
+            background: rgba(0,168,255,0.08);
+            box-shadow: 0 0 8px rgba(0,168,255,0.15);
+        }
+        .bp-node.reached .bp-card svg { opacity: 1; }
+        .bp-node:not(.reached) .bp-card { opacity: 0.45; }
+        .bp-node.reached.big .bp-card {
+            border-color: var(--warning, #f0c400);
+            background: rgba(240,196,0,0.08);
+            box-shadow: 0 0 10px rgba(240,196,0,0.18);
+        }
+        .bp-node.big .bp-card {
+            border-width: 2px;
+        }
+        .bp-card svg {
+            width: 30px;
+            height: 30px;
+            opacity: 0.5;
+        }
+        .bp-card .bp-check {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6px;
+            color: #fff;
+            display: none;
+        }
+        .bp-node.reached .bp-check { display: flex; }
+
+        /* Reward label under card */
+        .bp-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70px;
+            line-height: 1.2;
+        }
+        .bp-node.reached .bp-label { color: var(--text-dim); }
+        .bp-node.big .bp-label { color: var(--warning, #f0c400); font-weight: 700; }
+
+        /* Level pip + connector bar underneath */
+        .bp-bar-row {
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            margin-top: 4px;
+            min-width: max-content;
+        }
+
+        .bp-pip {
+            width: 72px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .bp-pip-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid var(--border);
+            position: relative;
+            z-index: 2;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .bp-pip.reached .bp-pip-dot {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 5px rgba(0,168,255,0.4);
+        }
+
+        .bp-pip-num {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+        .bp-pip.reached .bp-pip-num { color: var(--primary); }
+
+        /* Connecting line between pips — absolute so it doesn't shift layout */
+        .bp-connector {
+            position: absolute;
+            top: 4px;
+            left: calc(50% + 6px);
+            width: calc(72px - 12px);
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+        .bp-connector .bp-conn-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(0,168,255,0.3);
+            transition: width 0.6s ease;
+        }
+
+        /* Level / XP header inside the sec-head area */
+        .bp-level-info {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bp-level-info .bp-li-lvl { color: var(--text); font-weight: 700; }
+        .bp-level-info .bp-li-xp  { color: var(--text-muted); }
+
+        /* Compact race stat grid (replaces stacked sec-rows) */
+        .race-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            border-top: 1px solid var(--border);
+        }
+        .race-stat-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 4px;
+            border-right: 1px solid var(--border);
+        }
+        .race-stat-cell:last-child { border-right: none; }
+        .race-stat-num {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+        }
+        .race-stat-num.green  { color: var(--success); }
+        .race-stat-num.red    { color: var(--danger); }
+        .race-stat-num.blue   { color: var(--primary); }
+        .race-stat-num.yellow { color: var(--warning); }
+        .race-stat-lbl {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Top racers leaderboard */
+        .race-lb-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .race-lb-row:last-child { border-bottom: none; }
+        .race-lb-rank {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+        .race-lb-rank.gold   { background: rgba(255,215,0,0.15);  color: #ffd700; }
+        .race-lb-rank.silver { background: rgba(192,192,192,0.12); color: #c0c0c0; }
+        .race-lb-rank.bronze { background: rgba(205,127,50,0.12);  color: #cd7f32; }
+        .race-lb-info { flex: 1; min-width: 0; }
+        .race-lb-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .race-lb-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+        .race-lb-wins {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--warning);
+            white-space: nowrap;
         }
 
         /* ── Objectives Grid Layout ── */
@@ -1243,8 +1532,15 @@
                 </div>
             </div>
             <div class="sidebar-title">Logged in as</div>
-            <div class="sidebar-name" id="player-name">Loading...</div>
-            <div class="sidebar-id">ID: <span id="player-id">-</span></div>
+            <div class="sidebar-identity">
+                <div class="sidebar-avatar" id="player-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="sidebar-identity-info">
+                    <div class="sidebar-name" id="player-name">Loading...</div>
+                    <div class="sidebar-id">ID: <span id="player-id">-</span></div>
+                </div>
+            </div>
         </div>
 
         <div class="nav-items">
@@ -1421,13 +1717,68 @@
 
             <!-- ═══ CAREERS ═══ -->
             <div class="tab-content" id="tab-careers">
-                <div class="sec-block">
-                    <div class="sec-head">
-                        <span class="sec-head-icon"><i class="fas fa-briefcase"></i></span>
-                        <span class="sec-head-title">Job Skills</span>
-                        <span class="sec-head-badge" id="jobs-count-badge">0 jobs</span>
+                <div class="careers-grid">
+
+                    <!-- LEFT: Job Skills -->
+                    <div class="sec-block">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-briefcase"></i></span>
+                            <span class="sec-head-title">Job Skills</span>
+                            <span class="sec-head-badge" id="jobs-count-badge">0 jobs</span>
+                        </div>
+                        <div id="jobs-container"></div>
                     </div>
-                    <div id="jobs-container"></div>
+
+                    <!-- RIGHT: Street Racing (single block) -->
+                    <div class="sec-block">
+                        <div class="sec-head">
+                            <span class="sec-head-icon"><i class="fas fa-flag-checkered"></i></span>
+                            <span class="sec-head-title">Street Racing</span>
+                            <span class="sec-head-badge" id="race-lvl-badge">LVL 0</span>
+                        </div>
+
+                        <!-- XP bar + compact stats row -->
+                        <div id="race-stats-container">
+                            <div class="sec-xp-row">
+                                <div class="sec-xp-top">
+                                    <span class="sec-xp-label"><i class="fas fa-flag-checkered" style="margin-right:6px;color:var(--text-muted);font-size:10px;"></i>Race Level</span>
+                                    <span class="sec-xp-val" style="color:var(--primary);font-weight:700;">LVL <span id="race-level-val">0</span> &nbsp;<span id="race-xp-pct" style="color:var(--text-muted);font-weight:400;">0%</span></span>
+                                </div>
+                                <div class="progress-track"><div class="progress-fill blue" id="race-xp-fill" style="width:0%"></div></div>
+                            </div>
+                            <div class="race-stat-grid">
+                                <div class="race-stat-cell"><span class="race-stat-num green" id="race-wins-val">0</span><span class="race-stat-lbl">Wins</span></div>
+                                <div class="race-stat-cell"><span class="race-stat-num red" id="race-losses-val">0</span><span class="race-stat-lbl">Losses</span></div>
+                                <div class="race-stat-cell"><span class="race-stat-num blue" id="race-winrate-val">0%</span><span class="race-stat-lbl">Win Rate</span></div>
+                                <div class="race-stat-cell"><span class="race-stat-num" id="race-total-val">0</span><span class="race-stat-lbl">Races</span></div>
+                                <div class="race-stat-cell"><span class="race-stat-num yellow" id="race-dailyxp-val">500</span><span class="race-stat-lbl">Daily XP</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Race Pass inline -->
+                        <div style="border-top:1px solid var(--border);padding:6px 0 2px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:0 12px 4px;">
+                                <span style="font-size:10px;font-weight:700;color:var(--text-dim);"><i class="fas fa-road" style="margin-right:5px;color:var(--primary);font-size:9px;"></i>Race Pass</span>
+                                <span style="font-size:9px;color:var(--text-muted);">LVL <span id="bp-hdr-lvl" style="color:var(--text);font-weight:700;">0</span>/25 &nbsp; <span id="bp-hdr-xp">0/0 XP</span></span>
+                            </div>
+                            <div class="bp-wrapper" id="bp-scroll">
+                                <div class="bp-track" id="bp-cards"></div>
+                                <div class="bp-bar-row" id="bp-bar"></div>
+                            </div>
+                        </div>
+
+                        <!-- Top Racers inline -->
+                        <div style="border-top:1px solid var(--border);">
+                            <div style="display:flex;align-items:center;gap:6px;padding:8px 12px 4px;">
+                                <i class="fas fa-medal" style="font-size:9px;color:var(--warning,#f0c400);"></i>
+                                <span style="font-size:10px;font-weight:700;color:var(--text-dim);">Top Racers This Week</span>
+                            </div>
+                            <div id="race-leaderboard-container">
+                                <div class="empty-state" style="padding:16px;"><i class="fas fa-medal"></i><span>No races this week yet.</span></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -1600,8 +1951,34 @@
                         </div>
                     </div>
 
-                    <!-- Right: Keybinds -->
+                    <!-- Right: Keybinds + Mugshot -->
                     <div>
+                        <div class="sec-block">
+                            <div class="sec-head">
+                                <span class="sec-head-icon"><i class="fas fa-camera"></i></span>
+                                <span class="sec-head-title">Mugshot</span>
+                            </div>
+                            <div style="padding:14px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);">
+                                <div id="settings-mugshot-preview" style="width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:20px;overflow:hidden;border:2px solid rgba(100,180,255,0.2);flex-shrink:0;">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:12px;font-weight:600;color:var(--text);">Profile Photo</div>
+                                    <div style="font-size:10px;color:var(--text-muted);margin-top:2px;" id="mugshot-status">No mugshot set</div>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-left">
+                                    <span class="setting-icon"><i class="fas fa-trash"></i></span>
+                                    <div class="setting-text">
+                                        <div class="setting-name">Reset Mugshot</div>
+                                        <div class="setting-desc">Delete current photo. Rejoin to take a new one.</div>
+                                    </div>
+                                </div>
+                                <button onclick="resetMugshot()" class="btn-inline danger" id="btn-reset-mugshot" style="display:none;"><i class="fas fa-trash-can"></i> Reset</button>
+                            </div>
+                        </div>
+
                         <div class="sec-block">
                             <div class="sec-head">
                                 <span class="sec-head-icon"><i class="fas fa-keyboard"></i></span>
@@ -1727,6 +2104,45 @@
         slider.style.pointerEvents = isChecked ? 'auto' : 'none';
     }
 
+    // ── Mugshot Reset ──
+    let currentMugshotUrl = null;
+
+    function updateMugshotUI(url) {
+        currentMugshotUrl = url;
+        const preview = document.getElementById('settings-mugshot-preview');
+        const status = document.getElementById('mugshot-status');
+        const btn = document.getElementById('btn-reset-mugshot');
+        if (url) {
+            preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%;" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user-circle\\'></i>'" />`;
+            status.innerText = 'Mugshot active';
+            status.style.color = '#2ecc71';
+            btn.style.display = '';
+        } else {
+            preview.innerHTML = '<i class="fas fa-user-circle"></i>';
+            status.innerText = 'No mugshot set';
+            status.style.color = '';
+            btn.style.display = 'none';
+        }
+    }
+
+    function resetMugshot() {
+        const btn = document.getElementById('btn-reset-mugshot');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+        mp.trigger('client:mugshot:reset');
+    }
+
+    // Called from client-side after server confirms
+    function mugshotResetDone() {
+        updateMugshotUI(null);
+        // Also clear sidebar avatar
+        const avatarEl = document.getElementById('player-avatar');
+        if (avatarEl) avatarEl.innerHTML = '<i class="fas fa-user-circle"></i>';
+        const btn = document.getElementById('btn-reset-mugshot');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-can"></i> Reset';
+    }
+
     // ── Receive Data From Server ──
     function receiveData(jsonString) {
         try {
@@ -1736,6 +2152,18 @@
         // Player info
         if (data.playerName) document.getElementById('player-name').innerText = data.playerName;
         if (data.onlineId !== undefined) document.getElementById('player-id').innerText = data.onlineId;
+
+        // Mugshot avatar
+        const avatarEl = document.getElementById('player-avatar');
+        if (avatarEl) {
+            if (data.mugshot) {
+                avatarEl.innerHTML = `<img src="${data.mugshot}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user-circle\\'></i>'" />`;
+            } else {
+                avatarEl.innerHTML = '<i class="fas fa-user-circle"></i>';
+            }
+        }
+        // Update settings mugshot section
+        updateMugshotUI(data.mugshot || null);
 
         // Level
         document.getElementById('lvl-num').innerText = s.level;
@@ -1832,6 +2260,129 @@
 
         // ── Quests ──
         const qc = document.getElementById('quests-container');
+
+        // ── Race Stats ──
+        if (data.raceStats) {
+            const r = data.raceStats;
+            document.getElementById('race-lvl-badge').innerText = 'LVL ' + r.level;
+            document.getElementById('race-level-val').innerText = r.level;
+            const rPct = r.nextXp > 0 ? Math.min(100, Math.round((r.xp / r.nextXp) * 100)) : 100;
+            document.getElementById('race-xp-pct').innerText = rPct + '%';
+            document.getElementById('race-xp-fill').style.width = rPct + '%';
+            document.getElementById('race-wins-val').innerText = r.wins;
+            document.getElementById('race-losses-val').innerText = r.losses;
+            const total = r.wins + r.losses;
+            const wr = total > 0 ? Math.round((r.wins / total) * 100) : 0;
+            document.getElementById('race-winrate-val').innerText = wr + '%';
+            document.getElementById('race-total-val').innerText = total;
+            document.getElementById('race-dailyxp-val').innerText = r.dailyXpLeft;
+
+            // ── Race Pass (Battle Pass) ──
+            const bpRewards = [
+                { lvl:1,  label:'$1,000',       icon:'money',   big:false },
+                { lvl:2,  label:'$1,500',       icon:'money',   big:false },
+                { lvl:3,  label:'Tire Smoke',   icon:'smoke',   big:false },
+                { lvl:4,  label:'$2,000',       icon:'money',   big:false },
+                { lvl:5,  label:'Exhaust Pop',  icon:'exhaust', big:true  },
+                { lvl:6,  label:'$2,500',       icon:'money',   big:false },
+                { lvl:7,  label:'$3,000',       icon:'money',   big:false },
+                { lvl:8,  label:'Horn Kit',     icon:'horn',    big:false },
+                { lvl:9,  label:'$3,500',       icon:'money',   big:false },
+                { lvl:10, label:'Neon Kit',     icon:'neon',    big:true  },
+                { lvl:11, label:'$4,000',       icon:'money',   big:false },
+                { lvl:12, label:'$4,500',       icon:'money',   big:false },
+                { lvl:13, label:'Livery Pack',  icon:'paint',   big:false },
+                { lvl:14, label:'$5,000',       icon:'money',   big:false },
+                { lvl:15, label:'Nitrous',      icon:'nitro',   big:true  },
+                { lvl:16, label:'$6,000',       icon:'money',   big:false },
+                { lvl:17, label:'$7,000',       icon:'money',   big:false },
+                { lvl:18, label:'Tint Kit',     icon:'tint',    big:false },
+                { lvl:19, label:'$8,000',       icon:'money',   big:false },
+                { lvl:20, label:'Race Liveries', icon:'trophy', big:true  },
+                { lvl:21, label:'$9,000',       icon:'money',   big:false },
+                { lvl:22, label:'$10,000',      icon:'money',   big:false },
+                { lvl:23, label:'Gold Rims',    icon:'rim',     big:false },
+                { lvl:24, label:'$12,000',      icon:'money',   big:false },
+                { lvl:25, label:'Street King',  icon:'crown',   big:true  }
+            ];
+
+            const svgs = {
+                money:   '<svg viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+                smoke:   '<svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.8" stroke-linecap="round"><path d="M4 20c0-3 2-4 4-4s4 1 4 4"/><path d="M12 20c0-3 2-4 4-4s4 1 4 4"/><path d="M8 12c-1-2 0-5 2-6"/><path d="M16 12c-1-2 0-5 2-6"/></svg>',
+                exhaust: '<svg viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L9 12l3 2 3-2-3-10z"/><path d="M9 14l-2 8"/><path d="M15 14l2 8"/><path d="M8 8l-4 2"/><path d="M16 8l4 2"/></svg>',
+                horn:    '<svg viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="1.8" stroke-linecap="round"><path d="M2 15V9a1 1 0 0 1 1-1h2l5-5v18l-5-5H3a1 1 0 0 1-1-1z"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>',
+                neon:    '<svg viewBox="0 0 24 24" fill="none" stroke="#00a8ff" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="17" y1="12" x2="17" y2="12.01"/><path d="M5 17v2"/><path d="M19 17v2"/></svg>',
+                paint:   '<svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/><path d="M12 9v12"/><path d="M8 21h8"/></svg>',
+                nitro:   '<svg viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+                tint:    '<svg viewBox="0 0 24 24" fill="none" stroke="#5dade2" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M7 4v6"/><path d="M17 4v6"/></svg>',
+                trophy:  '<svg viewBox="0 0 24 24" fill="none" stroke="#f1c40f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M4 22h16"/><path d="M10 22V12a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v10"/><path d="M6 3v6a6 6 0 0 0 12 0V3"/></svg>',
+                rim:     '<svg viewBox="0 0 24 24" fill="none" stroke="#f0c400" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/></svg>',
+                crown:   '<svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20V10l4 4 4-8 4 8 4-4v10"/></svg>'
+            };
+
+            // Header
+            document.getElementById('bp-hdr-lvl').innerText = r.level;
+            document.getElementById('bp-hdr-xp').innerText = r.xp + '/' + r.nextXp + ' XP';
+
+            // Build cards row
+            const cardsEl = document.getElementById('bp-cards');
+            const barEl = document.getElementById('bp-bar');
+            cardsEl.innerHTML = '';
+            barEl.innerHTML = '';
+
+            bpRewards.forEach((rw, i) => {
+                const reached = r.level >= rw.lvl;
+                cardsEl.innerHTML += `
+                    <div class="bp-node ${reached ? 'reached' : ''} ${rw.big ? 'big' : ''}">
+                        <div class="bp-card">
+                            ${svgs[rw.icon] || ''}
+                            <div class="bp-check"><i class="fas fa-check"></i></div>
+                        </div>
+                        <div class="bp-label">${rw.label}</div>
+                    </div>
+                `;
+
+                // Bar row: pip (connector is inside the pip, absolute positioned)
+                const showConn = i < bpRewards.length - 1;
+                let connHtml = '';
+                if (showConn) {
+                    const nextReached = r.level >= bpRewards[i + 1].lvl;
+                    const isCurrent = reached && !nextReached;
+                    let fillPct = '0%';
+                    if (nextReached) fillPct = '100%';
+                    else if (isCurrent && r.nextXp > 0) fillPct = Math.min(100, Math.round((r.xp / r.nextXp) * 100)) + '%';
+                    connHtml = `<div class="bp-connector"><div class="bp-conn-fill" style="width:${fillPct}"></div></div>`;
+                }
+                barEl.innerHTML += `<div class="bp-pip ${reached ? 'reached' : ''}">${connHtml}<div class="bp-pip-dot"></div><div class="bp-pip-num">${rw.lvl}</div></div>`;
+            });
+
+            // Auto-scroll to current level
+            const scrollEl = document.getElementById('bp-scroll');
+            const scrollTo = Math.max(0, (r.level - 2)) * 72;
+            setTimeout(() => { scrollEl.scrollLeft = scrollTo; }, 100);
+
+            // Top Racers Leaderboard
+            const lc = document.getElementById('race-leaderboard-container');
+            if (r.topRacers && r.topRacers.length > 0) {
+                lc.innerHTML = '';
+                const rankColors = ['gold', 'silver', 'bronze'];
+                r.topRacers.forEach((racer, i) => {
+                    const rcls = rankColors[i] || '';
+                    lc.innerHTML += `
+                        <div class="race-lb-row">
+                            <div class="race-lb-rank ${rcls}">${i + 1}</div>
+                            <div class="race-lb-info">
+                                <div class="race-lb-name">${racer.name}</div>
+                                <div class="race-lb-sub">LVL ${racer.level} · ${racer.totalRaces} races</div>
+                            </div>
+                            <div class="race-lb-wins"><i class="fas fa-trophy" style="font-size:9px;margin-right:4px;"></i>${racer.wins}W</div>
+                        </div>
+                    `;
+                });
+            } else {
+                lc.innerHTML = '<div class="empty-state"><i class="fas fa-medal"></i><span>No races this week yet.</span></div>';
+            }
+        }
         qc.innerHTML = '';
         const sessionMin = data.activeMinutes || 0;
         if (data.quests.length === 0) {

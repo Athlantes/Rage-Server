@@ -11,9 +11,10 @@ const uploadCache = new Map();
 // --- PHOTO UPLOAD LOGIC ---
 // Updated: Accepts 'filename' from client to ensure sync
 mp.events.add('server:photo:initUpload', (player, totalChunks, filename) => {
-    if (!player.logged) return;
+    console.log(`[Upload] server:photo:initUpload from ${player.name}: chunks=${totalChunks}, filename=${filename}`);
+    if (!player.logged) { console.log('[Upload] REJECTED: player not logged'); return; }
     const total = parseInt(totalChunks);
-    if (isNaN(total) || total <= 0) return;
+    if (isNaN(total) || total <= 0) { console.log('[Upload] REJECTED: invalid totalChunks'); return; }
     
     // Ensure DB ID is synced to client for future photos
     if (player.data.dbId && !player.getVariable('dbId')) {
@@ -30,7 +31,7 @@ mp.events.add('server:photo:initUpload', (player, totalChunks, filename) => {
 });
 
 mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
-    if (!uploadCache.has(player.id)) return;
+    if (!uploadCache.has(player.id)) { console.log(`[Upload] receiveChunk REJECTED: no cache for player ${player.id}`); return; }
     const upload = uploadCache.get(player.id);
     if (upload.chunks[index] !== undefined) return;
 
@@ -38,6 +39,7 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
     upload.received++;
 
     if (upload.received >= upload.total) {
+        console.log(`[Upload] All ${upload.total} chunks received for ${upload.filename}, assembling...`);
         const fullBase64 = upload.chunks.join('');
         const finalName = upload.filename; 
         uploadCache.delete(player.id); 
@@ -47,21 +49,31 @@ mp.events.add('server:photo:receiveChunk', async (player, chunkData, index) => {
 
 async function savePhotoToDisk(player, base64Data, filename) {
     try {
-        if (typeof base64Data !== 'string') return;
+        if (typeof base64Data !== 'string') { console.log('[Photo] REJECTED: base64Data is not a string'); return; }
         
         const safeFilename = path.basename(filename);
         const userId = player.data.dbId || 0;
-        const filePath = path.join(webServer.photosDir, safeFilename);
+        const isMugshot = safeFilename.startsWith('mugshot_');
+        const saveDir = isMugshot ? webServer.mugshotsDir : webServer.photosDir;
+        const filePath = path.join(saveDir, safeFilename);
+
+        console.log(`[Photo] savePhotoToDisk: file=${safeFilename}, isMugshot=${isMugshot}, dir=${saveDir}, fullPath=${filePath}, base64Length=${base64Data.length}`);
 
         fs.writeFile(filePath, base64Data, 'base64', async (err) => {
             if (err) return console.error(`[Photo] Write Error: ${err.message}`);
             
-            await db.query("INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", [userId, safeFilename]);
-            console.log(`[Photo] Saved: ${safeFilename}`);
-
-            // --- CRITICAL FIX: Tell Client the file is ready ---
-            if (mp.players.exists(player)) {
-                player.call('client:camera:uploadSuccess', [safeFilename]);
+            if (isMugshot) {
+                console.log(`[Mugshot] Saved: ${safeFilename}`);
+                if (mp.players.exists(player)) {
+                    player.outputChatBox(`!{00FF00}[Mugshot] Mugshot saved successfully.`);
+                    player.call('client:mugshot:uploadSuccess', [safeFilename]);
+                }
+            } else {
+                await db.query("INSERT INTO player_photos (user_id, image_path) VALUES (?, ?)", [userId, safeFilename]);
+                console.log(`[Photo] Saved: ${safeFilename}`);
+                if (mp.players.exists(player)) {
+                    player.call('client:camera:uploadSuccess', [safeFilename]);
+                }
             }
         });
     } catch (err) {
@@ -116,6 +128,8 @@ mp.events.add('server:phone:open', async (player) => {
         if (!player.getVariable('dbId')) player.setVariable('dbId', userId);
 
         const settings = await getPhoneSettings(userId);
+        // Inject mugshot URL into settings for the phone UI
+        settings.mugshot = player.data.mugshot ? (webServer.mugshotsUrl + player.data.mugshot) : null;
         const myNumber = settings.phone_number;
 
         const [mails] = await db.query(

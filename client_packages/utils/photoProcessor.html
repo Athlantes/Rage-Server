@@ -44,7 +44,7 @@
                 const BURST_WAIT = 10;   // Wait 10ms between bursts
                 
                 const totalChunks = Math.ceil(base64.length / CHUNK_SIZE);
-                mp.trigger('client:photo:startUpload', totalChunks);
+                mp.trigger('client:photo:startUpload', totalChunks, filename);
 
                 let currentChunk = 0;
                 

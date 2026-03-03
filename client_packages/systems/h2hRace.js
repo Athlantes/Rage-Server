@@ -132,7 +132,7 @@ mp.events.add('h2h:go', () => {
 //  3. END RACE — Cleanup everything
 // ═══════════════════════════════════════════════════════════════════════════
 
-mp.events.add('h2h:end', (winnerId) => {
+mp.events.add('h2h:end', (winnerId, xpDataJSON) => {
     const wasRacing = raceState === 'racing' || raceState === 'countdown';
     raceState = 'ended';
 
@@ -151,13 +151,30 @@ mp.events.add('h2h:end', (winnerId) => {
     removeCheckpoint();
 
     // Show result via CEF
-    if (wasRacing && winnerId >= 0) {
-        const elapsed = ((Date.now() - raceStartTime) / 1000).toFixed(1);
-        const isWin = winnerId === localPlayer.remoteId;
-        browserExec(`showResult(${isWin}, '${elapsed}s')`);
+    if (wasRacing) {
+        if (winnerId >= 0) {
+            const elapsed = ((Date.now() - raceStartTime) / 1000).toFixed(1);
+            const isWin = winnerId === localPlayer.remoteId;
+            browserExec(`showResult(${isWin}, '${elapsed}s')`);
+
+            // Show XP data if bundled from server
+            if (xpDataJSON && xpDataJSON !== 'null') {
+                try {
+                    const xp = JSON.parse(xpDataJSON);
+                    if (xp) {
+                        setTimeout(() => {
+                            browserExec(`showXpGain(${xp.xpGain}, ${xp.raceLevel}, ${xp.raceXp}, ${xp.nextLevelXp}, ${xp.leveledUp}, ${xp.cashBonus})`);
+                        }, 600);
+                    }
+                } catch(e) {}
+            }
+        } else {
+            // Forfeit / disconnect / cancel
+            browserExec(`showResult(false, 'CANCELLED')`);
+        }
     }
 
-    // Reset after delay (match the result animation duration)
+    // Reset after delay (extended for XP display)
     setTimeout(() => {
         destroyBrowser();
         raceState = 'idle';
@@ -165,8 +182,10 @@ mp.events.add('h2h:end', (winnerId) => {
         checkpointName = '';
         opponentVehiclePos = null;
         initialDistance = 0;
-    }, 6000);
+    }, 10000);
 });
+
+// (XP data is now bundled with h2h:end — no separate handler needed)
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  4. SMOOTH CINEMATIC CAMERA  (Interpolated transitions)

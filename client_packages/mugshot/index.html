@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mugshot Processor</title>
+</head>
+<body>
+<script>
+    function processAndUpload(filename, uploadUrl, dbId) {
+        mp.trigger('client:mugshot:log', 'Loading screenshot: ' + filename + ' dbId: ' + dbId);
+
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+
+        img.onload = function () {
+            try {
+                // Crop headshot from top-left of full screenshot
+                const fullW = img.naturalWidth;
+                const fullH = img.naturalHeight;
+                const cropW = Math.round(fullW / 11);
+                const cropH = Math.round(fullH / 6);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = cropW;
+                canvas.height = cropH;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, cropW, cropH, 0, 0, cropW, cropH);
+
+                const dataURL = canvas.toDataURL('image/jpeg', 0.90);
+                const base64 = dataURL.split(',')[1];
+
+                // POST directly to webserver — no triggers, no chunks, no callRemote
+                fetch(uploadUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base64: base64, filename: filename, dbId: dbId })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        mp.trigger('client:mugshot:uploadSuccess', data.filename);
+                    } else {
+                        mp.trigger('client:mugshot:error', data.error || 'Upload failed');
+                    }
+                })
+                .catch(function(err) {
+                    mp.trigger('client:mugshot:error', 'HTTP error: ' + err.message);
+                });
+
+            } catch (e) {
+                mp.trigger('client:mugshot:error', 'Processing error: ' + e.message);
+            }
+        };
+
+        img.onerror = function () {
+            mp.trigger('client:mugshot:error', 'Could not load screenshot: ' + filename);
+        };
+
+        img.src = 'http://screenshots/' + filename;
+    }
+</script>
+</body>
+</html>

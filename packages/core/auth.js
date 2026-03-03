@@ -17,7 +17,7 @@ mp.events.add('playerJoin', async (player) => {
 
     try {
         const [recentAccounts] = await db.query(
-            `SELECT username, money, level, hwid FROM users 
+            `SELECT username, money, level, hwid, mugshot FROM users 
              WHERE social_id = ? 
              AND last_active >= NOW() - INTERVAL 3 DAY 
              ORDER BY last_active DESC 
@@ -208,6 +208,7 @@ async function startSession(player, userData) {
     player.model = (player.data.gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
     player.data.money = userData.money;
     player.data.bank_money = userData.bank_money || 0;
+    player.data.mugshot = userData.mugshot || null;
     player.setVariable('money', userData.money);
     
     // --- LOAD RPG STATS ---
@@ -351,6 +352,16 @@ async function startSession(player, userData) {
         player.dim = 0; 
         player.heading = lastPos.heading || 0;
         showSpawnSelector = false; 
+
+        // Auto-mugshot if player doesn't have one yet
+        if (!player.data.mugshot) {
+            const webServer = require('../webserver');
+            setTimeout(() => {
+                if (mp.players.exists(player)) {
+                    player.call('prepareScreenshot', [webServer.mugshotUploadUrl, player.data.dbId]);
+                }
+            }, 5000);
+        }
     }
 
     // Pass housePos, familyHQPos, and factionHQPos to the client event

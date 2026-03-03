@@ -161,10 +161,56 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             familyData = await FamilyManager.getPlayerMenuData(player);
         } catch (e) { console.error('[PlayerMenu] Family data error:', e); }
 
+        // 10. Race Stats + Top Racers
+        let raceStats = { level: 1, xp: 0, nextXp: 100, wins: 0, losses: 0, dailyXpLeft: 500, topRacers: [] };
+        try {
+            const [raceRows] = await db.query(
+                "SELECT race_level, race_xp, race_wins, race_losses, daily_race_xp, daily_race_xp_date FROM users WHERE id = ?",
+                [player.data.dbId]
+            );
+            if (raceRows.length > 0) {
+                const rr = raceRows[0];
+                const lvl = rr.race_level || 1;
+                const todayStr = new Date().toISOString().split('T')[0];
+                let usedDaily = 0;
+                if (rr.daily_race_xp_date) {
+                    const dbDate = new Date(rr.daily_race_xp_date).toISOString().split('T')[0];
+                    if (dbDate === todayStr) usedDaily = rr.daily_race_xp || 0;
+                }
+                raceStats = {
+                    level: lvl,
+                    xp: rr.race_xp || 0,
+                    nextXp: Math.max(lvl * 100, 100),
+                    wins: rr.race_wins || 0,
+                    losses: rr.race_losses || 0,
+                    dailyXpLeft: Math.max(0, 500 - usedDaily),
+                    topRacers: []
+                };
+            }
+
+            // Top 3 racers this week (by wins)
+            const [topRows] = await db.query(
+                `SELECT u.username AS name, u.race_level, u.race_wins, u.race_losses
+                 FROM users u
+                 WHERE u.race_wins > 0
+                 ORDER BY u.race_wins DESC, u.race_level DESC
+                 LIMIT 3`
+            );
+            raceStats.topRacers = topRows.map(t => ({
+                name: t.name,
+                level: t.race_level || 1,
+                wins: t.race_wins || 0,
+                totalRaces: (t.race_wins || 0) + (t.race_losses || 0)
+            }));
+        } catch (e) { console.error('[PlayerMenu] Race stats error:', e); }
+
+        const webServer = require('../webserver');
+
         // Send payload
         const payload = {
             playerName: player.name || 'Unknown',
             onlineId: player.data.onlineId !== undefined ? player.data.onlineId : player.id,
+            mugshot: player.data.mugshot ? (webServer.mugshotsUrl + player.data.mugshot) : null,
             hoursPlayed: hoursPlayed,
             registeredDate: registeredDate,
             paydayIn: player.data.paydayIn || 60,
@@ -175,7 +221,8 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             photoHunt: photoHuntData,
             repoJobs: repoJobs,
             house: houseInfo,
-            family: familyData
+            family: familyData,
+            raceStats: raceStats
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);
