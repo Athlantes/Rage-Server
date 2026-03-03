@@ -34,14 +34,14 @@ mp.events.add('h2h:countdown', (seconds, oppVehX, oppVehY, oppVehZ, oppHeading, 
 
     // ── Freeze the vehicle ──
     if (localVeh) {
-        mp.game.invoke('0xDF7E3ACB9CAE107D', localVeh.handle, true); // SET_ENTITY_INVINCIBLE
+        localVeh.setInvincible(true);
         localVeh.freezePosition(true);
     }
     localPlayer.freezePosition(true);
 
     // ── Let them rev the engine ──
     if (localVeh) {
-        mp.game.invoke('0x2497C4717C8B881E', localVeh.handle, true); // SET_VEHICLE_ENGINE_ON
+        localVeh.setEngineOn(true, true, false);
     }
 
     // ── Start cinematic camera sequence ──
@@ -68,7 +68,7 @@ mp.events.add('h2h:go', () => {
     localPlayer.freezePosition(false);
     if (localVeh) {
         localVeh.freezePosition(false);
-        mp.game.invoke('0xDF7E3ACB9CAE107D', localVeh.handle, false); // SET_ENTITY_INVINCIBLE off
+        localVeh.setInvincible(false);
     }
 
     // ── Destroy cinematic cam, restore gameplay camera ──
@@ -97,7 +97,7 @@ mp.events.add('h2h:end', (winnerId) => {
     localPlayer.freezePosition(false);
     if (localPlayer.vehicle) {
         localPlayer.vehicle.freezePosition(false);
-        mp.game.invoke('0xDF7E3ACB9CAE107D', localPlayer.vehicle.handle, false);
+        localPlayer.vehicle.setInvincible(false);
     }
 
     // Destroy camera if still active
@@ -274,8 +274,7 @@ function createCheckpoint() {
     });
 
     // Draw route on minimap
-    mp.game.invoke('0x4F7D8A9BFB0B43E9', checkpointBlip.handle, true); // SET_BLIP_ROUTE
-    mp.game.invoke('0x837155CD2F63DA09', checkpointBlip.handle, 46);    // SET_BLIP_ROUTE_COLOUR
+    checkpointBlip.setRoute(true);
 
     // Checkpoint marker (cylinder)
     checkpointMarker = mp.markers.new(1, new mp.Vector3(checkpointPos.x, checkpointPos.y, checkpointPos.z - 1), 1.0, {

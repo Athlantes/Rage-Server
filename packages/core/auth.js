@@ -68,8 +68,12 @@ mp.events.add('server:auth:register', async (player, username, password) => {
     if (player.logged) return;
     if (!username || username.length < 3) return player.call('client:auth:error', ["Username too short."]);
 
-    if (isDeviceOrSocialActive(player)) {
-        return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time from the same device."]);
+    const registerBlock = isDeviceOrSocialActive(player);
+    if (registerBlock) {
+        const msg = registerBlock === 'same_device'
+            ? "You can't register while another account is active on this device."
+            : `You already have ${MAX_ACCOUNTS_PER_PLAYER} accounts connected simultaneously.`;
+        return player.call('client:auth:error', [msg]);
     }
 
     try {
@@ -137,13 +141,15 @@ async function performLoginChecks(player, user, passwordInput) {
 
     const existingSession = mp.players.toArray().find(p => p.logged && p.data.dbId === user.id);
     if (existingSession) {
-        player.call('client:auth:error', ["You are already connected in another location. Disconnecting old session..."]);
-        existingSession.kick("Logged in from another location.");
-        return; 
+        return player.call('client:auth:error', ["This account is already active. Please disconnect from the other session first."]);
     }
 
-    if (isDeviceOrSocialActive(player)) {
-        return player.call('client:auth:error', ["You can't connect with 2 accounts at the same time."]);
+    const loginBlock = isDeviceOrSocialActive(player);
+    if (loginBlock) {
+        const msg = loginBlock === 'same_device'
+            ? "You can't connect with 2 accounts from the same device."
+            : `You already have ${MAX_ACCOUNTS_PER_PLAYER} accounts connected. Use a different device.`;
+        return player.call('client:auth:error', [msg]);
     }
 
     if (!user.social_id) await db.query("UPDATE users SET social_id = ? WHERE id = ?", [player.rgscId, user.id]);
@@ -152,12 +158,19 @@ async function performLoginChecks(player, user, passwordInput) {
     finalizeLogin(player, user);
 }
 
+const MAX_ACCOUNTS_PER_PLAYER = 2; // Max simultaneous accounts from the same Social Club (must be on different devices)
+
 function isDeviceOrSocialActive(currentPlayer) {
-    return mp.players.toArray().some(p => {
-        if (!p.logged) return false;
-        if (p === currentPlayer) return false;
-        return (p.serial === currentPlayer.serial) || (p.rgscId === currentPlayer.rgscId);
-    });
+    const loggedPlayers = mp.players.toArray().filter(p => p.logged && p !== currentPlayer);
+
+    // Block same device (same HWID) — no multi-accounting from one machine
+    if (loggedPlayers.some(p => p.serial === currentPlayer.serial)) return 'same_device';
+
+    // Allow up to MAX_ACCOUNTS_PER_PLAYER sessions per Social Club ID (from different devices)
+    const sameSocialCount = loggedPlayers.filter(p => p.rgscId === currentPlayer.rgscId).length;
+    if (sameSocialCount >= MAX_ACCOUNTS_PER_PLAYER) return 'max_accounts';
+
+    return false;
 }
 
 async function finalizeLogin(player, userData) {

@@ -65,7 +65,7 @@ mp.events.add('h2h:invite', (player, targetVehicleId) => {
     if (!player.vehicle) {
         return player.outputChatBox(`${COLORS.ERROR}You must be driving a vehicle.`);
     }
-    if (player.seat !== -1) {
+    if (player.seat !== -1 && player.seat !== 0) {
         return player.outputChatBox(`${COLORS.ERROR}You must be the driver.`);
     }
 
@@ -225,6 +225,17 @@ function startRace(challenger, target) {
     challenger.h2hRaceId = raceId;
     target.h2hRaceId = raceId;
 
+    // ── Ensure both vehicles have fuel and engine on ──
+    [challenger, target].forEach(p => {
+        if (p.vehicle) {
+            const currentFuel = p.vehicle.getVariable('fuel') || 0;
+            if (currentFuel < 30) {
+                p.vehicle.setVariable('fuel', 100); // Top up to full
+            }
+            p.vehicle.engine = true;
+        }
+    });
+
     // Freeze both & start cinematic on client
     challenger.call('h2h:countdown', [
         COUNTDOWN_SECONDS,
@@ -325,10 +336,10 @@ function endRace(raceId, winner, message) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function findVehicleDriver(vehicle) {
-    // Find the player sitting in seat -1 (driver)
+    // Find the player sitting in the driver seat (-1 or 0)
     let driver = null;
     mp.players.forEach(p => {
-        if (p.vehicle && p.vehicle.id === vehicle.id && p.seat === -1) {
+        if (p.vehicle && p.vehicle.id === vehicle.id && (p.seat === -1 || p.seat === 0)) {
             driver = p;
         }
     });
