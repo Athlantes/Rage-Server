@@ -205,6 +205,20 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         } catch (e) { console.error('[PlayerMenu] Race stats error:', e); }
 
         const webServer = require('../webserver');
+        const wantedManager = require('../factions/lspd/wantedManager');
+
+        // 11. Nearby wanted players (visible to everyone in range)
+        const nearbyWanted = [];
+        mp.players.forEach(p => {
+            if (!p.logged || p.id === player.id) return;
+            const wType = p.getVariable('wantedType');
+            if (!wType) return;
+            nearbyWanted.push({
+                id: p.data.onlineId !== undefined ? p.data.onlineId : p.id,
+                name: p.name.replace(/_/g, ' '),
+                wantedType: wType
+            });
+        });
 
         // Send payload
         const payload = {
@@ -222,7 +236,8 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             repoJobs: repoJobs,
             house: houseInfo,
             family: familyData,
-            raceStats: raceStats
+            raceStats: raceStats,
+            nearbyWanted: nearbyWanted
         };
 
         player.call('client:playerMenu:receiveData', [JSON.stringify(payload)]);

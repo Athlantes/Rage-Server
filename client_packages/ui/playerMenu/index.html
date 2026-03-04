@@ -1612,6 +1612,18 @@
         <div class="content-body">
             <!-- ═══ OVERVIEW ═══ -->
             <div class="tab-content active" id="tab-overview">
+
+                <!-- Nearby Wanted Players Alert -->
+                <div id="nearby-wanted-section" style="display:none; padding: 10px 14px 0;">
+                    <div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:9px;padding:12px 14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <i class="fas fa-shield-halved" style="color:#ff4757;font-size:13px;"></i>
+                            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#ff4757;">Wanted Players Online</span>
+                        </div>
+                        <div id="nearby-wanted-list"></div>
+                    </div>
+                </div>
+
                 <div class="tab-cols">
                     <!-- Left Column -->
                     <div>
@@ -2528,6 +2540,29 @@
             } else {
                 quickFam.innerText = 'None';
                 quickFam.className = 'sec-row-val muted';
+            }
+        }
+
+        // Nearby wanted players
+        const wantedSection = document.getElementById('nearby-wanted-section');
+        const wantedList = document.getElementById('nearby-wanted-list');
+        if (wantedSection && wantedList) {
+            if (data.nearbyWanted && data.nearbyWanted.length > 0) {
+                wantedSection.style.display = 'block';
+                wantedList.innerHTML = data.nearbyWanted.map(p => {
+                    const isNoS = p.wantedType === 'NoS';
+                    const color = isNoS ? '#ff4757' : '#ffc300';
+                    const icon  = isNoS ? 'fa-skull' : 'fa-handcuffs';
+                    const label = isNoS ? 'NO SURRENDER' : 'WANTED';
+                    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:rgba(255,255,255,0.03);border:1px solid ${color}33;margin-bottom:5px;">
+                        <i class="fas ${icon}" style="color:${color};font-size:13px;width:16px;text-align:center;"></i>
+                        <span style="flex:1;font-size:12px;font-weight:600;">${p.name}</span>
+                        <span style="font-size:10px;color:#888;margin-right:6px;">ID ${p.id}</span>
+                        <span style="font-size:10px;font-weight:700;color:${color};background:${color}22;padding:2px 8px;border-radius:4px;">${label}</span>
+                    </div>`;
+                }).join('');
+            } else {
+                wantedSection.style.display = 'none';
             }
         }
 

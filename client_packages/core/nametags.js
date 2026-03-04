@@ -112,5 +112,19 @@ mp.events.add('render', () => {
             outline: true,
             centre:  true,
         });
-    });
+
+        // ── Wanted indicator (visible to all nearby players) ──────────────────
+        const wantedType = player.getVariable('wantedType');
+        if (wantedType) {
+            const wantedText = wantedType === 'NoS' ? '⚠ NO SURRENDER' : '🚔 WANTED';
+            const wantedColor = wantedType === 'NoS' ? [255, 71, 87, 230] : [255, 195, 0, 230];
+            mp.game.graphics.drawText(wantedText, [pPos.x, pPos.y, pPos.z + 0.82], {
+                font:    FONT_ID,
+                color:   wantedColor,
+                scale:   [scale * 0.75, scale * 0.75],
+                outline: true,
+                centre:  true,
+            });
+        }
+});
 });

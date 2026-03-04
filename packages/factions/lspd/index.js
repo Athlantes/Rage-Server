@@ -1,204 +1,207 @@
-// packages/factions/lspd/index.js
-const Faction = require('../Faction');
-const factionsManager = require('../factionsManager');
-const wardrobeManager = require('../wardrobe/wardrobeManager');
+// client_packages/factions/lspd/index.js
+// ─────────────────────────────────────────────────────────────────────────────
+// Handles client-side LSPD mechanics:
+//   - Surrender: plays hands-up animation, freezes local player
+//   - Cuffed: plays cuff animation, freezes movement
+//   - Garage vehicle selection menu (simple NativeUI-style via browser)
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Load subsystems
-require('./wantedManager');
-require('./arrestManager');
+// ── Animation dictionary constants ───────────────────────────────────────────
+const ANIM_SURRENDER  = { dict: 'missminuteman_1ig_2', anim: 'handsup_base',   flag: 49 };
+const ANIM_CUFFED     = { dict: 'mp_arresting',        anim: 'idle',           flag: 49 };
+const ANIM_CUFF_INTRO = { dict: 'mp_arresting',        anim: 'a_uncuff',       flag: 48 };
 
-class LSPDFaction extends Faction {
-    constructor() {
-        super(2, 'Los Santos Police Department', 'LEO',
-            ['Cadet', 'Officer', 'Senior Officer', 'Sergeant', 'Lieutenant', 'Captain'],
-            '#00a8ff'
-        );
+let surrendered = false;
+let cuffed = false;
+let cuffedToOfficerId = null;
+let cuffFollowTick = null;
 
-        this.hq = {
-            exterior: new mp.Vector3(433.79, -981.88, 30.71),
-            interior: new mp.Vector3(435.79, -981.97, 30.70),
-            dutyPoint: new mp.Vector3(435.79, -981.97, 30.70),
-            wardrobePoint: new mp.Vector3(451.42, -991.91, 30.69),
-            dimension: 102,
-        };
+// ── Load animation dictionary helper ─────────────────────────────────────────
 
-        this.garage = {
-            menuPoint: new mp.Vector3(453.3, -1017.8, 28.5),
-            spawnPoints: [
-                { x: 449.4, y: -1026.4, z: 28.4, h: 0.0 },
-                { x: 444.5, y: -1026.4, z: 28.4, h: 0.0 },
-                { x: 439.5, y: -1026.4, z: 28.4, h: 0.0 },
-                { x: 434.5, y: -1026.4, z: 28.4, h: 0.0 },
-                { x: 429.5, y: -1026.4, z: 28.4, h: 0.0 },
-                { x: 449.4, y: -1033.0, z: 28.4, h: 180.0 },
-                { x: 444.5, y: -1033.0, z: 28.4, h: 180.0 },
-                { x: 439.5, y: -1033.0, z: 28.4, h: 180.0 },
-            ],
-        };
-
-        // Rank-gated vehicle categories
-        // minRank: 0 = any member, 3 = Sergeant+, etc.
-        this.vehicleCatalog = [
-            { model: 'police',    label: 'Police Cruiser',     minRank: 0 },
-            { model: 'police2',   label: 'Police Buffalo',     minRank: 0 },
-            { model: 'police3',   label: 'Police Interceptor', minRank: 1 },
-            { model: 'policeb',   label: 'Police Bike',        minRank: 2 },
-            { model: 'policeold1',label: 'Unmarked Cruiser',   minRank: 3 },
-            { model: 'fbi',       label: 'FBI Suburban',       minRank: 4 },
-        ];
-
-        this.registerWardrobe();
-        this.createWorldEntities();
-    }
-
-    registerWardrobe() {
-        wardrobeManager.registerUniforms(this.id, {
-            name: 'LSPD Wardrobe',
-            wardrobePoint: this.hq.wardrobePoint,
-            wardrobeDimension: this.hq.dimension,
-            uniforms: {
-                male: [
-                    {
-                        name: 'Cadet Uniform',
-                        description: 'Standard issue cadet outfit',
-                        minRank: 0,
-                        components: [
-                            { id: 11, drawable: 55,  texture: 0 },
-                            { id: 3,  drawable: 14,  texture: 0 },
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 25,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [{ id: 0, drawable: 46, texture: 0 }], // officer cap
-                    },
-                    {
-                        name: 'Officer Uniform',
-                        description: 'Full patrol officer uniform',
-                        minRank: 1,
-                        components: [
-                            { id: 11, drawable: 55,  texture: 0 },
-                            { id: 3,  drawable: 14,  texture: 0 },
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 25,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [{ id: 0, drawable: 46, texture: 0 }],
-                    },
-                    {
-                        name: 'Tactical Uniform',
-                        description: 'Vest and tactical gear — Sergeant+',
-                        minRank: 3,
-                        components: [
-                            { id: 11, drawable: 55,  texture: 0 },
-                            { id: 3,  drawable: 179, texture: 4 }, // tactical vest
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 25,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [],
-                    },
-                ],
-                female: [
-                    {
-                        name: 'Cadet Uniform',
-                        description: 'Standard issue cadet outfit',
-                        minRank: 0,
-                        components: [
-                            { id: 11, drawable: 48,  texture: 0 },
-                            { id: 3,  drawable: 14,  texture: 0 },
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 34,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [{ id: 0, drawable: 46, texture: 0 }],
-                    },
-                    {
-                        name: 'Officer Uniform',
-                        description: 'Full patrol officer uniform',
-                        minRank: 1,
-                        components: [
-                            { id: 11, drawable: 48,  texture: 0 },
-                            { id: 3,  drawable: 14,  texture: 0 },
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 34,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [{ id: 0, drawable: 46, texture: 0 }],
-                    },
-                    {
-                        name: 'Tactical Uniform',
-                        description: 'Vest and tactical gear — Sergeant+',
-                        minRank: 3,
-                        components: [
-                            { id: 11, drawable: 48,  texture: 0 },
-                            { id: 3,  drawable: 179, texture: 4 },
-                            { id: 8,  drawable: 15,  texture: 0 },
-                            { id: 4,  drawable: 34,  texture: 0 },
-                            { id: 6,  drawable: 24,  texture: 0 },
-                        ],
-                        props: [],
-                    },
-                ],
-            },
-        });
-    }
-
-    createWorldEntities() {
-        const blue = [0, 168, 255, 180];
-        const green = [0, 255, 100, 150];
-
-        // Exterior entrance
-        mp.markers.new(1, new mp.Vector3(this.hq.exterior.x, this.hq.exterior.y, this.hq.exterior.z - 1.0), 1.0,
-            { color: blue, dimension: 0 });
-        const enterCol = mp.colshapes.newSphere(this.hq.exterior.x, this.hq.exterior.y, this.hq.exterior.z, 1.5, 0);
-        enterCol.setVariable('interaction', { title: 'LSPD Mission Row', text: 'Enter HQ', event: 'faction:lspd:enter', requireOnFoot: true });
-
-        // Interior exit
-        mp.markers.new(1, new mp.Vector3(this.hq.interior.x, this.hq.interior.y, this.hq.interior.z - 1.0), 1.0,
-            { color: blue, dimension: this.hq.dimension });
-        const exitCol = mp.colshapes.newSphere(this.hq.interior.x, this.hq.interior.y, this.hq.interior.z, 1.5, this.hq.dimension);
-        exitCol.setVariable('interaction', { title: 'LSPD Mission Row', text: 'Exit HQ', event: 'faction:lspd:exit', requireOnFoot: true });
-
-        // Duty marker
-        mp.markers.new(1, new mp.Vector3(this.hq.dutyPoint.x, this.hq.dutyPoint.y, this.hq.dutyPoint.z - 1.0), 1.0,
-            { color: green, dimension: this.hq.dimension });
-
-        // Wardrobe
-        mp.markers.new(1, new mp.Vector3(this.hq.wardrobePoint.x, this.hq.wardrobePoint.y, this.hq.wardrobePoint.z - 1.0), 1.0,
-            { color: blue, dimension: this.hq.dimension });
-        const wardrobeCol = mp.colshapes.newSphere(this.hq.wardrobePoint.x, this.hq.wardrobePoint.y, this.hq.wardrobePoint.z, 1.5, this.hq.dimension);
-        wardrobeCol.setVariable('interaction', { title: 'Wardrobe', text: 'Select Uniform', event: 'faction:wardrobe:open', requireOnFoot: true });
-
-        // Garage
-        mp.markers.new(36, this.garage.menuPoint, 1.0, { color: [0, 168, 255, 200], dimension: 0 });
-        const garageCol = mp.colshapes.newSphere(this.garage.menuPoint.x, this.garage.menuPoint.y, this.garage.menuPoint.z, 1.5, 0);
-        garageCol.setVariable('interaction', { title: 'LSPD Fleet', text: 'Open Garage', event: 'faction:lspd:garage', requireOnFoot: true });
-
-        // Blip
-        mp.blips.new(60, this.hq.exterior, { name: 'LSPD Mission Row', color: 29, shortRange: true });
-    }
+async function loadAnimDict(dict) {
+    return new Promise((resolve) => {
+        if (mp.game.streaming.hasAnimDictLoaded(dict)) return resolve();
+        mp.game.streaming.requestAnimDict(dict);
+        const check = setInterval(() => {
+            if (mp.game.streaming.hasAnimDictLoaded(dict)) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 50);
+    });
 }
 
-const instance = new LSPDFaction();
-factionsManager.registerFaction(instance);
+// ── Surrender ─────────────────────────────────────────────────────────────────
 
-require('./events/vehicleManager')(instance);
+mp.events.add('client:lspd:setSurrendered', async (isSurrendered) => {
+    surrendered = isSurrendered;
 
-mp.events.add('faction:lspd:enter', (player) => {
-    if (!player.factionId || player.factionId !== instance.id) {
-        return player.outputChatBox('!{#ff4757}You are not a member of the LSPD.');
+    if (isSurrendered) {
+        await loadAnimDict(ANIM_SURRENDER.dict);
+        mp.players.local.taskPlayAnim(
+            ANIM_SURRENDER.dict, ANIM_SURRENDER.anim,
+            8.0, -8.0, -1, ANIM_SURRENDER.flag, 0, false, false, false
+        );
+        // Freeze controls — only camera & talking allowed
+        mp.game.controls.disableControlAction(0, 30, true); // move LR
+        mp.game.controls.disableControlAction(0, 31, true); // move UD
+        mp.game.controls.disableControlAction(0, 21, true); // sprint
+    } else {
+        mp.players.local.clearTasks();
     }
-    player.position = instance.hq.interior;
-    player.dimension = instance.hq.dimension;
 });
 
-mp.events.add('faction:lspd:exit', (player) => {
-    player.position = instance.hq.exterior;
-    player.dimension = 0;
+// ── Cuffed ────────────────────────────────────────────────────────────────────
+
+mp.events.add('client:lspd:setCuffed', async (isCuffed, officerId) => {
+    cuffed = isCuffed;
+    cuffedToOfficerId = officerId;
+
+    if (isCuffed) {
+        // Play cuff intro then loop idle
+        await loadAnimDict(ANIM_CUFF_INTRO.dict);
+        mp.players.local.taskPlayAnim(
+            ANIM_CUFF_INTRO.dict, ANIM_CUFF_INTRO.anim,
+            8.0, -8.0, 2000, ANIM_CUFF_INTRO.flag, 0, false, false, false
+        );
+
+        setTimeout(async () => {
+            if (!cuffed) return;
+            await loadAnimDict(ANIM_CUFFED.dict);
+            mp.players.local.taskPlayAnim(
+                ANIM_CUFFED.dict, ANIM_CUFFED.anim,
+                8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
+            );
+        }, 2100);
+
+        // Start follow tick — keep cuffed player near officer
+        if (cuffFollowTick) clearInterval(cuffFollowTick);
+        cuffFollowTick = setInterval(() => {
+            if (!cuffed || cuffedToOfficerId === null) {
+                clearInterval(cuffFollowTick);
+                cuffFollowTick = null;
+                return;
+            }
+
+            const officer = mp.players.atRemoteId(cuffedToOfficerId);
+            if (!officer || !mp.players.exists(officer)) return;
+
+            const offPos = officer.position;
+            const myPos  = mp.players.local.position;
+
+            const dx = offPos.x - myPos.x;
+            const dy = offPos.y - myPos.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // If too far away (officer moved), teleport us beside them
+            if (dist > 3.5) {
+                const behind = new mp.Vector3(
+                    offPos.x - Math.sin(officer.heading * Math.PI / 180) * 1.0,
+                    offPos.y - Math.cos(officer.heading * Math.PI / 180) * 1.0,
+                    offPos.z
+                );
+                mp.players.local.position = behind;
+            }
+
+            // Block all movement controls
+            mp.game.controls.disableControlAction(0, 30, true);
+            mp.game.controls.disableControlAction(0, 31, true);
+            mp.game.controls.disableControlAction(0, 21, true);
+            mp.game.controls.disableControlAction(0, 22, true);
+            mp.game.controls.disableControlAction(0, 24, true); // attack
+            mp.game.controls.disableControlAction(0, 25, true); // aim
+        }, 100);
+
+    } else {
+        // Remove cuffs
+        cuffed = false;
+        cuffedToOfficerId = null;
+        surrendered = false;
+
+        if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
+        mp.players.local.clearTasks();
+    }
 });
 
-mp.events.add('faction:lspd:garage', (player) => {
-    mp.events.call('faction:spawnLSPD', player);
+// Officer feedback when they cuff someone
+mp.events.add('client:lspd:cuffedSomeone', (suspectId) => {
+    // Play cuff animation on officer side too (mirrored)
+    loadAnimDict('mp_arresting').then(() => {
+        mp.players.local.taskPlayAnim('mp_arresting', 'a_uncuff', 8.0, -8.0, 2000, 48, 0, false, false, false);
+    });
 });
 
-module.exports = instance;
+// ── Garage vehicle selection ──────────────────────────────────────────────────
+
+let garageBrowser = null;
+
+mp.events.add('client:lspd:openGarageMenu', (catalogJson) => {
+    if (garageBrowser) { garageBrowser.destroy(); garageBrowser = null; }
+
+    garageBrowser = mp.browsers.new('package://factions/lspd/garage.html');
+    mp.gui.cursor.visible = true;
+
+    setTimeout(() => {
+        if (garageBrowser) {
+            garageBrowser.execute(`loadCatalog(${JSON.stringify(catalogJson)})`);
+        }
+    }, 150);
+});
+
+mp.events.add('client:lspd:selectVehicle', (modelStr) => {
+    if (garageBrowser) { garageBrowser.destroy(); garageBrowser = null; }
+    mp.gui.cursor.visible = false;
+    mp.events.callRemote('server:lspd:spawnVehicle', modelStr);
+});
+
+mp.events.add('client:lspd:closeGarage', () => {
+    if (garageBrowser) { garageBrowser.destroy(); garageBrowser = null; }
+    mp.gui.cursor.visible = false;
+});
+
+
+// ── Stop Order UI: received by target ────────────────────────────────────────
+
+mp.events.add('client:lspd:showStopOrder', (officerName) => {
+    // Show a screen notification via overlay
+    mp.events.call('showStopOrderNotification', officerName, false);
+});
+
+// ── Stop Order UI: sent confirmation for officer ──────────────────────────────
+
+mp.events.add('client:lspd:showStopOrderSent', (targetName) => {
+    mp.events.call('showStopOrderNotification', targetName, true);
+});
+
+// ── Wanted HUD update ─────────────────────────────────────────────────────────
+
+mp.events.add('client:lspd:updateWantedHUD', (wantedType) => {
+    // Pass through to overlay browser
+    mp.events.call('updateWantedHUD', wantedType);
+});
+
+// ── Relay playerWeaponShot to server for wanted system ────────────────────────
+// RAGE MP fires playerWeaponShot CLIENT-side only; the server handler in
+// wantedManager.js won't trigger unless we forward it here.
+mp.events.add('playerWeaponShot', (targetPosition, targetEntity) => {
+    const targetPlayerId = (targetEntity && targetEntity.type === 'player')
+        ? targetEntity.remoteId
+        : -1;
+    mp.events.callRemote('server:wanted:weaponShot', targetPlayerId);
+});
+
+// ── Cleanup on death: clear animations and cuff state ────────────────────────
+
+mp.events.add('playerDeath', () => {
+    if (surrendered) {
+        surrendered = false;
+        mp.players.local.clearTasks();
+    }
+    // Cuff state is cleared server-side on death event; client just cleans up
+    if (cuffed) {
+        cuffed = false;
+        cuffedToOfficerId = null;
+        if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
+        mp.players.local.clearTasks();
+    }
+});

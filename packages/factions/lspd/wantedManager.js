@@ -297,17 +297,20 @@ mp.events.addCommand('so', function(officer, idStr) {
 
 var PD_SHOT_NEAR_RANGE = 100;
 
-// Replace the existing playerWeaponShot event with this:
-mp.events.add('playerWeaponShot', function(player, targetPosition, targetEntity) {
+// Client relays playerWeaponShot via 'server:wanted:weaponShot'
+// (RAGE MP only fires playerWeaponShot client-side, not server-side)
+mp.events.add('server:wanted:weaponShot', function(player, targetPlayerId) {
     if (!player.logged) return;
     if (player.factionId === 2) return; // cops shooting is fine
 
     var shotAtOfficer = false;
 
-    // Fixed 'target' parameter to 'targetEntity'
-    if (targetEntity && targetEntity.type === 'player' && isOfficerOnDuty(targetEntity)) {
-        applyOffense(player, 'assaulting_officer', null);
-        shotAtOfficer = true;
+    if (targetPlayerId !== -1) {
+        var targetEntity = mp.players.at(parseInt(targetPlayerId));
+        if (targetEntity && mp.players.exists(targetEntity) && isOfficerOnDuty(targetEntity)) {
+            applyOffense(player, 'assaulting_officer', null);
+            shotAtOfficer = true;
+        }
     }
 
     if (!shotAtOfficer) {
