@@ -363,7 +363,16 @@ mp.events.add('server:loadAccount', (player) => {
 mp.events.add('server:spawn:player', (player) => {
     setTimeout(() => {
         if (mp.players.exists(player) && player.logged) {
+            // Send the global ATM states (available/cooldown) to the client
             sendAtmStatesToPlayer(player);
+
+            // Restore the player's personal skimmer variable if they have an active one
+            for (const [idx, atm] of atmState.entries()) {
+                if ((atm.state === 'compromised' || atm.state === 'ready') && atm.ownerId === player.data.dbId) {
+                    player.setVariable('skimmer_pending_atm', idx);
+                    break; // A player can only have 1 active skimmer, so we can stop searching
+                }
+            }
         }
     }, 1500);
 });
@@ -579,9 +588,22 @@ mp.events.add('server:atm:requestStates', (player) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const _origSave = playerManager.saveAccount.bind(playerManager);
 playerManager.saveAccount = async (player) => {
+    // 1. Check if the player object is still valid right now
+    if (!mp.players.exists(player) || !player.data) {
+        return await _origSave(player);
+    }
+
+    // 2. Cache the variables BEFORE the asynchronous await pause
+    const dbId = player.data.dbId;
+    const exposure = player.data.exposure;
+
+    // 3. Await the original save function
     await _origSave(player);
-    if (player.data.dbId && typeof player.data.exposure === 'number') {
-        await db.query('UPDATE users SET exposure = ? WHERE id = ?', [player.data.exposure, player.data.dbId]).catch(console.error);
+
+    // 4. Use the cached variables to save exposure instead of the player object
+    if (dbId && typeof exposure === 'number') {
+        await db.query('UPDATE users SET exposure = ? WHERE id = ?', [exposure, dbId])
+            .catch(err => console.error('[Skimmer] Failed to save exposure:', err));
     }
 };
 

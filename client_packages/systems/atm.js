@@ -227,7 +227,7 @@ setInterval(() => {
                 } else {
                     // Criminal sees: E = Access Bank, F = Install/Collect Skimmer
                     const pendingAtm = mp.players.local.getVariable('skimmer_pending_atm');
-                    const robLabel = (pendingAtm === robbableIdx) ? 'Collect Funds' : 'Install Skimmer';
+                    const robLabel = (parseInt(pendingAtm) === parseInt(robbableIdx)) ? 'Collect Funds' : 'Install Skimmer';
                     mp.events.call('showInteraction', [
                         { key: 'E', label: 'Access Bank' },
                         { key: 'F', label: robLabel, accent: true },
@@ -273,7 +273,7 @@ mp.keys.bind(0x46, true, () => {
     if (idx === null) return;
 
     const pendingAtm = mp.players.local.getVariable('skimmer_pending_atm');
-    if (pendingAtm === idx) {
+    if (parseInt(pendingAtm) === parseInt(idx)) {
         mp.events.callRemote('server:atm:collectSkimmer', idx);
     } else {
         mp.events.callRemote('server:atm:installSkimmer', idx);
@@ -293,14 +293,15 @@ mp.keys.bind(0x46, true, () => {
     mp.events.callRemote('server:atm:pdInspect', idx);
 });
 
-// Re-evaluate interaction label when factionDuty or skimmer_pending_atm changes
-// (force a refresh by resetting lastInteractionState if near an ATM)
-mp.events.add('variableChange', (player, name) => {
-    if (player !== mp.players.local) return;
-    if (name === 'factionDuty' || name === 'skimmer_pending_atm') {
-        if (lastInteractionState) {
-            lastInteractionState = false; // will re-trigger on next interval tick
-        }
+mp.events.addDataHandler('skimmer_pending_atm', (entity, value, oldValue) => {
+    if (entity.type === 'player' && entity === mp.players.local) {
+        if (lastInteractionState) lastInteractionState = false;
+    }
+});
+
+mp.events.addDataHandler('factionDuty', (entity, value, oldValue) => {
+    if (entity.type === 'player' && entity === mp.players.local) {
+        if (lastInteractionState) lastInteractionState = false;
     }
 });
 
