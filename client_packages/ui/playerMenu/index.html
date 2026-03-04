@@ -1751,7 +1751,7 @@
                                 <div class="race-stat-cell"><span class="race-stat-num red" id="race-losses-val">0</span><span class="race-stat-lbl">Losses</span></div>
                                 <div class="race-stat-cell"><span class="race-stat-num blue" id="race-winrate-val">0%</span><span class="race-stat-lbl">Win Rate</span></div>
                                 <div class="race-stat-cell"><span class="race-stat-num" id="race-total-val">0</span><span class="race-stat-lbl">Races</span></div>
-                                <div class="race-stat-cell"><span class="race-stat-num yellow" id="race-dailyxp-val">500</span><span class="race-stat-lbl">Daily XP</span></div>
+                                <div class="race-stat-cell"><span class="race-stat-num yellow" id="race-dailyxp-val">0</span><span class="race-stat-lbl">XP Today</span></div>
                             </div>
                         </div>
 
@@ -2275,7 +2275,7 @@
             const wr = total > 0 ? Math.round((r.wins / total) * 100) : 0;
             document.getElementById('race-winrate-val').innerText = wr + '%';
             document.getElementById('race-total-val').innerText = total;
-            document.getElementById('race-dailyxp-val').innerText = r.dailyXpLeft;
+            document.getElementById('race-dailyxp-val').innerText = r.dailyXpEarned !== undefined ? r.dailyXpEarned.toLocaleString() : 0;
 
             // ── Race Pass (Battle Pass) ──
             const bpRewards = [

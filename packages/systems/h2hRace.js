@@ -13,10 +13,9 @@ const MAX_CHECKPOINT_DIST = 4000;     // Maximum distance of checkpoint from rac
 const CHECKPOINT_RADIUS   = 15.0;     // Radius for finish colshape
 
 // ── Race XP / Level config ──
-const DAILY_XP_CAP          = 500;
-const OPPONENT_COOLDOWN_MS  = 15 * 60 * 1000; // 15 min
-const MIN_RACE_DISTANCE_M   = 1500;
-const MIN_RACE_DURATION_S   = 45;
+const OPPONENT_COOLDOWN_MS  = 30 * 60 * 1000; // 30 min
+const MIN_RACE_DISTANCE_M   = 100;
+const MIN_RACE_DURATION_S   = 10;
 const HOURLY_RACE_THRESHOLD = 3;   // Diminishing returns after 3/hour
 const MAX_RACE_LEVEL        = 25;
 
@@ -510,6 +509,9 @@ async function awardRaceXP(race, winner) {
 
     // Anti-abuse: minimum distance & duration
     if (distMeters < MIN_RACE_DISTANCE_M || elapsed < MIN_RACE_DURATION_S) {
+        const msg = `${COLORS.INFO}Race was too short or too fast to award XP.`;
+        if (mp.players.exists(race.challenger)) race.challenger.outputChatBox(msg);
+        if (mp.players.exists(race.target)) race.target.outputChatBox(msg);
         return results; // No XP for trivial races
     }
 
@@ -538,24 +540,11 @@ async function awardRaceXP(race, winner) {
         let raceWins   = u.race_wins || 0;
         let raceLosses = u.race_losses || 0;
 
-        // ── Daily cap check ──
-        const today = new Date().toISOString().split('T')[0];
-        let dailyXp = 0;
-        if (u.daily_race_xp_date) {
-            const dbDate = new Date(u.daily_race_xp_date);
-            const dbStr = dbDate.toISOString().split('T')[0];
-            if (dbStr === today) dailyXp = u.daily_race_xp || 0;
-        }
-        if (dailyXp >= DAILY_XP_CAP) {
-            p.outputChatBox(`${COLORS.INFO}Daily race XP cap reached (${DAILY_XP_CAP} XP).`);
-            continue;
-        }
-
         // ── Same opponent cooldown ──
         if (u.last_race_opponent === opponentId && u.last_race_opponent_time) {
             const lastTime = new Date(u.last_race_opponent_time).getTime();
             if (Date.now() - lastTime < OPPONENT_COOLDOWN_MS) {
-                p.outputChatBox(`${COLORS.INFO}Wait before racing the same opponent for XP.`);
+                p.outputChatBox(`${COLORS.INFO}You must wait 30 minutes before racing the same opponent for XP.`);
                 continue;
             }
         }
@@ -578,7 +567,6 @@ async function awardRaceXP(race, winner) {
         if (elapsed < 180) baseXp = Math.round(baseXp * 1.25); // Short intense race bonus
 
         let xpGain = Math.round(baseXp * diminish);
-        xpGain = Math.min(xpGain, DAILY_XP_CAP - dailyXp); // Respect daily cap
         if (xpGain <= 0) continue;
 
         // ── Apply XP & check level up ──
@@ -621,6 +609,14 @@ async function awardRaceXP(race, winner) {
              newRacesHour, newHourStart,
              p.data.dbId]
         );
+
+        // -- ADD THESE LINES HERE --
+        // Update in-memory data for instantaneous Player Menu / other scripts support
+        p.data.race_xp = raceXp;
+        p.data.race_level = raceLevel;
+        p.data.race_wins = raceWins;
+        p.data.race_losses = raceLosses;
+        // --------------------------
 
         // Give cash bonus
         if (cashBonus > 0) {

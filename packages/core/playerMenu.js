@@ -183,7 +183,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
                     nextXp: Math.max(lvl * 100, 100),
                     wins: rr.race_wins || 0,
                     losses: rr.race_losses || 0,
-                    dailyXpLeft: Math.max(0, 500 - usedDaily),
+                    dailyXpEarned: usedDaily,
                     topRacers: []
                 };
             }
