@@ -57,6 +57,9 @@ class DispatchManager {
 
         this._broadcastToFaction(factionId);
 
+        // Fix 2: Auto-expire this call after 5 minutes if no driver accepts
+        this.scheduleCallExpiry(factionId, callId, 5 * 60 * 1000);
+
         return call;
     }
 
@@ -142,6 +145,49 @@ class DispatchManager {
                 driver.outputChatBox(`!{${config ? config.accentColor : '#ff4757'}}${config ? config.chatTag : '[DISPATCH]'} !{#ffffff}Call cancelled: ${reason}`);
             }
         }
+    }
+
+    // ── Fix 1: Safe method to create an assignment directly (bypasses dispatch queue) ──
+    // Use this instead of accessing _nextCallId and activeAssignments directly.
+    createDirectAssignment(driverId, assignmentData) {
+        const callId = this._nextCallId++;
+        this.activeAssignments.set(driverId, {
+            callId,
+            factionId:       assignmentData.factionId,
+            callerServerId:  assignmentData.callerServerId,
+            callerName:      assignmentData.callerName,
+            coords:          assignmentData.coords,
+            phase:           assignmentData.phase || 3,
+            driverVehicleId: assignmentData.driverVehicleId || null,
+            destCoords:      assignmentData.destCoords || null,
+            destLocation:    assignmentData.destLocation || null,
+            fare:            assignmentData.fare || 0,
+            distKm:          assignmentData.distKm || 0,
+        });
+        return callId;
+    }
+
+    // ── Fix 2: Expire a pending call after a timeout ─────────────────────────
+    scheduleCallExpiry(factionId, callId, timeoutMs = 5 * 60 * 1000) {
+        setTimeout(() => {
+            if (!this.calls.has(factionId)) return;
+            const call = this.calls.get(factionId).get(callId);
+            if (!call || call.acceptedBy !== null) return; // already accepted
+
+            this.calls.get(factionId).delete(callId);
+            this._broadcastToFaction(factionId);
+
+            // Notify the caller their call expired
+            if (call.callerServerId !== null) {
+                const caller = mp.players.at(call.callerServerId);
+                if (caller && mp.players.exists(caller)) {
+                    const config = DISPATCH_CONFIGS[factionId];
+                    caller.outputChatBox(`!{${config ? config.accentColor : '#ff4757'}}${config ? config.chatTag : '[DISPATCH]'} !{#ffffff}No drivers available — your request has expired. Please try again.`);
+                    caller.call('client:taxi:callExpired', []);
+                }
+            }
+            console.log(`[Dispatch] Call #${callId} for faction ${factionId} expired (no driver accepted in time).`);
+        }, timeoutMs);
     }
 
     // ── Helper Methods for Faction Modules ──────────────────────────────────

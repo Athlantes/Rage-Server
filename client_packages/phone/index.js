@@ -551,6 +551,16 @@ mp.events.add('client:taxi:callCancelled', () => {
     }
 });
 
+// Fix 2: Handle call expiry — no driver accepted in time
+mp.events.add('client:taxi:callExpired', () => {
+    if (phoneBrowser) {
+        phoneBrowser.execute(`app.taxiApp.onCallCancelled()`);
+    }
+    mp.events.call('showNotification', 'Taxi', 'No drivers were available. Your request has expired.');
+    // Acknowledge the expiry to the server so it cleans up activePhoneCalls
+    mp.events.callRemote('server:taxi:callExpired');
+});
+
 // Submit rating
 mp.events.add('client:phone:submitTaxiRating', (stars) => {
     mp.events.callRemote('server:taxi:submitRating', stars);

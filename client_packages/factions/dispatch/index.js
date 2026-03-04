@@ -207,7 +207,7 @@ mp.events.add('client:taxi:autoAssignRide', (dataJson) => {
             } catch (_) {}
         }
 
-        if (dist2(pPos, pos) <= 50.0) {
+        if (dist3(pPos, pos) <= 50.0) { // Fix 5: 3D distance check
             clearRideTick();
             mp.events.callRemote('server:dispatch:rideComplete');
             notify('Taxi', 'You have arrived at the destination. Ride complete!');
@@ -264,7 +264,7 @@ mp.events.add('client:taxi:setDestination', (dataJson) => {
             } catch (_) {}
         }
 
-        if (dist2(pPos, pos) <= 50.0) {
+        if (dist3(pPos, pos) <= 50.0) { // Fix 5: 3D distance check
             clearRideTick();
             mp.events.callRemote('server:dispatch:rideComplete');
             notify('Taxi', 'You have arrived at the destination. Ride complete!');

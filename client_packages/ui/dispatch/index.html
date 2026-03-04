@@ -615,6 +615,12 @@
             case 'callType':
                 return `<div class="cell" style="width:${width}">${escHtml(call.callType || '—')}</div>`;
 
+            case 'fare': {
+                const fareVal = call.fare || 0;
+                const fareColor = fareVal >= 200 ? 'var(--success)' : 'var(--accent)';
+                return `<div class="cell" style="width:${width};color:${fareColor};font-weight:600;">$${fareVal}</div>`;
+            }
+
             default:
                 return `<div class="cell" style="width:${width}">${escHtml(String(call[key] || ''))}</div>`;
         }

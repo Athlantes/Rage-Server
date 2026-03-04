@@ -159,20 +159,18 @@ mp.events.add('server:taxi:callFromPhone', (player, destName, destX, destY, dest
 
         const driverName = inTaxiDriver.name.replace(/_/g, ' ');
 
-        // Create the assignment directly (skip dispatch queue)
-        const callId = dispatchManager._nextCallId++;
-        dispatchManager.activeAssignments.set(inTaxiDriver.id, {
-            callId,
-            factionId: TAXI_FACTION_ID,
-            callerServerId: player.id,
-            callerName: callerName,
-            coords: { x: pickup.x, y: pickup.y, z: pickup.z },
-            phase: 3, // Already boarded
+        // Fix 1: Create the assignment via the safe API instead of touching internals directly
+        const callId = dispatchManager.createDirectAssignment(inTaxiDriver.id, {
+            factionId:       TAXI_FACTION_ID,
+            callerServerId:  player.id,
+            callerName:      callerName,
+            coords:          { x: pickup.x, y: pickup.y, z: pickup.z },
+            phase:           3,
             driverVehicleId: inTaxiDriver.vehicle ? inTaxiDriver.vehicle.id : null,
-            destCoords: { x: dX, y: dY, z: dZ },
-            destLocation: locationName,
-            fare: fare,
-            distKm: distKm,
+            destCoords:      { x: dX, y: dY, z: dZ },
+            destLocation:    locationName,
+            fare:            fare,
+            distKm:          distKm,
         });
 
         // Track the active phone call (already at phase 3 — on the way)
@@ -293,7 +291,7 @@ mp.events.add('server:taxi:cancelCall', (player) => {
 });
 
 // ── Phone app: submit rating ──────────────────────────────────────────────────
-mp.events.add('server:taxi:submitRating', (player, starsStr) => {
+mp.events.add('server:taxi:submitRating', async (player, starsStr) => {
     if (!player.logged) return;
 
     const stars = parseInt(starsStr);
@@ -309,12 +307,30 @@ mp.events.add('server:taxi:submitRating', (player, starsStr) => {
             const starStr = '★'.repeat(stars) + '☆'.repeat(5 - stars);
             driver.outputChatBox(`!{#ffc300}[TAXI] !{#ffffff}${player.name.replace(/_/g, ' ')} rated your ride: !{#ffc300}${starStr} !{#ffffff}(${stars}/5)`);
 
-            // Track cumulative rating on the driver
+            // Fix 3: Keep in-memory running average for display this session
             if (!driver.taxiRatings) driver.taxiRatings = { total: 0, count: 0 };
             driver.taxiRatings.total += stars;
             driver.taxiRatings.count += 1;
             const avg = (driver.taxiRatings.total / driver.taxiRatings.count).toFixed(1);
-            driver.outputChatBox(`!{#888888}Your average rating: ${avg}/5.0 (${driver.taxiRatings.count} rides)`);
+            driver.outputChatBox(`!{#888888}Your average rating this session: ${avg}/5.0 (${driver.taxiRatings.count} rides)`);
+
+            // Fix 3: Persist to dedicated taxi_ratings table — no NULLs polluting users
+            if (driver.data && driver.data.dbId) {
+                try {
+                    const db = require('../../core/database');
+                    await db.query(
+                        `INSERT INTO taxi_ratings (user_id, rating_total, rating_count)
+                         VALUES (?, ?, 1)
+                         ON DUPLICATE KEY UPDATE
+                             rating_total = rating_total + VALUES(rating_total),
+                             rating_count = rating_count + 1`,
+                        [driver.data.dbId, stars]
+                    );
+                    console.log(`[Taxi] Saved rating ${stars}/5 for ${driver.name} (dbId: ${driver.data.dbId})`);
+                } catch (e) {
+                    console.error('[Taxi] Failed to persist rating:', e);
+                }
+            }
         }
     }
 
@@ -420,6 +436,38 @@ async function onRideComplete(callerId) {
         }
     }
 }
+
+// ── Fix 3: Load persisted ratings from taxi_ratings table on login ────────────
+// Fires only for taxi faction members via the factionDataLoaded event,
+// so non-taxi players are never touched.
+mp.events.add('factionDataLoaded', async (player) => {
+    if (player.factionId !== TAXI_FACTION_ID) return;
+    if (!player.data || !player.data.dbId) return;
+
+    try {
+        const db = require('../../core/database');
+        const [rows] = await db.query(
+            'SELECT rating_total, rating_count FROM taxi_ratings WHERE user_id = ?',
+            [player.data.dbId]
+        );
+        if (rows.length > 0) {
+            player.taxiRatings = { total: rows[0].rating_total, count: rows[0].rating_count };
+            const avg = (rows[0].rating_total / rows[0].rating_count).toFixed(1);
+            console.log(`[Taxi] ${player.name} loaded ratings: ${avg}/5 (${rows[0].rating_count} rides)`);
+        } else {
+            player.taxiRatings = { total: 0, count: 0 };
+        }
+    } catch (e) {
+        console.error('[Taxi] Failed to load ratings for', player.name, e);
+        player.taxiRatings = { total: 0, count: 0 };
+    }
+});
+
+// ── Fix 2: Handle call expiry cleanup on the server ──────────────────────────
+mp.events.add('server:taxi:callExpired', (player) => {
+    // Called when the client acknowledges the expiry; clean up their phone state
+    activePhoneCalls.delete(player.id);
+});
 
 // ── Cleanup on disconnect ─────────────────────────────────────────────────────
 mp.events.add('playerQuit', (player) => {
