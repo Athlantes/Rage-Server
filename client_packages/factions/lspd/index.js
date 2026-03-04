@@ -138,7 +138,7 @@ let garageBrowser = null;
 mp.events.add('client:lspd:openGarageMenu', (catalogJson) => {
     if (garageBrowser) { garageBrowser.destroy(); garageBrowser = null; }
 
-    garageBrowser = mp.browsers.new('package://ui/lspd/garage.html');
+    garageBrowser = mp.browsers.new('package://factions/lspd/garage.html');
     mp.gui.cursor.visible = true;
 
     setTimeout(() => {

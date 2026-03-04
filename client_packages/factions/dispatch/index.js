@@ -346,3 +346,20 @@ mp.events.add('client:dispatch:requestAccept', (callIdStr) => {
     if (!isDispatchOpen) return;
     mp.events.callRemote('server:dispatch:accept', callIdStr);
 });
+
+// Listen for the UI triggering a search
+mp.events.add('client:dispatch:triggerSearch', (nameQuery) => {
+    mp.events.callRemote('server:dispatch:searchPlayer', nameQuery);
+});
+
+// Receive the search result from the server and send it to the UI
+mp.events.add('client:dispatch:searchResult', (profileDataJson) => {
+    if (dispatchBrowser) { // Replace 'dispatchBrowser' with the actual variable name of your UI browser!
+        dispatchBrowser.execute(`showProfile('${profileDataJson}')`);
+    }
+});
+
+// Listen for the UI triggering the Apply Wanted button
+mp.events.add('client:dispatch:triggerWanted', (targetId, stars, reason) => {
+    mp.events.callRemote('server:dispatch:applyWanted', targetId, stars, reason);
+});

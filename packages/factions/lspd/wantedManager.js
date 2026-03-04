@@ -236,6 +236,67 @@ setInterval(() => {
     });
 }, 30 * 1000);
 
+mp.events.add('server:dispatch:searchPlayer', (player, nameQuery) => {
+    // Security Check: Make sure only LSPD (Faction ID 2) can search
+    if (player.factionId !== 2) return;
+
+    let target = null;
+    let queryLower = nameQuery.toLowerCase();
+    
+    // Find the closest matching online player
+    mp.players.forEach(p => {
+        if (p.logged && p.name.toLowerCase().includes(queryLower)) {
+            target = p;
+        }
+    });
+
+    if (!target) {
+        // Send null if nobody was found
+        return player.call('client:dispatch:searchResult', [null]);
+    }
+
+    // Package the data and send it back to the client UI
+    const profileData = {
+        id: target.id,
+        name: target.name.replace(/_/g, ' '),
+        wantedLevel: target.wantedLevel || 0 // Uses the wanted_level from your central_db
+    };
+
+    player.call('client:dispatch:searchResult', [JSON.stringify(profileData)]);
+});
+
+mp.events.add('server:dispatch:applyWanted', async (player, targetId, stars, reason) => {
+    // Security Check
+    if (player.factionId !== 2) return;
+    
+    const target = mp.players.at(parseInt(targetId));
+    if (!target || !mp.players.exists(target)) {
+        return player.outputChatBox("!{#ff4757}That player is no longer online.");
+    }
+    
+    // Calculate new wanted level (Cap at 5)
+    let addedStars = parseInt(stars);
+    let currentWanted = target.wantedLevel || 0;
+    let newWanted = currentWanted + addedStars;
+    if (newWanted > 5) newWanted = 5;
+    
+    target.wantedLevel = newWanted;
+    target.setVariable('wantedLevel', target.wantedLevel); // Sync to client
+    
+    // Notify the officer and the suspect
+    player.outputChatBox(`!{#00a8ff}[MDT] You added ${addedStars} stars to ${target.name.replace(/_/g, ' ')}. Reason: ${reason}`);
+    target.outputChatBox(`!{#ff4757}[WANTED] An arrest warrant has been issued for you. Reason: ${reason}`);
+    
+    // Save the new wanted level directly to your database table 'users'
+    if (target.data && target.data.dbId) {
+        try {
+            await DB.query('UPDATE users SET wanted_level = ? WHERE id = ?', [target.wantedLevel, target.data.dbId]);
+        } catch (e) {
+            console.error(`[MDT] Error saving wanted level for ${target.name}:`, e);
+        }
+    }
+});
+
 // ── Cleanup on disconnect ─────────────────────────────────────────────────────
 
 mp.events.add('playerQuit', (player) => {

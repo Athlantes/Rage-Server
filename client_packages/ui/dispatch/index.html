@@ -71,7 +71,6 @@
             position: relative;
         }
 
-        /* Coloured left stripe matching faction accent */
         .panel-header::before {
             content: '';
             position: absolute;
@@ -199,6 +198,30 @@
             color: var(--text-muted);
         }
 
+        /* ── MDT Panel Styling ─────────────────────────────────────────────── */
+        #mdt-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 20px;
+            display: none;
+        }
+        
+        .mdt-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            transition: border 0.2s;
+        }
+
+        .mdt-input:focus {
+            border-color: var(--primary);
+        }
+
         /* ── Column headers ────────────────────────────────────────────────── */
         .table-header {
             display: flex;
@@ -261,40 +284,22 @@
             text-overflow: ellipsis;
         }
 
-        /* Caller name cell — slightly brighter */
-        .cell-name {
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        /* Location */
-        .cell-location {
-            color: var(--text-dim);
-            font-size: 11px;
-        }
-
-        /* Distance — colored by proximity */
-        .cell-distance {
-            font-weight: 700;
-            font-size: 12px;
-        }
+        .cell-name { font-weight: 600; color: var(--text); }
+        .cell-location { color: var(--text-dim); font-size: 11px; }
+        .cell-distance { font-weight: 700; font-size: 12px; }
 
         .cell-distance.near   { color: var(--success); }
         .cell-distance.medium { color: var(--warning); }
         .cell-distance.far    { color: var(--text-dim); }
 
-        /* Wait time */
-        .cell-wait {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
+        .cell-wait { font-size: 11px; color: var(--text-muted); }
         .cell-wait.urgent { color: var(--danger); font-weight: 700; }
 
-        /* ── Action button ─────────────────────────────────────────────────── */
+        /* ── Action buttons ────────────────────────────────────────────────── */
         .accept-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
             padding: 6px 14px;
             border-radius: 7px;
@@ -313,36 +318,30 @@
             border: 1px solid rgba(46, 204, 113, 0.25);
             color: var(--success);
         }
-
-        .accept-btn.green:hover {
-            background: rgba(46, 204, 113, 0.28);
-            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
-        }
+        .accept-btn.green:hover { background: rgba(46, 204, 113, 0.28); box-shadow: 0 0 12px rgba(46, 204, 113, 0.25); }
 
         .accept-btn.blue {
             background: var(--primary-dim);
             border: 1px solid rgba(0, 168, 255, 0.25);
             color: var(--primary);
         }
-
-        .accept-btn.blue:hover {
-            background: rgba(0, 168, 255, 0.28);
-            box-shadow: 0 0 12px var(--primary-glow);
-        }
+        .accept-btn.blue:hover { background: rgba(0, 168, 255, 0.28); box-shadow: 0 0 12px var(--primary-glow); }
 
         .accept-btn.yellow {
             background: rgba(240, 196, 0, 0.15);
             border: 1px solid rgba(240, 196, 0, 0.25);
             color: var(--warning);
         }
+        .accept-btn.yellow:hover { background: rgba(240, 196, 0, 0.28); }
 
-        .accept-btn.yellow:hover {
-            background: rgba(240, 196, 0, 0.28);
+        .accept-btn.red {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.25);
+            color: var(--danger);
         }
+        .accept-btn.red:hover { background: rgba(255, 71, 87, 0.28); box-shadow: 0 0 12px rgba(255, 71, 87, 0.25); }
 
-        .accept-btn:active {
-            transform: scale(0.97);
-        }
+        .accept-btn:active { transform: scale(0.97); }
 
         /* ── Empty state ───────────────────────────────────────────────────── */
         .empty-state {
@@ -354,16 +353,8 @@
             padding: 50px 20px;
             color: var(--text-muted);
         }
-
-        .empty-state i {
-            font-size: 28px;
-            opacity: 0.4;
-        }
-
-        .empty-state p {
-            font-size: 13px;
-            font-weight: 500;
-        }
+        .empty-state i { font-size: 28px; opacity: 0.4; }
+        .empty-state p { font-size: 13px; font-weight: 500; }
 
         /* ── Footer ────────────────────────────────────────────────────────── */
         .panel-footer {
@@ -375,15 +366,8 @@
             flex-shrink: 0;
         }
 
-        .footer-note {
-            font-size: 10px;
-            color: var(--text-muted);
-        }
-
-        .footer-note i {
-            margin-right: 4px;
-            color: var(--accent);
-        }
+        .footer-note { font-size: 10px; color: var(--text-muted); }
+        .footer-note i { margin-right: 4px; color: var(--accent); }
 
         .live-badge {
             display: flex;
@@ -395,17 +379,13 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-
         .live-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse 1s infinite;
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--success); animation: pulse 1s infinite;
         }
 
-        /* ── Error toast ───────────────────────────────────────────────────── */
-        .error-toast {
+        /* ── Error/Success toast ───────────────────────────────────────────── */
+        .toast-msg {
             position: fixed;
             bottom: 30px;
             left: 50%;
@@ -423,36 +403,68 @@
             white-space: nowrap;
         }
 
-        .error-toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        .toast-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-msg.success {
+            background: rgba(46, 204, 113, 0.15);
+            border-color: rgba(46, 204, 113, 0.4);
+            color: var(--success);
         }
     </style>
 </head>
 <body>
 
 <div class="panel" id="panel">
-    <!-- ─── Header ─── -->
     <div class="panel-header" id="panel-header">
         <div class="header-icon" id="header-icon">
             <i id="header-icon-i" class="fas fa-taxi"></i>
         </div>
         <div class="header-text">
-            <div class="header-title" id="header-title">Taxi Dispatch</div>
-            <div class="header-subtitle" id="header-subtitle">Los Santos Transit</div>
+            <div class="header-title" id="header-title">Dispatch</div>
+            <div class="header-subtitle" id="header-subtitle">Connecting Systems</div>
         </div>
         <div class="header-right">
             <div class="call-count-badge" id="call-count-badge">
                 <div class="dot"></div>
                 <span id="call-count-text">0 Calls</span>
             </div>
+            
+            <button id="mdt-toggle-btn" class="accept-btn blue" onclick="toggleMdt()">
+                <i class="fas fa-search"></i> MDT
+            </button>
+
             <div class="close-btn" onclick="closeMenu()">
                 <i class="fas fa-xmark"></i>
             </div>
         </div>
     </div>
 
-    <!-- ─── Keybind hint ─── -->
+    <div id="mdt-panel">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="searchInput" class="mdt-input" placeholder="Enter player name (e.g. John_Doe)..." style="flex: 1;">
+            <button onclick="searchPlayer()" class="accept-btn blue" style="padding: 0 20px; height: 35px;">
+                <i class="fas fa-magnifying-glass"></i> Search
+            </button>
+        </div>
+        
+        <div id="mdt-profile" style="display: none; background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div>
+                    <h4 id="profileName" style="margin: 0; color: var(--text); font-size: 14px;">Name: ---</h4>
+                    <div id="profileId" style="color: var(--text-dim); font-size: 11px;">ID: ---</div>
+                </div>
+                <div id="profileWanted" style="font-weight: 700; color: var(--danger); font-size: 13px; background: rgba(255, 71, 87, 0.1); padding: 4px 10px; border-radius: 4px;">Wanted Level: ---</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px;">
+                <input type="number" id="wantedStars" class="mdt-input" placeholder="Stars (1-5)" min="1" max="5" style="width: 100px;">
+                <input type="text" id="wantedReason" class="mdt-input" placeholder="Crime / Reason" style="flex: 1;">
+                <button onclick="applyWanted()" class="accept-btn red">
+                    <i class="fas fa-gavel"></i> Issue Warrant
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="keybind-hint">
         <span class="key-chip">P</span>
         <span>Close dispatch &nbsp;&nbsp;</span>
@@ -460,12 +472,9 @@
         <span>Accept a call</span>
     </div>
 
-    <!-- ─── Column headers ─── -->
     <div class="table-header" id="table-header">
-        <!-- Populated by JS from config.columns -->
-    </div>
+        </div>
 
-    <!-- ─── Call list ─── -->
     <div class="call-list" id="call-list">
         <div class="empty-state" id="empty-state">
             <i class="fas fa-road"></i>
@@ -473,7 +482,6 @@
         </div>
     </div>
 
-    <!-- ─── Footer ─── -->
     <div class="panel-footer">
         <div class="footer-note">
             <i class="fas fa-circle-info"></i>
@@ -486,16 +494,15 @@
     </div>
 </div>
 
-<!-- Error toast -->
-<div class="error-toast" id="error-toast"></div>
+<div class="toast-msg" id="toast-msg"></div>
 
 <script>
     // ── State ─────────────────────────────────────────────────────────────────
     let currentConfig = null;
     let currentCalls  = [];
+    let currentTargetId = null;
 
     // ── Entry point — called by client JS ────────────────────────────────────
-    // payloadJson is a JSON string (double-encoded because execute() stringifies again)
     function receiveDispatchData(payloadJson) {
         try {
             const payload = typeof payloadJson === 'string'
@@ -509,17 +516,78 @@
             renderHeader(currentConfig);
             renderTableHeader(currentConfig.columns);
             renderCalls(currentCalls, currentConfig);
+
+            // Hide MDT button if faction is not LEO/LSPD (Optional logic)
+            // if (currentConfig.factionId !== 2) document.getElementById('mdt-toggle-btn').style.display = 'none';
+
         } catch (e) {
             console.error('[Dispatch UI] receiveDispatchData error:', e, payloadJson);
         }
     }
 
-    // ── Error toast ───────────────────────────────────────────────────────────
-    function showDispatchError(message) {
-        const toast = document.getElementById('error-toast');
+    // ── Toast Notification ────────────────────────────────────────────────────
+    function showToast(message, isSuccess = false) {
+        const toast = document.getElementById('toast-msg');
         toast.textContent = message;
+        
+        if(isSuccess) toast.classList.add('success');
+        else toast.classList.remove('success');
+
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // ── MDT Search Logic ──────────────────────────────────────────────────────
+    function toggleMdt() {
+        const mdt = document.getElementById('mdt-panel');
+        mdt.style.display = mdt.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function searchPlayer() {
+        const nameQuery = document.getElementById('searchInput').value;
+        if (nameQuery.length < 3) return showToast("Enter at least 3 characters.");
+        
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:triggerSearch', nameQuery);
+        }
+    }
+
+    function showProfile(dataJson) {
+        if (!dataJson || dataJson === 'null') {
+            showToast("Player not found online.");
+            document.getElementById('mdt-profile').style.display = 'none';
+            return;
+        }
+
+        const data = JSON.parse(dataJson);
+        currentTargetId = data.id;
+
+        document.getElementById('profileName').innerText = "Name: " + data.name;
+        document.getElementById('profileId').innerText = "Server ID: " + data.id;
+        document.getElementById('profileWanted').innerText = "Wanted Level: " + data.wantedLevel + " Stars";
+        
+        document.getElementById('mdt-profile').style.display = 'block';
+    }
+
+    function applyWanted() {
+        if (currentTargetId === null) return;
+        const stars = document.getElementById('wantedStars').value;
+        const reason = document.getElementById('wantedReason').value;
+
+        if (!stars || !reason) return showToast("Fill out both stars and reason!");
+        if (stars < 1 || stars > 5) return showToast("Stars must be between 1 and 5.");
+
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:triggerWanted', currentTargetId, stars, reason);
+        }
+        
+        // Reset and notify
+        document.getElementById('wantedStars').value = '';
+        document.getElementById('wantedReason').value = '';
+        document.getElementById('mdt-profile').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+        toggleMdt(); 
+        showToast("Warrant issued successfully.", true);
     }
 
     // ── Accent colour ─────────────────────────────────────────────────────────
@@ -606,7 +674,6 @@
             }
 
             case 'waitTime': {
-                // Flag as urgent if waiting > 2 min
                 const waitSecs = extractWaitSeconds(call.waitTime);
                 const urgent   = waitSecs > 120 ? ' urgent' : '';
                 return `<div class="cell cell-wait${urgent}" style="width:${width}">${escHtml(call.waitTime)}</div>`;
@@ -648,8 +715,6 @@
         if (typeof mp !== 'undefined') {
             mp.trigger('client:dispatch:requestAccept', String(callId));
         }
-
-        // Optimistically remove from UI immediately (server will confirm/deny)
         currentCalls = currentCalls.filter(c => c.id !== callId);
         renderCalls(currentCalls, currentConfig);
     }
@@ -672,7 +737,6 @@
 
     function extractWaitSeconds(waitStr) {
         if (!waitStr) return 0;
-        // "45s" or "1m 30s"
         let total = 0;
         const mMatch = waitStr.match(/(\d+)m/);
         const sMatch = waitStr.match(/(\d+)s/);

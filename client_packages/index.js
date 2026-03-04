@@ -51,5 +51,7 @@ require('./core/tuning.js');
 // Factions — Wardrobe system
 require('./factions/wardrobe/index.js');
 
+require('./factions/lspd/index.js');
+
 // Factions — Dispatch system
 require('./factions/dispatch/index.js');
