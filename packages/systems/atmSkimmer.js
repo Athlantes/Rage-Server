@@ -358,6 +358,14 @@ mp.events.add('server:loadAccount', (player) => {
     const exp = typeof raw === 'number' ? raw : (raw ? parseInt(raw) : 0);
     player.data.exposure = Math.max(0, Math.min(100, exp));
     player.setVariable('exposure', player.data.exposure);
+
+    // FIX: Restore the pending ATM variable if the player has an active skimmer
+    for (const [idx, atm] of atmState.entries()) {
+        if ((atm.state === 'compromised' || atm.state === 'ready') && atm.ownerId === player.data.dbId) {
+            player.setVariable('skimmer_pending_atm', idx);
+            break;
+        }
+    }
 });
 
 mp.events.add('server:spawn:player', (player) => {
