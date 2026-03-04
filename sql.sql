@@ -19,6 +19,23 @@
 CREATE DATABASE IF NOT EXISTS `central_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
 USE `central_db`;
 
+-- Dumping structure for table central_db.arrest_records
+CREATE TABLE IF NOT EXISTS `arrest_records` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `officer_id` int(11) DEFAULT NULL,
+  `suspect_id` int(11) DEFAULT NULL,
+  `suspect_name` varchar(64) DEFAULT NULL,
+  `offenses` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`offenses`)),
+  `outcome` enum('arrested','ticketed','released') NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_suspect` (`suspect_id`),
+  KEY `idx_officer` (`officer_id`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
 -- Dumping structure for table central_db.bank_transactions
 CREATE TABLE IF NOT EXISTS `bank_transactions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -73,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `character_inventory` (
   `metadata` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_char_id` (`character_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=115 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -98,7 +115,7 @@ CREATE TABLE IF NOT EXISTS `character_job_skills` (
   `level` int(11) DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_skill` (`character_id`,`job_key`)
-) ENGINE=InnoDB AUTO_INCREMENT=644 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=702 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -125,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `factions` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_key` (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -175,6 +192,20 @@ CREATE TABLE IF NOT EXISTS `faction_ranks` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_faction_rank` (`faction_id`,`rank_index`),
   CONSTRAINT `faction_ranks_ibfk_1` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.faction_uniforms
+CREATE TABLE IF NOT EXISTS `faction_uniforms` (
+  `character_id` int(11) NOT NULL,
+  `faction_id` int(11) NOT NULL,
+  `uniform_index` int(11) NOT NULL DEFAULT 0,
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`character_id`,`faction_id`),
+  KEY `idx_faction` (`faction_id`),
+  CONSTRAINT `faction_uniforms_ibfk_1` FOREIGN KEY (`character_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `faction_uniforms_ibfk_2` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
@@ -251,7 +282,7 @@ CREATE TABLE IF NOT EXISTS `ground_items` (
   `metadata` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -309,7 +340,7 @@ CREATE TABLE IF NOT EXISTS `player_daily_quests` (
   PRIMARY KEY (`id`),
   KEY `idx_user_date` (`user_id`,`created_date`),
   CONSTRAINT `player_daily_quests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -323,7 +354,7 @@ CREATE TABLE IF NOT EXISTS `player_mails` (
   `is_read` tinyint(1) DEFAULT 0,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -342,7 +373,7 @@ CREATE TABLE IF NOT EXISTS `player_phone` (
   UNIQUE KEY `unique_number` (`phone_number`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `player_phone_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -353,7 +384,7 @@ CREATE TABLE IF NOT EXISTS `player_photos` (
   `image_path` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -367,7 +398,7 @@ CREATE TABLE IF NOT EXISTS `player_photo_hunt` (
   PRIMARY KEY (`id`),
   KEY `fk_user_photo` (`user_id`),
   CONSTRAINT `fk_user_photo` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -401,7 +432,18 @@ CREATE TABLE IF NOT EXISTS `server_vehicles` (
   `parked` tinyint(1) DEFAULT 0,
   `build_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`build_data`)),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table central_db.taxi_ratings
+CREATE TABLE IF NOT EXISTS `taxi_ratings` (
+  `user_id` int(11) NOT NULL,
+  `rating_total` int(11) NOT NULL DEFAULT 0,
+  `rating_count` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `taxi_ratings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
@@ -484,28 +526,26 @@ CREATE TABLE IF NOT EXISTS `vehicle_mods` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_mod` (`vehicle_id`,`mod_type`),
   KEY `idx_vehicle` (`vehicle_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=189 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
 
--- Dumping structure for table central_db.faction_uniforms
-CREATE TABLE IF NOT EXISTS `faction_uniforms` (
-  `character_id` int(11) NOT NULL,
-  `faction_id` int(11) NOT NULL,
-  `uniform_index` int(11) NOT NULL DEFAULT 0,
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`character_id`,`faction_id`),
-  KEY `idx_faction` (`faction_id`),
-  CONSTRAINT `faction_uniforms_ibfk_1` FOREIGN KEY (`character_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `faction_uniforms_ibfk_2` FOREIGN KEY (`faction_id`) REFERENCES `factions` (`id`) ON DELETE CASCADE
+-- Dumping structure for table central_db.wanted_history
+CREATE TABLE IF NOT EXISTS `wanted_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `offense_key` varchar(64) NOT NULL,
+  `offense_label` varchar(128) NOT NULL,
+  `type` enum('RoS','NoS') NOT NULL,
+  `outcome` enum('escaped','arrested','ticketed','released') NOT NULL DEFAULT 'escaped',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_outcome` (`outcome`),
+  KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Data exporting was unselected.
-
--- ─── Migration: Add variant + slider columns to vehicle_mods ───
--- Run these on existing databases to support the variant system:
--- ALTER TABLE `vehicle_mods` ADD COLUMN `variant` varchar(32) DEFAULT NULL;
--- ALTER TABLE `vehicle_mods` ADD COLUMN `slider_data` text DEFAULT NULL;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

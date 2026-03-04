@@ -559,34 +559,69 @@
             return;
         }
 
-        const data = JSON.parse(dataJson);
+        const data = typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
         currentTargetId = data.id;
 
         document.getElementById('profileName').innerText = "Name: " + data.name;
         document.getElementById('profileId').innerText = "Server ID: " + data.id;
-        document.getElementById('profileWanted').innerText = "Wanted Level: " + data.wantedLevel + " Stars";
-        
+
+        // Wanted status badge
+        const wantedEl = document.getElementById('profileWanted');
+        if (data.wantedType === 'NoS') {
+            wantedEl.innerText = '⚠ NO SURRENDER';
+            wantedEl.style.color = '#ff4757';
+            wantedEl.style.background = 'rgba(255,71,87,0.12)';
+        } else if (data.wantedType === 'RoS') {
+            wantedEl.innerText = '🚔 SURRENDER';
+            wantedEl.style.color = '#ffc300';
+            wantedEl.style.background = 'rgba(255,195,0,0.12)';
+        } else {
+            wantedEl.innerText = 'No Wanted';
+            wantedEl.style.color = '#555a66';
+            wantedEl.style.background = 'rgba(255,255,255,0.05)';
+        }
+
+        // Active offenses
+        const offensesBox = document.getElementById('profileOffenses');
+        const offenseList = document.getElementById('offenseList');
+        if (data.offenses && data.offenses.length > 0) {
+            offensesBox.style.display = 'block';
+            offenseList.innerHTML = data.offenses.map(o => {
+                const color = o.type === 'NoS' ? '#ff4757' : '#ffc300';
+                return `<span style="background:rgba(255,255,255,0.05);border:1px solid ${color}33;color:${color};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${escHtml(o.label)}</span>`;
+            }).join('');
+        } else {
+            offensesBox.style.display = 'none';
+        }
+
+        // Populate offense dropdown
+        const sel = document.getElementById('wantedOffenseSelect');
+        sel.innerHTML = '<option value="">— Select Offense —</option>';
+        if (data.mdtOffenses) {
+            data.mdtOffenses.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.key;
+                opt.textContent = o.label + ' (' + o.duration + 'm)';
+                sel.appendChild(opt);
+            });
+        }
+
         document.getElementById('mdt-profile').style.display = 'block';
     }
 
     function applyWanted() {
-        if (currentTargetId === null) return;
-        const stars = document.getElementById('wantedStars').value;
-        const reason = document.getElementById('wantedReason').value;
-
-        if (!stars || !reason) return showToast("Fill out both stars and reason!");
-        if (stars < 1 || stars > 5) return showToast("Stars must be between 1 and 5.");
+        if (currentTargetId === null) return showToast("No player selected.");
+        const offenseKey = document.getElementById('wantedOffenseSelect').value;
+        if (!offenseKey) return showToast("Select an offense first!");
 
         if (typeof mp !== 'undefined') {
-            mp.trigger('client:dispatch:triggerWanted', currentTargetId, stars, reason);
+            mp.trigger('client:dispatch:triggerWanted', currentTargetId, offenseKey);
         }
-        
-        // Reset and notify
-        document.getElementById('wantedStars').value = '';
-        document.getElementById('wantedReason').value = '';
+
+        document.getElementById('wantedOffenseSelect').value = '';
         document.getElementById('mdt-profile').style.display = 'none';
         document.getElementById('searchInput').value = '';
-        toggleMdt(); 
+        toggleMdt();
         showToast("Warrant issued successfully.", true);
     }
 

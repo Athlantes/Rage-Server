@@ -497,6 +497,115 @@
             margin-top: 1px;
         }
 
+
+        /* --- STOP ORDER POPUP --- */
+        .stop-order-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(8, 10, 16, 0.97);
+            border-radius: 14px;
+            padding: 28px 36px 22px;
+            text-align: center;
+            z-index: 900;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            min-width: 320px;
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+        }
+        .stop-order-popup.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .stop-order-popup .so-icon {
+            font-size: 38px;
+            margin-bottom: 10px;
+        }
+        .stop-order-popup.received .so-icon { color: #ff4757; }
+        .stop-order-popup.sent .so-icon { color: #00a8ff; }
+        .stop-order-popup .so-title {
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+        .stop-order-popup.received .so-title { color: #ff4757; }
+        .stop-order-popup.sent .so-title { color: #00a8ff; }
+        .stop-order-popup .so-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .stop-order-popup .so-sub {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.4;
+        }
+        .stop-order-popup .so-bar {
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+        .stop-order-popup .so-bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width linear;
+        }
+        .stop-order-popup.received .so-bar-fill { background: #ff4757; }
+        .stop-order-popup.sent .so-bar-fill { background: #00a8ff; }
+
+        /* --- WANTED INDICATOR (top-right, below money) --- */
+        .wanted-hud {
+            position: fixed;
+            top: 175px;
+            right: 35px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            animation: slideInRight 0.4s ease-out;
+        }
+        .wanted-hud.ros {
+            background: rgba(255, 195, 0, 0.12);
+            border: 1px solid rgba(255, 195, 0, 0.3);
+        }
+        .wanted-hud.nos {
+            background: rgba(255, 71, 87, 0.12);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+        .wanted-hud .wh-icon {
+            font-size: 18px;
+        }
+        .wanted-hud.ros .wh-icon { color: #ffc300; }
+        .wanted-hud.nos .wh-icon { color: #ff4757; }
+        .wanted-hud .wh-label {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .wanted-hud.ros .wh-label { color: #ffc300; }
+        .wanted-hud.nos .wh-label { color: #ff4757; }
+        .wanted-hud .wh-blink {
+            animation: wantedPulse 1.2s infinite;
+        }
+        @keyframes wantedPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
@@ -603,7 +712,91 @@
         <div class="popup-progress"><div class="popup-progress-fill" id="popup-progress-fill"></div></div>
     </div>
 
+    <!-- STOP ORDER POPUP -->
+    <div class="stop-order-popup" id="stop-order-popup">
+        <div class="so-icon"><i id="so-icon" class="fas fa-hand"></i></div>
+        <div class="so-title" id="so-title">STOP ORDER</div>
+        <div class="so-name" id="so-name">Officer Name</div>
+        <div class="so-sub" id="so-sub">has ordered you to stop your vehicle</div>
+        <div class="so-bar"><div class="so-bar-fill" id="so-bar-fill"></div></div>
+    </div>
+
+    <!-- WANTED HUD INDICATOR (top right) -->
+    <div class="wanted-hud" id="wanted-hud">
+        <i class="fas wh-icon wh-blink" id="wh-icon"></i>
+        <span class="wh-label" id="wh-label">WANTED</span>
+    </div>
+
     <script>
+
+        // --- STOP ORDER ---
+        let stopOrderTimer = null;
+
+        function showStopOrder(name, isSender) {
+            const popup = document.getElementById('stop-order-popup');
+            const icon  = document.getElementById('so-icon');
+            const title = document.getElementById('so-title');
+            const nameEl = document.getElementById('so-name');
+            const sub   = document.getElementById('so-sub');
+            const fill  = document.getElementById('so-bar-fill');
+
+            popup.classList.remove('received', 'sent');
+
+            if (isSender) {
+                popup.classList.add('sent');
+                icon.className = 'fas fa-bullhorn';
+                title.textContent = 'STOP ORDER SENT';
+                nameEl.textContent = name;
+                sub.textContent = 'You ordered this player to stop';
+            } else {
+                popup.classList.add('received');
+                icon.className = 'fas fa-hand';
+                title.textContent = 'STOP ORDER';
+                nameEl.textContent = name;
+                sub.textContent = 'ordered you to stop — comply or face charges';
+            }
+
+            popup.classList.add('visible');
+            fill.style.transition = 'none';
+            fill.style.width = '100%';
+            
+            if (stopOrderTimer) clearTimeout(stopOrderTimer);
+            
+            setTimeout(() => {
+                fill.style.transition = 'width 5s linear';
+                fill.style.width = '0%';
+            }, 50);
+
+            stopOrderTimer = setTimeout(() => {
+                popup.classList.remove('visible');
+            }, 5200);
+        }
+
+        // --- WANTED HUD ---
+        function updateWantedHUD(wantedType) {
+            const hud   = document.getElementById('wanted-hud');
+            const icon  = document.getElementById('wh-icon');
+            const label = document.getElementById('wh-label');
+
+            if (!wantedType) {
+                hud.style.display = 'none';
+                return;
+            }
+
+            hud.style.display = 'flex';
+            hud.classList.remove('ros', 'nos');
+
+            if (wantedType === 'NoS') {
+                hud.classList.add('nos');
+                icon.className = 'fas fa-skull wh-icon wh-blink';
+                label.textContent = 'NO SURRENDER';
+            } else {
+                hud.classList.add('ros');
+                icon.className = 'fas fa-handcuffs wh-icon wh-blink';
+                label.textContent = 'SURRENDER';
+            }
+        }
+
         // --- COOLDOWN SYSTEM ---
         let activeCooldowns = {}; // Stores end timestamps
         let cooldownInterval = null;
@@ -612,21 +805,21 @@
         const COOLDOWN_CONFIG = {
             'dumpster': { label: 'Dumpster', icon: 'fas fa-trash' },
 
-            // ── RoS Wanted ───────────────────────────────────────────────────
-            'speeding':           { label: 'Speeding',           icon: 'fas fa-gauge-high',    color: '#ffc300' },
-            'reckless_driving':   { label: 'Reckless Driving',   icon: 'fas fa-car-burst',     color: '#ffc300' },
-            'trespassing':        { label: 'Trespassing',        icon: 'fas fa-person-shelter', color: '#ffc300' },
-            'petty_theft':        { label: 'Petty Theft',        icon: 'fas fa-hand',           color: '#ffc300' },
-            'minor_possession':   { label: 'Drug Possession',    icon: 'fas fa-capsules',       color: '#ffc300' },
-            'public_disturbance': { label: 'Public Disturbance', icon: 'fas fa-bullhorn',       color: '#ffc300' },
+            // ── RoS Wanted (cuffs icon) ───────────────────────────────────
+            'speeding':              { label: 'Speeding',             icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'reckless_driving':      { label: 'Reckless Driving',     icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'trespassing':           { label: 'Trespassing',          icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'petty_theft':           { label: 'Petty Theft',          icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'drug_possession':       { label: 'Drug Possession',      icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'public_disturbance':    { label: 'Public Disturbance',   icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'robbery':               { label: 'Robbery',              icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'vehicle_theft':         { label: 'Vehicle Theft',        icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'shooting_near_pd':      { label: 'Shooting',             icon: 'fas fa-handcuffs', color: '#ffc300' },
 
-            // ── NoS Wanted ───────────────────────────────────────────────────
-            'armed_robbery':      { label: 'Armed Robbery',      icon: 'fas fa-gun',            color: '#ff4757' },
-            'assault':            { label: 'Assault',            icon: 'fas fa-hand-fist',      color: '#ff4757' },
-            'murder':             { label: 'Murder',             icon: 'fas fa-skull',          color: '#ff4757' },
-            'fleeing_officer':    { label: 'Fleeing Officer',    icon: 'fas fa-person-running', color: '#ff4757' },
-            'drug_trafficking':   { label: 'Drug Trafficking',   icon: 'fas fa-syringe',        color: '#ff4757' },
-            'vehicle_theft':      { label: 'Vehicle Theft',      icon: 'fas fa-car-on',         color: '#ff4757' },
+            // ── NoS Wanted (skull icon) ───────────────────────────────────
+            'assaulting_officer':    { label: 'Assault on Officer',   icon: 'fas fa-skull',     color: '#ff4757' },
+            'murder':                { label: 'Murder',               icon: 'fas fa-skull',     color: '#ff4757' },
+            'armed_robbery':         { label: 'Armed Robbery',        icon: 'fas fa-skull',     color: '#ff4757' },
         };
 
         function updateCooldowns(json) {

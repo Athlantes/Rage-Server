@@ -190,3 +190,14 @@ mp.events.add('updateCooldowns', (cooldownsJson) => {
         overlayBrowser.execute(`updateCooldowns('${cooldownsJson}');`);
     }
 });
+mp.events.add('showStopOrderNotification', (name, isSender) => {
+    if (overlayBrowser) {
+        overlayBrowser.execute(`showStopOrder(${JSON.stringify(name)}, ${isSender});`);
+    }
+});
+
+mp.events.add('updateWantedHUD', (wantedType) => {
+    if (overlayBrowser) {
+        overlayBrowser.execute(`updateWantedHUD(${JSON.stringify(wantedType)});`);
+    }
+});

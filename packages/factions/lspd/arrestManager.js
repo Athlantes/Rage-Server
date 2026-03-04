@@ -122,9 +122,10 @@ mp.events.addCommand('cuff', (officer, idStr) => {
         return officer.outputChatBox('!{#ff4757}This suspect has a No Surrender charge. You cannot cuff them — use lethal force.');
     }
 
-    // RoS — must have surrendered first
-    if (!suspect.getVariable('surrendered')) {
-        return officer.outputChatBox('!{#ff4757}The suspect has not surrendered yet. Use /arrest to order them to surrender first.');
+    // RoS — must have surrendered first (or officer is within 1.5m for forced cuff)
+    const forceCuff = dist3(officer.position, suspect.position) <= 1.5;
+    if (!suspect.getVariable('surrendered') && !forceCuff) {
+        return officer.outputChatBox('!{#ff4757}The suspect has not surrendered yet (/surrender). Get within 1.5m to force cuff.');
     }
 
     // Apply cuffs

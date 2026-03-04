@@ -159,6 +159,27 @@ mp.events.add('client:lspd:closeGarage', () => {
     mp.gui.cursor.visible = false;
 });
 
+
+// ── Stop Order UI: received by target ────────────────────────────────────────
+
+mp.events.add('client:lspd:showStopOrder', (officerName) => {
+    // Show a screen notification via overlay
+    mp.events.call('showStopOrderNotification', officerName, false);
+});
+
+// ── Stop Order UI: sent confirmation for officer ──────────────────────────────
+
+mp.events.add('client:lspd:showStopOrderSent', (targetName) => {
+    mp.events.call('showStopOrderNotification', targetName, true);
+});
+
+// ── Wanted HUD update ─────────────────────────────────────────────────────────
+
+mp.events.add('client:lspd:updateWantedHUD', (wantedType) => {
+    // Pass through to overlay browser
+    mp.events.call('updateWantedHUD', wantedType);
+});
+
 // ── Cleanup on death: clear animations and cuff state ────────────────────────
 
 mp.events.add('playerDeath', () => {

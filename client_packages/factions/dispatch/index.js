@@ -360,6 +360,6 @@ mp.events.add('client:dispatch:searchResult', (profileDataJson) => {
 });
 
 // Listen for the UI triggering the Apply Wanted button
-mp.events.add('client:dispatch:triggerWanted', (targetId, stars, reason) => {
-    mp.events.callRemote('server:dispatch:applyWanted', targetId, stars, reason);
+mp.events.add('client:dispatch:triggerWanted', (targetId, offenseKey) => {
+    mp.events.callRemote('server:dispatch:applyWanted', targetId, offenseKey);
 });
