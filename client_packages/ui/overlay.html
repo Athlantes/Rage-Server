@@ -610,7 +610,23 @@
 
         // Map internal keys to Display Name & Icon
         const COOLDOWN_CONFIG = {
-            'dumpster': { label: 'Dumpster', icon: 'fas fa-trash' }
+            'dumpster': { label: 'Dumpster', icon: 'fas fa-trash' },
+
+            // ── RoS Wanted ───────────────────────────────────────────────────
+            'speeding':           { label: 'Speeding',           icon: 'fas fa-gauge-high',    color: '#ffc300' },
+            'reckless_driving':   { label: 'Reckless Driving',   icon: 'fas fa-car-burst',     color: '#ffc300' },
+            'trespassing':        { label: 'Trespassing',        icon: 'fas fa-person-shelter', color: '#ffc300' },
+            'petty_theft':        { label: 'Petty Theft',        icon: 'fas fa-hand',           color: '#ffc300' },
+            'minor_possession':   { label: 'Drug Possession',    icon: 'fas fa-capsules',       color: '#ffc300' },
+            'public_disturbance': { label: 'Public Disturbance', icon: 'fas fa-bullhorn',       color: '#ffc300' },
+
+            // ── NoS Wanted ───────────────────────────────────────────────────
+            'armed_robbery':      { label: 'Armed Robbery',      icon: 'fas fa-gun',            color: '#ff4757' },
+            'assault':            { label: 'Assault',            icon: 'fas fa-hand-fist',      color: '#ff4757' },
+            'murder':             { label: 'Murder',             icon: 'fas fa-skull',          color: '#ff4757' },
+            'fleeing_officer':    { label: 'Fleeing Officer',    icon: 'fas fa-person-running', color: '#ff4757' },
+            'drug_trafficking':   { label: 'Drug Trafficking',   icon: 'fas fa-syringe',        color: '#ff4757' },
+            'vehicle_theft':      { label: 'Vehicle Theft',      icon: 'fas fa-car-on',         color: '#ff4757' },
         };
 
         function updateCooldowns(json) {
@@ -648,13 +664,15 @@
 
                     // Get Config
                     const conf = COOLDOWN_CONFIG[key] || { label: key, icon: 'fas fa-clock' };
+                    const nameColor = conf.color ? `color:${conf.color}` : '';
+                    const iconColor = conf.color ? `style="color:${conf.color}"` : '';
 
                     html += `
                         <div class="cd-item">
-                            <span class="cd-name">${conf.label}</span>
+                            <span class="cd-name" style="${nameColor}">${conf.label}</span>
                             <span class="cd-sep">&bull;</span>
                             <span class="cd-timer">${timeStr}</span>
-                            <i class="cd-icon ${conf.icon}"></i>
+                            <i class="cd-icon ${conf.icon}" ${iconColor}></i>
                         </div>
                     `;
                 }

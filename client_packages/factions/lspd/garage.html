@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LSPD Fleet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00a8ff;
+            --primary-dim: rgba(0,168,255,0.15);
+            --bg: rgba(10,12,18,0.97);
+            --border: rgba(255,255,255,0.07);
+            --text: #ffffff;
+            --text-dim: #8a8f9c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: transparent;
+            color: var(--text);
+            height: 100vh; width: 100vw;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; user-select: none;
+        }
+
+        .panel {
+            width: 480px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            animation: panelIn 0.25s ease-out;
+        }
+
+        @keyframes panelIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+
+        .header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
+        }
+
+        .header-icon {
+            width: 36px; height: 36px;
+            background: var(--primary-dim);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary); font-size: 15px;
+        }
+
+        .header-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .header-sub   { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+        .close-btn {
+            margin-left: auto;
+            background: none; border: none; cursor: pointer;
+            color: var(--text-dim); font-size: 16px;
+            transition: color 0.15s;
+        }
+        .close-btn:hover { color: #ff4757; }
+
+        .vehicle-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+        .vehicle-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .vehicle-row:hover {
+            background: var(--primary-dim);
+            border-color: rgba(0,168,255,0.5);
+        }
+
+        .vehicle-icon {
+            width: 34px; height: 34px;
+            background: var(--primary-dim);
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary); font-size: 14px; flex-shrink: 0;
+        }
+
+        .vehicle-label { font-size: 13px; font-weight: 700; }
+        .vehicle-model { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+        .spawn-btn {
+            margin-left: auto;
+            background: var(--primary-dim);
+            border: 1px solid rgba(0,168,255,0.4);
+            color: var(--primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px; font-weight: 700;
+            padding: 5px 12px; border-radius: 5px;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: background 0.15s;
+        }
+        .spawn-btn:hover { background: rgba(0,168,255,0.3); }
+
+        .footer {
+            padding: 10px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 10px; color: var(--text-dim);
+            text-align: center; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="header">
+            <div class="header-icon"><i class="fas fa-shield-halved"></i></div>
+            <div>
+                <div class="header-title">LSPD Fleet</div>
+                <div class="header-sub">Select a patrol vehicle</div>
+            </div>
+            <button class="close-btn" onclick="closeMenu()"><i class="fas fa-xmark"></i></button>
+        </div>
+
+        <div class="vehicle-list" id="vehicle-list">
+            <!-- Populated by loadCatalog() -->
+        </div>
+
+        <div class="footer">Press ESC or click × to close</div>
+    </div>
+
+    <script>
+        function loadCatalog(json) {
+            const catalog = JSON.parse(json);
+            const list = document.getElementById('vehicle-list');
+            list.innerHTML = '';
+
+            catalog.forEach(entry => {
+                const row = document.createElement('div');
+                row.className = 'vehicle-row';
+                row.innerHTML = `
+                    <div class="vehicle-icon"><i class="fas fa-car"></i></div>
+                    <div>
+                        <div class="vehicle-label">${entry.label}</div>
+                        <div class="vehicle-model">${entry.model}</div>
+                    </div>
+                    <button class="spawn-btn" onclick="spawnVehicle('${entry.model}')">Spawn</button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function spawnVehicle(model) {
+            if (typeof mp !== 'undefined') {
+                mp.events.call('client:lspd:selectVehicle', model);
+            }
+        }
+
+        function closeMenu() {
+            if (typeof mp !== 'undefined') {
+                mp.events.call('client:lspd:closeGarage');
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMenu();
+        });
+    </script>
+</body>
+</html>

@@ -54,33 +54,34 @@ const DISPATCH_CONFIGS = {
         emptyIcon: 'fas fa-road',
     },
 
-    // ── Template for future factions (LSPD Example) ──────────────────────────
-    // 2: {
-    //     factionId: 2,
-    //     title: 'Police Dispatch',
-    //     subtitle: 'Los Santos Police Dept.',
-    //     accentColor: '#00a8ff',
-    //     icon: 'fas fa-shield-halved',
-    //     callLabel: 'Incident',
-    //     chatTag: '[911]',
-    //     messages: {
-    //         onWay: 'An LSPD unit is responding to your location.',
-    //         arrived: 'Police have arrived at your location.',
-    //         completed: 'The incident has been resolved.',
-    //     },
-    //     columns: [
-    //         { key: 'callerName',   label: 'Caller',    width: '20%' },
-    //         { key: 'location',     label: 'Location',  width: '28%' },
-    //         { key: 'callType',     label: 'Type',      width: '18%' },
-    //         { key: 'distance',     label: 'Distance',  width: '14%' },
-    //         { key: 'waitTime',     label: 'Waiting',   width: '10%' },
-    //         { key: 'action',       label: 'Respond',   width: '10%' },
-    //     ],
-    //     actionButton: { label: 'Respond', icon: 'fas fa-siren', color: 'blue', event: 'dispatch:accept' },
-    //     hud: { icon: 'fas fa-shield-halved', color: '#00a8ff', label: 'Active Call' },
-    //     emptyMessage: 'No active incidents.',
-    //     emptyIcon: 'fas fa-shield-halved',
-    // },
+    // ── LSPD (factionId: 2) ──────────────────────────────────────────────────
+    2: {
+        factionId: 2,
+        title: 'Police Dispatch',
+        subtitle: 'Los Santos Police Dept.',
+        accentColor: '#00a8ff',
+        icon: 'fas fa-shield-halved',
+        callLabel: 'Incident',
+        chatTag: '[911]',
+        messages: {
+            onWay:     'An LSPD unit is responding to your location.',
+            arrived:   'Police have arrived at your location.',
+            completed: 'The incident has been resolved.',
+        },
+        columns: [
+            { key: 'callerName', label: 'Caller',    width: '18%' },
+            { key: 'location',   label: 'Location',  width: '24%' },
+            { key: 'callType',   label: 'Type',      width: '18%' },
+            { key: 'distance',   label: 'Distance',  width: '14%' },
+            { key: 'waitTime',   label: 'Waiting',   width: '12%' },
+            { key: 'action',     label: 'Respond',   width: '14%' },
+        ],
+        actionButton: { label: 'Respond', icon: 'fas fa-shield-halved', color: 'blue', event: 'dispatch:accept' },
+        hud: { icon: 'fas fa-shield-halved', color: '#00a8ff', label: 'Active Call' },
+        emptyMessage: 'No active incidents.',
+        emptyIcon: 'fas fa-shield-halved',
+    },
+
 };
 
 module.exports = DISPATCH_CONFIGS;
