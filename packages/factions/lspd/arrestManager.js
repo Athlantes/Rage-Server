@@ -403,10 +403,12 @@ mp.events.add('playerEnterVehicle', (officer, vehicle, seat) => {
         if (!suspect || !mp.players.exists(suspect)) return;
         if (dist3(officer.position, suspect.position) > 5.0) return;
 
-        // Warp suspect into back seat
+        // Warp suspect into back seat using the dedicated detain event.
+        // The generic warpIntoVehicle doesn't stop the cuff follow tick,
+        // which caused the suspect to be teleported under the map.
         setTimeout(() => {
             if (mp.players.exists(suspect) && mp.vehicles.exists(vehicle)) {
-                suspect.call('client:warpIntoVehicle', [vehicle.id, DETAIN_SEAT]);
+                suspect.call('client:lspd:detainInVehicle', [vehicle.id, DETAIN_SEAT]);
                 suspect.outputChatBox('!{#ff4757}You have been detained in the police vehicle.');
                 officer.outputChatBox(`!{#2ecc71}${suspect.name.replace(/_/g, ' ')} has been detained in your vehicle.`);
                 console.log(`[Arrest] ${suspect.name} auto-detained into officer ${officer.name}'s vehicle.`);

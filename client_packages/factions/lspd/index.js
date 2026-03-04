@@ -123,6 +123,58 @@ mp.events.add('client:lspd:setCuffed', async (isCuffed, officerId) => {
     }
 });
 
+// ── Detain: warp cuffed suspect into police vehicle safely ────────────────────
+// Called by server instead of the generic warpIntoVehicle so we can
+// stop the follow tick and clear the looping cuff animation first.
+mp.events.add('client:lspd:detainInVehicle', (vehId, seat) => {
+    // 1. Stop the follow tick — this is what caused the "under the map" bug.
+    //    The tick runs every 100ms setting local.position to the officer's feet;
+    //    if it fires after setIntoVehicle the Z mismatch drops the player through
+    //    the car floor and into the ground.
+    if (cuffFollowTick) {
+        clearInterval(cuffFollowTick);
+        cuffFollowTick = null;
+    }
+
+    // 2. Clear the looping handcuffed animation so it doesn't fight the vehicle
+    //    enter state. We resume it once seated (500ms grace period).
+    mp.players.local.clearTasks();
+
+    // 3. Warp into the vehicle — retry once if not yet streamed in
+    const doWarp = () => {
+        const veh = mp.vehicles.atRemoteId(vehId);
+        if (!veh || !mp.vehicles.exists(veh)) return false;
+        mp.players.local.setIntoVehicle(veh.handle, seat);
+        return true;
+    };
+
+    if (!doWarp()) {
+        setTimeout(() => {
+            if (!doWarp()) return;
+            // Resume cuff idle anim after seated
+            setTimeout(() => {
+                if (!cuffed) return;
+                loadAnimDict(ANIM_CUFFED.dict).then(() => {
+                    mp.players.local.taskPlayAnim(
+                        ANIM_CUFFED.dict, ANIM_CUFFED.anim,
+                        8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
+                    );
+                });
+            }, 500);
+        }, 300);
+    } else {
+        setTimeout(() => {
+            if (!cuffed) return;
+            loadAnimDict(ANIM_CUFFED.dict).then(() => {
+                mp.players.local.taskPlayAnim(
+                    ANIM_CUFFED.dict, ANIM_CUFFED.anim,
+                    8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
+                );
+            });
+        }, 500);
+    }
+});
+
 // Officer feedback when they cuff someone
 mp.events.add('client:lspd:cuffedSomeone', (suspectId) => {
     // Play cuff animation on officer side too (mirrored)
@@ -178,6 +230,16 @@ mp.events.add('client:lspd:showStopOrderSent', (targetName) => {
 mp.events.add('client:lspd:updateWantedHUD', (wantedType) => {
     // Pass through to overlay browser
     mp.events.call('updateWantedHUD', wantedType);
+});
+
+// ── Relay playerWeaponShot to server for wanted system ────────────────────────
+// RAGE MP fires playerWeaponShot CLIENT-side only; the server handler in
+// wantedManager.js won't trigger unless we forward it here.
+mp.events.add('playerWeaponShot', (targetPosition, targetEntity) => {
+    const targetPlayerId = (targetEntity && targetEntity.type === 'player')
+        ? targetEntity.remoteId
+        : -1;
+    mp.events.callRemote('server:wanted:weaponShot', targetPlayerId);
 });
 
 // ── Cleanup on death: clear animations and cuff state ────────────────────────
