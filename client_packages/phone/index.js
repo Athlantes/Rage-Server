@@ -226,15 +226,15 @@ mp.events.add('client:camera:photoSaved', (filename) => {
 
 mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
     if(phoneBrowser) {
-        const safeBody = message.replace(/'/g, "\\'");
-        const safeTitle = title.replace(/'/g, "\\'");
-        const safeSender = sender.replace(/'/g, "\\'");
+        const safeSender = JSON.stringify(sender);
+        const safeTitle = JSON.stringify(title);
+        const safeBody = JSON.stringify(message);
         
         phoneBrowser.execute(`
             if(typeof app.receiveMail === 'function') {
-                app.receiveMail(${id}, '${safeSender}', '${safeTitle}', '${safeBody}');
+                app.receiveMail(${id}, ${safeSender}, ${safeTitle}, ${safeBody});
             } else {
-                app.receiveNotification('${safeSender}', '${safeTitle}', '${safeBody}');
+                app.receiveNotification(${safeSender}, ${safeTitle}, ${safeBody});
             }
         `);
     }
