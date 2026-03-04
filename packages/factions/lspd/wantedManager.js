@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const db = require('../../core/database');
+const dispatchManager = require('../dispatch/dispatchManager');
 
 // ── Offense Registry ──────────────────────────────────────────────────────────
 const OFFENSES = {
@@ -134,6 +135,17 @@ function applyOffense(suspect, offenseKey, officerId) {
     });
 
     console.log('[Wanted] ' + suspect.name + ' charged with ' + offenseKey + ' (' + offense.type + ') by officer ID ' + officerId);
+
+    // --- NEW: Add a dispatch call so LSPD can track the suspect ---
+    dispatchManager.addCall(2, {
+        callerName: 'Warrant: ' + suspect.name.replace(/_/g, ' '),
+        callerServerId: suspect.id,
+        coords: suspect.position,
+        location: offense.label, // Label replaces normal zone
+        callType: 'Wanted',
+        isWanted: true // Custom flag for dispatch manager
+    });
+
     return true;
 }
 
@@ -203,10 +215,13 @@ setInterval(function() {
 
 mp.events.add('server:dispatch:searchPlayer', function(player, nameQuery) {
     if (player.factionId !== 2) return;
+    if (!nameQuery) return player.call('client:dispatch:searchResult', [null]); // Add this safety check
+    
     var target = null;
     var queryLower = nameQuery.toLowerCase();
+    
     mp.players.forEach(function(p) {
-        if (p.logged && p.name.toLowerCase().includes(queryLower)) target = p;
+        if (p.logged && p.name && p.name.toLowerCase().includes(queryLower)) target = p;
     });
     if (!target) return player.call('client:dispatch:searchResult', [null]);
 
@@ -282,13 +297,15 @@ mp.events.addCommand('so', function(officer, idStr) {
 
 var PD_SHOT_NEAR_RANGE = 100;
 
-mp.events.add('playerWeaponShot', function(player, target, position) {
+// Replace the existing playerWeaponShot event with this:
+mp.events.add('playerWeaponShot', function(player, targetPosition, targetEntity) {
     if (!player.logged) return;
     if (player.factionId === 2) return; // cops shooting is fine
 
     var shotAtOfficer = false;
 
-    if (target && target.type === 'player' && isOfficerOnDuty(target)) {
+    // Fixed 'target' parameter to 'targetEntity'
+    if (targetEntity && targetEntity.type === 'player' && isOfficerOnDuty(targetEntity)) {
         applyOffense(player, 'assaulting_officer', null);
         shotAtOfficer = true;
     }

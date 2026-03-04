@@ -25,7 +25,10 @@ let isDispatchOpen  = false;
 const ride = {
     phase:      0,
     callerName: null,
+    callerId:   null, // Add this
+    isWanted:   false, // Add this
     blip:       null,
+    areaBlip:   null, // Add this
     marker:     null,
     destBlip:   null,
     destMarker: null,
@@ -61,11 +64,14 @@ function clearRideTick() {
 function cleanupRide() {
     clearRideTick();
     destroyBlip(ride.blip);         ride.blip       = null;
+    destroyBlip(ride.areaBlip);     ride.areaBlip   = null; // Add this
     destroyMarker(ride.marker);     ride.marker     = null;
     destroyBlip(ride.destBlip);     ride.destBlip   = null;
     destroyMarker(ride.destMarker); ride.destMarker = null;
     ride.phase      = 0;
     ride.callerName = null;
+    ride.callerId   = null; // Add this
+    ride.isWanted   = false; // Add this
 }
 
 // ── Dispatch menu ─────────────────────────────────────────────────────────────
@@ -128,41 +134,76 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
 
     let data;
     try { data = JSON.parse(dataJson); }
-    catch (e) { console.error('[Taxi] Bad JSON in accepted:', e); return; }
+    catch (e) { console.error('[Dispatch] Bad JSON in accepted:', e); return; }
     if (!data || !data.coords) return;
 
     cleanupRide();
 
     ride.phase      = 1;
     ride.callerName = data.callerName || 'Passenger';
+    ride.callerId   = data.callerServerId;
+    ride.isWanted   = data.isWanted || false;
 
     const pos = new mp.Vector3(data.coords.x, data.coords.y, data.coords.z);
     const dim = mp.players.local.dimension;
 
-    ride.blip = mp.blips.new(280, pos, {
-        name: `Taxi: ${ride.callerName}`, color: 66, scale: 1.0, shortRange: false,
+    // Use police blips for pursuits
+    ride.blip = mp.blips.new(ride.isWanted ? 161 : 280, pos, {
+        name: ride.isWanted ? `Pursuit: ${ride.callerName}` : `Dispatch: ${ride.callerName}`,
+        color: ride.isWanted ? 1 : 66, 
+        scale: 1.0, 
+        shortRange: false,
     });
     ride.blip.setRoute(true);
 
+    // Create tracking radius exclusively for pursuits
+    if (ride.isWanted) {
+        ride.areaBlip = mp.blips.new(4, pos, {
+            name: 'Search Area',
+            color: 1,
+            alpha: 100,
+            radius: 75.0 // Sets area radius
+        });
+    }
+
     ride.marker = mp.markers.new(1,
-        new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.5,
-        { color: [255, 204, 0, 200], visible: true, dimension: dim }
+        new mp.Vector3(pos.x, pos.y, pos.z - 1.0), ride.isWanted ? 3.0 : 1.5,
+        { color: ride.isWanted ? [255, 50, 50, 200] : [255, 204, 0, 200], visible: true, dimension: dim }
     );
 
-    notify('Taxi Dispatch', `Picking up ${ride.callerName}`);
+    notify('Dispatch', ride.isWanted ? `Tracking wanted suspect: ${ride.callerName}` : `Responding to ${ride.callerName}`);
 
     ride.tick = setInterval(() => {
         if (ride.phase !== 1) { clearRideTick(); return; }
-        if (dist3(mp.players.local.position, pos) <= 10.0) {
+        
+        let targetPos = pos;
+        
+        // Dynamically update the blip/area position if tracking a player
+        if (ride.isWanted && ride.callerId != null) {
+            const targetPlayer = mp.players.atRemoteId(ride.callerId);
+            if (targetPlayer && mp.players.exists(targetPlayer)) {
+                targetPos = targetPlayer.position;
+                if (ride.blip) ride.blip.position = targetPos;
+                if (ride.areaBlip) ride.areaBlip.position = targetPos;
+                if (ride.marker) ride.marker.position = new mp.Vector3(targetPos.x, targetPos.y, targetPos.z - 1.0);
+            }
+        }
+
+        if (dist3(mp.players.local.position, targetPos) <= (ride.isWanted ? 20.0 : 10.0)) {
             clearRideTick();
-            notify('Taxi', `You have arrived at ${ride.callerName}'s location.`);
+            notify('Dispatch', `You have arrived at ${ride.callerName}'s location.`);
             mp.events.callRemote('server:dispatch:driverArrived');
 
             destroyBlip(ride.blip);     ride.blip   = null;
+            destroyBlip(ride.areaBlip); ride.areaBlip = null;
             destroyMarker(ride.marker); ride.marker = null;
 
-            ride.phase = 2;
-            notify('Taxi', `Wait for ${ride.callerName} to get in`);
+            if (ride.isWanted) {
+                ride.phase = 0; // Chase concludes here
+            } else {
+                ride.phase = 2;
+                notify('Dispatch', `Wait for ${ride.callerName} to get in`);
+            }
         }
     }, 500);
 });
@@ -354,8 +395,9 @@ mp.events.add('client:dispatch:triggerSearch', (nameQuery) => {
 
 // Receive the search result from the server and send it to the UI
 mp.events.add('client:dispatch:searchResult', (profileDataJson) => {
-    if (dispatchBrowser) { // Replace 'dispatchBrowser' with the actual variable name of your UI browser!
-        dispatchBrowser.execute(`showProfile('${profileDataJson}')`);
+    if (dispatchBrowser) {
+        // We use JSON.stringify to safely format quotes and characters coming from the backend
+        dispatchBrowser.execute(`showProfile(${JSON.stringify(profileDataJson)})`);
     }
 });
 

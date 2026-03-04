@@ -40,6 +40,7 @@ class DispatchManager {
             destLocation:   callData.destLocation   || null,
             fare:           callData.fare           || 0,
             distKm:         callData.distKm         || 0,
+            isWanted:       callData.isWanted       || false
         };
 
         this.calls.get(factionId).set(callId, call);
@@ -106,10 +107,12 @@ class DispatchManager {
             callerName: call.callerName,
             coords:     call.coords,
             location:   call.location,
+            callerServerId: call.callerServerId, 
+            isWanted:   call.isWanted // Add this line
         })]);
 
         // Generic Caller Notification
-        if (call.callerServerId !== null) {
+        if (call.callerServerId !== null && !call.isWanted) {
             const caller = mp.players.at(call.callerServerId);
             if (caller && mp.players.exists(caller)) {
                 // E.g. "[TAXI] A taxi driver is on the way to you!" or "[911] An officer is responding."
@@ -178,7 +181,7 @@ class DispatchManager {
             this._broadcastToFaction(factionId);
 
             // Notify the caller their call expired
-            if (call.callerServerId !== null) {
+            if (call.callerServerId !== null && !call.isWanted) {
                 const caller = mp.players.at(call.callerServerId);
                 if (caller && mp.players.exists(caller)) {
                     const config = DISPATCH_CONFIGS[factionId];
