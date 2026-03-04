@@ -46,7 +46,6 @@ class DispatchManager {
         this.calls.get(factionId).set(callId, call);
         console.log(`[Dispatch] New call #${callId} for faction ${factionId} — ${call.callerName} @ ${call.location}`);
 
-        // --- Generic Chat Notification for all on-duty faction members ---
         const config = DISPATCH_CONFIGS[factionId];
         const color = config.accentColor || '#ffffff'; 
         
@@ -58,8 +57,11 @@ class DispatchManager {
 
         this._broadcastToFaction(factionId);
 
-        // Fix 2: Auto-expire this call after 5 minutes if no driver accepts
-        this.scheduleCallExpiry(factionId, callId, 5 * 60 * 1000);
+        // Fix 2: Auto-expire this call after 5 minutes if no driver accepts 
+        // For wanted calls, we don't automatically expire it (waiting for clear level instead)
+        if (!call.isWanted) {
+            this.scheduleCallExpiry(factionId, callId, 5 * 60 * 1000);
+        }
 
         return call;
     }
@@ -78,28 +80,29 @@ class DispatchManager {
             return;
         }
 
-        if (call.acceptedBy !== null) {
+        if (call.acceptedBy !== null && !call.isWanted) {
             driver.call('client:dispatch:error', ['This call was just taken by someone else.']);
             return;
         }
 
-        call.acceptedBy = driver.id;
-        factionCalls.delete(callId);
+        if (!call.isWanted) {
+            call.acceptedBy = driver.id;
+            factionCalls.delete(callId);
+        }
 
-        // Register active assignment so server knows who's going where
         this.activeAssignments.set(driver.id, {
             callId,
-            factionId, // Track the faction so modules (like taxi) know if it's theirs
+            factionId,
             callerServerId: call.callerServerId,
             callerName:     call.callerName,
             coords:         call.coords,
-            phase:          1,   // starts at 1 (en-route to caller)
+            phase:          1,   
             driverVehicleId: driver.vehicle ? driver.vehicle.id : null,
-            // Extended taxi data
             destCoords:     call.destCoords || null,
             destLocation:   call.destLocation || null,
             fare:           call.fare || 0,
             distKm:         call.distKm || 0,
+            isWanted:       call.isWanted || false
         });
 
         driver.call('client:dispatch:accepted', [JSON.stringify({
@@ -108,19 +111,16 @@ class DispatchManager {
             coords:     call.coords,
             location:   call.location,
             callerServerId: call.callerServerId, 
-            isWanted:   call.isWanted // Add this line
+            isWanted:   call.isWanted
         })]);
 
-        // Generic Caller Notification
         if (call.callerServerId !== null && !call.isWanted) {
             const caller = mp.players.at(call.callerServerId);
             if (caller && mp.players.exists(caller)) {
-                // E.g. "[TAXI] A taxi driver is on the way to you!" or "[911] An officer is responding."
                 caller.outputChatBox(`!{${config.accentColor || '#ffffff'}}${config.chatTag || '[DISPATCH]'} !{#ffffff}${config.messages.onWay}`);
             }
         }
 
-        // Hook: Notify taxi phone app when driver accepts
         if (factionId === 1) {
             try {
                 const taxiCommand = require('../taxi/taxiCommand');

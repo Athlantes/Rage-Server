@@ -164,12 +164,13 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
             alpha: 100,
             radius: 75.0 // Sets area radius
         });
+        // We INTENTIONALLY don't give a huge red marker on the ground for wanted suspects
+    } else {
+        ride.marker = mp.markers.new(1,
+            new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 1.5,
+            { color: [255, 204, 0, 200], visible: true, dimension: dim }
+        );
     }
-
-    ride.marker = mp.markers.new(1,
-        new mp.Vector3(pos.x, pos.y, pos.z - 1.0), ride.isWanted ? 3.0 : 1.5,
-        { color: ride.isWanted ? [255, 50, 50, 200] : [255, 204, 0, 200], visible: true, dimension: dim }
-    );
 
     notify('Dispatch', ride.isWanted ? `Tracking wanted suspect: ${ride.callerName}` : `Responding to ${ride.callerName}`);
 
@@ -185,22 +186,20 @@ mp.events.add('client:dispatch:accepted', (dataJson) => {
                 targetPos = targetPlayer.position;
                 if (ride.blip) ride.blip.position = targetPos;
                 if (ride.areaBlip) ride.areaBlip.position = targetPos;
-                if (ride.marker) ride.marker.position = new mp.Vector3(targetPos.x, targetPos.y, targetPos.z - 1.0);
             }
-        }
+            
+            // Skip the distance arrival check for `isWanted` runs. This loop continues
+            // until the player goes to jail/dies which forcibly trips `cancelAssignment`
+            
+        } else {
+            if (dist3(mp.players.local.position, targetPos) <= 10.0) {
+                clearRideTick();
+                notify('Dispatch', `You have arrived at ${ride.callerName}'s location.`);
+                mp.events.callRemote('server:dispatch:driverArrived');
 
-        if (dist3(mp.players.local.position, targetPos) <= (ride.isWanted ? 20.0 : 10.0)) {
-            clearRideTick();
-            notify('Dispatch', `You have arrived at ${ride.callerName}'s location.`);
-            mp.events.callRemote('server:dispatch:driverArrived');
+                destroyBlip(ride.blip);     ride.blip   = null;
+                destroyMarker(ride.marker); ride.marker = null;
 
-            destroyBlip(ride.blip);     ride.blip   = null;
-            destroyBlip(ride.areaBlip); ride.areaBlip = null;
-            destroyMarker(ride.marker); ride.marker = null;
-
-            if (ride.isWanted) {
-                ride.phase = 0; // Chase concludes here
-            } else {
                 ride.phase = 2;
                 notify('Dispatch', `Wait for ${ride.callerName} to get in`);
             }

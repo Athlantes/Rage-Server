@@ -803,21 +803,8 @@
         const COOLDOWN_CONFIG = {
             'dumpster': { label: 'Dumpster', icon: 'fas fa-trash' },
 
-            // ── RoS Wanted (cuffs icon) ───────────────────────────────────
-            'speeding':              { label: 'Speeding',             icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'reckless_driving':      { label: 'Reckless Driving',     icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'trespassing':           { label: 'Trespassing',          icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'petty_theft':           { label: 'Petty Theft',          icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'drug_possession':       { label: 'Drug Possession',      icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'public_disturbance':    { label: 'Public Disturbance',   icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'robbery':               { label: 'Robbery',              icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'vehicle_theft':         { label: 'Vehicle Theft',        icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'shooting_near_pd':      { label: 'Shooting',             icon: 'fas fa-handcuffs', color: '#ffc300' },
-
-            // ── NoS Wanted (skull icon) ───────────────────────────────────
-            'assaulting_officer':    { label: 'Assault on Officer',   icon: 'fas fa-skull',     color: '#ff4757' },
-            'murder':                { label: 'Murder',               icon: 'fas fa-skull',     color: '#ff4757' },
-            'armed_robbery':         { label: 'Armed Robbery',        icon: 'fas fa-skull',     color: '#ff4757' },
+            'wanted_ros': { label: 'Wanted', icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'wanted_nos': { label: 'No Surrender', icon: 'fas fa-skull', color: '#ff4757' },
         };
 
         function updateCooldowns(json) {

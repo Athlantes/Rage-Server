@@ -1,22 +1,8 @@
 // packages/factions/lspd/wantedManager.js
-// ─────────────────────────────────────────────────────────────────────────────
-// Wanted system with TWO states only:
-//
-//   RoS (Right of Surrender) — suspect can /surrender, then be /cuff'd
-//   NoS (No Surrender)       — no surrender; dying clears NoS
-//
-// Officers give wanted via MDT dropdown (RoS only from MDT).
-// Auto-applied:
-//   • shooting_near_pd  (RoS) — shooting within 100m of on-duty officer
-//   • assaulting_officer (NoS) — directly shooting an on-duty officer
-// ─────────────────────────────────────────────────────────────────────────────
-
 const db = require('../../core/database');
 const dispatchManager = require('../dispatch/dispatchManager');
 
-// ── Offense Registry ──────────────────────────────────────────────────────────
 const OFFENSES = {
-    // RoS — officers can assign via MDT
     speeding:              { label: 'Speeding',               type: 'RoS', duration: 5  * 60 },
     reckless_driving:      { label: 'Reckless Driving',       type: 'RoS', duration: 8  * 60 },
     trespassing:           { label: 'Trespassing',            type: 'RoS', duration: 6  * 60 },
@@ -25,27 +11,19 @@ const OFFENSES = {
     public_disturbance:    { label: 'Public Disturbance',     type: 'RoS', duration: 5  * 60 },
     robbery:               { label: 'Robbery',                type: 'RoS', duration: 12 * 60 },
     vehicle_theft:         { label: 'Vehicle Theft',          type: 'RoS', duration: 10 * 60 },
-    // RoS — system-applied only
     shooting_near_pd:      { label: 'Shooting',               type: 'RoS', duration: 10 * 60 },
-    // NoS — system-applied only
     assaulting_officer:    { label: 'Assaulting an Officer',  type: 'NoS', duration: 20 * 60 },
     murder:                { label: 'Murder',                 type: 'NoS', duration: 20 * 60 },
     armed_robbery:         { label: 'Armed Robbery',          type: 'NoS', duration: 15 * 60 },
 };
 
-// MDT dropdown list — RoS only, no system-only entries
 const MDT_OFFENSES = Object.entries(OFFENSES)
     .filter(([key, v]) => v.type === 'RoS' && key !== 'shooting_near_pd')
     .map(([key, v]) => ({ key, label: v.label, duration: Math.floor(v.duration / 60) }));
 
-// ── In-memory wanted state ────────────────────────────────────────────────────
 const wantedPlayers = new Map();
-
-// ── /so cooldown ──────────────────────────────────────────────────────────────
 const stopOrderCooldowns = new Map();
 const STOP_ORDER_COOLDOWN = 30 * 1000;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getWanted(player) {
     return wantedPlayers.get(player.id) || new Map();
@@ -78,9 +56,25 @@ function buildCooldownPayload(player) {
     const entries = getWanted(player);
     const now = Date.now();
     const payload = {};
-    for (const [instanceKey, entry] of entries.entries()) {
-        if (entry.expiresAt > now) payload[instanceKey] = entry.expiresAt;
+    let maxRoS = 0;
+    let maxNoS = 0;
+
+    for (const entry of entries.values()) {
+        if (entry.expiresAt > now) {
+            if (entry.type === 'NoS') {
+                if (entry.expiresAt > maxNoS) maxNoS = entry.expiresAt;
+            } else {
+                if (entry.expiresAt > maxRoS) maxRoS = entry.expiresAt;
+            }
+        }
     }
+
+    if (maxNoS > now) {
+        payload['wanted_nos'] = maxNoS;
+    } else if (maxRoS > now) {
+        payload['wanted_ros'] = maxRoS;
+    }
+
     return payload;
 }
 
@@ -101,7 +95,22 @@ function isOfficerOnDuty(player) {
     return player.logged && player.factionId === 2 && player.getVariable('factionDuty');
 }
 
-// ── Apply an offense ──────────────────────────────────────────────────────────
+function clearWantedDispatch(suspectId) {
+    if (dispatchManager.calls.has(2)) {
+        const calls = dispatchManager.calls.get(2);
+        for (const [callId, call] of calls.entries()) {
+            if (call.isWanted && call.callerServerId === suspectId) {
+                calls.delete(callId);
+            }
+        }
+        dispatchManager._broadcastToFaction(2);
+    }
+    dispatchManager.activeAssignments.forEach((assignment, driverId) => {
+        if (assignment.factionId === 2 && assignment.callerServerId === suspectId && assignment.isWanted) {
+            dispatchManager.cancelAssignment(driverId, 'Suspect wanted status cleared.');
+        }
+    });
+}
 
 function applyOffense(suspect, offenseKey, officerId) {
     const offense = OFFENSES[offenseKey];
@@ -119,11 +128,9 @@ function applyOffense(suspect, offenseKey, officerId) {
     entries.set(offenseKey, { offenseKey, expiresAt, type: offense.type, label: offense.label });
     syncHUD(suspect);
 
-    const typeTag = offense.type === 'NoS'
-        ? '!{#ff4757}[WANTED - NO SURRENDER]'
-        : '!{#ffc300}[WANTED - SURRENDER]';
-
+    const typeTag = offense.type === 'NoS' ? '!{#ff4757}[WANTED - NO SURRENDER]' : '!{#ffc300}[WANTED - SURRENDER]';
     suspect.outputChatBox(typeTag + ' !{#ffffff}You are wanted for: ' + offense.label + '.');
+    
     if (offense.type === 'RoS') {
         suspect.outputChatBox('!{#ffc300}Use /surrender near a police officer to give yourself up.');
     }
@@ -136,15 +143,25 @@ function applyOffense(suspect, offenseKey, officerId) {
 
     console.log('[Wanted] ' + suspect.name + ' charged with ' + offenseKey + ' (' + offense.type + ') by officer ID ' + officerId);
 
-    // --- NEW: Add a dispatch call so LSPD can track the suspect ---
-    dispatchManager.addCall(2, {
-        callerName: 'Warrant: ' + suspect.name.replace(/_/g, ' '),
-        callerServerId: suspect.id,
-        coords: suspect.position,
-        location: offense.label, // Label replaces normal zone
-        callType: 'Wanted',
-        isWanted: true // Custom flag for dispatch manager
-    });
+    let hasCall = false;
+    if (dispatchManager.calls.has(2)) {
+        for (const call of dispatchManager.calls.get(2).values()) {
+            if (call.isWanted && call.callerServerId === suspect.id) {
+                hasCall = true; break;
+            }
+        }
+    }
+    
+    if (!hasCall) {
+        dispatchManager.addCall(2, {
+            callerName: 'Warrant: ' + suspect.name.replace(/_/g, ' '),
+            callerServerId: suspect.id,
+            coords: suspect.position,
+            location: offense.label,
+            callType: 'Wanted',
+            isWanted: true
+        });
+    }
 
     return true;
 }
@@ -156,6 +173,10 @@ function clearOffense(suspect, offenseKey) {
             entries.delete(instanceKey);
         }
     }
+    if (entries.size === 0) {
+        wantedPlayers.delete(suspect.id);
+        clearWantedDispatch(suspect.id);
+    }
     syncHUD(suspect);
 }
 
@@ -166,6 +187,7 @@ function clearAllWanted(suspect, reason) {
         syncHUD(suspect);
         suspect.outputChatBox('!{#2ecc71}[WANTED] Your wanted status has been cleared (' + reason + ').');
     }
+    clearWantedDispatch(suspect.id);
 }
 
 function clearNoSOnDeath(suspect) {
@@ -176,12 +198,14 @@ function clearNoSOnDeath(suspect) {
         if (entry.type === 'NoS') { entries.delete(instanceKey); cleared++; }
     }
     if (cleared > 0) {
+        if (entries.size === 0) {
+            wantedPlayers.delete(suspect.id);
+            clearWantedDispatch(suspect.id);
+        }
         syncHUD(suspect);
         suspect.outputChatBox('!{#888888}[WANTED] Your NoS offenses were cleared by death.');
     }
 }
-
-// ── Expire timers ─────────────────────────────────────────────────────────────
 
 setInterval(function() {
     var now = Date.now();
@@ -204,18 +228,19 @@ setInterval(function() {
             }
         }
         if (anyExpired) {
-            if (entries.size === 0) wantedPlayers.delete(playerId);
+            if (entries.size === 0) {
+                wantedPlayers.delete(playerId);
+                clearWantedDispatch(playerId);
+            }
             var player = mp.players.at(playerId);
             if (player && mp.players.exists(player)) syncHUD(player);
         }
     });
 }, 30 * 1000);
 
-// ── MDT: Search Player ────────────────────────────────────────────────────────
-
 mp.events.add('server:dispatch:searchPlayer', function(player, nameQuery) {
     if (player.factionId !== 2) return;
-    if (!nameQuery) return player.call('client:dispatch:searchResult', [null]); // Add this safety check
+    if (!nameQuery) return player.call('client:dispatch:searchResult', [null]);
     
     var target = null;
     var queryLower = nameQuery.toLowerCase();
@@ -242,8 +267,6 @@ mp.events.add('server:dispatch:searchPlayer', function(player, nameQuery) {
     player.call('client:dispatch:searchResult', [JSON.stringify(profileData)]);
 });
 
-// ── MDT: Apply Wanted ────────────────────────────────────────────────────────
-
 mp.events.add('server:dispatch:applyWanted', function(player, targetId, offenseKey) {
     if (player.factionId !== 2) return;
 
@@ -261,8 +284,6 @@ mp.events.add('server:dispatch:applyWanted', function(player, targetId, offenseK
         player.outputChatBox('!{#2ecc71}[MDT] Wanted applied to ' + target.name.replace(/_/g, ' ') + ': ' + offense.label);
     }
 });
-
-// ── /so [id] — Stop Order ─────────────────────────────────────────────────────
 
 mp.events.addCommand('so', function(officer, idStr) {
     if (!isOfficerOnDuty(officer)) return officer.outputChatBox('!{#ff4757}You must be on duty to use this.');
@@ -293,15 +314,11 @@ mp.events.addCommand('so', function(officer, idStr) {
     officer.call('client:lspd:showStopOrderSent', [targetName]);
 });
 
-// ── Weapon shot near PD / shot at PD officer ───────────────────────────────────
-
 var PD_SHOT_NEAR_RANGE = 100;
 
-// Client relays playerWeaponShot via 'server:wanted:weaponShot'
-// (RAGE MP only fires playerWeaponShot client-side, not server-side)
 mp.events.add('server:wanted:weaponShot', function(player, targetPlayerId) {
     if (!player.logged) return;
-    if (player.factionId === 2) return; // cops shooting is fine
+    if (player.factionId === 2) return; 
 
     var shotAtOfficer = false;
 
@@ -325,11 +342,10 @@ mp.events.add('server:wanted:weaponShot', function(player, targetPlayerId) {
     }
 });
 
-// ── Cleanup ───────────────────────────────────────────────────────────────────
-
 mp.events.add('playerQuit', function(player) {
     wantedPlayers.delete(player.id);
     stopOrderCooldowns.delete(player.id);
+    clearWantedDispatch(player.id);
 });
 
 mp.events.add('playerDeath', function(player) {
