@@ -540,6 +540,14 @@ async function awardRaceXP(race, winner) {
         let raceWins   = u.race_wins || 0;
         let raceLosses = u.race_losses || 0;
 
+        // ── Daily XP Tracking (Required for DB Save) ──
+        const today = new Date().toISOString().split('T')[0];
+        let dailyXp = 0;
+        if (u.daily_race_xp_date) {
+            const dbDate = new Date(u.daily_race_xp_date).toISOString().split('T')[0];
+            if (dbDate === today) dailyXp = u.daily_race_xp || 0;
+        }
+
         // ── Same opponent cooldown ──
         if (u.last_race_opponent === opponentId && u.last_race_opponent_time) {
             const lastTime = new Date(u.last_race_opponent_time).getTime();
