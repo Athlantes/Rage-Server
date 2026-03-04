@@ -15,10 +15,10 @@ class LSPDFaction extends Faction {
         );
 
         this.hq = {
-            exterior: new mp.Vector3(428.3, -984.1, 30.7),
-            interior: new mp.Vector3(441.6, -990.8, 30.7),
-            dutyPoint: new mp.Vector3(443.0, -990.0, 30.7),
-            wardrobePoint: new mp.Vector3(446.8, -987.9, 30.7),
+            exterior: new mp.Vector3(433.79, -981.88, 30.71),
+            interior: new mp.Vector3(435.79, -981.97, 30.70),
+            dutyPoint: new mp.Vector3(435.79, -981.97, 30.70),
+            wardrobePoint: new mp.Vector3(451.42, -991.91, 30.69),
             dimension: 102,
         };
 
