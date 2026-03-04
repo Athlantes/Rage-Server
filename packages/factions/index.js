@@ -8,6 +8,7 @@ require('./wardrobe/index');
 
 // 3. Load all your factions here
 require('./taxi/index');
+require('./lspd/index');
 
 // 4. Load dispatch system (after all factions are registered)
 require('./dispatch/index');
