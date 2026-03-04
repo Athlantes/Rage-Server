@@ -263,17 +263,32 @@
         /* --- INTERACTION --- */
         .inter-box {
             position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-            display: none; align-items: center; gap: 10px;
+            display: none; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .inter-row {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .inter-sep {
+            width: 60px; height: 1px; background: rgba(255,255,255,0.12); margin: 0 auto;
         }
         .inter-key {
-            width: 30px; height: 30px; background: white; color: #000;
-            border-radius: 50%; font-weight: 800; font-size: 14px;
+            min-width: 30px; height: 30px; padding: 0 8px;
+            background: white; color: #000;
+            border-radius: 6px; font-weight: 800; font-size: 13px;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+            box-shadow: 0 0 12px rgba(255,255,255,0.4);
+        }
+        .inter-key.accent {
+            background: var(--danger); color: #fff;
+            box-shadow: 0 0 12px rgba(255,71,87,0.5);
+        }
+        .inter-key.pd {
+            background: var(--primary); color: #fff;
+            box-shadow: 0 0 12px rgba(0,168,255,0.5);
         }
         .inter-lbl {
-            font-size: 14px; font-weight: 800; color: white;
-            text-transform: uppercase; letter-spacing: 1px;
+            font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9);
+            text-transform: uppercase; letter-spacing: 0.8px;
         }
 
         /* --- HOTBAR --- */
@@ -688,7 +703,7 @@
     </div>
 
     <div id="notif-stack"></div>
-    <div class="inter-box" id="interaction"><div class="inter-key">E</div><div class="inter-lbl" id="inter-text">INTERACT</div></div>
+    <div class="inter-box" id="interaction"><div id="inter-rows"></div></div>
     <div class="hotbar" id="pop-hotbar"></div>
     <div class="zone-text" id="zone-status"><span id="zone-label">ZONE</span></div>
 
@@ -791,10 +806,10 @@
 
         // Map internal keys to Display Name & Icon
         const COOLDOWN_CONFIG = {
-            'dumpster': { label: 'Dumpster', icon: 'fas fa-trash' },
-
-            'wanted_ros': { label: 'Wanted', icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'wanted_nos': { label: 'No Surrender', icon: 'fas fa-skull', color: '#ff4757' },
+            'dumpster':        { label: 'Dumpster',         icon: 'fas fa-trash' },
+            'skimmer_collect': { label: 'Collect Skimmer',  icon: 'fas fa-microchip', color: '#f0c400' },
+            'wanted_ros':      { label: 'Wanted',           icon: 'fas fa-handcuffs', color: '#ffc300' },
+            'wanted_nos':      { label: 'No Surrender',     icon: 'fas fa-skull',     color: '#ff4757' },
         };
 
         function updateCooldowns(json) {
@@ -1005,13 +1020,36 @@
             });
         }
 
-        function setInteraction(visible, title, text) {
-            const box = document.getElementById('interaction');
-            if(visible) {
-                const raw = title ? `${title}: ${text}` : text;
-                document.getElementById('inter-text').innerHTML = parseColorCodes(raw);
-                box.style.display = 'flex';
-            } else { box.style.display = 'none'; }
+        function setInteraction(visible, titleOrActions, legacyText) {
+            const box    = document.getElementById('interaction');
+            const rowsEl = document.getElementById('inter-rows');
+            if (!visible) { box.style.display = 'none'; rowsEl.innerHTML = ''; return; }
+
+            rowsEl.innerHTML = '';
+
+            // Multi-key path: first arg is a JSON array string
+            let actions = null;
+            try { const p = JSON.parse(titleOrActions); if (Array.isArray(p)) actions = p; } catch(e) {}
+
+            if (actions) {
+                actions.forEach((action, i) => {
+                    if (i > 0) { const sep = document.createElement('div'); sep.className = 'inter-sep'; rowsEl.appendChild(sep); }
+                    const row = document.createElement('div');
+                    row.className = 'inter-row';
+                    let keyClass = 'inter-key' + (action.accent ? ' accent' : '') + (action.pd ? ' pd' : '');
+                    row.innerHTML = '<div class="' + keyClass + '">' + action.key + '</div><div class="inter-lbl">' + action.label + '</div>';
+                    rowsEl.appendChild(row);
+                });
+            } else {
+                // Legacy single-key path — fully backwards compatible
+                const raw = titleOrActions ? titleOrActions + ': ' + (legacyText || '') : (legacyText || '');
+                const row = document.createElement('div');
+                row.className = 'inter-row';
+                row.innerHTML = '<div class="inter-key">E</div><div class="inter-lbl">' + parseColorCodes(raw) + '</div>';
+                rowsEl.appendChild(row);
+            }
+
+            box.style.display = 'flex';
         }
 
         function setGameHUD(visible) {

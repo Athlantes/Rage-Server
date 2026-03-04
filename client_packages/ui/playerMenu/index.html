@@ -1640,6 +1640,31 @@
                                 </div>
                                 <div class="progress-track"><div class="progress-fill blue" id="xp-fill"></div></div>
                             </div>
+                            <div class="sec-xp-row" style="margin-top:8px;">
+                                <div class="sec-xp-top">
+                                    <span class="sec-xp-label" style="display:flex;align-items:center;gap:6px;">
+                                        <i class="fas fa-eye" style="font-size:10px;color:#ff4757;"></i>
+                                        Exposure
+                                    </span>
+                                    <span class="sec-xp-val" id="exposure-val-wrap">
+                                        <span id="exposure-val">0</span>
+                                        <span style="color:var(--text-muted);font-weight:400;"> / 100</span>
+                                    </span>
+                                </div>
+                                <div class="progress-track">
+                                    <div id="exposure-fill" style="
+                                        height:100%;
+                                        width:0%;
+                                        border-radius:6px;
+                                        background:linear-gradient(90deg,#2ecc71,#27ae60);
+                                        box-shadow:0 0 8px rgba(46,204,113,0.4);
+                                        transition:width 0.6s ease, background 0.4s ease, box-shadow 0.4s ease;
+                                    "></div>
+                                </div>
+                                <div id="exposure-hint" style="margin-top:4px;font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                    Clean — can rob freely.
+                                </div>
+                            </div>
                             <div class="sec-row">
                                 <div class="sec-row-left"><span class="sec-row-icon"><i class="fas fa-clock"></i></span><span class="sec-row-label">Online Time</span></div>
                                 <span class="sec-row-val" id="hours-played">0h</span>
@@ -2197,6 +2222,10 @@
         document.getElementById('inv-weight').innerText = s.weight.toFixed(1);
         document.getElementById('inv-max').innerText = s.maxWeight.toFixed(1);
         document.getElementById('weight-fill').style.width = Math.min(100, (s.weight / s.maxWeight) * 100) + '%';
+
+        if (data.exposure !== undefined) {
+          updateExposureUI(data.exposure, data.exposureThreshold || 39);
+        }
 
         // Extra info tiles
         if (data.hoursPlayed !== undefined) {
@@ -3152,6 +3181,43 @@
 
         mp.trigger('client:family:create', JSON.stringify({ name, tag: rawTag, color, description: desc, ranks }));
         closeFamModal();
+    }
+
+    function updateExposureUI(value, threshold) {
+        threshold = threshold || 39;
+        const val  = Math.max(0, Math.min(100, Math.round(value)));
+        const fill = document.getElementById('exposure-fill');
+        const lbl  = document.getElementById('exposure-val');
+        const hint = document.getElementById('exposure-hint');
+        if (!fill || !lbl || !hint) return;
+
+        lbl.innerText = val;
+        fill.style.width = val + '%';
+
+        const canRob  = val <= threshold;
+        const minsLeft = canRob ? 0 : Math.ceil((val - threshold) * 1.5);
+
+        if (val === 0) {
+            fill.style.background  = 'linear-gradient(90deg,#2ecc71,#27ae60)';
+            fill.style.boxShadow   = '0 0 8px rgba(46,204,113,0.4)';
+            hint.style.color       = 'var(--text-muted)';
+            hint.innerHTML         = '<i class="fas fa-circle-check" style="color:#2ecc71"></i> Clean — can install skimmer.';
+        } else if (canRob) {
+            fill.style.background  = 'linear-gradient(90deg,#f0c400,#e67e22)';
+            fill.style.boxShadow   = '0 0 8px rgba(240,196,0,0.35)';
+            hint.style.color       = '#f0c400';
+            hint.innerHTML         = '<i class="fas fa-circle-check"></i> Exposure low — can still operate.';
+        } else {
+            fill.style.background  = 'linear-gradient(90deg,#ff4757,#c0392b)';
+            fill.style.boxShadow   = '0 0 10px rgba(255,71,87,0.5)';
+            hint.style.color       = '#ff4757';
+            hint.innerHTML         = `<i class="fas fa-ban"></i> Too hot — lay low for ~${minsLeft} min.`;
+        }
+    }
+
+    // Called from client-side when server pushes a live update
+    function exposureUpdate(value) {
+        updateExposureUI(parseInt(value), 39);
     }
 </script>
 </body>

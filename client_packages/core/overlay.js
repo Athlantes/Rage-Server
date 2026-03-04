@@ -132,12 +132,17 @@ mp.events.add('showNotification', (title, message) => {
     if(overlayBrowser) overlayBrowser.execute(`showNotification(${JSON.stringify(title)}, ${JSON.stringify(message)})`);
 });
 
-mp.events.add('showInteraction', (title, text) => {
-    if(overlayBrowser) overlayBrowser.execute(`setInteraction(true, ${JSON.stringify(title)}, ${JSON.stringify(text)})`);
+mp.events.add('showInteraction', (titleOrActions, text) => {
+    if (!overlayBrowser) return;
+    if (Array.isArray(titleOrActions)) {
+        overlayBrowser.execute(`setInteraction(true, ${JSON.stringify(JSON.stringify(titleOrActions))})`);
+    } else {
+        overlayBrowser.execute(`setInteraction(true, ${JSON.stringify(titleOrActions)}, ${JSON.stringify(text || '')})`);
+    }
 });
 
 mp.events.add('hideInteraction', () => {
-    if(overlayBrowser) overlayBrowser.execute(`setInteraction(false, '', '')`);
+    if(overlayBrowser) overlayBrowser.execute(`setInteraction(false)`);
 });
 
 mp.events.add('client:setHUDVisible', (visible) => {

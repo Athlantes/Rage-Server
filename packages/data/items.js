@@ -126,6 +126,17 @@ module.exports = {
         data: { componentId: 11, drawable: 1, texture: 0, torso: 15 }
     },
 
+    // --- ROB ITEMS ---
+    "skimmer_device": {
+        name: "Skimmer Device",
+        type: "tool",
+        weight: 0.3,
+        isEquippable: false,
+        maxStack: 3,
+        icon: "skimmer_device.png",
+        data: { useFor: "atm_skimmer" }
+    },
+
     // --- WEAPONS (Allowed in Fast Slots) ---
     "pistol": {
         name: "Pistol .50",

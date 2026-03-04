@@ -1,4 +1,3 @@
-
 require('./houseManager');
 require('./familyManager');
 require('./familyCommands');
@@ -7,6 +6,7 @@ require('./dumpster');
 require('./returo');
 require('./fuel');
 require('./atm');
+require('./atmSkimmer');
 require('./charCreator');
 require('./scooter');
 require('./photoHunt/photoHuntManager');

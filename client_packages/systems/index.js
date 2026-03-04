@@ -6,4 +6,5 @@ require('./inventory.js');
 require('./zones.js');
 require('./questTracker.js');
 require('./atm.js');
+require('./atmSkimmer.js');
 require('./cablecar.js');

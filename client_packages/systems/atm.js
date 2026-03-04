@@ -122,6 +122,54 @@ let lastInteractionState = false;
 let atmBrowser = null;
 let createdBlips = false;
 
+// Robbable ATM indices — must match atmSkimmer.js
+const ROBBABLE_ATM_INDICES_SET =  new Set([
+    1,   // Downtown
+    4,   // LSIA area
+    11,  // Elysian Island
+    23,  // Strawberry Ave
+    25,  // Legion Square
+    30,  // Vinewood
+    34,  // Richman
+    40, // Del Perro
+    44,  // Morningwood
+    50,  // Alta St
+    55,  // Davis
+    60,  // Burton
+    62,  // Vespucci
+    66, // Hawick
+    70,  // Rockford Hills
+    74,  // La Mesa
+    78,  // Rancho
+    81, // Murrieta Heights
+    85,  // Paleto Bay
+    88,  // Sandy Shores
+    91,  // Sandy Shores
+    93,  // Grapeseed
+]);
+
+
+
+
+// Helper: is the player a PD officer on duty?
+function isOfficerOnDuty() {
+    const p = mp.players.local;
+    return p.getVariable('factionId') === 2 && p.getVariable('factionDuty');
+}
+
+// Helper: find the nearest robbable ATM index within range
+function getNearbyRobbableIndex(pos, range) {
+    let closest = null, closestDist = range;
+    ROBBABLE_ATM_INDICES_SET.forEach(idx => {
+        const loc = ATM_LOCATIONS[idx];
+        if (!loc) return;
+        const dx = pos.x - loc.x, dy = pos.y - loc.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < closestDist) { closestDist = d; closest = idx; }
+    });
+    return closest;
+}
+
 // 5. Create Persistent Blips
 mp.events.add('playerReady', () => {
     if (createdBlips) return;
@@ -163,7 +211,32 @@ setInterval(() => {
     if (foundHandle) {
         nearbyAtm = foundHandle;
         if (!lastInteractionState) {
-            mp.events.call('showInteraction', 'ATM', 'Press E to Access Bank');
+            const pos = mp.players.local.position;
+            const robbableIdx = getNearbyRobbableIndex(pos, 2.5);
+
+            if (robbableIdx !== null) {
+                // This ATM is robbable — build multi-key prompt
+                const officer = isOfficerOnDuty();
+
+                if (officer) {
+                    // PD sees: E = Access Bank, F = Inspect ATM
+                    mp.events.call('showInteraction', [
+                        { key: 'E', label: 'Access Bank' },
+                        { key: 'F', label: 'Inspect ATM', pd: true },
+                    ]);
+                } else {
+                    // Criminal sees: E = Access Bank, F = Install/Collect Skimmer
+                    const pendingAtm = mp.players.local.getVariable('skimmer_pending_atm');
+                    const robLabel = (pendingAtm === robbableIdx) ? 'Collect Funds' : 'Install Skimmer';
+                    mp.events.call('showInteraction', [
+                        { key: 'E', label: 'Access Bank' },
+                        { key: 'F', label: robLabel, accent: true },
+                    ]);
+                }
+            } else {
+                // Normal ATM — single prompt
+                mp.events.call('showInteraction', 'ATM', 'Press E to Access Bank');
+            }
             lastInteractionState = true;
         }
     } else {
@@ -186,6 +259,48 @@ mp.keys.bind(0x45, true, () => {
 mp.keys.bind(0x1B, false, () => {
     if (atmBrowser) {
         mp.events.call('client:closeATM');
+    }
+});
+
+// F key — Install / Collect Skimmer (criminal)
+mp.keys.bind(0x46, true, () => {
+    if (mp.gui.cursor.visible) return;
+    if (!nearbyAtm) return;
+    if (isOfficerOnDuty()) return; // officers use F
+
+    const pos = mp.players.local.position;
+    const idx = getNearbyRobbableIndex(pos, 2.5);
+    if (idx === null) return;
+
+    const pendingAtm = mp.players.local.getVariable('skimmer_pending_atm');
+    if (pendingAtm === idx) {
+        mp.events.callRemote('server:atm:collectSkimmer', idx);
+    } else {
+        mp.events.callRemote('server:atm:installSkimmer', idx);
+    }
+});
+
+// F key — Inspect ATM (PD on duty)
+mp.keys.bind(0x46, true, () => {
+    if (mp.gui.cursor.visible) return;
+    if (!nearbyAtm) return;
+    if (!isOfficerOnDuty()) return;
+
+    const pos = mp.players.local.position;
+    const idx = getNearbyRobbableIndex(pos, 2.5);
+    if (idx === null) return;
+
+    mp.events.callRemote('server:atm:pdInspect', idx);
+});
+
+// Re-evaluate interaction label when factionDuty or skimmer_pending_atm changes
+// (force a refresh by resetting lastInteractionState if near an ATM)
+mp.events.add('variableChange', (player, name) => {
+    if (player !== mp.players.local) return;
+    if (name === 'factionDuty' || name === 'skimmer_pending_atm') {
+        if (lastInteractionState) {
+            lastInteractionState = false; // will re-trigger on next interval tick
+        }
     }
 });
 
