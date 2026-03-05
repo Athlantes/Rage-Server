@@ -2223,8 +2223,8 @@
         document.getElementById('inv-max').innerText = s.maxWeight.toFixed(1);
         document.getElementById('weight-fill').style.width = Math.min(100, (s.weight / s.maxWeight) * 100) + '%';
 
-        if (data.exposure !== undefined) {
-          updateExposureUI(data.exposure, data.exposureThreshold || 39);
+        if (s.exposure !== undefined) {
+          updateExposureUI(s.exposure, data.exposureThreshold || 39);
         }
 
         // Extra info tiles
