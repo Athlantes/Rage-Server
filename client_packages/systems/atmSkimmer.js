@@ -111,12 +111,15 @@ mp.events.add('playerReady', () => {
         robbableBlips.set(idx, blip);
     });
 
+    // Check if the player reconnected while carrying data
+    hasSkimmerData = !!mp.players.local.getVariable('skimmer_has_data');
+
     spawnFenceNpc();
+    updateFenceBlip(); // Initialize the blip state right away
 
     // Ask server for current states
     mp.events.callRemote('server:atm:requestStates');
 });
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  2. Receive ATM state updates — flip blip colors
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,26 +220,38 @@ function spawnFenceNpc() {
         fenceNpc.setBlockingOfNonTemporaryEvents(true);
         fenceNpc.setFleeAttributes(0, true);
         fenceNpc.setAlertness(0);
-
-        // Blip (hidden until player carries data)
-        fenceBlip = mp.blips.new(
-            351, // person-silhouette blip
-            pos,
-            {
-                name:       'Data Fence',
-                scale:      0.7,
-                color:      5,    // yellow
-                shortRange: true,
-            }
-        );
-        fenceBlip.alpha = 0; // hidden until data is held
-
+        
+        // Note: Blip creation removed from here
     }, 100);
 }
 
 function updateFenceBlip() {
-    if (!fenceBlip) return;
-    fenceBlip.alpha = hasSkimmerData ? 255 : 0;
+    if (hasSkimmerData) {
+        // If they have the data but no blip exists, create it
+        if (!fenceBlip) {
+            const pos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
+            fenceBlip = mp.blips.new(
+                351, // person-silhouette blip
+                pos,
+                {
+                    name:       'Data Fence',
+                    scale:      0.7,
+                    color:      5,    // yellow
+                    shortRange: false, // Changed to false so it's always visible on the minimap edge
+                }
+            );
+            
+            // Automatically set a GPS route line to this blip
+            fenceBlip.setRoute(true);
+        }
+    } else {
+        // If they don't have data, safely destroy the blip
+        if (fenceBlip) {
+            fenceBlip.setRoute(false); // Clear the GPS route
+            fenceBlip.destroy();       // Destroy the blip
+            fenceBlip = null;
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

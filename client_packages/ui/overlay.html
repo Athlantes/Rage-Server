@@ -788,16 +788,6 @@
 
             hud.style.display = 'flex';
             hud.classList.remove('ros', 'nos');
-
-            if (wantedType === 'NoS') {
-                hud.classList.add('nos');
-                icon.className = 'fas fa-skull wh-icon wh-blink';
-                label.textContent = 'NO SURRENDER';
-            } else {
-                hud.classList.add('ros');
-                icon.className = 'fas fa-handcuffs wh-icon wh-blink';
-                label.textContent = 'SURRENDER';
-            }
         }
 
         // --- COOLDOWN SYSTEM ---
@@ -809,7 +799,7 @@
             'dumpster':        { label: 'Dumpster',         icon: 'fas fa-trash' },
             'skimmer_collect': { label: 'Collect Skimmer',  icon: 'fas fa-microchip' },
             'wanted_ros':      { label: 'Wanted',           icon: 'fas fa-handcuffs', color: '#ffc300' },
-            'wanted_nos':      { label: 'No Surrender',     icon: 'fas fa-skull',     color: '#ff4757' },
+            'wanted_nos':      { label: 'Wanted',           icon: 'fas fa-skull',     color: '#ff4757' },
         };
 
         function updateCooldowns(json) {

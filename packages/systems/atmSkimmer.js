@@ -34,7 +34,7 @@ const CFG = {
     EXPOSURE_DECAY_RATE:  1,         // pts per tick
     EXPOSURE_DECAY_MS:    90_000,    // 1.5 min
     ATM_COOLDOWN_MS:      20 * 60_000,
-    COLLECT_READY_MS:     10 * 60_000, // 10 min before funds are collectable
+    COLLECT_READY_MS:     1 * 60_000, // 1 min before funds are collectable
     MIN_REWARD:           1_200,
     MAX_REWARD:           3_800,
 };
@@ -532,6 +532,7 @@ mp.events.add('server:atm:collectSkimmer', async (player, atmIndexRaw) => {
 
     // Tell client they now carry the data (shows HUD label, no timer)
     player.setVariable('skimmer_has_data', true);
+    player.call('client:skimmer:setDataState', [true]);
 
     // Apply exposure
     const newExposure = getExposure(player) + CFG.EXPOSURE_ON_COLLECT;
@@ -644,6 +645,7 @@ mp.events.add('server:atm:deliverData', async (player) => {
     // Remove data flag and pending delivery
     pendingDeliveries.delete(player.data.dbId);
     player.setVariable('skimmer_has_data', false);
+    player.call('client:skimmer:setDataState', [false]);
 
     // Give dirty_cash item to inventory (not paying cash directly)
     await Inventory.giveItem(player, CFG.REWARD_ITEM, 1, { value: reward });
@@ -660,7 +662,9 @@ function failSkimmerDelivery(player, reason) {
     if (!player.data || !pendingDeliveries.has(player.data.dbId)) return;
     pendingDeliveries.delete(player.data.dbId);
     player.setVariable('skimmer_has_data', false);
+    
     if (mp.players.exists(player)) {
+        player.call('client:skimmer:setDataState', [false]); // <-- ADD THIS LINE
         player.call('showNotification', ['ATM Skimmer', 'Data lost — job failed.']);
         player.outputChatBox('!{#ff4757}[SKIMMER] !{#ff4757}You lost the skimmer data. Job failed.');
     }
@@ -685,23 +689,37 @@ async function notifySkimmerReady(idx) {
     if (!atm.ownerId || atm.state !== 'ready') return;
 
     const loc = ATM_LOCATIONS[idx];
-    const msgBody = `Your ATM skimmer is ready for collection. Location: X: ${loc.x.toFixed(0)}, Y: ${loc.y.toFixed(0)}`;
+    const msgBody = `Your ATM skimmer is ready for collection.`;
+    
+    // Format the coordinates as a JSON string so the phone's 'setWaypoint' event can parse it
+    const locationBody = JSON.stringify({ x: loc.x, y: loc.y, z: loc.z }); 
     
     try {
         const [rows] = await db.query("SELECT phone_number FROM player_phone WHERE user_id = ?", [atm.ownerId]);
         if (rows.length > 0) {
             const targetNumber = rows[0].phone_number;
             
-            // Insert the message into the phone_messages table directly
+            // 1. Insert the text message
             await db.query(
                 "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
                 ["Unknown", targetNumber, msgBody, 'text']
             );
 
+            // 2. Insert the interactive location message
+            await db.query(
+                "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
+                ["Unknown", targetNumber, locationBody, 'location']
+            );
+
             // If player is online, trigger the live phone events
             const p = mp.players.toArray().find(p => p.logged && p.data.dbId === atm.ownerId);
             if (p && mp.players.exists(p)) {
+                // Send the text bubble
                 p.call('client:phone:receiveSMS', ["Unknown", msgBody, 'text']);
+                
+                // Send the location bubble
+                p.call('client:phone:receiveSMS', ["Unknown", locationBody, 'location']);
+                
                 p.call('client:phone:notification', [JSON.stringify({
                     app: 'messages', title: 'Unknown Number',
                     body: 'The package is ready for pickup.', icon: 'fa-envelope',
