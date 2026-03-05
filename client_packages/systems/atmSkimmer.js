@@ -106,15 +106,20 @@ mp.events.add('playerReady', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  2. Receive ATM state updates — flip blip colors
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  2. Receive ATM state updates — flip blip colors
+// ─────────────────────────────────────────────────────────────────────────────
 mp.events.add('client:atm:updateStates', (jsonStr) => {
     try { serverAtmStates = JSON.parse(jsonStr); } catch(e) { return; }
 
     ROBBABLE_ATM_INDICES.forEach(idx => {
         const blip = robbableBlips.get(idx);
         if (!blip) return;
-        blip.color = (serverAtmStates[idx] === 'cooldown')
+        
+        // Use .setColour() instead of .color
+        blip.setColour((serverAtmStates[idx] === 'cooldown')
             ? BLIP_COLOR_COOLDOWN
-            : BLIP_COLOR_ROBBABLE;
+            : BLIP_COLOR_ROBBABLE);
     });
 });
 

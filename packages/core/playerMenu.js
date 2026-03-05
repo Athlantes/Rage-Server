@@ -22,7 +22,8 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             money: player.data.money || 0,
             bank: player.data.bank_money || 0,
             weight: typeof rawWeight === 'string' ? parseFloat(rawWeight) : (rawWeight || 0),
-            maxWeight: 40.0
+            maxWeight: 40.0,
+            exposure: player.data.exposure || 0
         };
 
         // 2. Vehicle Count

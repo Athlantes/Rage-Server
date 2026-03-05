@@ -215,6 +215,7 @@ async function startSession(player, userData) {
     player.data.level = userData.level || 1;
     player.data.xp = userData.xp || 0; 
     player.data.vehicle_slots = userData.vehicle_slots;
+    player.data.exposure = userData.exposure || 0;
     
     // --- LOAD PAYDAY TIMER ---
     player.data.paydayIn = (userData.payday_in && userData.payday_in > 0) ? userData.payday_in : 60;

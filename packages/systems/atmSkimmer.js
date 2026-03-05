@@ -246,15 +246,10 @@ async function loadAtmStates() {
                         if (atm.state !== 'compromised') return;
                         atm.state = 'ready';
                         await saveAtmState(idx);
-
-                        const p = mp.players.toArray().find(p => p.logged && p.data.dbId === atm.ownerId);
-                        if (p && mp.players.exists(p)) {
-                            p.call('client:phone:notification', [JSON.stringify({
-                                app: 'messages', title: 'Unknown Number',
-                                body: 'The package is ready for pickup.', icon: 'fa-envelope',
-                            })]);
-                            p.call('showNotification', ['Skimmer', 'Your skimmer has collected enough data. Go retrieve it!']);
-                        }
+                        
+                        // Use our new SMS helper
+                        await notifySkimmerReady(idx);
+                        
                         console.log(`[Skimmer] ATM #${idx} is now ready for collection.`);
                     }, remaining);
                     console.log(`[Skimmer] ATM #${idx} restored (compromised) — ready in ${Math.ceil(remaining/60000)} min.`);
@@ -451,17 +446,9 @@ mp.events.add('server:atm:installSkimmer', async (player, atmIndexRaw) => {
         atm.state = 'ready';
         await saveAtmState(idx); // persist ready state
 
-        // Send phone notification to the player if online
-        const p = mp.players.toArray().find(p => p.logged && p.data.dbId === atm.ownerId);
-        if (p && mp.players.exists(p)) {
-            p.call('client:phone:notification', [JSON.stringify({
-                app: 'messages',
-                title: 'Unknown Number',
-                body: 'The package is ready for pickup.',
-                icon: 'fa-envelope',
-            })]);
-            p.call('showNotification', ['Skimmer', 'Your skimmer has collected enough data. Go retrieve it!']);
-        }
+        // Use our new SMS helper
+        await notifySkimmerReady(idx);
+        
         console.log(`[Skimmer] ATM #${idx} is now ready for collection.`);
     }, CFG.COLLECT_READY_MS);
 
@@ -614,6 +601,40 @@ playerManager.saveAccount = async (player) => {
             .catch(err => console.error('[Skimmer] Failed to save exposure:', err));
     }
 };
+
+async function notifySkimmerReady(idx) {
+    const atm = getAtm(idx);
+    if (!atm.ownerId || atm.state !== 'ready') return;
+
+    const loc = ATM_LOCATIONS[idx];
+    const msgBody = `Your ATM skimmer is ready for collection. Location: X: ${loc.x.toFixed(0)}, Y: ${loc.y.toFixed(0)}`;
+    
+    try {
+        const [rows] = await db.query("SELECT phone_number FROM player_phone WHERE user_id = ?", [atm.ownerId]);
+        if (rows.length > 0) {
+            const targetNumber = rows[0].phone_number;
+            
+            // Insert the message into the phone_messages table directly
+            await db.query(
+                "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
+                ["Unknown", targetNumber, msgBody, 'text']
+            );
+
+            // If player is online, trigger the live phone events
+            const p = mp.players.toArray().find(p => p.logged && p.data.dbId === atm.ownerId);
+            if (p && mp.players.exists(p)) {
+                p.call('client:phone:receiveSMS', ["Unknown", msgBody, 'text']);
+                p.call('client:phone:notification', [JSON.stringify({
+                    app: 'messages', title: 'Unknown Number',
+                    body: 'The package is ready for pickup.', icon: 'fa-envelope',
+                })]);
+                p.call('showNotification', ['Skimmer', 'Your skimmer has collected enough data. Check your phone.']);
+            }
+        }
+    } catch(err) {
+        console.error('[Skimmer] Failed to send ready SMS:', err);
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  EXPORTS (used by playerMenu.js)
