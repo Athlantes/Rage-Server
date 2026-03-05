@@ -176,6 +176,16 @@ class LSPDFaction extends Faction {
 
         // Blip
         mp.blips.new(60, this.hq.exterior, { name: 'LSPD Mission Row', color: 29, shortRange: true });
+
+        this.lockHQDoors(true);
+    }
+
+    lockHQDoors(locked) {
+        // Mission Row PD - main entrance doors (near x:428, y:-980)
+        mp.game.object.doorControl(0xF4B94B87, 428.52, -979.78, 29.69, locked, 0.0);  // front left
+        mp.game.object.doorControl(0xF6CA6D91, 431.35, -979.78, 29.69, locked, 0.0);  // front right
+        mp.game.object.doorControl(0x3C378906, 426.87, -987.03, 29.69, locked, 0.0);  // side left
+        mp.game.object.doorControl(0xFBC3FDAA, 426.87, -989.03, 29.69, locked, 0.0);  // side right
     }
 }
 
