@@ -1,11 +1,11 @@
 // =============================================================================
 //  client_packages/systems/atmSkimmer.js  —  ATM Skimmer (Client-Side)
-//  UPDATED: No longer uses circleMenu. Key binds + interaction prompt are
-//  handled entirely inside atm.js (R key = criminal, F key = PD).
-//  This file only manages:
+//  Manages:
 //    - Robbable ATM blip creation (green / red)
 //    - Receiving state updates from the server
 //    - Live exposure forwarding to playerMenu
+//    - "Data collected" HUD label (no timer) while carrying skimmer data
+//    - Fence NPC spawn + blip + delivery interaction (E key)
 // =============================================================================
 
 'use strict';
@@ -34,7 +34,6 @@ const ROBBABLE_ATM_INDICES = [
     91,  // Sandy Shores
     93,  // Grapeseed
 ];
-
 
 const ATM_LOCATIONS = [
     {x:228.03,y:337.85,z:104.50},{x:158.79,y:234.74,z:105.64},{x:-57.17,y:-92.37,z:56.75},
@@ -72,6 +71,16 @@ const ATM_LOCATIONS = [
     {x:-1206.14,y:-325.03,z:36.85},
 ];
 
+// ── Fence NPC config (must mirror server FENCE_NPC coords) ───────────────────
+const FENCE_NPC = {
+    x:        947.38,
+    y:       -1987.62,
+    z:         30.72,
+    heading:  220.0,
+    model:    'mp_m_freemode_01',   // generic male ped
+    interactRange: 2.5,
+};
+
 // ── Blip colors ───────────────────────────────────────────────────────────────
 const BLIP_COLOR_ROBBABLE = 2;  // Green
 const BLIP_COLOR_COOLDOWN = 1;  // Red
@@ -80,11 +89,14 @@ const BLIP_SCALE          = 0.55;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const robbableBlips = new Map(); // Map<idx, blip>
-let serverAtmStates = {};        // Map<idx, 'available'|'cooldown'>
+let serverAtmStates  = {};       // Map<idx, 'available'|'cooldown'>
+let hasSkimmerData   = false;    // player currently carries extracted data
+let fenceNpc         = null;     // mp.Peds reference
+let fenceBlip        = null;     // map blip for the fence
+let nearFence        = false;    // proximity flag for E-key prompt
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  1. Create GREEN blips for robbable ATMs on spawn
-//     (atm.js skips these indices — it checks ROBBABLE_ATM_INDICES_SET)
+//  1. Create GREEN blips for robbable ATMs + fence NPC on spawn
 // ─────────────────────────────────────────────────────────────────────────────
 mp.events.add('playerReady', () => {
     ROBBABLE_ATM_INDICES.forEach(idx => {
@@ -99,13 +111,12 @@ mp.events.add('playerReady', () => {
         robbableBlips.set(idx, blip);
     });
 
+    spawnFenceNpc();
+
     // Ask server for current states
     mp.events.callRemote('server:atm:requestStates');
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  2. Receive ATM state updates — flip blip colors
-// ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
 //  2. Receive ATM state updates — flip blip colors
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,8 +126,6 @@ mp.events.add('client:atm:updateStates', (jsonStr) => {
     ROBBABLE_ATM_INDICES.forEach(idx => {
         const blip = robbableBlips.get(idx);
         if (!blip) return;
-        
-        // Use .setColour() instead of .color
         blip.setColour((serverAtmStates[idx] === 'cooldown')
             ? BLIP_COLOR_COOLDOWN
             : BLIP_COLOR_ROBBABLE);
@@ -129,4 +138,139 @@ mp.events.add('client:atm:updateStates', (jsonStr) => {
 mp.events.add('client:exposure:update', (value) => {
     global.playerExposure = parseInt(value);
     mp.events.call('client:playerMenu:exposureUpdate', value);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  4. Server tells us we now hold / lost the data
+// ─────────────────────────────────────────────────────────────────────────────
+mp.events.add('client:skimmer:setDataState', (holding) => {
+    hasSkimmerData = !!holding;
+    updateDataHud();
+    updateFenceBlip();
+});
+
+// Also react to the server variable change (set by setVariable)
+mp.events.add('entityDataChange', (entity, key, oldVal) => {
+    if (entity !== mp.players.local) return;
+    if (key === 'skimmer_has_data') {
+        hasSkimmerData = !!mp.players.local.getVariable('skimmer_has_data');
+        updateDataHud();
+        updateFenceBlip();
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  5. "Data collected" HUD — top-right label, no timer
+//     Uses the native mp.game.ui.setTextComponentFormat approach via a
+//     per-frame draw call so it sits alongside the wanted stars.
+// ─────────────────────────────────────────────────────────────────────────────
+let hudDrawInterval = null;
+
+function updateDataHud() {
+    if (hasSkimmerData) {
+        if (!hudDrawInterval) {
+            hudDrawInterval = setInterval(drawDataHud, 0);
+        }
+    } else {
+        if (hudDrawInterval) {
+            clearInterval(hudDrawInterval);
+            hudDrawInterval = null;
+        }
+    }
+}
+
+function drawDataHud() {
+    // Draw a persistent top-right text label
+    mp.game.graphics.drawText(
+        '~y~[DATA COLLECTED]',
+        [0.98, 0.02],
+        {
+            font:      4,
+            color:     [255, 220, 0, 255],
+            scale:     [0.45, 0.45],
+            outline:   true,
+            alignment: 2,  // right-align
+        }
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  6. Fence NPC — only the blip is shown when player does NOT carry data.
+//     When carrying data: blip appears + E-key prompt near NPC.
+// ─────────────────────────────────────────────────────────────────────────────
+function spawnFenceNpc() {
+    const pos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
+
+    mp.game.streaming.requestModel(mp.game.joaat(FENCE_NPC.model));
+    const waitModel = setInterval(() => {
+        if (!mp.game.streaming.hasModelLoaded(mp.game.joaat(FENCE_NPC.model))) return;
+        clearInterval(waitModel);
+
+        fenceNpc = mp.peds.new(
+            mp.game.joaat(FENCE_NPC.model),
+            pos,
+            FENCE_NPC.heading,
+            0
+        );
+        fenceNpc.setDefaultComponentVariation();
+        fenceNpc.taskStandStill(-1);
+        fenceNpc.setBlockingOfNonTemporaryEvents(true);
+        fenceNpc.setFleeAttributes(0, true);
+        fenceNpc.setAlertness(0);
+
+        // Blip (hidden until player carries data)
+        fenceBlip = mp.blips.new(
+            351, // person-silhouette blip
+            pos,
+            {
+                name:       'Data Fence',
+                scale:      0.7,
+                color:      5,    // yellow
+                shortRange: true,
+            }
+        );
+        fenceBlip.alpha = 0; // hidden until data is held
+
+    }, 100);
+}
+
+function updateFenceBlip() {
+    if (!fenceBlip) return;
+    fenceBlip.alpha = hasSkimmerData ? 255 : 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  7. Proximity loop — show E-key prompt when near fence with data
+// ─────────────────────────────────────────────────────────────────────────────
+setInterval(() => {
+    if (!hasSkimmerData || !fenceNpc) return;
+
+    const myPos    = mp.players.local.position;
+    const fencePos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
+    const dist     = myPos.distanceTo(fencePos);
+
+    nearFence = (dist <= FENCE_NPC.interactRange);
+
+    if (nearFence) {
+        // Draw interaction hint
+        mp.game.graphics.drawText(
+            'Press ~INPUT_CONTEXT~ to deliver data',
+            [0.5, 0.88],
+            {
+                font:      4,
+                color:     [255, 255, 255, 220],
+                scale:     [0.38, 0.38],
+                outline:   true,
+                alignment: 0,
+            }
+        );
+    }
+}, 0);
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  8. E key — deliver data when near fence
+// ─────────────────────────────────────────────────────────────────────────────
+mp.keys.bind(0x45 /* E */, false, () => {
+    if (!hasSkimmerData || !nearFence) return;
+    mp.events.callRemote('server:atm:deliverData');
 });

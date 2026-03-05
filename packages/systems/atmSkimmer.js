@@ -27,6 +27,8 @@ const Inventory       = require('./inventory');
 // ─────────────────────────────────────────────────────────────────────────────
 const CFG = {
     REQUIRED_ITEM:        'skimmer_device',
+    DATA_ITEM:            'atm_skimmer_data',   // non-inventory "held" item given on collect
+    REWARD_ITEM:          'dirty_cash',          // inventory item given on delivery
     EXPOSURE_ON_COLLECT:  60,
     EXPOSURE_MAX_TO_ROB:  39,        // must be ≤ this to install
     EXPOSURE_DECAY_RATE:  1,         // pts per tick
@@ -36,6 +38,22 @@ const CFG = {
     MIN_REWARD:           1_200,
     MAX_REWARD:           3_800,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FENCE NPC — player delivers atm_skimmer_data here to receive dirty_cash
+//  Coords: Cypress Flats back-alley, away from foot traffic
+// ─────────────────────────────────────────────────────────────────────────────
+const FENCE_NPC = {
+    x: 947.38,
+    y: -1987.62,
+    z: 30.72,
+    heading: 220.0,
+    name: 'Data Fence',
+};
+
+// Track which players currently hold skimmer data (set by server variable)
+// Map<dbId, { reward, atmIdx }>
+const pendingDeliveries = new Map();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ROBBABLE ATM INDEX LIST
@@ -361,6 +379,11 @@ mp.events.add('server:loadAccount', (player) => {
             break;
         }
     }
+
+    // Restore data-carry flag if the player reconnected mid-delivery
+    if (pendingDeliveries.has(player.data.dbId)) {
+        player.setVariable('skimmer_has_data', true);
+    }
 });
 
 mp.events.add('server:spawn:player', (player) => {
@@ -487,32 +510,35 @@ mp.events.add('server:atm:collectSkimmer', async (player, atmIndexRaw) => {
         return player.call('showNotification', ['ATM Skimmer', 'Nothing to collect here.']);
     }
 
-    // ── COLLECT ──
+    // ── COLLECT — give data item, mark wanted, send to fence ──
     const reward = atm.reward;
 
     // Set ATM to cooldown
-    atm.state      = 'cooldown';
-    atm.cooldownAt = Date.now();
-    atm.ownerId    = null;
-    atm.ownerName  = null;
+    atm.state       = 'cooldown';
+    atm.cooldownAt  = Date.now();
+    atm.ownerId     = null;
+    atm.ownerName   = null;
     atm.installedAt = null;
-    atm.reward     = null;
+    atm.reward      = null;
 
-    // Clear client-side pending flag
+    // Clear client-side ATM pending flag
     player.setVariable('skimmer_pending_atm', null);
 
     // Persist cooldown state to DB
     await saveAtmState(idx);
 
-    // Pay player
-    await playerManager.addMoneyAndSave(player, reward, 'ATM Skimmer Payout');
+    // Track pending delivery server-side
+    pendingDeliveries.set(player.data.dbId, { reward, atmIdx: idx });
+
+    // Tell client they now carry the data (shows HUD label, no timer)
+    player.setVariable('skimmer_has_data', true);
 
     // Apply exposure
     const newExposure = getExposure(player) + CFG.EXPOSURE_ON_COLLECT;
     await setExposure(player, newExposure);
 
-    // Apply wanted — robbery RoS (skimmer = armed robbery would be too harsh)
-    wantedManager.applyOffense(player, 'robbery', null);
+    // Apply wanted — NoS (PD can shoot on sight)
+    wantedManager.applyOffense(player, 'armed_robbery', null);
 
     // Dispatch
     const loc = ATM_LOCATIONS[idx];
@@ -528,9 +554,9 @@ mp.events.add('server:atm:collectSkimmer', async (player, atmIndexRaw) => {
     // Broadcast updated blip states (ATM now on cooldown → red)
     broadcastAtmStates();
 
-    player.call('showNotification', ['ATM Skimmer', `+$${reward.toLocaleString()} collected! Lay low.`]);
-    player.outputChatBox(`!{#ff4757}[SKIMMER] !{#ffffff}You retrieved $${reward.toLocaleString()}. Your Exposure is now ${Math.min(100, newExposure)}/100.`);
-    console.log(`[Skimmer] ${player.name} collected $${reward} from ATM #${idx}. Exposure: ${Math.min(100, newExposure)}`);
+    player.call('showNotification', ['ATM Skimmer', 'Data collected! Deliver it to the fence. Lay low — PD is on you.']);
+    player.outputChatBox(`!{#ff4757}[SKIMMER] !{#ffffff}Data extracted. Deliver it to the fence. Exposure: ${Math.min(100, newExposure)}/100.`);
+    console.log(`[Skimmer] ${player.name} collected data from ATM #${idx}. Reward pending: $${reward}. Exposure: ${Math.min(100, newExposure)}`);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -601,6 +627,58 @@ playerManager.saveAccount = async (player) => {
             .catch(err => console.error('[Skimmer] Failed to save exposure:', err));
     }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT: DELIVER SKIMMER DATA TO FENCE NPC
+// ─────────────────────────────────────────────────────────────────────────────
+mp.events.add('server:atm:deliverData', async (player) => {
+    if (!player.logged) return;
+
+    const delivery = pendingDeliveries.get(player.data.dbId);
+    if (!delivery) {
+        return player.call('showNotification', ['Fence', "You don't have anything for me."]);
+    }
+
+    const { reward } = delivery;
+
+    // Remove data flag and pending delivery
+    pendingDeliveries.delete(player.data.dbId);
+    player.setVariable('skimmer_has_data', false);
+
+    // Give dirty_cash item to inventory (not paying cash directly)
+    await Inventory.giveItem(player, CFG.REWARD_ITEM, 1, { value: reward });
+
+    player.call('showNotification', ['Fence', `Deal done. Here's your $${reward.toLocaleString()} in marked bills.`]);
+    player.outputChatBox(`!{#2ecc71}[SKIMMER] !{#ffffff}Delivery complete. You received Dirty Cash worth $${reward.toLocaleString()}.`);
+    console.log(`[Skimmer] ${player.name} delivered ATM data. Rewarded dirty_cash $${reward}.`);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FAIL STATE: player dies or disconnects while holding data
+// ─────────────────────────────────────────────────────────────────────────────
+function failSkimmerDelivery(player, reason) {
+    if (!player.data || !pendingDeliveries.has(player.data.dbId)) return;
+    pendingDeliveries.delete(player.data.dbId);
+    player.setVariable('skimmer_has_data', false);
+    if (mp.players.exists(player)) {
+        player.call('showNotification', ['ATM Skimmer', 'Data lost — job failed.']);
+        player.outputChatBox('!{#ff4757}[SKIMMER] !{#ff4757}You lost the skimmer data. Job failed.');
+    }
+    console.log(`[Skimmer] ${player.name || player.id} lost skimmer data (${reason}).`);
+}
+
+mp.events.add('playerDeath', (player) => {
+    failSkimmerDelivery(player, 'death');
+});
+
+mp.events.add('playerQuit', (player) => {
+    failSkimmerDelivery(player, 'disconnect');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EXPORT FENCE LOCATION (used by client to spawn NPC + blip)
+// ─────────────────────────────────────────────────────────────────────────────
+module.exports.FENCE_NPC = FENCE_NPC;
 
 async function notifySkimmerReady(idx) {
     const atm = getAtm(idx);

@@ -137,6 +137,26 @@ module.exports = {
         data: { useFor: "atm_skimmer" }
     },
 
+    "atm_skimmer_data": {
+        name: "ATM Skimmer Data",
+        type: "quest",
+        weight: 0.0,
+        isEquippable: false,
+        maxStack: 1,
+        icon: "atm_skimmer_data.png",
+        data: { useFor: "atm_delivery" }
+    },
+
+    "dirty_cash": {
+        name: "Dirty Cash",
+        type: "money",
+        weight: 0.1,
+        isEquippable: false,
+        maxStack: 1,
+        icon: "dirty_cash.png",
+        data: { useFor: "laundering" }
+    },
+
     // --- WEAPONS (Allowed in Fast Slots) ---
     "pistol": {
         name: "Pistol .50",
