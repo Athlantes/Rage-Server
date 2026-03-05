@@ -574,41 +574,6 @@
         .stop-order-popup.received .so-bar-fill { background: #ff4757; }
         .stop-order-popup.sent .so-bar-fill { background: #00a8ff; }
 
-        /* --- WANTED INDICATOR (top-right, below money) --- */
-        .wanted-hud {
-            position: fixed;
-            top: 175px;
-            right: 35px;
-            display: none;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            animation: slideInRight 0.4s ease-out;
-        }
-        .wanted-hud.ros {
-            background: rgba(255, 195, 0, 0.12);
-            border: 1px solid rgba(255, 195, 0, 0.3);
-        }
-        .wanted-hud.nos {
-            background: rgba(255, 71, 87, 0.12);
-            border: 1px solid rgba(255, 71, 87, 0.3);
-        }
-        .wanted-hud .wh-icon {
-            font-size: 18px;
-        }
-        .wanted-hud.ros .wh-icon { color: #ffc300; }
-        .wanted-hud.nos .wh-icon { color: #ff4757; }
-        .wanted-hud .wh-label {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        .wanted-hud.ros .wh-label { color: #ffc300; }
-        .wanted-hud.nos .wh-label { color: #ff4757; }
-
     </style>
 </head>
 <body>
@@ -724,12 +689,6 @@
         <div class="so-bar"><div class="so-bar-fill" id="so-bar-fill"></div></div>
     </div>
 
-    <!-- WANTED HUD INDICATOR (top right) -->
-    <div class="wanted-hud" id="wanted-hud">
-        <i class="fas wh-icon wh-blink" id="wh-icon"></i>
-        <span class="wh-label" id="wh-label">WANTED</span>
-    </div>
-
     <script>
 
         // --- STOP ORDER ---
@@ -775,29 +734,16 @@
             }, 5200);
         }
 
-        // --- WANTED HUD ---
-        function updateWantedHUD(wantedType) {
-            const hud   = document.getElementById('wanted-hud');
-            const icon  = document.getElementById('wh-icon');
-            const label = document.getElementById('wh-label');
-
-            if (!wantedType) {
-                hud.style.display = 'none';
-                return;
-            }
-
-            hud.style.display = 'flex';
-            hud.classList.remove('ros', 'nos');
-        }
-
         // --- COOLDOWN SYSTEM ---
-        let activeCooldowns = {}; // Stores end timestamps
+        let activeCooldowns = {}; // Stores server-sent timestamps
+        let localStatuses = {};   // Stores permanent local statuses (no timer)
         let cooldownInterval = null;
 
         // Map internal keys to Display Name & Icon
         const COOLDOWN_CONFIG = {
             'dumpster':        { label: 'Dumpster',         icon: 'fas fa-trash' },
             'skimmer_collect': { label: 'Collect Skimmer',  icon: 'fas fa-microchip' },
+            'skimmer_data':    { label: 'Data Collected',   icon: 'fas fa-hdd',       color: '#ffc300' }, // New Status
             'wanted_ros':      { label: 'Wanted',           icon: 'fas fa-handcuffs', color: '#ffc300' },
             'wanted_nos':      { label: 'Wanted',           icon: 'fas fa-skull',     color: '#ff4757' },
         };
@@ -806,14 +752,18 @@
             try {
                 activeCooldowns = JSON.parse(json);
                 renderCooldowns();
-                
-                // Start active timer if not running
-                if (!cooldownInterval) {
-                    cooldownInterval = setInterval(renderCooldowns, 1000);
-                }
             } catch (e) {
                 console.error("CD Error", e);
             }
+        }
+
+        function setLocalStatus(key, active) {
+            if (active) {
+                localStatuses[key] = true;
+            } else {
+                delete localStatuses[key];
+            }
+            renderCooldowns();
         }
 
         function renderCooldowns() {
@@ -824,18 +774,16 @@
             let hasActive = false;
             let html = '';
 
+            // 1. Render Server Cooldowns (With Timers)
             for (const [key, expiry] of Object.entries(activeCooldowns)) {
                 if (expiry > now) {
                     hasActive = true;
                     const diff = expiry - now;
-                    
-                    // Format Time mm:ss
                     const totalSeconds = Math.floor(diff / 1000);
                     const m = Math.floor(totalSeconds / 60);
                     const s = totalSeconds % 60;
                     const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
 
-                    // Get Config
                     const conf = COOLDOWN_CONFIG[key] || { label: key, icon: 'fas fa-clock' };
                     const nameColor = conf.color ? `color:${conf.color}` : '';
                     const iconColor = conf.color ? `style="color:${conf.color}"` : '';
@@ -851,12 +799,31 @@
                 }
             }
 
+            // 2. Render Local Statuses (No Timers)
+            for (const key of Object.keys(localStatuses)) {
+                hasActive = true;
+                const conf = COOLDOWN_CONFIG[key] || { label: key, icon: 'fas fa-info-circle' };
+                const nameColor = conf.color ? `color:${conf.color}` : '';
+                const iconColor = conf.color ? `style="color:${conf.color}"` : '';
+
+                html += `
+                    <div class="cd-item">
+                        <span class="cd-name" style="${nameColor}">${conf.label}</span>
+                        <span class="cd-sep">&bull;</span>
+                        <span class="cd-timer" style="color: #2ecc71;">READY</span>
+                        <i class="cd-icon ${conf.icon}" ${iconColor}></i>
+                    </div>
+                `;
+            }
+
             container.innerHTML = html;
 
-            // Stop timer if no cooldowns left
+            // Manage Interval
             if (!hasActive && cooldownInterval) {
                 clearInterval(cooldownInterval);
                 cooldownInterval = null;
+            } else if (hasActive && !cooldownInterval) {
+                cooldownInterval = setInterval(renderCooldowns, 1000);
             }
         }
 

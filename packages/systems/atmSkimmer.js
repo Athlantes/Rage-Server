@@ -632,6 +632,9 @@ playerManager.saveAccount = async (player) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  EVENT: DELIVER SKIMMER DATA TO FENCE NPC
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT: DELIVER SKIMMER DATA TO FENCE NPC
+// ─────────────────────────────────────────────────────────────────────────────
 mp.events.add('server:atm:deliverData', async (player) => {
     if (!player.logged) return;
 
@@ -642,16 +645,30 @@ mp.events.add('server:atm:deliverData', async (player) => {
 
     const { reward } = delivery;
 
-    // Remove data flag and pending delivery
+    // 1. Remove data flag and pending delivery
     pendingDeliveries.delete(player.data.dbId);
     player.setVariable('skimmer_has_data', false);
     player.call('client:skimmer:setDataState', [false]);
 
-    // Give dirty_cash item to inventory (not paying cash directly)
-    await Inventory.giveItem(player, CFG.REWARD_ITEM, 1, { value: reward });
+    // 2. Add the item using your standard Inventory function
+    // Assuming 1 dirty_cash = $1, we give them the 'reward' amount as the count.
+    const success = await Inventory.addItem(player, CFG.REWARD_ITEM, reward);
+    
+    // Safety check in case their inventory is too full/heavy
+    if (!success) {
+        return player.call('showNotification', ['Inventory', 'Pockets are too full to carry the cash!']);
+    }
 
+    // 3. Show standard text notifications
     player.call('showNotification', ['Fence', `Deal done. Here's your $${reward.toLocaleString()} in marked bills.`]);
     player.outputChatBox(`!{#2ecc71}[SKIMMER] !{#ffffff}Delivery complete. You received Dirty Cash worth $${reward.toLocaleString()}.`);
+    
+    // 4. Trigger your awesome Center Popup UI!
+    const rewardsJson = JSON.stringify([
+        { type: 'money', value: `$${reward.toLocaleString()} Dirty Cash` }
+    ]);
+    player.call('showCenterPopup', ['DATA DELIVERED', 'Extracted drive safely fenced.', rewardsJson, 6000]);
+
     console.log(`[Skimmer] ${player.name} delivered ATM data. Rewarded dirty_cash $${reward}.`);
 });
 

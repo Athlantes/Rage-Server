@@ -225,13 +225,6 @@ mp.events.add('client:lspd:showStopOrderSent', (targetName) => {
     mp.events.call('showStopOrderNotification', targetName, true);
 });
 
-// ── Wanted HUD update ─────────────────────────────────────────────────────────
-
-mp.events.add('client:lspd:updateWantedHUD', (wantedType) => {
-    // Pass through to overlay browser
-    mp.events.call('updateWantedHUD', wantedType);
-});
-
 // ── Relay playerWeaponShot to server for wanted system ────────────────────────
 // RAGE MP fires playerWeaponShot CLIENT-side only; the server handler in
 // wantedManager.js won't trigger unless we forward it here.

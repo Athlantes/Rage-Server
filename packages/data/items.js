@@ -150,9 +150,9 @@ module.exports = {
     "dirty_cash": {
         name: "Dirty Cash",
         type: "money",
-        weight: 0.1,
+        weight: 0.00005,
         isEquippable: false,
-        maxStack: 1,
+        maxStack: 10000,
         icon: "dirty_cash.png",
         data: { useFor: "laundering" }
     },

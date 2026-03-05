@@ -148,7 +148,6 @@ mp.events.add('client:exposure:update', (value) => {
 // ─────────────────────────────────────────────────────────────────────────────
 mp.events.add('client:skimmer:setDataState', (holding) => {
     hasSkimmerData = !!holding;
-    updateDataHud();
     updateFenceBlip();
 });
 
@@ -157,50 +156,17 @@ mp.events.add('entityDataChange', (entity, key, oldVal) => {
     if (entity !== mp.players.local) return;
     if (key === 'skimmer_has_data') {
         hasSkimmerData = !!mp.players.local.getVariable('skimmer_has_data');
-        updateDataHud();
         updateFenceBlip();
     }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  5. "Data collected" HUD — top-right label, no timer
-//     Uses the native mp.game.ui.setTextComponentFormat approach via a
-//     per-frame draw call so it sits alongside the wanted stars.
-// ─────────────────────────────────────────────────────────────────────────────
-let hudDrawInterval = null;
-
-function updateDataHud() {
-    if (hasSkimmerData) {
-        if (!hudDrawInterval) {
-            hudDrawInterval = setInterval(drawDataHud, 0);
-        }
-    } else {
-        if (hudDrawInterval) {
-            clearInterval(hudDrawInterval);
-            hudDrawInterval = null;
-        }
-    }
-}
-
-function drawDataHud() {
-    // Draw a persistent top-right text label
-    mp.game.graphics.drawText(
-        '~y~[DATA COLLECTED]',
-        [0.98, 0.02],
-        {
-            font:      4,
-            color:     [255, 220, 0, 255],
-            scale:     [0.45, 0.45],
-            outline:   true,
-            alignment: 2,  // right-align
-        }
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  6. Fence NPC — only the blip is shown when player does NOT carry data.
 //     When carrying data: blip appears + E-key prompt near NPC.
 // ─────────────────────────────────────────────────────────────────────────────
+
+let fenceColshape = null;
+
 function spawnFenceNpc() {
     const pos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
 
@@ -220,67 +186,56 @@ function spawnFenceNpc() {
         fenceNpc.setBlockingOfNonTemporaryEvents(true);
         fenceNpc.setFleeAttributes(0, true);
         fenceNpc.setAlertness(0);
-        
-        // Note: Blip creation removed from here
     }, 100);
 }
 
 function updateFenceBlip() {
     if (hasSkimmerData) {
-        // If they have the data but no blip exists, create it
+        // Show the "Timer-less" CEF Cooldown Status
+        mp.events.call('updateLocalStatus', 'skimmer_data', true);
+        
+        // 1. Create Blip & GPS Route
         if (!fenceBlip) {
             const pos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
-            fenceBlip = mp.blips.new(
-                351, // person-silhouette blip
-                pos,
-                {
-                    name:       'Data Fence',
-                    scale:      0.7,
-                    color:      5,    // yellow
-                    shortRange: false, // Changed to false so it's always visible on the minimap edge
-                }
-            );
-            
-            // Automatically set a GPS route line to this blip
+            fenceBlip = mp.blips.new(351, pos, {
+                name:       'Data Fence',
+                scale:      0.7,
+                color:      5,
+                shortRange: false,
+            });
             fenceBlip.setRoute(true);
         }
+
+        // 2. Create dynamic Interaction ColShape
+        if (!fenceColshape) {
+            fenceColshape = mp.colshapes.newSphere(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z, FENCE_NPC.interactRange);
+            // This hooks perfectly into your interaction.js!
+            fenceColshape.interaction = {
+                title: 'Data Fence',
+                text: 'Deliver extracted drive',
+                event: 'server:atm:deliverData',
+                requireOnFoot: true
+            };
+        }
     } else {
-        // If they don't have data, safely destroy the blip
+        // Hide the CEF Status
+        mp.events.call('updateLocalStatus', 'skimmer_data', false);
+
+        // Safely destroy GPS Blip
         if (fenceBlip) {
-            fenceBlip.setRoute(false); // Clear the GPS route
-            fenceBlip.destroy();       // Destroy the blip
+            fenceBlip.setRoute(false);
+            fenceBlip.destroy();
             fenceBlip = null;
+        }
+        
+        // Safely destroy Interaction Colshape
+        if (fenceColshape) {
+            fenceColshape.destroy();
+            fenceColshape = null;
+            mp.events.call('hideInteraction'); // Ensure UI closes if standing in it
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  7. Proximity loop — show E-key prompt when near fence with data
-// ─────────────────────────────────────────────────────────────────────────────
-setInterval(() => {
-    if (!hasSkimmerData || !fenceNpc) return;
-
-    const myPos    = mp.players.local.position;
-    const fencePos = new mp.Vector3(FENCE_NPC.x, FENCE_NPC.y, FENCE_NPC.z);
-    const dist     = myPos.distanceTo(fencePos);
-
-    nearFence = (dist <= FENCE_NPC.interactRange);
-
-    if (nearFence) {
-        // Draw interaction hint
-        mp.game.graphics.drawText(
-            'Press ~INPUT_CONTEXT~ to deliver data',
-            [0.5, 0.88],
-            {
-                font:      4,
-                color:     [255, 255, 255, 220],
-                scale:     [0.38, 0.38],
-                outline:   true,
-                alignment: 0,
-            }
-        );
-    }
-}, 0);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  8. E key — deliver data when near fence

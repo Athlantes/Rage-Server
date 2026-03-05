@@ -82,7 +82,6 @@ function syncHUD(player) {
     if (!mp.players.exists(player)) return;
     const wantedType = getWantedType(player);
     player.call('updateCooldowns', [JSON.stringify(buildCooldownPayload(player))]);
-    player.call('client:lspd:updateWantedHUD', [wantedType]);
     player.setVariable('wantedType', wantedType);
 }
 
