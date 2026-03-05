@@ -1,146 +1,203 @@
 // client_packages/factions/lspd/index.js
 // ─────────────────────────────────────────────────────────────────────────────
-// Handles client-side LSPD mechanics:
-//   - Surrender: plays hands-up animation, freezes local player
-//   - Cuffed: plays cuff animation, freezes movement
-//   - Garage vehicle selection menu (simple NativeUI-style via browser)
+// Client-side LSPD mechanics.
+//
+//  Interaction prompt
+//  ------------------
+//  Uses the EXISTING overlay multi-key array format so "G  Cuff PlayerName"
+//  renders with the correct key badge styling.  The cuff/jail prompt is managed
+//  via a separate `gKeyInteraction` variable and NEVER touches `activeInteraction`
+//  (the ColShape E-key slot), so the two systems cannot conflict.
+//
+//  When BOTH prompts need to show at once (e.g. player inside a colshape AND
+//  near a RoS suspect) the overlay merges them into a single multi-row prompt.
+//
+//  Animation sync
+//  --------------
+//  client:lspd:cuffAnim is broadcast by the server to ALL players within range,
+//  so the cuff animation is visible to bystanders too.
+//
+//  Vehicle detain fix
+//  ------------------
+//  Follow-tick is killed synchronously BEFORE setIntoVehicle to prevent the
+//  Z-drop / under-map bug.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Animation dictionary constants ───────────────────────────────────────────
-const ANIM_SURRENDER  = { dict: 'missminuteman_1ig_2', anim: 'handsup_base',   flag: 49 };
-const ANIM_CUFFED     = { dict: 'mp_arresting',        anim: 'idle',           flag: 49 };
-const ANIM_CUFF_INTRO = { dict: 'mp_arresting',        anim: 'a_uncuff',       flag: 48 };
+const ANIM_CUFFED     = { dict: 'mp_arresting', anim: 'idle',    flag: 49 };
+const ANIM_CUFF_INTRO = { dict: 'mp_arresting', anim: 'a_uncuff',flag: 48 };
 
-let surrendered = false;
-let cuffed = false;
+// ── Local state ───────────────────────────────────────────────────────────────
+let cuffed            = false;
 let cuffedToOfficerId = null;
-let cuffFollowTick = null;
+let cuffFollowTick    = null;
 
-// ── Load animation dictionary helper ─────────────────────────────────────────
+// Officer-side
+let jailDropPoints  = [];
+let jailDropBlips   = [];
+let nearJailDrop    = false;
+let nearCuffTarget  = null; // { remoteId, displayName } | null
+// The current G-key action to show (null = none)
+// { key:'G', label:'...', accent?:true, pd?:true }
+let gKeyAction      = null;
+
+// ── Util ──────────────────────────────────────────────────────────────────────
 
 async function loadAnimDict(dict) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         if (mp.game.streaming.hasAnimDictLoaded(dict)) return resolve();
         mp.game.streaming.requestAnimDict(dict);
-        const check = setInterval(() => {
-            if (mp.game.streaming.hasAnimDictLoaded(dict)) {
-                clearInterval(check);
-                resolve();
-            }
+        const iv = setInterval(() => {
+            if (mp.game.streaming.hasAnimDictLoaded(dict)) { clearInterval(iv); resolve(); }
         }, 50);
     });
 }
 
-// ── Surrender ─────────────────────────────────────────────────────────────────
+function dist2(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
 
-mp.events.add('client:lspd:setSurrendered', async (isSurrendered) => {
-    surrendered = isSurrendered;
+function dist3(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
 
-    if (isSurrendered) {
-        await loadAnimDict(ANIM_SURRENDER.dict);
-        mp.players.local.taskPlayAnim(
-            ANIM_SURRENDER.dict, ANIM_SURRENDER.anim,
-            8.0, -8.0, -1, ANIM_SURRENDER.flag, 0, false, false, false
-        );
-        // Freeze controls — only camera & talking allowed
-        mp.game.controls.disableControlAction(0, 30, true); // move LR
-        mp.game.controls.disableControlAction(0, 31, true); // move UD
-        mp.game.controls.disableControlAction(0, 21, true); // sprint
-    } else {
-        mp.players.local.clearTasks();
-    }
+// ── Prompt rendering ──────────────────────────────────────────────────────────
+// We call showInteraction with a multi-row array that merges the ColShape E-key
+// row (if any) with our G-key row.  This way a single setInteraction call always
+// renders the full picture and neither system stomps the other.
+//
+// We hook into the existing 'interaction:restore' event so our row survives
+// menu-close restores too.
+
+// Read the ColShape slot without modifying it
+function getActiveColshapeInteraction() {
+    // interaction.js stores this in its own closure; we can't read it directly.
+    // Instead we track it ourselves via a shadow variable updated by the events.
+    return _shadowColshapeInteraction;
+}
+
+let _shadowColshapeInteraction = null;
+
+mp.events.add('playerEnterColshape', (shape) => {
+    const data = shape.getVariable('interaction') || shape.interaction;
+    if (data) _shadowColshapeInteraction = data;
+});
+mp.events.add('playerExitColshape', (shape) => {
+    const data = shape.getVariable('interaction') || shape.interaction;
+    if (data) { _shadowColshapeInteraction = null; refreshPrompt(); }
 });
 
-// ── Cuffed ────────────────────────────────────────────────────────────────────
+function refreshPrompt() {
+    const rows = [];
 
-mp.events.add('client:lspd:setCuffed', async (isCuffed, officerId) => {
-    cuffed = isCuffed;
-    cuffedToOfficerId = officerId;
+    // E-key row from colshape (if any)
+    const cs = _shadowColshapeInteraction;
+    if (cs) {
+        rows.push({ key: 'E', label: (cs.title ? cs.title + ': ' : '') + (cs.text || '') });
+    }
 
-    if (isCuffed) {
-        // Play cuff intro then loop idle
+    // G-key row (cuff or jail drop)
+    if (gKeyAction) {
+        rows.push(gKeyAction);
+    }
+
+    if (rows.length === 0) {
+        mp.events.call('hideInteraction');
+    } else {
+        // Pass as JSON array string — overlay's multi-key path handles this
+        mp.events.call('showInteraction', JSON.stringify(rows));
+    }
+}
+
+// Keep our shadow in sync when interaction:restore fires (menu close)
+mp.events.add('interaction:restore', () => {
+    refreshPrompt();
+});
+
+function setGKeyAction(action) {
+    // action = { key:'G', label:'...', pd?:true } or null
+    gKeyAction = action;
+    refreshPrompt();
+}
+
+// ── Cuff animation (synced to all nearby clients) ─────────────────────────────
+
+mp.events.add('client:lspd:cuffAnim', async (suspectRemoteId, officerRemoteId, cuffing) => {
+    const isLocalSuspect = (suspectRemoteId === mp.players.local.remoteId);
+    const isLocalOfficer = (officerRemoteId  === mp.players.local.remoteId);
+
+    if (isLocalSuspect) {
+        cuffed            = cuffing;
+        cuffedToOfficerId = cuffing ? officerRemoteId : null;
+
+        if (cuffing) {
+            await loadAnimDict(ANIM_CUFF_INTRO.dict);
+            mp.players.local.taskPlayAnim(
+                ANIM_CUFF_INTRO.dict, ANIM_CUFF_INTRO.anim,
+                8.0, -8.0, 2000, ANIM_CUFF_INTRO.flag, 0, false, false, false
+            );
+            setTimeout(async () => {
+                if (!cuffed) return;
+                await loadAnimDict(ANIM_CUFFED.dict);
+                mp.players.local.taskPlayAnim(
+                    ANIM_CUFFED.dict, ANIM_CUFFED.anim,
+                    8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
+                );
+            }, 2100);
+
+            // Follow-tick: keep cuffed player beside officer while on foot
+            if (cuffFollowTick) clearInterval(cuffFollowTick);
+            cuffFollowTick = setInterval(() => {
+                if (!cuffed || cuffedToOfficerId === null) {
+                    clearInterval(cuffFollowTick); cuffFollowTick = null; return;
+                }
+                if (mp.players.local.vehicle) return; // in car — detain handles position
+
+                const officer = mp.players.atRemoteId(cuffedToOfficerId);
+                if (!officer || !mp.players.exists(officer)) return;
+                if (officer.vehicle) return;
+
+                const offPos = officer.position;
+                const myPos  = mp.players.local.position;
+                const dist   = Math.sqrt((offPos.x-myPos.x)**2 + (offPos.y-myPos.y)**2);
+
+                if (dist > 3.5) {
+                    mp.players.local.position = new mp.Vector3(
+                        offPos.x - Math.sin(officer.heading * Math.PI / 180) * 1.0,
+                        offPos.y - Math.cos(officer.heading * Math.PI / 180) * 1.0,
+                        offPos.z
+                    );
+                }
+                [30, 31, 21, 22, 24, 25].forEach(ctrl =>
+                    mp.game.controls.disableControlAction(0, ctrl, true)
+                );
+            }, 100);
+
+        } else {
+            cuffed = false; cuffedToOfficerId = null;
+            if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
+            mp.players.local.clearTasks();
+            clearJailDropBlips();
+        }
+
+    } else if (isLocalOfficer && cuffing) {
         await loadAnimDict(ANIM_CUFF_INTRO.dict);
         mp.players.local.taskPlayAnim(
             ANIM_CUFF_INTRO.dict, ANIM_CUFF_INTRO.anim,
             8.0, -8.0, 2000, ANIM_CUFF_INTRO.flag, 0, false, false, false
         );
-
-        setTimeout(async () => {
-            if (!cuffed) return;
-            await loadAnimDict(ANIM_CUFFED.dict);
-            mp.players.local.taskPlayAnim(
-                ANIM_CUFFED.dict, ANIM_CUFFED.anim,
-                8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
-            );
-        }, 2100);
-
-        // Start follow tick — keep cuffed player near officer
-        if (cuffFollowTick) clearInterval(cuffFollowTick);
-        cuffFollowTick = setInterval(() => {
-            if (!cuffed || cuffedToOfficerId === null) {
-                clearInterval(cuffFollowTick);
-                cuffFollowTick = null;
-                return;
-            }
-
-            const officer = mp.players.atRemoteId(cuffedToOfficerId);
-            if (!officer || !mp.players.exists(officer)) return;
-
-            const offPos = officer.position;
-            const myPos  = mp.players.local.position;
-
-            const dx = offPos.x - myPos.x;
-            const dy = offPos.y - myPos.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            // If too far away (officer moved), teleport us beside them
-            if (dist > 3.5) {
-                const behind = new mp.Vector3(
-                    offPos.x - Math.sin(officer.heading * Math.PI / 180) * 1.0,
-                    offPos.y - Math.cos(officer.heading * Math.PI / 180) * 1.0,
-                    offPos.z
-                );
-                mp.players.local.position = behind;
-            }
-
-            // Block all movement controls
-            mp.game.controls.disableControlAction(0, 30, true);
-            mp.game.controls.disableControlAction(0, 31, true);
-            mp.game.controls.disableControlAction(0, 21, true);
-            mp.game.controls.disableControlAction(0, 22, true);
-            mp.game.controls.disableControlAction(0, 24, true); // attack
-            mp.game.controls.disableControlAction(0, 25, true); // aim
-        }, 100);
-
-    } else {
-        // Remove cuffs
-        cuffed = false;
-        cuffedToOfficerId = null;
-        surrendered = false;
-
-        if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
-        mp.players.local.clearTasks();
     }
+    // Bystanders: RAGE syncs ped anims automatically via the streamer.
 });
 
-// ── Detain: warp cuffed suspect into police vehicle safely ────────────────────
-// Called by server instead of the generic warpIntoVehicle so we can
-// stop the follow tick and clear the looping cuff animation first.
-mp.events.add('client:lspd:detainInVehicle', (vehId, seat) => {
-    // 1. Stop the follow tick — this is what caused the "under the map" bug.
-    //    The tick runs every 100ms setting local.position to the officer's feet;
-    //    if it fires after setIntoVehicle the Z mismatch drops the player through
-    //    the car floor and into the ground.
-    if (cuffFollowTick) {
-        clearInterval(cuffFollowTick);
-        cuffFollowTick = null;
-    }
+// ── Vehicle detain ────────────────────────────────────────────────────────────
 
-    // 2. Clear the looping handcuffed animation so it doesn't fight the vehicle
-    //    enter state. We resume it once seated (500ms grace period).
+mp.events.add('client:lspd:detainInVehicle', (vehId, seat) => {
+    // Kill follow-tick FIRST — this prevents the Z-drop / under-map bug.
+    if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
     mp.players.local.clearTasks();
 
-    // 3. Warp into the vehicle — retry once if not yet streamed in
     const doWarp = () => {
         const veh = mp.vehicles.atRemoteId(vehId);
         if (!veh || !mp.vehicles.exists(veh)) return false;
@@ -148,55 +205,154 @@ mp.events.add('client:lspd:detainInVehicle', (vehId, seat) => {
         return true;
     };
 
-    if (!doWarp()) {
-        setTimeout(() => {
-            if (!doWarp()) return;
-            // Resume cuff idle anim after seated
-            setTimeout(() => {
-                if (!cuffed) return;
-                loadAnimDict(ANIM_CUFFED.dict).then(() => {
-                    mp.players.local.taskPlayAnim(
-                        ANIM_CUFFED.dict, ANIM_CUFFED.anim,
-                        8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
-                    );
-                });
-            }, 500);
-        }, 300);
-    } else {
-        setTimeout(() => {
+    const resumeAnim = () => {
+        setTimeout(async () => {
             if (!cuffed) return;
-            loadAnimDict(ANIM_CUFFED.dict).then(() => {
-                mp.players.local.taskPlayAnim(
-                    ANIM_CUFFED.dict, ANIM_CUFFED.anim,
-                    8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
-                );
-            });
-        }, 500);
+            await loadAnimDict(ANIM_CUFFED.dict);
+            mp.players.local.taskPlayAnim(
+                ANIM_CUFFED.dict, ANIM_CUFFED.anim,
+                8.0, -8.0, -1, ANIM_CUFFED.flag, 0, false, false, false
+            );
+        }, 600);
+    };
+
+    if (!doWarp()) {
+        setTimeout(() => { if (doWarp()) resumeAnim(); }, 400);
+    } else {
+        resumeAnim();
     }
 });
 
-// Officer feedback when they cuff someone
-mp.events.add('client:lspd:cuffedSomeone', (suspectId) => {
-    // Play cuff animation on officer side too (mirrored)
-    loadAnimDict('mp_arresting').then(() => {
-        mp.players.local.taskPlayAnim('mp_arresting', 'a_uncuff', 8.0, -8.0, 2000, 48, 0, false, false, false);
+// ── Eject & teleport to jail ──────────────────────────────────────────────────
+
+mp.events.add('client:lspd:ejectAndTeleport', (x, y, z) => {
+    if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
+    mp.players.local.clearTasks();
+    cuffed = false; cuffedToOfficerId = null;
+    mp.players.local.position = new mp.Vector3(x, y, z);
+    clearJailDropBlips();
+    setGKeyAction(null);
+});
+
+// ── Jail drop blips ───────────────────────────────────────────────────────────
+
+function clearJailDropBlips() {
+    jailDropBlips.forEach(b => { try { b.destroy(); } catch(e) {} });
+    jailDropBlips = []; jailDropPoints = []; nearJailDrop = false;
+}
+
+mp.events.add('client:lspd:updateJailDrops', (pointsJson) => {
+    clearJailDropBlips();
+    jailDropPoints = JSON.parse(pointsJson);
+    jailDropPoints.forEach(p => {
+        const blip = mp.blips.new(
+            431,
+            new mp.Vector3(p.x, p.y, p.z),
+            { shortRange: false, name: p.label, color: 3, scale: 0.9 }
+        );
+        jailDropBlips.push(blip);
     });
 });
 
-// ── Garage vehicle selection ──────────────────────────────────────────────────
+mp.events.add('client:lspd:showJailDropPrompt', (pointsJson) => {
+    mp.events.call('client:lspd:updateJailDrops', pointsJson);
+});
+
+// ── Proximity tick — officer G-key context detection ─────────────────────────
+// Runs every 300ms. Checks two mutually exclusive contexts:
+//   1. Officer is driving a PD car at a jail drop point  → "G  Book Suspect"
+//   2. Officer is on foot near a RoS-wanted player       → "G  Cuff PlayerName"
+// Only touches gKeyAction — never activeInteraction (E-key / ColShape).
+
+setInterval(() => {
+    if (mp.gui.cursor.visible) {
+        if (gKeyAction) setGKeyAction(null);
+        return;
+    }
+
+    const local     = mp.players.local;
+    const duty      = local.getVariable('factionDuty');
+    const faction   = local.getVariable('factionId') || local.factionId;
+    const isOfficer = duty && faction === 2;
+
+    if (!isOfficer) {
+        if (gKeyAction || nearCuffTarget || nearJailDrop) {
+            nearCuffTarget = null; nearJailDrop = false;
+            setGKeyAction(null);
+        }
+        return;
+    }
+
+    // Context 1: at a jail drop point in a PD vehicle
+    if (local.vehicle && jailDropPoints.length > 0) {
+        const pos = local.position;
+        const atDrop = jailDropPoints.some(p => dist3(pos, p) <= 10);
+
+        if (atDrop !== nearJailDrop) {
+            nearJailDrop = atDrop;
+            setGKeyAction(atDrop
+                ? { key: 'G', label: 'Book Suspect', pd: true }
+                : null
+            );
+        }
+        // Don't check cuff while in a vehicle
+        if (nearCuffTarget) { nearCuffTarget = null; }
+        return;
+    }
+
+    // Clear jail-drop state if we left the vehicle
+    if (nearJailDrop) { nearJailDrop = false; }
+
+    // Context 2: on foot near a RoS-wanted player
+    if (local.vehicle) {
+        if (nearCuffTarget) { nearCuffTarget = null; setGKeyAction(null); }
+        return;
+    }
+
+    let closest = null, closestDist = 3.0;
+    mp.players.forEach(p => {
+        if (p.remoteId === local.remoteId) return;
+        if (!p.getVariable) return;
+        if (p.getVariable('cuffed')) return;
+        if (p.getVariable('wantedType') !== 'RoS') return;
+        const d = dist2(local.position, p.position);
+        if (d < closestDist) { closestDist = d; closest = p; }
+    });
+
+    if (closest) {
+        const rid  = closest.remoteId;
+        const name = closest.name.replace(/_/g, ' ');
+        if (!nearCuffTarget || nearCuffTarget.remoteId !== rid) {
+            nearCuffTarget = { remoteId: rid, displayName: name };
+            setGKeyAction({ key: 'G', label: `Cuff ${name}`, pd: true });
+        }
+    } else if (nearCuffTarget) {
+        nearCuffTarget = null;
+        setGKeyAction(null);
+    }
+}, 300);
+
+// ── G key ─────────────────────────────────────────────────────────────────────
+
+mp.keys.bind(0x47, true, () => {
+    if (mp.gui.cursor.visible) return;
+    if (nearJailDrop) {
+        mp.events.callRemote('server:lspd:tryJailDrop');
+    } else if (nearCuffTarget) {
+        mp.events.callRemote('server:lspd:tryCuff', nearCuffTarget.remoteId);
+    }
+});
+
+// ── Garage menu ───────────────────────────────────────────────────────────────
 
 let garageBrowser = null;
 
 mp.events.add('client:lspd:openGarageMenu', (catalogJson) => {
     if (garageBrowser) { garageBrowser.destroy(); garageBrowser = null; }
-
     garageBrowser = mp.browsers.new('package://factions/lspd/garage.html');
     mp.gui.cursor.visible = true;
-
     setTimeout(() => {
-        if (garageBrowser) {
-            garageBrowser.execute(`loadCatalog(${JSON.stringify(catalogJson)})`);
-        }
+        if (garageBrowser) garageBrowser.execute(`loadCatalog(${JSON.stringify(catalogJson)})`);
     }, 150);
 });
 
@@ -211,42 +367,27 @@ mp.events.add('client:lspd:closeGarage', () => {
     mp.gui.cursor.visible = false;
 });
 
+// ── Stop Order UI ─────────────────────────────────────────────────────────────
 
-// ── Stop Order UI: received by target ────────────────────────────────────────
+mp.events.add('client:lspd:showStopOrder',     (n) => mp.events.call('showStopOrderNotification', n, false));
+mp.events.add('client:lspd:showStopOrderSent', (n) => mp.events.call('showStopOrderNotification', n, true));
 
-mp.events.add('client:lspd:showStopOrder', (officerName) => {
-    // Show a screen notification via overlay
-    mp.events.call('showStopOrderNotification', officerName, false);
-});
+// ── Weapon shot relay ─────────────────────────────────────────────────────────
 
-// ── Stop Order UI: sent confirmation for officer ──────────────────────────────
-
-mp.events.add('client:lspd:showStopOrderSent', (targetName) => {
-    mp.events.call('showStopOrderNotification', targetName, true);
-});
-
-// ── Relay playerWeaponShot to server for wanted system ────────────────────────
-// RAGE MP fires playerWeaponShot CLIENT-side only; the server handler in
-// wantedManager.js won't trigger unless we forward it here.
 mp.events.add('playerWeaponShot', (targetPosition, targetEntity) => {
-    const targetPlayerId = (targetEntity && targetEntity.type === 'player')
-        ? targetEntity.remoteId
-        : -1;
-    mp.events.callRemote('server:wanted:weaponShot', targetPlayerId);
+    const id = (targetEntity && targetEntity.type === 'player') ? targetEntity.remoteId : -1;
+    mp.events.callRemote('server:wanted:weaponShot', id);
 });
 
-// ── Cleanup on death: clear animations and cuff state ────────────────────────
+// ── Death cleanup ─────────────────────────────────────────────────────────────
 
 mp.events.add('playerDeath', () => {
-    if (surrendered) {
-        surrendered = false;
-        mp.players.local.clearTasks();
-    }
-    // Cuff state is cleared server-side on death event; client just cleans up
     if (cuffed) {
-        cuffed = false;
-        cuffedToOfficerId = null;
+        cuffed = false; cuffedToOfficerId = null;
         if (cuffFollowTick) { clearInterval(cuffFollowTick); cuffFollowTick = null; }
         mp.players.local.clearTasks();
     }
+    clearJailDropBlips();
+    nearCuffTarget = null; nearJailDrop = false;
+    setGKeyAction(null);
 });

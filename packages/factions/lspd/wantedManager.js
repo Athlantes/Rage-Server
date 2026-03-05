@@ -129,9 +129,9 @@ function applyOffense(suspect, offenseKey, officerId) {
 
     const typeTag = offense.type === 'NoS' ? '!{#ff4757}[WANTED - NO SURRENDER]' : '!{#ffc300}[WANTED - SURRENDER]';
     suspect.outputChatBox(typeTag + ' !{#ffffff}You are wanted for: ' + offense.label + '.');
-    
+
     if (offense.type === 'RoS') {
-        suspect.outputChatBox('!{#ffc300}Use /surrender near a police officer to give yourself up.');
+        suspect.outputChatBox('!{#ffc300}Stop at a police station. An officer will approach to arrest you.');
     }
 
     mp.players.forEach(p => {
