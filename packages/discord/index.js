@@ -63,8 +63,7 @@ function handleBotMessage(msg) {
         botReady = true;
         console.log('[Discord] Bot ready: ' + msg.tag);
     }
-    else if (msg.type === 'sendLinkPin') {
-        // Prefer to find the target by DB id (safer), fall back to username
+    else if (msg.type === 'sendLinkPin') {        // Prefer to find the target by DB id (safer), fall back to username
         let targetPlayer = null;
         if (msg.userId !== undefined && msg.userId !== null) {
             const uid = Number(msg.userId);
@@ -149,6 +148,31 @@ function logKick(message, fields) {
     sendToBot({ type: 'kickLog', message: message, fields: fields || [] });
 }
 
+// ── Family API ────────────────────────────────────────────────────────────────
+function familyCreated(familyId, familyName, familyTag, familyColor, ownerId, ownerName, ranks) {
+    sendToBot({ type: 'familyCreated', familyId, familyName, familyTag, familyColor, ownerId, ownerName, ranks });
+}
+
+function familyDisbanded(familyId, familyName) {
+    sendToBot({ type: 'familyDisbanded', familyId, familyName });
+}
+
+function familyMemberJoined(familyId, familyName, userId, username, rank) {
+    sendToBot({ type: 'familyMemberJoined', familyId, familyName, userId, username, rank });
+}
+
+function familyMemberLeft(familyId, familyName, userId, username) {
+    sendToBot({ type: 'familyMemberLeft', familyId, familyName, userId, username });
+}
+
+function familyRankChanged(familyId, familyName, userId, username, oldRank, newRank) {
+    sendToBot({ type: 'familyRankChanged', familyId, familyName, userId, username, oldRank, newRank });
+}
+
+function familyColorChanged(familyId, familyName, newColor) {
+    sendToBot({ type: 'familyColorChanged', familyId, familyName, newColor });
+}
+
 // ── Start ────────────────────────────────────────────────────────────────────
 startBot();
 
@@ -162,6 +186,13 @@ module.exports = {
     logBan: logBan,
     logKick: logKick,
     sendToBot: sendToBot,
-    syncPlayerList: syncPlayerList, // Permite actualizarea instantă a jucătorilor (ex: direct la login)
+    syncPlayerList: syncPlayerList,
     isReady: function() { return botReady; },
+    // Family system
+    familyCreated: familyCreated,
+    familyDisbanded: familyDisbanded,
+    familyMemberJoined: familyMemberJoined,
+    familyMemberLeft: familyMemberLeft,
+    familyRankChanged: familyRankChanged,
+    familyColorChanged: familyColorChanged,
 };

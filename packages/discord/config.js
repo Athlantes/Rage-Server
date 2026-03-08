@@ -35,4 +35,17 @@ module.exports = {
 
     // ── Update intervals ──
     STATUS_UPDATE_INTERVAL: 60000,           // Update status channel every 60 seconds
+
+    // ── Family System ──
+    // Category position offset for new family categories (higher = lower in channel list)
+    FAMILY_CATEGORY_POSITION: 10,
+    // Default channels created for every family (order matters)
+    FAMILY_CHANNELS: [
+        { name: 'chat',         type: 'text',  topic: 'Family general chat' },
+        { name: 'media',        type: 'text',  topic: 'Share screenshots, clips & media' },
+        { name: 'announcements',type: 'text',  topic: 'Family announcements & news' },
+        { name: 'voice',        type: 'voice', topic: '' },
+    ],
+    // Family log channel — set to a real channel ID if you want family create/disband logs
+    FAMILY_LOG_CHANNEL_ID: '',
 };

@@ -6,6 +6,15 @@ const db            = require('../core/database');
 const playerManager = require('../core/playerManager');
 const HouseManager  = require('./houseManager');
 
+// Discord integration (lazy-loaded to avoid circular dep issues)
+let discord = null;
+function getDiscord() {
+    if (!discord) {
+        try { discord = require('../discord/index'); } catch (e) { /* discord not loaded */ }
+    }
+    return discord;
+}
+
 const CREATION_COST  = 200000;
 const UPGRADE_COST   = 75000;
 const UPGRADE_AMOUNT = 10;
@@ -208,6 +217,20 @@ class FamilyManager {
             player.outputChatBox(`!{00FF00}Family "!{${color.replace('#','')}${name}!{00FF00}" created! You are the Leader.`);
             console.log(`[FamilyManager] ${player.name} created family "${name}" (ID: ${newFamilyId})`);
             
+            // Notify Discord bot to create the private category + channels + roles
+            const disc = getDiscord();
+            if (disc) {
+                disc.familyCreated(
+                    newFamilyId,
+                    name,
+                    finalTag,
+                    color,
+                    player.data.dbId,
+                    player.name,
+                    safeRanks.map((r, i) => ({ rank: i + 1, name: r.name }))
+                );
+            }
+
             // Refresh playerMenu UI
             mp.events.call('server:playerMenu:getData', player);
         } catch (err) {
@@ -387,6 +410,10 @@ class FamilyManager {
             player.outputChatBox(`!{00FF00}You joined family !{${tagColor}}${family.name}!{00FF00}!`);
             this._broadcastToFamily(family, `!{${tagColor}}[Family] !{FFFFFF}${player.name} joined the family!`, []);
             
+            // Notify Discord
+            const disc = getDiscord();
+            if (disc) disc.familyMemberJoined(family.id, family.name, player.data.dbId, player.name, rank);
+
             // Refresh playerMenu UI
             mp.events.call('server:playerMenu:getData', player);
         } catch (err) {
@@ -405,6 +432,8 @@ class FamilyManager {
         this._clearPlayerVars(player);
         player.outputChatBox('!{FFFF00}You left the family.');
         this._broadcastToFamily(fam, `!{FFAA00}[Family] ${player.name} left the family.`, []);
+        const discLeave = getDiscord();
+        if (discLeave) discLeave.familyMemberLeft(fam.id, fam.name, player.data.dbId, player.name);
         mp.events.call('server:playerMenu:getData', player);
     }
 
@@ -424,6 +453,8 @@ class FamilyManager {
             this._clearPlayerVars(target);
             target.outputChatBox('!{FF4444}You were kicked from the family.');
         }
+        const discKick = getDiscord();
+        if (discKick) discKick.familyMemberLeft(fam.id, fam.name, targetUserId, mem.username);
         await this._pushFreshData(owner);
     }
 
@@ -473,9 +504,16 @@ class FamilyManager {
                 newOwner.outputChatBox(`!{00FF00}You are now the Leader of "${fam.name}"!`);
             }
             this._broadcastToFamily(fam, `!{FFAA00}[Family] ${mem.username} is the new Leader!`, []);
+            // Discord: old owner demoted 5→4, new owner promoted x→5
+            const discTransfer = getDiscord();
+            if (discTransfer) {
+                discTransfer.familyRankChanged(fam.id, fam.name, owner.data.dbId, owner.name, 5, 4);
+                discTransfer.familyRankChanged(fam.id, fam.name, targetUserId, mem.username, mem.rank, 5);
+            }
             return;
         }
 
+        const prevRank = mem.rank;
         mem.rank = newRank;
         await db.query('UPDATE family_members SET rank = ? WHERE family_id = ? AND user_id = ?', [newRank, fam.id, targetUserId]);
 
@@ -488,6 +526,8 @@ class FamilyManager {
             this._applyPlayerVars(target, fam, newRank);
             target.outputChatBox(`!{FFAA00}Your family rank changed to ${rankInfo.name} (Rank ${newRank}).`);
         }
+        const discRank = getDiscord();
+        if (discRank) discRank.familyRankChanged(fam.id, fam.name, targetUserId, mem.username, prevRank, newRank);
         await this._pushFreshData(owner);
     }
 
@@ -623,6 +663,9 @@ class FamilyManager {
         owner.outputChatBox(`!{00FF00}Family color updated to !{${clr}}${fam.color}!{00FF00}.`);
         this._broadcastToFamily(fam, `!{${clr}}[Family] !{FFFFFF}Main color changed to !{${clr}}${fam.color}!{FFFFFF}.`, [owner.data.dbId]);
         
+        const discColor = getDiscord();
+        if (discColor) discColor.familyColorChanged(fam.id, fam.name, fam.color);
+
         await this._pushFreshData(owner);
     }
 
@@ -683,6 +726,11 @@ class FamilyManager {
         this._clearPlayerVars(owner);
         owner.outputChatBox(`!{FF4444}Family "${fam.name}" has been disbanded.`);
         console.log(`[FamilyManager] Family "${fam.name}" (ID: ${fam.id}) disbanded by ${owner.name}.`);
+
+        // Tell Discord to clean up the category, channels and roles
+        const discDisband = getDiscord();
+        if (discDisband) discDisband.familyDisbanded(fam.id, fam.name);
+
         mp.events.call('server:playerMenu:getData', owner);
     }
 

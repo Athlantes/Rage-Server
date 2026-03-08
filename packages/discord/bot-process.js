@@ -10,7 +10,8 @@ const {
     TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags 
 } = require('discord.js');
 const mysql = require('mysql2');
-const bcrypt = require('bcryptjs'); // Nu mai este strict necesar pentru /link, dar îl păstrăm dacă vrei pe viitor
+const bcrypt = require('bcryptjs');
+const fs = require('fs');
 const path = require('path');
 
 // ── Load config (same file used by RAGE:MP side) ─────────────────────────────
@@ -39,6 +40,10 @@ const client = new Client({
 let statusMessage = null;
 let onlinePlayers = []; // Updated via IPC from RAGE:MP
 const pendingLinks = new Map(); // Va stoca temporar cererile de link active (PIN-urile)
+
+// ── Family Discord state ──────────────────────────────────────────────────────
+// familyId → { categoryId, channelIds: { chat, media, announcements, voice }, roleIds: { 1..5 } }
+const familyDiscord = new Map();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  IPC: Receive events from RAGE:MP via stdin
@@ -81,6 +86,26 @@ async function handleIPC(msg) {
         case 'kickLog':
             sendLogEmbed('kick', msg.message, msg.fields || []);
             break;
+
+        // ── Family events ──
+        case 'familyCreated':
+            familyCreated(msg).catch(e => console.error('[Discord/Family] familyCreated error:', e));
+            break;
+        case 'familyDisbanded':
+            familyDisbanded(msg).catch(e => console.error('[Discord/Family] familyDisbanded error:', e));
+            break;
+        case 'familyMemberJoined':
+            familyMemberJoined(msg).catch(e => console.error('[Discord/Family] memberJoined error:', e));
+            break;
+        case 'familyMemberLeft':
+            familyMemberLeft(msg).catch(e => console.error('[Discord/Family] memberLeft error:', e));
+            break;
+        case 'familyRankChanged':
+            familyRankChanged(msg).catch(e => console.error('[Discord/Family] rankChanged error:', e));
+            break;
+        case 'familyColorChanged':
+            familyColorChanged(msg).catch(e => console.error('[Discord/Family] colorChanged error:', e));
+            break;
     }
 }
 
@@ -109,6 +134,9 @@ client.once('ready', async () => {
 
     updateStatusEmbed();
     setInterval(updateStatusEmbed, config.STATUS_UPDATE_INTERVAL);
+
+    // Restore family Discord state from disk (survives bot restarts)
+    loadFamilyMap();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -381,6 +409,9 @@ async function handleLinkModal(interaction) {
 
     sendLogEmbed('link', `🔗 **${interaction.user.tag}** linked to in-game account **${pending.username}**`);
     
+    // Auto-assign family Discord role if player is in a family
+    onPlayerLinked({ userId: pending.userId, discordId }).catch(() => {});
+
     pendingLinks.delete(discordId); // Ștergem cererea din memorie
     await interaction.editReply(`✅ Ready! Your discord account is now linked to **${pending.username}**.`);
 }
@@ -592,7 +623,413 @@ async function ensureLinkMessage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  START
+//  FAMILY SYSTEM — Discord Integration
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FAMILY_MAP_PATH = path.join(__dirname, 'family_discord_map.json');
+
+function saveFamilyMap() {
+    try {
+        const obj = {};
+        for (const [id, data] of familyDiscord.entries()) obj[id] = data;
+        fs.writeFileSync(FAMILY_MAP_PATH, JSON.stringify(obj, null, 2));
+    } catch (e) {
+        console.warn('[Discord/Family] Could not save family map:', e.message);
+    }
+}
+
+function loadFamilyMap() {
+    try {
+        if (!fs.existsSync(FAMILY_MAP_PATH)) return;
+        const obj = JSON.parse(fs.readFileSync(FAMILY_MAP_PATH, 'utf8'));
+        for (const [id, data] of Object.entries(obj)) {
+            familyDiscord.set(parseInt(id), data);
+        }
+        console.log(`[Discord/Family] Loaded ${familyDiscord.size} family entries from disk.`);
+    } catch (e) {
+        console.warn('[Discord/Family] Could not load family map:', e.message);
+    }
+}
+
+/**
+ * Convert a #RRGGBB hex string to a Discord-compatible integer color.
+ */
+function hexToInt(hex) {
+    if (!hex || typeof hex !== 'string') return 0xAAAAAA;
+    const cleaned = hex.replace('#', '').trim();
+    const val = parseInt(cleaned, 16);
+    return isNaN(val) ? 0xAAAAAA : val;
+}
+
+/**
+ * Sanitize a string to be usable as a Discord channel/category name.
+ */
+function toDiscordName(str) {
+    return str.replace(/[^a-zA-Z0-9\s\-_]/g, '').trim().substring(0, 90) || 'family';
+}
+
+/**
+ * Fetch the guild.
+ */
+async function getGuild() {
+    return await client.guilds.fetch(config.GUILD_ID);
+}
+
+/**
+ * Resolve a Discord member by their in-game DB user id.
+ */
+async function getMemberByDbId(guild, dbUserId) {
+    try {
+        const [rows] = await pool.query('SELECT discord_id FROM users WHERE id = ?', [dbUserId]);
+        if (!rows.length || !rows[0].discord_id) return null;
+        return await guild.members.fetch(rows[0].discord_id).catch(() => null);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Called when a family is first created.
+ * msg: { familyId, familyName, familyColor, ownerId (DB), ownerName, ranks: [{rank,name}x5] }
+ */
+async function familyCreated(msg) {
+    const { familyId, familyName, familyTag, familyColor, ownerId, ownerName, ranks } = msg;
+    const guild = await getGuild();
+    const color = hexToInt(familyColor || '#AAAAAA');
+    const safeName = toDiscordName(familyName);
+
+    console.log(`[Discord/Family] Creating Discord structure for family "${familyName}" (ID: ${familyId})`);
+
+    // ── 1. Create the category with minimal perms first (roles don't exist yet)
+    const category = await guild.channels.create({
+        name: `╔ ${safeName}`,
+        type: ChannelType.GuildCategory,
+        position: config.FAMILY_CATEGORY_POSITION,
+        permissionOverwrites: [
+            { id: guild.roles.everyone, deny: ['ViewChannel'] },
+            { id: client.user.id,       allow: ['ViewChannel', 'SendMessages', 'ManageChannels', 'ManageMessages', 'ReadMessageHistory'] },
+        ],
+    });
+
+    // ── 2. Create rank roles (1=lowest .. 5=owner) ───────────────────────────
+    const roleIds = {};
+    for (const rankDef of (ranks || [])) {
+        const role = await guild.roles.create({
+            name: `[${familyTag}] ${rankDef.name} R${rankDef.rank}`,
+            color: color,
+            mentionable: false,
+            reason: `Family "${familyName}" rank role`,
+        });
+        roleIds[rankDef.rank] = role.id;
+    }
+
+    // ── 3. Build category permission overwrites ──────────────────────────────
+    // All rank roles get view access on the category; channels will inherit.
+    // Bot gets explicit full access so it can always manage what it creates.
+    const categoryPerms = [
+        { id: guild.roles.everyone, deny: ['ViewChannel'] },
+        { id: client.user.id,       allow: ['ViewChannel', 'SendMessages', 'ManageChannels', 'ManageMessages', 'ReadMessageHistory'] },
+    ];
+    for (const [rank, roleId] of Object.entries(roleIds)) {
+        const allow = ['ViewChannel', 'SendMessages', 'ReadMessageHistory', 'AddReactions', 'AttachFiles', 'EmbedLinks'];
+        if (parseInt(rank) >= 5) allow.push('ManageMessages');
+        categoryPerms.push({ id: roleId, allow });
+    }
+
+    // Update the category with the full permission set now that roles exist
+    await category.permissionOverwrites.set(categoryPerms);
+
+    // ── 4. Create text/voice channels inside the category (inherit perms) ────
+    const channelIds = {};
+    for (const chDef of config.FAMILY_CHANNELS) {
+        const chType = chDef.type === 'voice' ? ChannelType.GuildVoice : ChannelType.GuildText;
+        const createOptions = {
+            name: chDef.name,
+            type: chType,
+            parent: category.id,
+            // No permissionOverwrites here — inherits from category
+        };
+        if (chType === ChannelType.GuildText && chDef.topic) {
+            createOptions.topic = chDef.topic;
+        }
+        const ch = await guild.channels.create(createOptions);
+        channelIds[chDef.name] = ch.id;
+    }
+
+    // ── 5. Store in memory + persist to disk ────────────────────────────────
+    familyDiscord.set(familyId, { categoryId: category.id, channelIds, roleIds });
+    saveFamilyMap();
+
+    // ── 6. Assign owner their rank 5 role ────────────────────────────────────
+    const ownerMember = await getMemberByDbId(guild, ownerId);
+    if (ownerMember) {
+        if (roleIds[5]) await ownerMember.roles.add(roleIds[5]).catch(() => {});
+    }
+
+    // ── 7. Post a welcome message in #chat ───────────────────────────────────
+    const chatChannelId = channelIds['chat'];
+    if (chatChannelId) {
+        const chatChannel = await guild.channels.fetch(chatChannelId).catch(() => null);
+        if (chatChannel) {
+            const embed = new EmbedBuilder()
+                .setColor(color)
+                .setTitle(`🏠 Welcome to ${familyName}!`)
+                .setDescription(`This is the private Discord space for **${familyName}**.\n\n> Family members who have linked their Discord account will automatically get access here.`)
+                .addFields(
+                    { name: '👑 Founded by', value: ownerName, inline: true },
+                    { name: '💬 Channels', value: config.FAMILY_CHANNELS.map(c => `\`${c.name}\``).join(' · '), inline: false },
+                )
+                .setFooter({ text: 'Central Online — Family System' })
+                .setTimestamp();
+            await chatChannel.send({ embeds: [embed] }).catch(() => {});
+        }
+    }
+
+    // ── 8. Log ───────────────────────────────────────────────────────────────
+    if (config.FAMILY_LOG_CHANNEL_ID) {
+        sendLogEmbed('info', `🏠 **${ownerName}** created family **${familyName}** — Discord category created.`, []);
+    }
+
+    console.log(`[Discord/Family] Structure ready for "${familyName}": category ${category.id}, ${Object.keys(roleIds).length} roles, ${Object.keys(channelIds).length} channels.`);
+}
+
+/**
+ * Called when a family is disbanded.
+ */
+async function familyDisbanded(msg) {
+    const { familyId, familyName } = msg;
+    const data = familyDiscord.get(familyId);
+    if (!data) return;
+
+    const guild = await getGuild();
+
+    try {
+        if (data.categoryId) {
+            const category = await guild.channels.fetch(data.categoryId).catch(() => null);
+            if (category) {
+                const children = guild.channels.cache.filter(c => c.parentId === category.id);
+                for (const [, ch] of children) {
+                    await ch.delete(`Family "${familyName}" disbanded`).catch(() => {});
+                }
+                await category.delete(`Family "${familyName}" disbanded`).catch(() => {});
+            }
+        }
+    } catch (e) {
+        console.warn('[Discord/Family] Error deleting category:', e.message);
+    }
+
+    for (const roleId of Object.values(data.roleIds || {})) {
+        try {
+            const role = await guild.roles.fetch(roleId).catch(() => null);
+            if (role) await role.delete(`Family "${familyName}" disbanded`).catch(() => {});
+        } catch (e) { /* ignore */ }
+    }
+
+    familyDiscord.delete(familyId);
+    saveFamilyMap();
+
+    if (config.FAMILY_LOG_CHANNEL_ID) {
+        sendLogEmbed('info', `💀 Family **${familyName}** was disbanded — Discord category & roles removed.`, []);
+    }
+
+    console.log(`[Discord/Family] Cleaned up Discord for disbanded family "${familyName}" (ID: ${familyId}).`);
+}
+
+/**
+ * Called when a player joins a family.
+ */
+async function familyMemberJoined(msg) {
+    const { familyId, familyName, userId, username, rank } = msg;
+    const data = familyDiscord.get(familyId);
+    if (!data) return;
+
+    const guild = await getGuild();
+    const member = await getMemberByDbId(guild, userId);
+    if (!member) return;
+
+    const roleId = data.roleIds[rank] || data.roleIds[1];
+    if (roleId) {
+        await member.roles.add(roleId, `Joined family "${familyName}"`).catch(() => {});
+    }
+
+    const chatId = data.channelIds['chat'];
+    if (chatId) {
+        const ch = await guild.channels.fetch(chatId).catch(() => null);
+        if (ch) {
+            await ch.send(`👋 Welcome to **${familyName}**, ${member}!`).catch(() => {});
+        }
+    }
+
+    console.log(`[Discord/Family] ${username} (rank ${rank}) joined family "${familyName}" — Discord role assigned.`);
+}
+
+/**
+ * Called when a player leaves or is kicked from a family.
+ */
+async function familyMemberLeft(msg) {
+    const { familyId, familyName, userId, username } = msg;
+    const data = familyDiscord.get(familyId);
+    if (!data) return;
+
+    const guild = await getGuild();
+    const member = await getMemberByDbId(guild, userId);
+    if (!member) return;
+
+    for (const roleId of Object.values(data.roleIds || {})) {
+        await member.roles.remove(roleId, `Left/kicked from family "${familyName}"`).catch(() => {});
+    }
+    if (data.categoryId) {
+        const category = await guild.channels.fetch(data.categoryId).catch(() => null);
+        if (category) {
+            await category.permissionOverwrites.delete(member, 'Left family').catch(() => {});
+        }
+    }
+
+    console.log(`[Discord/Family] ${username} left family "${familyName}" — Discord roles removed.`);
+}
+
+/**
+ * Called when a member's rank changes.
+ */
+async function familyRankChanged(msg) {
+    const { familyId, familyName, userId, username, oldRank, newRank } = msg;
+    const data = familyDiscord.get(familyId);
+    if (!data) return;
+
+    const guild = await getGuild();
+    const member = await getMemberByDbId(guild, userId);
+    if (!member) return;
+
+    const oldRoleId = data.roleIds[oldRank];
+    const newRoleId = data.roleIds[newRank];
+
+    if (oldRoleId) await member.roles.remove(oldRoleId, `Rank change in "${familyName}"`).catch(() => {});
+    if (newRoleId) await member.roles.add(newRoleId, `Rank change in "${familyName}"`).catch(() => {});
+
+    if (data.categoryId) {
+        const category = await guild.channels.fetch(data.categoryId).catch(() => null);
+        if (category) {
+            if (newRank >= 5) {
+                await category.permissionOverwrites.edit(member, {
+                    ManageChannels: true,
+                    ManageMessages: true,
+                }).catch(() => {});
+            } else if (oldRank >= 5) {
+                await category.permissionOverwrites.delete(member, 'Ownership transferred').catch(() => {});
+            }
+        }
+    }
+
+    console.log(`[Discord/Family] ${username} rank changed ${oldRank} → ${newRank} in family "${familyName}".`);
+}
+
+/**
+ * Called when the family's main color changes.
+ */
+async function familyColorChanged(msg) {
+    const { familyId, familyName, newColor } = msg;
+    const data = familyDiscord.get(familyId);
+    if (!data) return;
+
+    const guild = await getGuild();
+    const color = hexToInt(newColor);
+
+    for (const roleId of Object.values(data.roleIds || {})) {
+        try {
+            const role = await guild.roles.fetch(roleId).catch(() => null);
+            if (role) await role.edit({ color: color }, `Family "${familyName}" color changed`).catch(() => {});
+        } catch (e) { /* ignore */ }
+    }
+
+    console.log(`[Discord/Family] Updated role colors for family "${familyName}" to ${newColor}.`);
+}
+
+/**
+ * Called when a player links their Discord — auto-assigns family role if they're in one.
+ */
+async function onPlayerLinked(msg) {
+    const { userId, discordId } = msg;
+    try {
+        const [rows] = await pool.query(
+            'SELECT fm.family_id, fm.rank FROM family_members fm WHERE fm.user_id = ?',
+            [userId]
+        );
+        if (!rows.length) return;
+
+        const { family_id: familyId, rank } = rows[0];
+        const data = familyDiscord.get(familyId);
+        if (!data) return;
+
+        const guild = await getGuild();
+        const member = await guild.members.fetch(discordId).catch(() => null);
+        if (!member) return;
+
+        const roleId = data.roleIds[rank] || data.roleIds[1];
+        if (roleId) await member.roles.add(roleId, 'Auto-assign on Discord link').catch(() => {});
+
+        const chatId = data.channelIds['chat'];
+        if (chatId) {
+            const ch = await guild.channels.fetch(chatId).catch(() => null);
+            if (ch) {
+                const [famRows] = await pool.query('SELECT name FROM families WHERE id = ?', [familyId]);
+                const famName = famRows.length ? famRows[0].name : 'the family';
+                await ch.send(`👋 ${member} just linked their Discord — welcome to the **${famName}** Discord space!`).catch(() => {});
+            }
+        }
+    } catch (e) {
+        console.warn('[Discord/Family] onPlayerLinked error:', e.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AUTO-ASSIGN FAMILY ROLE ON SERVER JOIN
+//  If a player is already linked + in a family when they join the Discord
+//  server, give them their role immediately without needing to re-link.
+// ─────────────────────────────────────────────────────────────────────────────
+client.on('guildMemberAdd', async (member) => {
+    try {
+        // Check if this Discord account is linked to an in-game account
+        const [userRows] = await pool.query(
+            'SELECT id FROM users WHERE discord_id = ?',
+            [member.user.id]
+        );
+        if (!userRows.length) return; // Not linked yet — they'll get the role when they /link
+
+        const userId = userRows[0].id;
+
+        // Check if they're in a family
+        const [famRows] = await pool.query(
+            'SELECT family_id, rank FROM family_members WHERE user_id = ?',
+            [userId]
+        );
+        if (!famRows.length) return; // Not in a family
+
+        const { family_id: familyId, rank } = famRows[0];
+        const data = familyDiscord.get(familyId);
+        if (!data) return; // Family has no Discord structure yet
+
+        const roleId = data.roleIds[rank] || data.roleIds[1];
+        if (roleId) {
+            await member.roles.add(roleId, 'Auto-assign on server join (already linked + in family)').catch(() => {});
+            console.log(`[Discord/Family] ${member.user.tag} joined the server — auto-assigned family role (rank ${rank}).`);
+        }
+
+        // Welcome them in the family chat
+        const chatId = data.channelIds['chat'];
+        if (chatId) {
+            const ch = await member.guild.channels.fetch(chatId).catch(() => null);
+            if (ch) {
+                const [nameRows] = await pool.query('SELECT name FROM families WHERE id = ?', [familyId]);
+                const famName = nameRows.length ? nameRows[0].name : 'your family';
+                await ch.send(`👋 ${member} just joined the server — welcome to the **${famName}** Discord space!`).catch(() => {});
+            }
+        }
+    } catch (e) {
+        console.warn('[Discord/Family] guildMemberAdd error:', e.message);
+    }
+});
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 if (!config.BOT_TOKEN || config.BOT_TOKEN.startsWith('PASTE_')) {
     console.log('[Discord] Bot token not configured. Edit packages/discord/config.js');
