@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nametags</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: transparent !important;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Exo 2', sans-serif;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #nametag-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .nametag {
+            position: absolute;
+            /* x/y are set as vw/vh from JS — translate -50% centers horizontally,
+               small negative Y nudge places tag just above the head anchor */
+            transform: translate(-50%, calc(-100% - 4px));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            will-change: transform, opacity;
+        }
+
+        /* ── STATUS BADGES (AFK / Typing / Wanted) ── */
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px 2px 6px;
+            border-radius: 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            backdrop-filter: blur(4px);
+            animation: badgePop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .badge-icon {
+            font-size: 9px;
+            line-height: 1;
+            width: 10px;
+            text-align: center;
+        }
+
+        .badge-afk {
+            background: rgba(255, 71, 87, 0.18);
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            color: #ff4757;
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .badge-typing {
+            background: rgba(100, 180, 255, 0.15);
+            border: 1px solid rgba(100, 180, 255, 0.4);
+            color: #64b4ff;
+            box-shadow: 0 0 8px rgba(100, 180, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .badge-wanted {
+            background: rgba(255, 195, 0, 0.15);
+            border: 1px solid rgba(255, 195, 0, 0.5);
+            color: #ffc300;
+            box-shadow: 0 0 10px rgba(255, 195, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .badge-nos {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.55);
+            color: #ff4757;
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        /* ── FAMILY TAG ── */
+        .family-tag {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 9px 2px 7px;
+            border-radius: 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+
+        /* ── MAIN NAME PLATE ── */
+        .name-plate {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 2px;
+        }
+
+        .player-id {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.07);
+            padding: 1px 5px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            line-height: 1.4;
+        }
+
+        .player-name {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            white-space: nowrap;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0,0,0,0.7);
+        }
+
+        /* ── TYPING DOTS ── */
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            padding: 0 2px;
+        }
+
+        .typing-dots span {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #64b4ff;
+            animation: typingBounce 1.2s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* ── CONNECTOR LINE ── */
+        .nametag-line {
+            width: 1px;
+            height: 8px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes badgePop {
+            0%   { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30%            { transform: translateY(-4px); }
+        }
+
+        @keyframes nosFlash {
+            0%, 100% { border-color: rgba(255, 71, 87, 0.55); box-shadow: 0 0 12px rgba(255,71,87,0.35); }
+            50%       { border-color: rgba(255, 71, 87, 0.9);  box-shadow: 0 0 20px rgba(255,71,87,0.7); }
+        }
+
+        .badge-nos { animation: badgePop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), nosFlash 1s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+    <div id="nametag-container"></div>
+
+    <script>
+        const container = document.getElementById('nametag-container');
+        const tags      = new Map(); // remoteId → { el, stateKey }
+
+        // ── PUBLIC API called from client JS ──────────────────────────────────
+
+        function updateNametag(id, data) {
+            if (!data || data.alpha === 0) {
+                removeNametag(id);
+                return;
+            }
+
+            let entry = tags.get(id);
+            if (!entry) {
+                const el = document.createElement('div');
+                el.className = 'nametag';
+                container.appendChild(el);
+                entry = { el, stateKey: null };
+                tags.set(id, entry);
+            }
+
+            // Position update runs every frame — cheap style writes only
+            positionTag(entry.el, data.x, data.y, data.alpha);
+
+            // Content rebuild only when something meaningful changed
+            const stateKey = buildStateKey(data);
+            if (entry.stateKey !== stateKey) {
+                entry.stateKey = stateKey;
+                renderTag(entry.el, data);
+            }
+        }
+
+        function removeNametag(id) {
+            const entry = tags.get(id);
+            if (entry) {
+                entry.el.style.opacity = '0';
+                setTimeout(() => { if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el); }, 150);
+                tags.delete(id);
+            }
+        }
+
+        function clearAllNametags() {
+            tags.forEach((_, id) => removeNametag(id));
+        }
+
+        // ── INTERNALS ────────────────────────────────────────────────────────
+
+        function buildStateKey(d) {
+            // Cheap string that captures everything that affects rendered HTML
+            return `${d.name}|${d.displayId}|${(d.color||[]).join(',')}|${d.familyName}|${(d.familyColor||[]).join(',')}|${d.isTyping}|${d.isAfk}|${d.wantedType}`;
+        }
+
+        function positionTag(el, x, y, alpha) {
+            // x/y are normalized 0.0–1.0 → convert to vw/vh
+            el.style.left    = (x * 100).toFixed(3) + 'vw';
+            el.style.top     = (y * 100).toFixed(3) + 'vh';
+            el.style.opacity = (alpha / 255).toFixed(2);
+        }
+
+        function renderTag(el, d) {
+            const {
+                name, displayId, color,
+                familyName, familyColor,
+                isTyping, isAfk, wantedType
+            } = d;
+
+            const [nr, ng, nb, na = 255] = color || [255, 255, 255, 255];
+            const nameColorCSS = `rgba(${nr},${ng},${nb},${(na/255).toFixed(2)})`;
+
+            let html = '';
+
+            // ── WANTED BADGE ──
+            if (wantedType === 'NoS') {
+                html += `<div class="badge badge-nos"><i class="badge-icon fa-solid fa-triangle-exclamation"></i>NO SURRENDER</div>`;
+            } else if (wantedType) {
+                html += `<div class="badge badge-wanted"><i class="badge-icon fa-solid fa-star"></i>WANTED</div>`;
+            }
+
+            // ── FAMILY TAG ──
+            if (familyName && familyColor) {
+                const [fr, fg, fb] = familyColor;
+                const fc = `rgb(${fr},${fg},${fb})`;
+                html += `
+                <div class="family-tag" style="
+                    background: rgba(${fr},${fg},${fb},0.12);
+                    border: 1px solid rgba(${fr},${fg},${fb},0.4);
+                    color: ${fc};
+                    box-shadow: 0 0 8px rgba(${fr},${fg},${fb},0.2);
+                ">
+                    ${escHtml(familyName)}
+                </div>`;
+            }
+
+            // ── NAME PLATE ──
+            const typingHtml = isTyping ? `
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>` : '';
+
+            html += `
+            <div class="name-plate">
+                <span class="player-id">${displayId}</span>
+                <span class="player-name" style="color:${nameColorCSS}">${escHtml(name)}</span>
+                ${typingHtml}
+            </div>`;
+
+            // ── AFK BADGE ──
+            if (isAfk) {
+                html += `<div class="badge badge-afk"><i class="badge-icon fa-solid fa-clock"></i>AFK</div>`;
+            }
+
+            // ── CONNECTOR LINE ──
+            html += `<div class="nametag-line"></div>`;
+
+            el.innerHTML = html;
+        }
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
