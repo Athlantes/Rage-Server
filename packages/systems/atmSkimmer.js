@@ -33,8 +33,8 @@ const CFG = {
     EXPOSURE_MAX_TO_ROB:  39,        // must be ≤ this to install
     EXPOSURE_DECAY_RATE:  1,         // pts per tick
     EXPOSURE_DECAY_MS:    90_000,    // 1.5 min
-    ATM_COOLDOWN_MS:      20 * 60_000,
-    COLLECT_READY_MS:     1 * 60_000, // 1 min before funds are collectable
+    ATM_COOLDOWN_MS:      5 * 60_000,
+    COLLECT_READY_MS:     10 * 60_000, // 10 min before funds are collectable
     MIN_REWARD:           1_200,
     MAX_REWARD:           3_800,
 };
@@ -68,11 +68,21 @@ const ROBBABLE_ATM_INDICES = [
     25,  // Legion Square
     30,  // Vinewood
     34,  // Richman
+    40, // Del Perro
     44,  // Morningwood
+    50,  // Alta St
+    55,  // Davis
+    60,  // Burton
     62,  // Vespucci
+    66, // Hawick
     70,  // Rockford Hills
+    74,  // La Mesa
+    78,  // Rancho
+    81, // Murrieta Heights
     85,  // Paleto Bay
+    88,  // Sandy Shores
     91,  // Sandy Shores
+    93,  // Grapeseed
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
