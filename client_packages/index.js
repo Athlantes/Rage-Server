@@ -5,6 +5,7 @@ require('./core/voice.js');
 require('./camera.js');
 require('./mugshot.js');
 require('./core/cayo/heistisland.js');
+
 // 1. Core Utilities & Managers
 require('./core/nametags.js');
 require('./core/afk.js');
@@ -31,7 +32,7 @@ require('./systems/fuel.js');
 require('./systems/dumpster.js');
 require('./systems/returo.js');
 require('./systems/atm.js');
-require('./systems/photoHunt');
+require('./systems/photoHunt.js');
 require('./systems/cablecar.js');
 require('./systems/carCrafting.js');
 
