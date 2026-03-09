@@ -174,8 +174,37 @@ module.exports = {
         isEquippable: false,
         maxStack: 100
     },
+
+    // --- FISH ---
+    "fish_anchovy": {
+        name: "Anchovy",     type: "fish", weight: 0.01, maxStack: 20, icon: "fish_anchovy.png"
+    },
+    "fish_sardine": {
+        name: "Sardine",     type: "fish", weight: 0.01, maxStack: 20, icon: "fish_sardine.png"
+    },
+    "fish_carp": {
+        name: "Carp",        type: "fish", weight: 0.03, maxStack: 15, icon: "fish_carp.png"
+    },
+    "fish_bass": {
+        name: "Bass",        type: "fish", weight: 0.04, maxStack: 15, icon: "fish_bass.png"
+    },
+    "fish_tuna": {
+        name: "Tuna",        type: "fish", weight: 0.06, maxStack: 10, icon: "fish_tuna.png"
+    },
+    "fish_catfish": {
+        name: "Catfish",     type: "fish", weight: 0.05, maxStack: 10, icon: "fish_catfish.png"
+    },
+    "fish_salmon": {
+        name: "Salmon",      type: "fish", weight: 0.05, maxStack: 10, icon: "fish_salmon.png",  rarity: "rare"
+    },
+    "fish_swordfish": {
+        name: "Swordfish",   type: "fish", weight: 0.08, maxStack: 5,  icon: "fish_swordfish.png", rarity: "rare"
+    },
+    "fish_sturgeon": {
+        name: "Sturgeon",    type: "fish", weight: 0.1, maxStack: 5,  icon: "fish_sturgeon.png",  rarity: "rare"
+    },
     
-// --- MALE TOPS (Sex: 0) ---
+    // --- MALE TOPS (Sex: 0) ---
     'm_top_white_tee': { 
         name: "White T-Shirt", type: "clothing", weight: 0.2, maxStack: 1,
         sex: 0, isEquippable: false, icon: "shirt_white.png",

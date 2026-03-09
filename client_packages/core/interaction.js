@@ -66,5 +66,9 @@ mp.keys.bind(0x45, true, function() {
 
         // Trigger Event
         mp.events.callRemote(activeInteraction.event, activeInteraction.data);
+        return;
     }
+
+    // No colshape interaction — let job-specific handlers try
+    mp.events.call('interaction:keypress');
 });

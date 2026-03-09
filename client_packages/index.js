@@ -45,6 +45,7 @@ require('./jobs/manager.js');
 require('./jobs/garbage.js');
 require('./jobs/farmer.js');
 require('./jobs/towtruck.js');
+require('./jobs/fishing.js');
 require('./jobs/preview.js');
 
 require('./creator/index.js');

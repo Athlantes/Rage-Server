@@ -4,3 +4,4 @@ require('./definitions/garbage');
 require('./definitions/foodDelivery');
 require('./definitions/farmer');
 require('./definitions/towtruck');
+require('./definitions/fishing');

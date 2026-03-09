@@ -52,5 +52,23 @@ module.exports = [
         targetAmount: 20,
         progressProp: 'count',   // Uses { count: 1 } from the event data
         reward: 500
+    },
+    {
+        id:           'catch_of_the_day',
+        title:        'Catch of the Day',
+        description:  'Catch 10 fish during the Fishing Job.',
+        type:         'fishing_catch',
+        targetAmount: 10,
+        progressProp: 'count',
+        reward:       600
+    },
+    {
+        id:           'rare_catch',
+        title:        'Trophy Fisher',
+        description:  'Catch 1 rare fish.',
+        type:         'fishing_catch',
+        targetAmount: 1,
+        progressProp: null,   // fires once per any catch — filter by rarity client side
+        reward:       400
     }
 ];
