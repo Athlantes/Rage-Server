@@ -5,12 +5,14 @@ mp.nametags.enabled = false;
 
 // ── CONFIGURATION ─────────────────────────────────────────────────────────────
 const SHOW_DISTANCE  = 20.0;
-const FADE_START     = 15.0;  // Distance at which tags begin fading out
-const UPDATE_RATE    = 1;     // Update every N render frames (1 = every frame)
+const FADE_START     = 15.0;  
+const UPDATE_RATE    = 1;     // Update CEF positions every frame
+const LOS_CHECK_RATE = 15;    // Check line-of-sight every 15 frames (saves CPU)
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let nametagBrowser = null;
 let frameCounter   = 0;
+const playerLosCache = new Map(); // Caches Line of Sight results
 
 let showSelf = false;
 try {
@@ -36,22 +38,13 @@ mp.events.add('client:nametags:toggleSelf', (enabled) => {
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
-/**
- * Project a world-space position to screen-space pixels.
- * Returns null if behind camera or off-screen.
- */
 function worldToScreen(pos) {
-    // world3dToScreen2d returns normalized 0.0–1.0 coords directly
     const result = mp.game.graphics.world3dToScreen2d({ x: pos.x, y: pos.y, z: pos.z });
     if (!result) return null;
     if (result.x < -0.1 || result.x > 1.1 || result.y < -0.1 || result.y > 1.1) return null;
-    return { x: result.x, y: result.y }; // normalized — HTML side uses vw/vh
+    return { x: result.x, y: result.y };
 }
 
-/**
- * Compute alpha 0-255 based on distance.
- * Full opacity near, fade out approaching SHOW_DISTANCE.
- */
 function distAlpha(dist) {
     if (dist >= SHOW_DISTANCE) return 0;
     if (dist <= FADE_START)    return 255;
@@ -74,6 +67,7 @@ mp.events.add('render', () => {
     const cam      = mp.cameras.new('gameplay').getCoord();
     const streamed = mp.players.streamed;
     const activeIds = [];
+    const bulkUpdates = []; // Collect all updates here
 
     streamed.forEach((player) => {
         if (player === localPlayer && !showSelf) return;
@@ -88,14 +82,27 @@ mp.events.add('render', () => {
 
         if (dist >= SHOW_DISTANCE) return;
 
-        // Project ~30cm above head bone so anchor sits above the skull
+        // ── LINE OF SIGHT CHECK (Throttled for Performance) ──
+        let hasLos = false;
+        // Only run the raycast every 15 frames or if the player is new to our cache
+        if (frameCounter % LOS_CHECK_RATE === 0 || !playerLosCache.has(player.remoteId)) {
+            // Flag 17 = Intersects with map and vehicles.
+            const raycast = mp.raycasting.testPointToPoint(cam, pPos, [localPlayer, player], 17);
+            hasLos = typeof raycast === 'undefined'; // Undefined means it didn't hit anything
+            playerLosCache.set(player.remoteId, hasLos);
+        } else {
+            hasLos = playerLosCache.get(player.remoteId);
+        }
+
+        if (!hasLos) return; // Skip rendering if behind a wall
+        // ─────────────────────────────────────────────────────
+
         const screen = worldToScreen({ x: pPos.x, y: pPos.y, z: pPos.z + 0.30 });
         if (!screen) return;
 
         const alpha = distAlpha(dist);
         if (alpha === 0) return;
 
-        // ── Gather variables ──────────────────────────────────────────────────
         let displayId = player.getVariable('onlineId');
         if (displayId === undefined) displayId = player.remoteId;
 
@@ -123,8 +130,7 @@ mp.events.add('render', () => {
             clamp(parseInt(familyNametagColor[2]) || 0),
         ] : null;
 
-        // ── Build and push data ───────────────────────────────────────────────
-        const id   = player.remoteId;
+        const id = player.remoteId;
         const data = {
             x: screen.x,
             y: screen.y,
@@ -140,13 +146,26 @@ mp.events.add('render', () => {
         };
 
         activeIds.push(id);
-        nametagBrowser.execute(`updateNametag(${id}, ${JSON.stringify(data)});`);
+        
+        // Push to bulk array instead of executing immediately
+        bulkUpdates.push({ id, data });
     });
+
+    // Send all updates in ONE single CEF execution (Massive performance boost)
+    if (bulkUpdates.length > 0) {
+        nametagBrowser.execute(`updateNametagsBulk(${JSON.stringify(bulkUpdates)});`);
+    }
 
     // Prune stale tags every ~2 seconds
     if (frameCounter % 120 === 0) {
         nametagBrowser.execute(
             `(function(active){ var s = new Set(active); tags.forEach(function(_,id){ if(!s.has(id)) removeNametag(id); }); })(${JSON.stringify(activeIds)});`
         );
+        
+        // Prune the Line of Sight cache so it doesn't leak memory
+        const activeSet = new Set(activeIds);
+        for (let key of playerLosCache.keys()) {
+            if (!activeSet.has(key)) playerLosCache.delete(key);
+        }
     }
 });

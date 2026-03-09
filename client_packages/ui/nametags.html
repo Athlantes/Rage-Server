@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Nametags</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Modern Nametags</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -13,7 +13,7 @@
             overflow: hidden;
             width: 100vw;
             height: 100vh;
-            font-family: 'Exo 2', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             pointer-events: none;
             user-select: none;
         }
@@ -26,67 +26,64 @@
 
         .nametag {
             position: absolute;
-            /* x/y are set as vw/vh from JS — translate -50% centers horizontally,
-               small negative Y nudge places tag just above the head anchor */
-            transform: translate(-50%, calc(-100% - 4px));
+            transform: translate(-50%, calc(-100% - 8px));
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 3px;
             pointer-events: none;
-            transition: opacity 0.15s ease;
+            transition: opacity 0.2s ease-out;
             will-change: transform, opacity;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5));
         }
 
         /* ── STATUS BADGES (AFK / Typing / Wanted) ── */
+        .badges-container {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+
         .badge {
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 2px 8px 2px 6px;
-            border-radius: 20px;
+            gap: 4px;
+            padding: 2px 6px 2px 5px;
+            border-radius: 4px;
             font-family: 'Rajdhani', sans-serif;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            backdrop-filter: blur(4px);
-            animation: badgePop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .badge-icon {
+        .badge i {
             font-size: 9px;
-            line-height: 1;
-            width: 10px;
-            text-align: center;
         }
 
         .badge-afk {
-            background: rgba(255, 71, 87, 0.18);
-            border: 1px solid rgba(255, 71, 87, 0.5);
-            color: #ff4757;
-            box-shadow: 0 0 8px rgba(255, 71, 87, 0.25), inset 0 1px 0 rgba(255,255,255,0.05);
-        }
-
-        .badge-typing {
-            background: rgba(100, 180, 255, 0.15);
-            border: 1px solid rgba(100, 180, 255, 0.4);
-            color: #64b4ff;
-            box-shadow: 0 0 8px rgba(100, 180, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 165, 2, 0.4);
+            color: #ffa502;
+            box-shadow: 0 0 8px rgba(255, 165, 2, 0.2);
         }
 
         .badge-wanted {
-            background: rgba(255, 195, 0, 0.15);
-            border: 1px solid rgba(255, 195, 0, 0.5);
-            color: #ffc300;
-            box-shadow: 0 0 10px rgba(255, 195, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            color: #ff4757;
+            box-shadow: 0 0 8px rgba(255, 71, 87, 0.3);
         }
 
         .badge-nos {
-            background: rgba(255, 71, 87, 0.15);
-            border: 1px solid rgba(255, 71, 87, 0.55);
-            color: #ff4757;
-            box-shadow: 0 0 12px rgba(255, 71, 87, 0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid #ff4757;
+            color: #ffffff;
+            text-shadow: 0 0 4px #ff4757;
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.5), inset 0 0 8px rgba(255, 71, 87, 0.2);
         }
 
         /* ── FAMILY TAG ── */
@@ -94,90 +91,98 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            padding: 2px 9px 2px 7px;
-            border-radius: 20px;
+            padding: 2px 8px;
+            border-radius: 6px;
             font-family: 'Rajdhani', sans-serif;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
-
 
         /* ── MAIN NAME PLATE ── */
         .name-plate {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 4px 2px;
+            padding: 2px 4px;
         }
 
         .player-id {
+            display: flex;
+            align-items: center;
+            gap: 2px;
             font-family: 'Rajdhani', sans-serif;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.05em;
-            color: rgba(255, 255, 255, 0.35);
-            background: rgba(255, 255, 255, 0.07);
+            color: rgba(255, 255, 255, 0.85);
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             padding: 1px 5px;
-            border-radius: 3px;
+            border-radius: 4px;
             flex-shrink: 0;
-            line-height: 1.4;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .player-id i {
+            font-size: 8px;
+            color: rgba(255,255,255,0.5);
         }
 
         .player-name {
-            font-family: 'Exo 2', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            line-height: 1;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
             white-space: nowrap;
-            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0,0,0,0.7);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 1), 0 0 2px rgba(0,0,0,0.8);
         }
 
-        /* ── TYPING DOTS ── */
-        .typing-dots {
+        /* ── TYPING INDICATOR ── */
+        .typing-bubble {
             display: flex;
-            gap: 3px;
             align-items: center;
-            padding: 0 2px;
+            gap: 2px;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 6px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .typing-dots span {
+        .typing-bubble span {
             width: 3px;
             height: 3px;
             border-radius: 50%;
-            background: #64b4ff;
-            animation: typingBounce 1.2s infinite ease-in-out;
+            background: #ffffff;
+            animation: typingBounce 1.4s infinite ease-in-out both;
         }
 
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        /* ── CONNECTOR LINE ── */
-        .nametag-line {
-            width: 1px;
-            height: 8px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
-        }
+        .typing-bubble span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-bubble span:nth-child(2) { animation-delay: -0.16s; }
 
         /* ── ANIMATIONS ── */
         @keyframes badgePop {
-            0%   { transform: scale(0.7); opacity: 0; }
-            100% { transform: scale(1);   opacity: 1; }
+            0%   { transform: scale(0.8) translateY(3px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
 
         @keyframes typingBounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30%            { transform: translateY(-4px); }
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
-        @keyframes nosFlash {
-            0%, 100% { border-color: rgba(255, 71, 87, 0.55); box-shadow: 0 0 12px rgba(255,71,87,0.35); }
-            50%       { border-color: rgba(255, 71, 87, 0.9);  box-shadow: 0 0 20px rgba(255,71,87,0.7); }
+        @keyframes nosPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 71, 87, 0.4), inset 0 0 6px rgba(255, 71, 87, 0.1); }
+            50%      { box-shadow: 0 0 20px rgba(255, 71, 87, 0.8), inset 0 0 12px rgba(255, 71, 87, 0.3); }
         }
 
-        .badge-nos { animation: badgePop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), nosFlash 1s ease-in-out infinite; }
+        .badge-nos { animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), nosPulse 1.5s infinite; }
     </style>
 </head>
 <body>
@@ -185,9 +190,13 @@
 
     <script>
         const container = document.getElementById('nametag-container');
-        const tags      = new Map(); // remoteId → { el, stateKey }
+        const tags      = new Map(); 
 
-        // ── PUBLIC API called from client JS ──────────────────────────────────
+        function updateNametagsBulk(bulkArray) {
+            for (let i = 0; i < bulkArray.length; i++) {
+                updateNametag(bulkArray[i].id, bulkArray[i].data);
+            }
+        }
 
         function updateNametag(id, data) {
             if (!data || data.alpha === 0) {
@@ -204,10 +213,8 @@
                 tags.set(id, entry);
             }
 
-            // Position update runs every frame — cheap style writes only
             positionTag(entry.el, data.x, data.y, data.alpha);
 
-            // Content rebuild only when something meaningful changed
             const stateKey = buildStateKey(data);
             if (entry.stateKey !== stateKey) {
                 entry.stateKey = stateKey;
@@ -219,7 +226,7 @@
             const entry = tags.get(id);
             if (entry) {
                 entry.el.style.opacity = '0';
-                setTimeout(() => { if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el); }, 150);
+                setTimeout(() => { if (entry.el.parentNode) entry.el.parentNode.removeChild(entry.el); }, 200);
                 tags.delete(id);
             }
         }
@@ -228,15 +235,11 @@
             tags.forEach((_, id) => removeNametag(id));
         }
 
-        // ── INTERNALS ────────────────────────────────────────────────────────
-
         function buildStateKey(d) {
-            // Cheap string that captures everything that affects rendered HTML
             return `${d.name}|${d.displayId}|${(d.color||[]).join(',')}|${d.familyName}|${(d.familyColor||[]).join(',')}|${d.isTyping}|${d.isAfk}|${d.wantedType}`;
         }
 
         function positionTag(el, x, y, alpha) {
-            // x/y are normalized 0.0–1.0 → convert to vw/vh
             el.style.left    = (x * 100).toFixed(3) + 'vw';
             el.style.top     = (y * 100).toFixed(3) + 'vh';
             el.style.opacity = (alpha / 255).toFixed(2);
@@ -251,51 +254,53 @@
 
             const [nr, ng, nb, na = 255] = color || [255, 255, 255, 255];
             const nameColorCSS = `rgba(${nr},${ng},${nb},${(na/255).toFixed(2)})`;
+            const glowShadow = `0 0 8px rgba(${nr},${ng},${nb},0.4), 0 2px 3px rgba(0,0,0,1)`;
 
             let html = '';
 
-            // ── WANTED BADGE ──
+            // ── TOP BADGES (AFK, WANTED) ──
+            let badgesHtml = '';
+            if (isAfk) {
+                badgesHtml += `<div class="badge badge-afk"><i class="fa-solid fa-moon"></i> AFK</div>`;
+            }
             if (wantedType === 'NoS') {
-                html += `<div class="badge badge-nos"><i class="badge-icon fa-solid fa-triangle-exclamation"></i>NO SURRENDER</div>`;
+                badgesHtml += `<div class="badge badge-nos"><i class="fa-solid fa-skull-crossbones"></i> NO SURRENDER</div>`;
             } else if (wantedType) {
-                html += `<div class="badge badge-wanted"><i class="badge-icon fa-solid fa-star"></i>WANTED</div>`;
+                badgesHtml += `<div class="badge badge-wanted"><i class="fa-solid fa-handcuffs"></i> WANTED</div>`;
+            }
+            
+            if (badgesHtml) {
+                html += `<div class="badges-container">${badgesHtml}</div>`;
             }
 
             // ── FAMILY TAG ──
             if (familyName && familyColor) {
                 const [fr, fg, fb] = familyColor;
-                const fc = `rgb(${fr},${fg},${fb})`;
                 html += `
                 <div class="family-tag" style="
-                    background: rgba(${fr},${fg},${fb},0.12);
-                    border: 1px solid rgba(${fr},${fg},${fb},0.4);
-                    color: ${fc};
-                    box-shadow: 0 0 8px rgba(${fr},${fg},${fb},0.2);
+                    background: rgba(20, 20, 20, 0.65);
+                    border: 1px solid rgba(${fr},${fg},${fb},0.5);
+                    color: rgb(${fr},${fg},${fb});
+                    box-shadow: 0 0 6px rgba(${fr},${fg},${fb},0.25);
                 ">
                     ${escHtml(familyName)}
                 </div>`;
             }
 
-            // ── NAME PLATE ──
-            const typingHtml = isTyping ? `
-                <div class="typing-dots">
+            // ── TYPING BUBBLE ──
+            if (isTyping) {
+                html += `
+                <div class="typing-bubble">
                     <span></span><span></span><span></span>
-                </div>` : '';
-
-            html += `
-            <div class="name-plate">
-                <span class="player-id">${displayId}</span>
-                <span class="player-name" style="color:${nameColorCSS}">${escHtml(name)}</span>
-                ${typingHtml}
-            </div>`;
-
-            // ── AFK BADGE ──
-            if (isAfk) {
-                html += `<div class="badge badge-afk"><i class="badge-icon fa-solid fa-clock"></i>AFK</div>`;
+                </div>`;
             }
 
-            // ── CONNECTOR LINE ──
-            html += `<div class="nametag-line"></div>`;
+            // ── NAME PLATE ──
+            html += `
+            <div class="name-plate">
+                <span class="player-id"><i class="fa-solid fa-hashtag"></i> ${displayId}</span>
+                <span class="player-name" style="color:${nameColorCSS}; text-shadow: ${glowShadow};">${escHtml(name)}</span>
+            </div>`;
 
             el.innerHTML = html;
         }
