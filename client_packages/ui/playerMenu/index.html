@@ -36,11 +36,6 @@
 
 html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-family:'Barlow',sans-serif;color:var(--text);user-select:none}
 
-/* ── Scanline overlay ── */
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
-}
-
 /* ── Background ── */
 .bg-wrap{position:fixed;inset:0;overflow:hidden}
 .bg-wrap::before{content:'';position:absolute;inset:0;
@@ -122,6 +117,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
   cursor:pointer;
   border:1.5px solid rgba(255,255,255,.09);
   transition:transform .18s cubic-bezier(.22,1,.36,1),border-color .18s,box-shadow .18s;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 .tile:hover{
   transform:translateY(-3px) scale(1.008);
@@ -330,7 +327,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
 .overlay{
   position:fixed;inset:0;z-index:200;
   background:rgba(5,7,15,.95); /* Fixed */
-  backdrop-filter:blur(5px);   /* Fixed */
   display:none;align-items:center;justify-content:center;
   animation:ovIn .2s ease both
 }
@@ -344,7 +340,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
   border-radius:16px;overflow:hidden;
   display:flex;flex-direction:column;
   animation:panIn .28s cubic-bezier(.22,1,.36,1) both;
-  box-shadow:0 40px 80px rgba(0,0,0,.8);
+  box-shadow: 0 20px 40px rgba(0,0,0,.6);
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 @keyframes panIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
 
@@ -600,7 +598,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
 .cset-r{display:flex;align-items:center;gap:6px}
 
 /* fam modal */
-.fam-modal-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;border-radius:16px}
+.fam-modal-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;border-radius:16px}
 .fam-modal-overlay.open{display:flex}
 .fam-modal{background:#11131c;border:1.5px solid rgba(255,255,255,.1);border-radius:14px;width:640px;max-height:78vh;overflow-y:auto;padding:22px;animation:panIn .22s cubic-bezier(.22,1,.36,1)}
 .fam-modal::-webkit-scrollbar{width:3px}

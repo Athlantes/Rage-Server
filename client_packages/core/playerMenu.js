@@ -30,7 +30,6 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
         }
         playerMenuBrowser.active = true;
         mp.gui.cursor.show(true, true);
-        mp.game.graphics.transitionToBlurred(500);
 
         // REQUEST DATA FROM SERVER
         mp.events.callRemote('server:playerMenu:getData');
@@ -60,7 +59,6 @@ mp.events.add('client:toggleplayerMenu', (force = false) => {
         }
         isInputFocused = false; // Reset — can't be stuck if menu is gone
         mp.gui.cursor.show(false, false);
-        mp.game.graphics.transitionFromBlurred(500);
     }
 });
 

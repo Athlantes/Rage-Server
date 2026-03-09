@@ -93,11 +93,9 @@ function toggleInventory(state) {
         mp.gui.chat.activate(false);
         mp.events.call('client:setHUDVisible', false);
         mp.events.callRemote('requestInventory');
-        mp.game.graphics.transitionToBlurred(200);
     } else {
         mp.gui.chat.activate(true);
         mp.events.call('client:setHUDVisible', true);
-        mp.game.graphics.transitionFromBlurred(200);
         mp.game.ui.setPauseMenuActive(false);
     }
 }
