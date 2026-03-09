@@ -40,13 +40,15 @@ class GameMap {
             attributionControl: false,
             center: [0, 0],
             zoom: this.config.initialZoom,
-            // Default interactions (can be overridden by css or options if needed)
             dragging: true,
-            zoomControl: false
+            
+            // PERFORMANCE FIX: Use Canvas for markers instead of SVG nodes
+            preferCanvas: true,
+            // PERFORMANCE FIX: Prevent map from trying to calculate bounds continuously 
+            trackResize: false 
         });
 
         // 3. Define Tile Layer
-        // Note: Ensure this path is correct for all files importing this script
         const tilePath = 'package://ui/WebMap/images/map/{z}/{x}x{y}.png'; 
         
         L.tileLayer(tilePath, {
@@ -54,7 +56,13 @@ class GameMap {
             maxZoom: this.config.maxZoom,
             tileSize: 256,
             noWrap: true,
-            tms: false
+            tms: false,
+            
+            // --- PERFORMANCE FIXES FOR TILES ---
+            updateWhenZooming: false, // Don't load new tiles mid-animation
+            updateWhenIdle: true,     // Wait until flyTo finishes to load high-res tiles
+            keepBuffer: 12,           // Keep more tiles in memory so they don't reload
+            zIndex: 1
         }).addTo(this.map);
 
         this.layerGroup = L.layerGroup().addTo(this.map);
