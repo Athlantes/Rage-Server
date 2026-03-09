@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background: transparent;
+        font-family: 'Segoe UI', sans-serif;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* ── BOBBER LABEL ─────────────────────────────────────────── */
+    #bobber-label {
+        position: fixed;
+        display: none;
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+        text-align: center;
+    }
+
+    #bobber-label .bl-text {
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+        padding: 2px 8px;
+        border-radius: 3px;
+        background: rgba(0,0,0,0.45);
+    }
+
+    #bobber-label.waiting .bl-text {
+        color: #5b9bd5;
+        border-left: 2px solid #5b9bd5;
+    }
+
+    #bobber-label.bite .bl-text {
+        color: #2ecc71;
+        border-left: 2px solid #2ecc71;
+        animation: bite-pulse 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes bite-pulse {
+        from { opacity: 0.75; }
+        to   { opacity: 1; }
+    }
+
+    /* ── MINIGAME BAR ─────────────────────────────────────────── */
+    #minigame-wrap {
+        position: fixed;
+        bottom: 110px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    #mg-hint {
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.75);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    #mg-hint span {
+        color: #5b9bd5;
+    }
+
+    #mg-track {
+        position: relative;
+        width: 320px;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.55);
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+    }
+
+    /* Green target zone */
+    #mg-zone {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background: rgba(46, 204, 113, 0.35);
+        border-left: 2px solid #2ecc71;
+        border-right: 2px solid #2ecc71;
+        transition: left 0s, width 0s;
+    }
+
+    /* Moving white indicator */
+    #mg-indicator {
+        position: absolute;
+        top: -2px;
+        width: 5px;
+        height: calc(100% + 4px);
+        background: #ffffff;
+        border-radius: 2px;
+        box-shadow: 0 0 8px rgba(255,255,255,0.9);
+        transition: background 0.1s;
+    }
+
+    /* Flash red when missed */
+    #mg-track.flash-fail {
+        animation: flash-fail 0.3s ease-out;
+    }
+    /* Flash green on success */
+    #mg-track.flash-success {
+        animation: flash-success 0.3s ease-out;
+    }
+
+    @keyframes flash-fail {
+        0%   { background: rgba(231, 76, 60, 0.7); }
+        100% { background: rgba(0,0,0,0.55); }
+    }
+    @keyframes flash-success {
+        0%   { background: rgba(46, 204, 113, 0.7); }
+        100% { background: rgba(0,0,0,0.55); }
+    }
+
+    #mg-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.4);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+</style>
+</head>
+<body>
+
+<!-- Bobber floating label (positioned by JS via world3dToScreen2d) -->
+<div id="bobber-label">
+    <div class="bl-text" id="bobber-text">...</div>
+</div>
+
+<!-- Minigame bar -->
+<div id="minigame-wrap">
+    <div id="mg-hint">Press <span>[E]</span> when the bar is in the <span style="color:#2ecc71">green zone</span></div>
+    <div id="mg-track">
+        <div id="mg-zone"></div>
+        <div id="mg-indicator"></div>
+    </div>
+    <div id="mg-label">Reel it in!</div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────
+let mgValue     = 0;     // 0–100
+let mgDir       = 1;
+let mgSpeed     = 40;
+let mgTargetMin = 35;
+let mgTargetMax = 65;
+let mgRunning   = false;
+let mgRaf       = null;
+let mgLastTime  = 0;
+
+const TRACK_W   = 320; // must match #mg-track width in px
+
+// ── BOBBER LABEL ─────────────────────────────────────────────────────────
+function showBobber(screenX, screenY, state) {
+    // state: 'waiting' | 'bite' | 'hide'
+    const el = document.getElementById('bobber-label');
+    if (state === 'hide') { el.style.display = 'none'; return; }
+
+    el.style.display = 'block';
+    el.style.left    = (screenX * 100) + 'vw';
+    el.style.top     = (screenY * 100) + 'vh';
+    el.className     = state;   // sets .waiting or .bite CSS class
+
+    document.getElementById('bobber-text').textContent =
+        state === 'bite' ? '⚡ BITE!' : '···';
+}
+
+// ── MINIGAME ──────────────────────────────────────────────────────────────
+function startMinigame(targetMin, targetMax, speed) {
+    mgTargetMin = targetMin;
+    mgTargetMax = targetMax;
+    mgSpeed     = speed;
+    mgValue     = 0;
+    mgDir       = 1;
+    mgRunning   = true;
+    mgLastTime  = performance.now();
+
+    // Position green zone
+    const zone = document.getElementById('mg-zone');
+    zone.style.left  = ((mgTargetMin / 100) * TRACK_W) + 'px';
+    zone.style.width = (((mgTargetMax - mgTargetMin) / 100) * TRACK_W) + 'px';
+
+    document.getElementById('minigame-wrap').style.display = 'flex';
+
+    // Remove any leftover flash classes
+    document.getElementById('mg-track').classList.remove('flash-fail', 'flash-success');
+
+    if (mgRaf) cancelAnimationFrame(mgRaf);
+    mgRaf = requestAnimationFrame(_tick);
+}
+
+function stopMinigame(result) {
+    // result: 'success' | 'fail' | null (null = hide instantly, no flash)
+    mgRunning = false;
+    if (mgRaf) { cancelAnimationFrame(mgRaf); mgRaf = null; }
+
+    const track = document.getElementById('mg-track');
+    const wrap  = document.getElementById('minigame-wrap');
+
+    if (result === 'success') {
+        track.classList.add('flash-success');
+        setTimeout(() => {
+            wrap.style.display = 'none';
+            track.classList.remove('flash-success');
+        }, 350);
+    } else if (result === 'fail') {
+        track.classList.add('flash-fail');
+        setTimeout(() => {
+            wrap.style.display = 'none';
+            track.classList.remove('flash-fail');
+        }, 350);
+    } else {
+        // null — hide immediately, no animation
+        wrap.style.display = 'none';
+        track.classList.remove('flash-fail', 'flash-success');
+    }
+}
+
+function _tick(now) {
+    if (!mgRunning) return;
+
+    const delta = (now - mgLastTime) / 1000;
+    mgLastTime  = now;
+
+    mgValue += mgDir * mgSpeed * delta;
+    if (mgValue >= 100) { mgValue = 100; mgDir = -1; }
+    if (mgValue <= 0)   { mgValue = 0;   mgDir  = 1; }
+
+    document.getElementById('mg-indicator').style.left =
+        ((mgValue / 100) * TRACK_W - 2.5) + 'px';
+
+    mgRaf = requestAnimationFrame(_tick);
+}
+
+// Expose to client JS via browser.execute(...)
+window.showBobber     = showBobber;
+window.startMinigame  = startMinigame;
+window.stopMinigame   = stopMinigame;
+</script>
+</body>
+</html>
