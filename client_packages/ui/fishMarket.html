@@ -65,12 +65,15 @@ function loadItems(json) {
         <div class="fish-info">$${i.price} each</div>
       </div>
       <div class="fish-count">${i.count}x</div>
-      <button class="sell-btn" onclick="sell('${i.id}', ${i.count})">Sell All</button>
+      <button class="sell-btn" onclick="sell(event, '${i.id}', ${i.count})">Sell All</button>
     </div>
   `).join('');
 }
 
-function sell(itemId, amount) {
+// Modified to accept event so we can disable the button locally instantly
+function sell(event, itemId, amount) {
+  event.target.innerText = "Selling...";
+  event.target.disabled = true;
   mp.trigger('client:fishing:sellAction', itemId, amount);
 }
 

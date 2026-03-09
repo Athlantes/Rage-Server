@@ -164,10 +164,9 @@ const logic = {
 };
 
 // ---------------------------------------------------------------------------
-//  CAST  (client already validated facing + depth)
-//  Client sends player position so server can determine water type.
+//  CAST
 // ---------------------------------------------------------------------------
-mp.events.add('server:fishing:cast', (player, posX, posY) => {
+mp.events.add('server:fishing:cast', (player) => { // Removed passed posX, posY args
     if (!player.activeJobId || player.activeJobId !== JOB_KEY) return;
 
     const session = activeSessions.get(player.id);
@@ -175,7 +174,9 @@ mp.events.add('server:fishing:cast', (player, posX, posY) => {
 
     session.casting   = true;
     session.biteReady = false;
-    session.waterType = getWaterType(posX, posY);
+    
+    // Security Fix: Always use the player's true server-side position
+    session.waterType = getWaterType(player.position.x, player.position.y);
 
     const level    = jobManager.getJobLevel(player, JOB_KEY);
     const biteWait = getBiteWait(level);
@@ -271,44 +272,52 @@ mp.events.add('server:fishing:openMarket', (player) => {
 // ---------------------------------------------------------------------------
 mp.events.add('server:fishing:sell', async (player, itemId, amount) => {
     if (!player.activeJobId || player.activeJobId !== JOB_KEY) return;
+    if (player.isSellingFish) return; // DB Race condition lock
 
     amount = parseInt(amount);
     if (!amount || amount <= 0) return;
     if (!SELLABLE_FISH[itemId]) return player.call('showNotification', ['Fish Market', "We don't buy that."]);
 
-    const db    = require('../../core/database');
-    const inv   = player.inventory || [];
-    const items = inv.filter(i => i.itemId === itemId);
-    const total = items.reduce((a, i) => a + i.count, 0);
+    player.isSellingFish = true; // Lock player
 
-    if (total < amount) return player.call('showNotification', ['Fish Market', 'Not enough fish.']);
+    try {
+        const db    = require('../../core/database');
+        const inv   = player.inventory || [];
+        const items = inv.filter(i => i.itemId === itemId);
+        const total = items.reduce((a, i) => a + i.count, 0);
 
-    let remaining = amount;
-    for (const item of items) {
-        if (remaining <= 0) break;
-        if (item.count <= remaining) {
-            remaining -= item.count;
-            await Inventory.removeItem(player, item);
-        } else {
-            item.count -= remaining;
-            await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
-            remaining = 0;
+        if (total < amount) return player.call('showNotification', ['Fish Market', 'Not enough fish.']);
+
+        let remaining = amount;
+        for (const item of items) {
+            if (remaining <= 0) break;
+            if (item.count <= remaining) {
+                remaining -= item.count;
+                await Inventory.removeItem(player, item);
+            } else {
+                item.count -= remaining;
+                await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
+                remaining = 0;
+            }
         }
+        Inventory.syncClient(player);
+
+        const level  = jobManager.getJobLevel(player, JOB_KEY);
+        const price  = SELLABLE_FISH[itemId] + Math.floor(level * 0.5);
+        const money  = amount * price;
+        const xp     = Math.ceil(amount * 1.5);
+
+        await playerManager.addMoneyAndSave(player, money, 'Fish Market Sale');
+        await jobManager.addJobXp(player, JOB_KEY, xp);
+
+        const def = ItemRegistry[itemId];
+        player.call('showNotification', ['Fish Market', `Sold ${amount}x ${def ? def.name : itemId} for $${money}`]);
+
+        // Auto-refresh the market menu data
+        mp.events.call('server:fishing:openMarket', player);
+    } finally {
+        player.isSellingFish = false; // Unlock player safely
     }
-    Inventory.syncClient(player);
-
-    const level  = jobManager.getJobLevel(player, JOB_KEY);
-    const price  = SELLABLE_FISH[itemId] + Math.floor(level * 0.5);
-    const money  = amount * price;
-    const xp     = Math.ceil(amount * 1.5);
-
-    await playerManager.addMoneyAndSave(player, money, 'Fish Market Sale');
-    await jobManager.addJobXp(player, JOB_KEY, xp);
-
-    const def = ItemRegistry[itemId];
-    player.call('showNotification', ['Fish Market', `Sold ${amount}x ${def ? def.name : itemId} for $${money}`]);
-
-    mp.events.call('server:fishing:openMarket', player);
 });
 
 // ---------------------------------------------------------------------------
