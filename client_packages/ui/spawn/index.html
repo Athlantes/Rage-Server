@@ -4,327 +4,267 @@
   <meta charset="UTF-8">
   <title>Select Spawn</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
-
-    /* ── Leaflet required styles (inlined from leaflet.css, trimmed) ── */
-    .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,
-    .leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,
-    .leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
-    .leaflet-container{overflow:hidden}
-    .leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}
-    .leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}
-    .leaflet-zoom-box{width:0;height:0;box-sizing:border-box;z-index:800}
-    .leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}
-    .leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}
-    .leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}
-    .leaflet-popup-pane{z-index:700}
-    .leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}
-    .leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,
-    .leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}
-    .leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,
-    .leaflet-pane>svg path.leaflet-interactive{pointer-events:auto}
-    .leaflet-container{background:#191919;outline-offset:1px}
-    .leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
-    .leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,
-    .leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,
-    .leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important;width:auto;padding:0}
-    .leaflet-container img.leaflet-tile {
-      /* Use hardware-accelerated filters instead of mix-blend-mode if you want it brighter */
-      filter: brightness(1.2) contrast(1.1); 
-      
-      /* Force GPU rendering for tiles */
-      will-change: opacity, transform;
-      transform: translateZ(0);
-      backface-visibility: hidden;
-    }
-
-    /* Force the entire map pane to the GPU */
-    .leaflet-pane, .leaflet-tile-pane {
-      will-change: transform;
-      transform: translateZ(0);
-      backface-visibility: hidden;
-    }
-    .leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}
-    .leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
-    .leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
-    .leaflet-zoom-animated{-webkit-transform-origin:0 0;transform-origin:0 0}
-    .leaflet-interactive{cursor:pointer}
-    .leaflet-grab{cursor:grab}.leaflet-crosshair{cursor:crosshair}
-    .leaflet-dragging .leaflet-grab{cursor:grabbing}
-    .leaflet-container{-webkit-tap-highlight-color:transparent}
-    .leaflet-fade-anim .leaflet-popup{opacity:0;transition:opacity .2s linear}
-    .leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}
-    .leaflet-div-icon{background:#fff;border:1px solid #666}
-
-    /* ── Reset ── */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
       overflow: hidden;
-      font-family: 'Poppins', sans-serif;
-      background: #191919;
+      font-family: 'Barlow', sans-serif;
+      background: #0d0d0d;
       user-select: none;
+      width: 100vw;
+      height: 100vh;
     }
 
-    /* ── Full-screen map behind the UI ── */
-    #map {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      background: #191919;
-    }
-
-    /* ── Vue UI overlay (pointer-events: none so map stays interactive) ── */
     #app {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    /* ── UI Layer ── */
-    .ui-layer {
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      padding: 40px;
-      background: radial-gradient(circle at center, transparent 0%, rgba(10, 15, 20, 0.4) 100%);
     }
 
     /* ── Header ── */
-    .header-title {
-      text-align: center;
-      margin-top: 50px;
-      pointer-events: auto;
-      animation: floatInDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .header-title h1 {
-      color: white;
-      font-weight: 800;
-      font-size: 42px;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      background: linear-gradient(to right, #fff, #a5c9ca);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .header-title p {
-      color: #cbd5e1;
-      font-size: 14px;
-      letter-spacing: 1px;
-      margin-top: 5px;
-      font-weight: 300;
-      text-transform: uppercase;
-      opacity: 0.8;
-    }
-
-    /* ── Bottom selector section ── */
-    .spawn-selector-container {
-      width: 100%;
+    #header {
+      flex-shrink: 0;
+      height: 90px;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 22px;
-      pointer-events: auto;
-      animation: floatInUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      margin-bottom: 20px;
+      justify-content: space-between;
+      padding: 0 40px;
+      animation: fadeIn 0.4s ease both;
     }
 
-    .spawn-row {
-      display: flex;
-      gap: 18px;
-      justify-content: center;
-      flex-wrap: wrap;
-      padding: 16px;
-    }
-
-    /* ── Spawn Cards ── */
-    .spawn-card {
-      width: 155px;
-      height: 135px;
-      background: rgba(15, 23, 35, 0.78);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(100, 180, 255, 0.15);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-                  background 0.25s, border-color 0.25s, box-shadow 0.25s;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
-    }
-
-    .spawn-card:hover {
-      transform: translateY(-8px);
-      background: rgba(25, 35, 50, 0.88);
-      border-color: rgba(0, 168, 255, 0.4);
-      box-shadow: 0 20px 40px rgba(0, 168, 255, 0.15);
-    }
-
-    .spawn-card.active {
-      background: rgba(0, 168, 255, 0.15);
-      border-color: #00a8ff;
-      box-shadow: 0 0 30px rgba(0, 168, 255, 0.28);
-      transform: translateY(-8px);
-    }
-
-    .spawn-card i {
-      font-size: 30px;
-      color: #64748b;
-      margin-bottom: 13px;
-      transition: color 0.25s, transform 0.25s;
-    }
-
-    .spawn-card:hover i,
-    .spawn-card.active i { color: #00a8ff; transform: scale(1.1); }
-
-    .spawn-card h3 {
-      margin: 0;
-      color: white;
-      font-size: 13px;
-      font-weight: 700;
+    .hdr-left h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 32px;
+      letter-spacing: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      color: #fff;
+      line-height: 1;
     }
 
-    .spawn-card span {
-      color: #94a3b8;
-      font-size: 10px;
-      margin-top: 4px;
-      display: block;
-      font-weight: 400;
-    }
-
-    /* ── Last location (gold variant) ── */
-    .spawn-card.special { border-color: rgba(255, 215, 0, 0.3); }
-    .spawn-card.special i { color: rgba(255, 215, 0, 0.75); }
-    .spawn-card.special:hover { border-color: rgba(255, 215, 0, 0.6); }
-    .spawn-card.special:hover i { color: #ffd700; }
-    .spawn-card.special.active {
-      border-color: #ffd700;
-      background: rgba(255, 215, 0, 0.1);
-      box-shadow: 0 0 30px rgba(255, 215, 0, 0.18);
-    }
-    .spawn-card.special.active i { color: #ffd700; opacity: 1; }
-
-    /* ── House location (Green variant) ── */
-    .spawn-card.special-house { border-color: rgba(46, 204, 113, 0.3); }
-    .spawn-card.special-house i { color: rgba(46, 204, 113, 0.75); }
-    .spawn-card.special-house:hover { border-color: rgba(46, 204, 113, 0.6); }
-    .spawn-card.special-house:hover i { color: #2ecc71; }
-    .spawn-card.special-house.active {
-      border-color: #2ecc71;
-      background: rgba(46, 204, 113, 0.1);
-      box-shadow: 0 0 30px rgba(46, 204, 113, 0.18);
-    }
-    .spawn-card.special-house.active i { color: #2ecc71; opacity: 1; }
-
-    /* ── Family HQ location (Purple/Violet variant) ── */
-    .spawn-card.special-family { border-color: rgba(155, 89, 182, 0.3); }
-    .spawn-card.special-family i { color: rgba(155, 89, 182, 0.75); }
-    .spawn-card.special-family:hover { border-color: rgba(155, 89, 182, 0.6); }
-    .spawn-card.special-family:hover i { color: #9b59b6; }
-    .spawn-card.special-family.active {
-      border-color: #9b59b6;
-      background: rgba(155, 89, 182, 0.1);
-      box-shadow: 0 0 30px rgba(155, 89, 182, 0.18);
-    }
-    .spawn-card.special-family.active i { color: #9b59b6; opacity: 1; }
-
-    /* ── Faction HQ location (Orange variant) ── */
-    .spawn-card.special-faction { border-color: rgba(230, 126, 34, 0.3); }
-    .spawn-card.special-faction i { color: rgba(230, 126, 34, 0.75); }
-    .spawn-card.special-faction:hover { border-color: rgba(230, 126, 34, 0.6); }
-    .spawn-card.special-faction:hover i { color: #e67e22; }
-    .spawn-card.special-faction.active {
-      border-color: #e67e22;
-      background: rgba(230, 126, 34, 0.1);
-      box-shadow: 0 0 30px rgba(230, 126, 34, 0.18);
-    }
-    .spawn-card.special-faction.active i { color: #e67e22; opacity: 1; }
-
-    /* ── Wake Up Button ── */
-    .btn-spawn {
-      padding: 15px 56px;
-      background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
-      color: white;
-      font-weight: 700;
-      font-size: 15px;
-      text-transform: uppercase;
+    .hdr-left p {
+      font-size: 11px;
       letter-spacing: 2px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 10px 25px rgba(0, 114, 255, 0.3);
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-top: 4px;
+    }
+
+    /* ── Cards area (takes remaining space, centers cards) ── */
+    #cards-area {
+      flex: 1;
       display: flex;
       align-items: center;
-      gap: 12px;
-      transition: filter 0.25s, transform 0.25s, box-shadow 0.25s,
-                  opacity 0.3s, visibility 0.3s;
+      justify-content: center;
+      padding: 0 40px;
     }
 
-    .btn-spawn:hover {
-      filter: brightness(1.1);
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(0, 114, 255, 0.5);
+    /* ── Card row ── */
+    .cards-wrap {
+      display: flex;
+      gap: 0;
+      height: 520px;       /* card height — adjust to taste */
+      width: 100%;
+      max-width: 1400px;
+      animation: fadeIn 0.45s ease 0.1s both;
     }
 
-    .btn-spawn:active { transform: scale(0.98); }
+    /* ── Single card ── */
+    .spawn-card {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border-right: 1px solid rgba(0,0,0,0.5);
+      transition: flex 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .spawn-card:last-child { border-right: none; }
+    .spawn-card.active { flex: 1.4; }
 
-    /* Vue v-show drives opacity/visibility instead of display:none
-       so the transform transition still plays */
-    .btn-spawn[style*="display: none"],
-    .btn-spawn[style*="display:none"] { pointer-events: none; }
+    /* Active top accent */
+    .spawn-card.active::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--accent, #fff);
+      z-index: 10;
+    }
 
-    /* ── Animations ── */
-    @keyframes floatInDown {
-      from { opacity: 0; transform: translateY(-40px); }
+    /* Background image */
+    .card-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .spawn-card:hover  .card-bg,
+    .spawn-card.active .card-bg { transform: scale(1.05); }
+
+    /* Color overlay */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.82;
+      transition: opacity 0.35s;
+    }
+    .spawn-card:hover  .card-overlay,
+    .spawn-card.active .card-overlay { opacity: 0.55; }
+
+    /* Bottom fade */
+    .card-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.65) 100%);
+    }
+
+    /* Card text */
+    .card-body {
+      position: absolute;
+      top: 20px;
+      left: 0; right: 0;
+      padding: 18px 20px;
+      z-index: 5;
+    }
+
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    }
+
+    .card-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 8px;
+      line-height: 1.55;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+      font-weight: 300;
+    }
+
+    /* Color themes */
+    .card-overlay.last   { background: linear-gradient(to bottom, #a0460f 0%, rgba(160, 70, 15, 0.10) 100%); }
+    .card-overlay.home   { background: linear-gradient(to bottom, #1a5423 0%, rgba(26,  84, 35, 0.10) 100%); }
+    .card-overlay.family { background: linear-gradient(to bottom, #0d4f7a 0%, rgba(13,  79,122, 0.10) 100%); }
+    .card-overlay.org    { background: linear-gradient(to bottom, #7a6808 0%, rgba(122,104,  8, 0.10) 100%); }
+    .card-overlay.std-0  { background: linear-gradient(to bottom, #7a1212 0%, rgba(122, 18, 18, 0.10) 100%); }
+    .card-overlay.std-1  { background: linear-gradient(to bottom, #42107a 0%, rgba( 66, 16,122, 0.10) 100%); }
+    .card-overlay.std-2  { background: linear-gradient(to bottom, #0d6060 0%, rgba( 13, 96, 96, 0.10) 100%); }
+    .card-overlay.std-3  { background: linear-gradient(to bottom, #6e3808 0%, rgba(110, 56,  8, 0.10) 100%); }
+    .card-overlay.std-4  { background: linear-gradient(to bottom, #1a3f6e 0%, rgba( 26, 63,110, 0.10) 100%); }
+
+    /* ── Footer ── */
+    #footer {
+      flex-shrink: 0;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      animation: fadeIn 0.4s ease 0.05s both;
+    }
+
+    .footer-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-icon-box {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent, #555);
+      clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .footer-icon-box i { font-size: 20px; color: #fff; }
+
+    .footer-text .sel-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .footer-text .sel-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 3px;
+    }
+
+    .footer-hint {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+
+    /* Spawn button */
+    .btn-spawn {
+      height: 50px;
+      padding: 0 44px 0 32px;
+      background: #c0392b;
+      color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      clip-path: polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-spawn:hover  { background: #e74c3c; transform: translateX(4px); }
+    .btn-spawn:active { background: #a93226; transform: scale(0.97); }
+
+    /* Animations */
+    .spawn-card:nth-child(1) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.05s both; }
+    .spawn-card:nth-child(2) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.10s both; }
+    .spawn-card:nth-child(3) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.15s both; }
+    .spawn-card:nth-child(4) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.20s both; }
+    .spawn-card:nth-child(5) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.25s both; }
+    .spawn-card:nth-child(6) { animation: cardIn 0.45s cubic-bezier(0.25,0.8,0.25,1) 0.30s both; }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    @keyframes floatInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
     }
 
-    /* Vue transition for the button */
-    .btn-fade-enter-active { transition: opacity 0.3s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .btn-fade-leave-active { transition: opacity 0.2s; }
-    .btn-fade-enter-from   { opacity: 0; transform: translateY(14px); }
-    .btn-fade-leave-to     { opacity: 0; }
+    /* Vue footer transition */
+    .slide-enter-active { transition: opacity 0.2s, transform 0.2s; }
+    .slide-leave-active { transition: opacity 0.15s; }
+    .slide-enter-from   { opacity: 0; transform: translateX(-8px); }
+    .slide-leave-to     { opacity: 0; }
   </style>
 </head>
 <body>
-
-  <!-- Leaflet map — outside Vue, managed imperatively -->
-  <div id="map"></div>
-
-  <!-- Vue mounts here — floats above the map -->
   <div id="app"></div>
-
-  <!--
-    Script loading order:
-      1. Leaflet           → exposes global L
-      2. customMap.js      → exposes class GameMap (uses L)
-      3. Vue 3             → exposes global Vue
-      4. app.js            → creates & mounts the Vue app (uses GameMap + Vue)
-  -->
-  <script src="../lib/leaflet/leaflet.js"></script>
-  <script src="../lib/customMap.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="app.js"></script>
-
 </body>
 </html>
