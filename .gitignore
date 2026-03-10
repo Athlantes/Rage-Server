@@ -10,5 +10,6 @@
 /client_packages/ui/spawn/img
 /client_packages/phone/ui/images/wallpapers
 /client_packages/ui/auth/images
-linux_x64.tar.gz
-ragemp-server.exe
+/client_packages/ui/playerMenu/img/jobs
+/linux_x64.tar.gz
+/ragemp-server.exe

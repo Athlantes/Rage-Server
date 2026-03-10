@@ -470,37 +470,33 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .race-sub{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:2px}
 
 /* jobs */
-.jobs-layout{display:grid;grid-template-columns:1fr 340px;gap:12px}
-.jobs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.jobs-layout{display:grid;grid-template-columns:1fr 300px;gap:12px}
+.jobs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start}
 .jcard{background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;transition:.18s}
 .jcard:hover{border-color:rgba(255,255,255,.16);transform:translateY(-2px)}
 .jcard.sel{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
-.jthumb{height:85px;position:relative;overflow:hidden;background:rgba(0,0,0,.3)}
-.jthumb-icon{position:absolute;bottom:6px;right:10px;font-size:28px;opacity:.12}
-.jlvl{position:absolute;top:7px;left:7px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
-.jfav{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);cursor:pointer;transition:color .15s}
+.jthumb{height:85px;position:relative;overflow:hidden;background:rgba(0,0,0,.3);background-size:cover;background-position:center}
+.jthumb-overlay{position:absolute;inset:0}
+.jthumb-icon{position:absolute;bottom:6px;right:10px;font-size:28px;opacity:.2;z-index:2}
+.jlvl{position:absolute;top:7px;left:7px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);z-index:3}
+.jfav{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);cursor:pointer;transition:color .15s;z-index:3}
 .jfav.on,.jfav:hover{color:var(--orange-light)}
 .jbody{padding:9px 11px}
-.jn{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
-.jmeta{display:flex;align-items:center;justify-content:space-between}
-.jslots{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px}
-.jslots i{color:var(--blue-light);font-size:9px}
-.jstart{padding:4px 10px;background:var(--blue);border:none;border-radius:5px;color:#fff;font-family:'Barlow',sans-serif;font-size:10px;font-weight:700;cursor:pointer;transition:.15s}
+.jn{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+.jmeta{display:flex;align-items:center}
+.jstart{padding:5px 11px;background:var(--blue);border:none;border-radius:5px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:4px}
 .jstart:hover{background:var(--blue-light)}
 
 .jdetail{background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.jd-hero{height:150px;position:relative;overflow:hidden;background:rgba(0,0,0,.4)}
-.jd-bg-icon{position:absolute;bottom:-15px;right:-10px;font-size:88px;opacity:.06}
-.jd-cat{position:absolute;top:11px;left:12px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:2px;padding:3px 9px;border-radius:4px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4)}
-.jd-name-wrap{position:absolute;bottom:12px;left:12px;right:12px}
+.jd-hero{height:140px;position:relative;overflow:hidden;background:rgba(0,0,0,.4)}
+.jd-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.55}
+.jd-hero-tint{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,rgba(0,0,0,.2) 100%)}
+.jd-bg-icon{position:absolute;bottom:-15px;right:-10px;font-size:80px;opacity:.1;z-index:2}
+.jd-name-wrap{position:absolute;bottom:12px;left:12px;right:12px;z-index:3}
 .jd-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-.3px;line-height:1}
-.jd-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px}
+.jd-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;font-family:'Rajdhani',sans-serif}
 .jd-body{flex:1;padding:12px;overflow-y:auto}
-.jd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.jds{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:9px 10px;text-align:center}
-.jds-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800}
-.jds-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:2px}
-.jd-desc{font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+.jd-desc{font-size:11px;color:rgba(255,255,255,.5);line-height:1.75;margin-bottom:10px}
 .jd-actions{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:7px}
 
 /* battle pass */
@@ -747,7 +743,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 <div id="toasts"></div>
 
 <div class="overlay" id="ov-jobs">
-  <div class="panel" style="width:960px">
+  <div class="panel" style="width:880px">
     <div class="pan-head">
       <div class="pan-icon" style="background:rgba(0,217,122,.1);color:var(--lime)"><i class="fas fa-truck"></i></div>
       <div class="pan-title">Employment Agency</div>
@@ -762,19 +758,15 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
         <div class="jobs-grid" id="jobs-grid"></div>
         <div class="jdetail" id="jd-panel">
           <div class="jd-hero">
+            <div class="jd-hero-bg" id="jd-hero-bg"></div>
+            <div class="jd-hero-tint"></div>
             <div class="jd-bg-icon" id="jd-icon"><i class="fas fa-truck"></i></div>
-            <div class="jd-cat">EMPLOYMENT</div>
             <div class="jd-name-wrap">
               <div class="jd-title" id="jd-name">Select a Job</div>
-              <div class="jd-sub" id="jd-sub">Choose from the grid</div>
+              <div class="jd-sub" id="jd-sub">Choose a job from the grid to see details</div>
             </div>
           </div>
           <div class="jd-body">
-            <div class="jd-stats">
-              <div class="jds"><div class="jds-val g" id="jd-salary" style="color:var(--lime)">—</div><div class="jds-lbl">Salary</div></div>
-              <div class="jds"><div class="jds-val" id="jd-slots" style="color:var(--blue-light)">—</div><div class="jds-lbl">Slots</div></div>
-              <div class="jds"><div class="jds-val" id="jd-rank" style="color:var(--orange-light)">—</div><div class="jds-lbl">Ranking</div></div>
-            </div>
             <div id="jd-skill-block" style="display:none;background:rgba(255,168,32,.07);border:1px solid rgba(255,168,32,.18);border-radius:10px;padding:10px 13px;margin-bottom:12px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
                 <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.5)"><i class="fas fa-chart-line" style="color:var(--orange-light);margin-right:5px"></i>Job Skill</div>
@@ -786,8 +778,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
             <div class="jd-desc" id="jd-desc">Select a job to see details.</div>
           </div>
           <div class="jd-actions">
-            <button class="btn success" style="flex:1;justify-content:center;padding:9px" onclick="startSelectedJob()"><i class="fas fa-play"></i> START JOB</button>
-            <button class="btn" style="padding:9px 12px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)"><i class="fas fa-circle-info"></i></button>
+            <button class="btn success" style="flex:1;justify-content:center;padding:9px" onclick="locateSelectedJob()"><i class="fas fa-location-dot"></i> LOCATE JOB</button>
           </div>
         </div>
       </div>
@@ -1223,53 +1214,106 @@ function setRoute(){if(_housePos)try{mp.trigger('setHouseWaypoint',_housePos.x,_
 
 /* ── jobs ── */
 let _jobs=[],_selJob=null,_favJobs=new Set(),_jFilter='all',_jobSkills={};
+
+// Job definitions: color, icon, gradient bg, GPS position, image path, description
 const JS={
-  'Go Postal':{c:'#00d97a',i:'fa-truck',bg:'linear-gradient(135deg,rgba(0,217,122,.2),rgba(0,150,80,.05),transparent)'},
-  'Trucking':{c:'#ffa820',i:'fa-truck-moving',bg:'linear-gradient(135deg,rgba(255,168,32,.2),rgba(255,80,0,.05),transparent)'},
-  'Taxi':{c:'#ffd426',i:'fa-taxi',bg:'linear-gradient(135deg,rgba(255,212,38,.18),rgba(255,120,0,.04),transparent)'},
-  'Garbage':{c:'#00d97a',i:'fa-trash',bg:'linear-gradient(135deg,rgba(0,217,122,.15),rgba(0,130,60,.04),transparent)'},
-  'Fishing':{c:'#00cfff',i:'fa-fish',bg:'linear-gradient(135deg,rgba(0,207,255,.15),rgba(22,87,255,.05),transparent)'},
-  'Mining':{c:'#ffa820',i:'fa-hammer',bg:'linear-gradient(135deg,rgba(255,168,32,.15),rgba(180,80,0,.04),transparent)'},
+  'GoPostal Courier':{
+    c:'#00d97a', i:'fa-truck',
+    bg:'linear-gradient(135deg,rgba(0,217,122,.25),rgba(0,150,80,.08),transparent)',
+    img:'package://ui/playerMenu/img/jobs/courier.jpg',
+    pos:{x:82.65,y:132.93},
+    desc:'Load up packages at the GoPostal depot and drop them off at doorsteps across the city. The faster you deliver, the more you earn. Watch traffic — GoPostal drivers are known for their\u2026 creative routing.'
+  },
+  'Fisherman':{
+    c:'#00cfff', i:'fa-fish',
+    bg:'linear-gradient(135deg,rgba(0,207,255,.2),rgba(22,87,255,.08),transparent)',
+    img:'package://ui/playerMenu/img/jobs/fishing.jpg',
+    pos:{x:-2187.95,y:-408.90},
+    desc:'Head to any deep body of water, cast your line and wait for the bite. Bring your catch to the fish market dockside. Rare fish fetch serious cash — every trip is a gamble with the sea.'
+  },
+  'Farmer':{
+    c:'#a3e635', i:'fa-tractor',
+    bg:'linear-gradient(135deg,rgba(163,230,53,.2),rgba(80,120,0,.08),transparent)',
+    img:'package://ui/playerMenu/img/jobs/farmer.jpg',
+    pos:{x:2434.66,y:4976.76},
+    desc:'Work the land out in Blaine County. Plant seeds, tend crops, and harvest produce when it\'s ready. You\'ll also look after livestock at the barn. Hard, honest work under the open sky — and decent pay if you stick at it.'
+  },
+  'Sanitation Worker':{
+    c:'#facc15', i:'fa-trash',
+    bg:'linear-gradient(135deg,rgba(250,204,21,.2),rgba(180,120,0,.06),transparent)',
+    img:'package://ui/playerMenu/img/jobs/garbage.jpg',
+    pos:{x:-321.41,y:-1545.74},
+    desc:'Climb into the cab of a garbage truck and design your own route through the city. Hit dumpsters, collect the waste, and dump it all at the landfill. The city won\'t clean itself — and someone\'s gotta do it.'
+  },
+  'Tow Truck Driver':{
+    c:'#fb923c', i:'fa-truck-pickup',
+    bg:'linear-gradient(135deg,rgba(251,146,60,.22),rgba(180,60,0,.06),transparent)',
+    img:'package://ui/playerMenu/img/jobs/towtruck.jpg',
+    pos:{x:407.99,y:-1631.57},
+    desc:'Respond to dispatch calls for abandoned or broken-down vehicles scattered around Los Santos. Hook them up and haul them back to the impound lot. Longer hauls mean bigger payouts — keep an eye on the radio.'
+  },
+  'QuickEats Driver':{
+    c:'#f0359a', i:'fa-bag-shopping',
+    bg:'linear-gradient(135deg,rgba(240,53,154,.2),rgba(120,0,80,.06),transparent)',
+    img:'package://ui/playerMenu/img/jobs/quickeats.jpg',
+    pos:null,
+    desc:'Pick up food orders from restaurants around the city and race them to hungry customers before they go cold. Use your own vehicle — faster cars mean better tips. No limit on orders per shift.'
+  },
 };
-function getJS(n){for(const[k,v]of Object.entries(JS))if(n.toLowerCase().includes(k.toLowerCase()))return v;return{c:'#4d84ff',i:'fa-briefcase',bg:'linear-gradient(135deg,rgba(77,132,255,.15),transparent)'}}
+
+function getJS(n){
+  // exact match first
+  if(JS[n])return JS[n];
+  // partial match fallback
+  for(const[k,v]of Object.entries(JS))if(n.toLowerCase().includes(k.toLowerCase())||k.toLowerCase().includes(n.toLowerCase()))return v;
+  return{c:'#4d84ff',i:'fa-briefcase',bg:'linear-gradient(135deg,rgba(77,132,255,.15),transparent)',img:null,pos:null,desc:'Perform tasks around the city to earn money and build your skill level.'}
+}
+
 function renderJobs(jobs){_jobs=jobs;buildJobGrid()}
+
 function buildJobGrid(){
   const grid=document.getElementById('jobs-grid');
   const list=_jFilter==='fav'?_jobs.filter(j=>_favJobs.has(j.name)):_jobs;
   if(!list.length){grid.innerHTML=`<div class="empty" style="grid-column:span 2;padding:36px"><i class="fas fa-briefcase"></i><span>${_jFilter==='fav'?'No favourites':'No jobs available'}</span></div>`;return}
   grid.innerHTML=list.map(j=>{
     const st=getJS(j.name),isFav=_favJobs.has(j.name),isSel=_selJob===j.name;
+    // Build thumbnail: image bg if available, gradient overlay always on top
+    const imgStyle=st.img?`background-image:url('${st.img}');background-size:cover;background-position:center;`:'';
+    const overlayStyle=`background:${st.bg},rgba(0,0,0,.45);`;
     return `<div class="jcard ${isSel?'sel':''}" onclick="selectJob('${j.name.replace(/'/g,"\\'")}')">
-      <div class="jthumb" style="background:${st.bg},var(--surface)">
+      <div class="jthumb" style="${imgStyle}">
+        <div class="jthumb-overlay" style="${overlayStyle}"></div>
         <div class="jthumb-icon"><i class="fas ${st.i}" style="color:${st.c}"></i></div>
         <div class="jlvl">LVL ${j.level||0}</div>
         <div class="jfav ${isFav?'on':''}" onclick="event.stopPropagation();toggleFav('${j.name.replace(/'/g,"\\'")}')"><i class="fas fa-star"></i></div>
       </div>
       <div class="jbody">
         <div class="jn">${j.name}</div>
-        <div class="jmeta"><div class="jslots"><i class="fas fa-users"></i>${j.slots||0}/${j.maxSlots||30}</div><button class="jstart" onclick="event.stopPropagation();startJob('${j.name.replace(/'/g,"\\'")}')">START</button></div>
+        <div class="jmeta"><button class="jstart" onclick="event.stopPropagation();locateJob('${j.name.replace(/'/g,"\\'")}')"><i class="fas fa-location-dot"></i> Locate</button></div>
       </div>
     </div>`;
   }).join('');
 }
+
 function filterJobs(f){
   _jFilter=f;
   ['jf-all','jf-fav'].forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById('jf-'+f).classList.add('active');
   buildJobGrid();
 }
+
 function selectJob(n){
   _selJob=n;buildJobGrid();
   const j=_jobs.find(x=>x.name===n);if(!j)return;
   const st=getJS(n);
   document.getElementById('jd-name').innerText=n;
-  document.getElementById('jd-sub').innerText='Complete delivery routes and earn a steady salary.';
+  document.getElementById('jd-sub').innerText=st.pos?'GPS route available — press Locate Job':'Start this job anywhere in the city';
+  // Hero bg image
+  const hero=document.getElementById('jd-hero-bg');
+  if(hero){if(st.img){hero.style.backgroundImage=`url('${st.img}')`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}else{hero.style.backgroundImage=''}}
   document.getElementById('jd-icon').innerHTML=`<i class="fas ${st.i}" style="color:${st.c}"></i>`;
-  document.getElementById('jd-salary').innerText='$'+(j.salary||160);
-  document.getElementById('jd-slots').innerText=(j.slots||0)+'/'+(j.maxSlots||30);
-  document.getElementById('jd-rank').innerText=(j.rank||0)+'º';
-  document.getElementById('jd-desc').innerText=j.description||'Complete delivery routes and earn a steady salary.';
-  // show job skill progress if available
+  document.getElementById('jd-desc').innerText=st.desc||j.description||'Perform tasks around the city to earn money.';
+  // skill block
   const sk=_jobSkills[n],block=document.getElementById('jd-skill-block');
   if(sk&&block){
     const range=sk.nextXp-sk.prevXp,progress=sk.xp-sk.prevXp,pct=range>0?Math.max(0,Math.min(100,(progress/range)*100)):0;
@@ -1280,10 +1324,26 @@ function selectJob(n){
     document.getElementById('jd-skill-xpmax').innerText=sk.nextXp.toLocaleString();
     block.style.display='block';
   }else if(block){block.style.display='none'}
+  // Locate button state
+  const locBtn=document.querySelector('.jd-actions .btn.success');
+  if(locBtn){
+    const hasPos=!!(st.pos);
+    locBtn.disabled=!hasPos;
+    locBtn.style.opacity=hasPos?'1':'0.4';
+    locBtn.title=hasPos?'Set GPS route to this job':'No fixed location — start anywhere';
+  }
 }
+
 function toggleFav(n){if(_favJobs.has(n))_favJobs.delete(n);else _favJobs.add(n);buildJobGrid()}
-function startJob(n){try{mp.trigger('client:job:start',n)}catch(e){}}
-function startSelectedJob(){if(_selJob)startJob(_selJob)}
+
+function locateJob(n){
+  const st=getJS(n);
+  if(!st.pos){showToast('This job has no fixed location.','warning');return}
+  try{mp.trigger('setHouseWaypoint',st.pos.x,st.pos.y)}catch(e){}
+  showToast('GPS set — head to the job location!','success');
+  try{mp.trigger('client:closePlayerMenu')}catch(e){}
+}
+function locateSelectedJob(){if(_selJob)locateJob(_selJob)}
 
 /* ══ receiveData ══════════════════════════════════════════ */
 function receiveData(jsonString){
@@ -1349,11 +1409,11 @@ function receiveData(jsonString){
     _jobSkills={};
     if(data.jobs&&data.jobs.length>0){
       data.jobs.forEach(j=>{_jobSkills[j.name]=j});
-      renderJobs(data.jobs.map(j=>({name:j.name,level:j.level,salary:160,slots:5,maxSlots:30,rank:3})));
+      renderJobs(data.jobs.map(j=>({name:j.name,level:j.level})));
       const tst=document.getElementById('job-tile-status');
       tst.innerHTML=`<div class="dot" style="background:var(--lime)"></div>${data.jobs[0].name}`;
     }else{
-      renderJobs([{name:'Go Postal',level:1,salary:160,slots:5,maxSlots:30,rank:3},{name:'Trucking',level:5,salary:280,slots:3,maxSlots:30,rank:5},{name:'Taxi',level:1,salary:120,slots:8,maxSlots:30,rank:1},{name:'Garbage',level:3,salary:200,slots:4,maxSlots:30,rank:2}]);
+      renderJobs(Object.entries(JS).map(([name])=>({name,level:1})));
     }
 
     // race
