@@ -1,7 +1,13 @@
 // client_packages/systems/citybox.js
 let cityboxUI = null;
 const cityBoxLocations = [
-    new mp.Vector3(49.94, -1743.90, 29.30)
+    new mp.Vector3(49.94, -1743.90, 29.30),
+    new mp.Vector3(-483.12, -738.55, 33.21),
+    new mp.Vector3(138.19, 152.90, 104.62),
+    new mp.Vector3(-2208.51, -369.83, 13.31),
+    new mp.Vector3(1869.87, 3744.84, 32.88),
+    new mp.Vector3(1694.97, 4766.48, 42.00),
+    new mp.Vector3(-431.75, 6139.91, 31.48),
 ];
 
 // Spawn Blips, Markers, and Colshapes

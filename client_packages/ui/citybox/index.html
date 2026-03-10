@@ -3,31 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoPostal Locker</title>
+    <title>GoPostal CityBox</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="locker-container">
-        <div class="locker-header">
-            <div class="logo">GoPostal</div>
-            <div class="title">Secure Smart Locker</div>
-            <button class="close-btn" onclick="closeLocker()">X</button>
+    <div class="overlay"></div>
+
+    <div class="kiosk">
+
+        <!-- HEADER STRIP -->
+        <div class="kiosk-header">
+            <div class="header-left">
+                <div class="gopostal-logo">
+                    <span class="logo-go">Go</span><span class="logo-postal">Postal</span>
+                </div>
+                <div class="header-divider"></div>
+                <div class="header-subtitle">SECURE SMART LOCKER</div>
+            </div>
+            <div class="header-right">
+                <div class="tracking-info">
+                    <div class="tracking-label">STATION ID</div>
+                    <div class="tracking-num">GP-LSC-001</div>
+                </div>
+                <button class="close-btn" onclick="closeLocker()">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div class="locker-body">
-            <div class="panel box-panel">
-                <div class="panel-title">Stored Items <span>(Click to Retrieve)</span></div>
-                <div class="grid" id="box-grid">
-                    </div>
+        <!-- YELLOW ACCENT BAR -->
+        <div class="accent-bar">
+            <div class="accent-marquee">
+                <span>AUTHORIZED ACCESS ONLY &nbsp;•&nbsp; PLEASE COLLECT YOUR ITEMS &nbsp;•&nbsp; THANK YOU FOR CHOOSING GOPOSTAL</span>
+            </div>
+        </div>
+
+        <!-- MAIN BODY -->
+        <div class="kiosk-body">
+
+            <!-- LEFT: LOCKER BRANDING STRIP -->
+            <div class="locker-sidebar">
+                <div class="sidebar-logo-big">GO<br>POST<br>AL</div>
+                <div class="sidebar-stripes">
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                </div>
+                <div class="sidebar-bottom">
+                    <div class="sidebar-icon">📦</div>
+                    <div class="sidebar-tagline">SHIP IT.<br>LOCK IT.<br>COLLECT IT.</div>
+                </div>
             </div>
 
+            <!-- CENTER: LOCKER CONTENTS -->
+            <div class="panel locker-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">🔓</span>
+                        LOCKER CONTENTS
+                    </div>
+                    <div class="panel-hint">Click an item to retrieve</div>
+                    <div class="panel-count" id="locker-count">0 items</div>
+                </div>
+                <div class="grid-wrapper">
+                    <div class="grid" id="box-grid"></div>
+                </div>
+            </div>
+
+            <!-- DIVIDER -->
+            <div class="panel-divider">
+                <div class="divider-line"></div>
+                <div class="divider-icon">⇌</div>
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- RIGHT: INVENTORY -->
             <div class="panel inv-panel">
-                <div class="panel-title">Your Pockets</div>
-                <div class="grid" id="inv-grid">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-icon">🎒</span>
+                        YOUR POCKETS
                     </div>
+                    <div class="panel-hint">View only</div>
+                    <div class="panel-count" id="inv-count">0 items</div>
+                </div>
+                <div class="grid-wrapper">
+                    <div class="grid" id="inv-grid"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="kiosk-footer">
+            <div class="footer-right">
+                <span>© GoPostal Delivery Services</span>
             </div>
         </div>
+
     </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast"></div>
 
     <script src="app.js"></script>
 </body>
