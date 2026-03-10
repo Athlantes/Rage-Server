@@ -19,17 +19,11 @@ const app = createApp({
   template: `
     <div class="auth-wrapper">
 
-      <!-- Server branding -->
       <div class="brand">
-        <div class="brand-badge">
-          <div class="brand-dot"></div>
-          <span class="brand-badge-txt">Server Online</span>
-        </div>
         <div class="brand-title">Central Online</div>
         <div class="brand-sub">Roleplay Experience</div>
       </div>
 
-      <!-- Error notification -->
       <transition name="notif">
         <div v-if="errorMsg" class="notification">
           <i class="fas fa-exclamation-circle"></i>
@@ -37,10 +31,8 @@ const app = createApp({
         </div>
       </transition>
 
-      <!-- Panels swap with slide transition -->
       <transition name="panel" mode="out-in">
 
-        <!-- LOGIN -->
         <div v-if="activeTab === 'login'" key="login">
           <div class="form-head">
             <h2>Welcome Back</h2>
@@ -91,7 +83,6 @@ const app = createApp({
           </div>
         </div>
 
-        <!-- REGISTER -->
         <div v-else key="register">
           <div class="form-head">
             <h2>New Identity</h2>
