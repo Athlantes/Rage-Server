@@ -256,6 +256,77 @@ class InventorySystem {
         });
 
         mp.events.add('playerRequestInventory', (player) => this.syncClient(player));
+
+        mp.events.add('server:citybox:requestOpen', async (player) => {
+            if (!player.data || !player.data.dbId) return;
+
+            try {
+                // Get CityBox items
+                const [rows] = await db.query('SELECT * FROM citybox_items WHERE user_id = ?', [player.data.dbId]);
+                const boxItems = rows.map(row => {
+                    const def = ItemRegistry[row.item_id];
+                    return {
+                        id: row.id, itemId: row.item_id, count: row.count,
+                        name: def ? (def.name || row.item_id) : row.item_id
+                    };
+                });
+
+                // Format player inventory items
+                const invItems = (player.inventory || []).map(item => {
+                    const def = ItemRegistry[item.itemId];
+                    return {
+                        id: item.id, itemId: item.itemId, count: item.count,
+                        name: def ? (def.name || item.itemId) : item.itemId
+                    };
+                });
+
+                player.call('client:citybox:openUI', [JSON.stringify(boxItems), JSON.stringify(invItems)]);
+
+            } catch (err) {
+                console.error("[CityBox] Fetch error:", err);
+            }
+        });
+
+        // 2. Handle transferring item from locker to pockets
+        mp.events.add('server:citybox:takeItem', async (player, boxItemId) => {
+            if (!player.data || !player.data.dbId) return;
+
+            try {
+                // Verify the item exists and belongs to this player
+                const [rows] = await db.query('SELECT * FROM citybox_items WHERE id = ? AND user_id = ?', [boxItemId, player.data.dbId]);
+                if (rows.length === 0) return;
+                
+                const boxItem = rows[0];
+                const def = ItemRegistry[boxItem.item_id];
+                if (!def) return;
+
+                // Check player weight limit
+                const currentWeight = parseFloat(this.getWeight(player));
+                const itemWeight = def.weight * boxItem.count;
+                
+                if (currentWeight + itemWeight > 40.0) {
+                    player.call('showNotification', ['CityBox', '~r~Not enough space in your pockets!']);
+                    // Refresh the UI so the slot becomes clickable again
+                    mp.events.call('server:citybox:requestOpen', player);
+                    return;
+                }
+
+                // Remove from DB Box
+                await this.removeItemFromBox(boxItem.id);
+                
+                // Add to active inventory
+                // We bypass the weight check in addItem because we already checked it above
+                await this.addItem(player, boxItem.item_id, boxItem.count);
+                
+                player.call('showNotification', ['CityBox', `Retrieved ${boxItem.count}x ${def.name}`]);
+
+                // Refresh the UI to show updated lists
+                mp.events.call('server:citybox:requestOpen', player);
+
+            } catch (err) {
+                console.error("[CityBox] Take item error:", err);
+            }
+        });
     }
 
     async onPlayerJoin(player) {
@@ -488,10 +559,26 @@ class InventorySystem {
         const itemDef = ItemRegistry[itemId];
         if (!itemDef) return false;
         if (!player.inventory) player.inventory = [];
+        
+        // --- CITYBOX OVERFLOW LOGIC ---
         if (parseFloat(this.getWeight(player)) + (itemDef.weight * amount) > 40.0) {
-            player.call('showNotification', ['Inventory', 'Pockets are too full!']);
-            return false;
+            try {
+                // Send the item to the CityBox database table
+                await db.query(
+                    'INSERT INTO citybox_items (user_id, item_id, count, metadata) VALUES (?, ?, ?, ?)', 
+                    [player.data.dbId, itemId, amount, '{}']
+                );
+                
+                // Notify the player
+                const itemName = itemDef.name || itemId;
+                player.call('showNotification', ['CityBox', `Pockets full! ${amount}x ${itemName} safely routed to your CityBox.`]);
+                
+            } catch (err) { 
+                console.error("[CityBox Error]", err); 
+            }
+            return true; 
         }
+        // ------------------------------
 
         if (itemDef.maxStack > 1) {
             const stacks = player.inventory.filter(i => i.itemId === itemId && i.count < itemDef.maxStack && i.slot >= 0);
@@ -520,6 +607,42 @@ class InventorySystem {
         this.syncClient(player);
         return true;
     }
+
+    /**
+     * Sends an item directly to a player's CityBox.
+     * Perfect for offline transfers, house sales, or trunk clearing.
+     * * @param {number} userId - The character's database ID (e.g., player.data.dbId)
+     * @param {string} itemId - The item string identifier
+     * @param {number} amount - The quantity of the item
+     * @param {object|string} metadata - (Optional) Custom item data like weapon ammo
+     * @returns {boolean} - Returns true if successful, false if it failed
+     */
+    async addItemToBox(userId, itemId, amount, metadata = '{}') {
+        if (!userId || !itemId || amount <= 0) return false;
+        
+        // Safely parse metadata to a string for the database
+        const metaString = typeof metadata === 'object' ? JSON.stringify(metadata) : metadata;
+        
+        try {
+            await db.query(
+                'INSERT INTO citybox_items (user_id, item_id, count, metadata) VALUES (?, ?, ?, ?)', 
+                [userId, itemId, amount, metaString]
+            );
+            
+            // Optional: If the player happens to be online, send them a live notification!
+            const targetPlayer = mp.players.toArray().find(p => p.data && p.data.dbId === userId);
+            if (targetPlayer) {
+                const def = ItemRegistry[itemId];
+                const itemName = def ? (def.name || itemId) : itemId;
+                targetPlayer.call('showNotification', ['CityBox', `Received ${amount}x ${itemName} in your secure locker.`]);
+            }
+            
+            return true;
+        } catch (err) {
+            console.error("[CityBox] Failed to add direct item:", err);
+            return false;
+        }
+    }
     
     async removeItem(player, item) {
         if (player.activeWeaponSlot === item.slot) {
@@ -528,6 +651,26 @@ class InventorySystem {
         }
         await db.query('DELETE FROM character_inventory WHERE id = ?', [item.id]);
         player.inventory = player.inventory.filter(i => i !== item);
+    }
+
+    /**
+     * Removes a specific item record from the CityBox storage.
+     * @param {number|object} item - The CityBox item object OR its database ID
+     * @returns {boolean} - True if successful
+     */
+    async removeItemFromBox(item) {
+        // Allow passing either the full item object or just the numeric DB ID
+        const boxItemId = typeof item === 'object' ? item.id : item;
+
+        if (!boxItemId) return false;
+
+        try {
+            await db.query('DELETE FROM citybox_items WHERE id = ?', [boxItemId]);
+            return true;
+        } catch (err) {
+            console.error("[CityBox] Failed to remove item:", err);
+            return false;
+        }
     }
 
     async loadGroundItems() {

@@ -49,17 +49,17 @@
       pointer-events: none;
     }
 
-    /* ambient glow orbs */
+    /* ambient glow orbs - OPTIMIZED */
     .orb {
       position: fixed;
       border-radius: 50%;
-      filter: blur(90px);
       pointer-events: none;
       z-index: 1;
+      will-change: transform;
     }
-    .orb-1 { width:500px; height:500px; background:rgba(26,111,255,.11); top:-15%; left:-10%; animation:driftA 20s ease-in-out infinite; }
-    .orb-2 { width:340px; height:340px; background:rgba(0,212,255,.08); bottom:0%; right:-8%; animation:driftB 25s ease-in-out infinite; }
-    .orb-3 { width:200px; height:200px; background:rgba(0,240,128,.05); bottom:25%; left:8%; animation:driftA 32s ease-in-out infinite reverse; }
+    .orb-1 { width:500px; height:500px; background:radial-gradient(circle, rgba(26,111,255,.15) 0%, transparent 70%); top:-15%; left:-10%; animation:driftA 20s ease-in-out infinite; }
+    .orb-2 { width:340px; height:340px; background:radial-gradient(circle, rgba(0,212,255,.12) 0%, transparent 70%); bottom:0%; right:-8%; animation:driftB 25s ease-in-out infinite; }
+    .orb-3 { width:200px; height:200px; background:radial-gradient(circle, rgba(0,240,128,.08) 0%, transparent 70%); bottom:25%; left:8%; animation:driftA 32s ease-in-out infinite reverse; }
 
     @keyframes driftA {
       0%,100% { transform:translate(0,0) scale(1); }
@@ -93,14 +93,16 @@
     .auth-wrapper {
       width: 420px;
       animation: riseIn .65s cubic-bezier(.22,1,.36,1) both;
-      /* NEW: Transparent Glassmorphism effect for readability */
-      background: rgba(4, 6, 16, 0.233);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      
+      /* PERFORMANCE FIX: Darker background without the expensive blur */
+      background: rgba(4, 6, 16, 0.85); 
       padding: 40px;
       border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.014);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.233);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      
+      /* Force hardware acceleration for smooth animation */
+      will-change: transform, opacity; 
     }
 
     @keyframes riseIn {
@@ -197,7 +199,7 @@
     /* ── Error ── */
     .notification {
       display:flex; align-items:center; gap:9px;
-      background:rgba(255,48,96,.1);
+      background:rgba(255,48,96,.15); /* Slightly more opaque to compensate for no blur */
       border:1px solid rgba(255,48,96,.3);
       border-left:3px solid var(--red);
       color:rgba(255,170,185,.9);
@@ -207,7 +209,7 @@
       font-size:12px; font-weight:600; letter-spacing:.3px;
       margin-bottom:18px;
       animation:shake .4s;
-      backdrop-filter:blur(14px);
+      /* Removed backdrop-filter */
     }
     .notification i { font-size:12px; color:var(--red); flex-shrink:0; }
 
@@ -353,10 +355,11 @@
       padding:10px 14px;
       border-radius:10px;
       border:1px solid rgba(255,255,255,.07);
-      background:rgba(255,255,255,.03);
-      backdrop-filter:blur(16px);
+      background:rgba(255,255,255,.05); /* Slightly more opaque */
       cursor:pointer;
       transition:background .2s, border-color .2s, transform .2s;
+      will-change: transform;
+      /* Removed backdrop-filter */
     }
     .recent-card:hover {
       background:rgba(26,111,255,.1);

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoPostal Locker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="locker-container">
+        <div class="locker-header">
+            <div class="logo">GoPostal</div>
+            <div class="title">Secure Smart Locker</div>
+            <button class="close-btn" onclick="closeLocker()">X</button>
+        </div>
+
+        <div class="locker-body">
+            <div class="panel box-panel">
+                <div class="panel-title">Stored Items <span>(Click to Retrieve)</span></div>
+                <div class="grid" id="box-grid">
+                    </div>
+            </div>
+
+            <div class="panel inv-panel">
+                <div class="panel-title">Your Pockets</div>
+                <div class="grid" id="inv-grid">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
