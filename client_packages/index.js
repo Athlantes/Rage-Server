@@ -45,7 +45,6 @@ require('./systems/atmSkimmer.js');
 // 4. Jobs
 require('./jobs/manager.js');
 require('./jobs/garbage.js');
-require('./jobs/train.js');
 require('./jobs/farmer.js');
 require('./jobs/towtruck.js');
 require('./jobs/fishing.js');
