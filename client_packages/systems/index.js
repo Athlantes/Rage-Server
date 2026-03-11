@@ -1,4 +1,5 @@
 require('./draw-zone.js');
+require('./permit.js');
 require('./fuel.js');
 require('./dumpster.js');
 require('./returo.js');

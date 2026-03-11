@@ -74,6 +74,14 @@ class FamilyManager {
 
             this.loaded = true;
             console.log(`[FamilyManager] Loaded ${this.families.size} families.`);
+
+            // Boot the permit system after families are loaded (it needs family data)
+            try {
+                const PermitManager = require('./permitManager');
+                await PermitManager.loadAll();
+            } catch (e) {
+                console.error('[FamilyManager] Failed to boot PermitManager:', e);
+            }
         } catch (err) {
             console.error('[FamilyManager] loadAll error:', err);
         }
@@ -831,6 +839,56 @@ class FamilyManager {
                 }));
             } catch (e) { /* no-op */ }
         }
+
+        // ── Permit data ───────────────────────────────────────────────────────
+        try {
+            const PermitManager = require('./permitManager');
+            const allBiz        = PermitManager.getPermitBoardData(player);
+
+            // Find business this family currently owns
+            const ownedBiz = allBiz.find(b => b.isOwnedByMe) || null;
+
+            // Check if this player already did a delivery this cycle
+            let deliveryDone = false;
+            if (ownedBiz && ownedBiz.cycleId) {
+                const [delRows] = await db.query(
+                    'SELECT id FROM permit_deliveries WHERE cycle_id = ? AND user_id = ?',
+                    [ownedBiz.cycleId, player.data.dbId]
+                );
+                deliveryDone = delRows.length > 0;
+            }
+
+            // Open raffles available (for the raffle-browsing section)
+            const openRaffles = allBiz.filter(b => b.status === 'open_raffle');
+
+            // Has the family already entered any open raffle?
+            let enteredRaffle = null;
+            if (openRaffles.length) {
+                for (const r of openRaffles) {
+                    if (r.cycleId) {
+                        const [entRows] = await db.query(
+                            'SELECT tickets, pp_spent FROM permit_entries WHERE cycle_id = ? AND family_id = ?',
+                            [r.cycleId, fam.id]
+                        );
+                        if (entRows.length) {
+                            enteredRaffle = { bizId: r.id, bizName: r.name, tickets: entRows[0].tickets, ppSpent: entRows[0].pp_spent };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            result.permit = {
+                ownedBusiness: ownedBiz,
+                deliveryDone,
+                openRaffles,
+                enteredRaffle,
+                ppPerTicket: 100,
+            };
+        } catch (e) {
+            result.permit = null;
+        }
+        // ── End permit data ───────────────────────────────────────────────────
 
         return result;
     }

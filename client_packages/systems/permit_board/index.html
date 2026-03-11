@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>City Hall – Business Permits</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: rgba(0,0,0,0.0);
+    display: flex; align-items: center; justify-content: center;
+    height: 100vh; width: 100vw;
+    color: #e0e0e0;
+  }
+
+  /* ─── Main panel ─── */
+  .panel {
+    background: linear-gradient(160deg, #0d1117 0%, #161b22 100%);
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    width: 820px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+  }
+
+  /* ─── Header ─── */
+  .header {
+    padding: 18px 24px;
+    background: linear-gradient(90deg, #1a2a1a, #1e2d1e);
+    border-bottom: 1px solid #30363d;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; color: #58d453; letter-spacing: 1px; }
+  .header p  { font-size: 12px; color: #8b949e; margin-top: 3px; }
+  .close-btn {
+    background: none; border: 1px solid #444; color: #aaa; border-radius: 6px;
+    padding: 4px 12px; cursor: pointer; font-size: 13px; transition: 0.2s;
+  }
+  .close-btn:hover { background: #2d3540; color: #fff; }
+
+  /* ─── Tier tabs ─── */
+  .tier-tabs {
+    display: flex; gap: 4px; padding: 12px 24px 0;
+    background: #161b22; border-bottom: 1px solid #30363d;
+  }
+  .tier-tab {
+    padding: 8px 20px; border-radius: 8px 8px 0 0; cursor: pointer;
+    font-size: 13px; font-weight: 600; border: 1px solid #30363d; border-bottom: none;
+    background: #0d1117; color: #8b949e; transition: 0.15s;
+  }
+  .tier-tab.active   { background: #1e2d1e; color: #58d453; border-color: #58d453; }
+  .tier-tab[data-tier="1"].active { color: #ff6b6b; border-color: #ff6b6b; background: #2d1a1a; }
+  .tier-tab[data-tier="2"].active { color: #ffa94d; border-color: #ffa94d; background: #2d2010; }
+  .tier-tab[data-tier="3"].active { color: #69db7c; border-color: #69db7c; background: #1a2d1a; }
+
+  /* ─── Business list ─── */
+  .biz-list { overflow-y: auto; padding: 16px 24px; flex: 1; }
+  .biz-list::-webkit-scrollbar { width: 6px; }
+  .biz-list::-webkit-scrollbar-track { background: #0d1117; }
+  .biz-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+  .biz-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 12px; display: flex;
+    align-items: center; gap: 16px; transition: 0.15s;
+  }
+  .biz-card:hover { border-color: #444; background: #1c2128; }
+
+  /* Tier badge */
+  .tier-badge {
+    font-size: 10px; font-weight: 800; padding: 3px 8px;
+    border-radius: 20px; letter-spacing: 1px; white-space: nowrap;
+  }
+  .t1 { background: #3d1515; color: #ff6b6b; border: 1px solid #ff6b6b55; }
+  .t2 { background: #3d2a10; color: #ffa94d; border: 1px solid #ffa94d55; }
+  .t3 { background: #1a3d1a; color: #69db7c; border: 1px solid #69db7c55; }
+
+  .biz-info { flex: 1; }
+  .biz-name { font-size: 16px; font-weight: 700; color: #c9d1d9; }
+  .biz-desc { font-size: 12px; color: #8b949e; margin-top: 3px; }
+  .biz-stats { display: flex; gap: 16px; margin-top: 8px; }
+  .stat       { font-size: 11px; color: #8b949e; }
+  .stat strong{ color: #c9d1d9; }
+
+  /* Status badges */
+  .status-leased  { background: #1a3d1a; color: #58d453; border: 1px solid #58d4534a; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
+  .status-open    { background: #1a2d3d; color: #58a8d4; border: 1px solid #58a8d44a; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
+  .status-yours   { background: #2d3d1a; color: #a8d458; border: 1px solid #a8d4584a; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
+
+  /* Actions */
+  .biz-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .btn {
+    padding: 7px 16px; border-radius: 7px; cursor: pointer; font-size: 12px;
+    font-weight: 600; border: none; transition: 0.15s; white-space: nowrap;
+  }
+  .btn-enter   { background: #1f6feb; color: #fff; }
+  .btn-enter:hover { background: #388bfd; }
+  .btn-view    { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+  .btn-view:hover { background: #2d3540; color: #c9d1d9; }
+  .btn-deliver { background: #2d6a2d; color: #69db7c; border: 1px solid #69db7c55; }
+  .btn-deliver:hover { background: #3a8a3a; }
+
+  /* ─── Raffle entry modal ─── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-backdrop.visible { display: flex; }
+  .modal {
+    background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+    padding: 28px 32px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+  .modal h2    { font-size: 18px; color: #c9d1d9; margin-bottom: 6px; }
+  .modal p     { font-size: 13px; color: #8b949e; margin-bottom: 18px; }
+  .ticket-row  { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .ticket-row label { font-size: 13px; color: #8b949e; white-space: nowrap; }
+  .ticket-input {
+    flex: 1; padding: 8px 12px; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 7px; color: #c9d1d9; font-size: 14px; text-align: center;
+  }
+  .pp-cost { font-size: 13px; color: #ffa94d; text-align: center; margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-confirm { background: #1f6feb; color: #fff; }
+  .btn-confirm:hover { background: #388bfd; }
+  .btn-cancel  { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+  .btn-cancel:hover { background: #2d3540; color: #c9d1d9; }
+
+  /* ─── Entries viewer ─── */
+  .entries-panel {
+    display: none; padding: 12px 24px 16px; background: #0d1117;
+    border-top: 1px solid #30363d;
+  }
+  .entries-panel.visible { display: block; }
+  .entries-panel h3 { font-size: 14px; color: #8b949e; margin-bottom: 8px; }
+  .entries-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .entries-table th { text-align: left; color: #8b949e; padding: 4px 8px; border-bottom: 1px solid #30363d; }
+  .entries-table td { padding: 5px 8px; color: #c9d1d9; border-bottom: 1px solid #21262d; }
+  .entries-table tr:last-child td { border-bottom: none; }
+
+  /* ─── Empty state ─── */
+  .empty { text-align: center; padding: 40px; color: #484f58; font-size: 14px; }
+
+  /* ─── Info footer ─── */
+  .info-bar {
+    padding: 10px 24px; background: #0d1117; border-top: 1px solid #30363d;
+    display: flex; gap: 24px; font-size: 11px; color: #484f58;
+  }
+  .info-bar span strong { color: #8b949e; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>🏛 CITY HALL — BUSINESS PERMITS</h1>
+      <p>Enter the monthly raffle to win a 30-day commercial lease. One permit per family.</p>
+    </div>
+    <button class="close-btn" onclick="closeBoard()">✕ Close</button>
+  </div>
+
+  <!-- Tier tabs -->
+  <div class="tier-tabs">
+    <div class="tier-tab active" data-tier="all" onclick="setTier('all')">All</div>
+    <div class="tier-tab" data-tier="1" onclick="setTier('1')">🔴 Tier 1 — Premium</div>
+    <div class="tier-tab" data-tier="2" onclick="setTier('2')">🟠 Tier 2 — Standard</div>
+    <div class="tier-tab" data-tier="3" onclick="setTier('3')">🟢 Tier 3 — Starter</div>
+  </div>
+
+  <!-- Business list -->
+  <div class="biz-list" id="bizList">
+    <div class="empty">Loading permits...</div>
+  </div>
+
+  <!-- Entries viewer (docked bottom) -->
+  <div class="entries-panel" id="entriesPanel">
+    <h3 id="entriesPanelTitle">Current Raffle Entries</h3>
+    <table class="entries-table">
+      <thead><tr>
+        <th>Family</th><th>Tickets</th><th>PP Locked</th><th>Win Chance</th>
+      </tr></thead>
+      <tbody id="entriesTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Info footer -->
+  <div class="info-bar">
+    <span>💡 <strong>PP per ticket:</strong> 100 PP</span>
+    <span>📅 <strong>Lease:</strong> 30 days</span>
+    <span>💰 <strong>Passive:</strong> 5% of player transactions</span>
+    <span>🚚 <strong>Delivery:</strong> 50% to you / 50% to family safe</span>
+  </div>
+</div>
+
+<!-- Raffle entry modal -->
+<div class="modal-backdrop" id="raffleModal">
+  <div class="modal">
+    <h2 id="modalTitle">Enter Raffle</h2>
+    <p id="modalDesc"></p>
+    <div class="ticket-row">
+      <label>Tickets (1–<span id="maxTix">5</span>):</label>
+      <input type="number" id="ticketInput" class="ticket-input" min="1" value="1" oninput="updateCost()" />
+    </div>
+    <div class="pp-cost" id="ppCost">Cost: 100 PP (fully refunded if you lose)</div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-enter btn-confirm" onclick="confirmEntry()">🎟 Enter Raffle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allBizinesses = [];
+let activeTier    = 'all';
+let selectedBiz   = null;
+
+// ── Receive data from client script ──
+function onBoardData(jsonStr) {
+  allBizinesses = JSON.parse(jsonStr);
+  renderList();
+}
+
+function onRaffleEntries(jsonStr) {
+  const entries = JSON.parse(jsonStr);
+  const total   = entries.reduce((s, e) => s + e.tickets, 0);
+  const tbody   = document.getElementById('entriesTbody');
+  tbody.innerHTML = '';
+
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#484f58;text-align:center;padding:10px">No entries yet</td></tr>';
+  } else {
+    entries.forEach(e => {
+      const chance = total > 0 ? ((e.tickets / total) * 100).toFixed(1) : '0.0';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${e.family_name || 'Unknown'}</td><td>${e.tickets}</td><td>${e.pp_spent} PP</td><td>${chance}%</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('entriesPanel').classList.add('visible');
+}
+
+// ── Rendering ──
+function setTier(t) {
+  activeTier = t;
+  document.querySelectorAll('.tier-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tier === t);
+  });
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('bizList');
+  let businesses = allBizinesses;
+  if (activeTier !== 'all') businesses = businesses.filter(b => String(b.tier) === activeTier);
+
+  if (!businesses.length) {
+    list.innerHTML = '<div class="empty">No businesses in this tier.</div>';
+    return;
+  }
+
+  list.innerHTML = businesses.map(b => {
+    const tierClass = `t${b.tier}`;
+    const tierLabel = b.tier === 1 ? 'TIER 1' : b.tier === 2 ? 'TIER 2' : 'TIER 3';
+    let statusHtml  = '';
+    let actionsHtml = '';
+
+    if (b.status === 'leased') {
+      if (b.isOwnedByMe) {
+        const exp = b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : '?';
+        statusHtml  = `<span class="status-yours">✅ Your Permit — expires ${exp}</span>`;
+        actionsHtml = `<button class="btn btn-deliver" onclick="doDelivery(${b.id})">🚚 Start Delivery</button>`;
+      } else {
+        statusHtml  = `<span class="status-leased">🔒 Leased by ${b.ownerName || '?'}</span>`;
+      }
+    } else if (b.status === 'open_raffle') {
+      statusHtml  = `<span class="status-open">🎟 Raffle Open</span>`;
+      actionsHtml = `
+        <button class="btn btn-enter" onclick="openModal(${b.id})">Enter Raffle</button>
+        <button class="btn btn-view"  onclick="viewEntries(${b.cycleId}, '${esc(b.name)}')">View Entries</button>`;
+    } else {
+      statusHtml = `<span style="color:#484f58;font-size:12px">No active cycle</span>`;
+    }
+
+    return `
+      <div class="biz-card">
+        <div><span class="tier-badge ${tierClass}">${tierLabel}</span></div>
+        <div class="biz-info">
+          <div class="biz-name">${esc(b.name)}</div>
+          <div class="biz-desc">${esc(b.description)}</div>
+          <div class="biz-stats">
+            <span class="stat">💰 <strong>${b.passivePct}%</strong> passive</span>
+            <span class="stat">🚚 Delivery: <strong>$${b.deliveryPayout.toLocaleString()}</strong></span>
+            <span class="stat">🎟 Max tickets: <strong>${b.maxTickets}</strong></span>
+            <span class="stat">💎 ${b.ppPerTicket} PP/ticket</span>
+          </div>
+        </div>
+        <div class="biz-actions">
+          ${statusHtml}
+          ${actionsHtml}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Modal ──
+function openModal(bizId) {
+  selectedBiz = allBizinesses.find(b => b.id === bizId);
+  if (!selectedBiz) return;
+
+  document.getElementById('modalTitle').textContent = `Enter Raffle: ${selectedBiz.name}`;
+  document.getElementById('modalDesc').textContent  =
+    `Max ${selectedBiz.maxTickets} tickets. Each ticket = ${selectedBiz.ppPerTicket} PP from your family safe. ` +
+    `PP is fully refunded if you don't win.`;
+  document.getElementById('maxTix').textContent     = selectedBiz.maxTickets;
+  const inp = document.getElementById('ticketInput');
+  inp.max = selectedBiz.maxTickets;
+  inp.value = 1;
+  updateCost();
+  document.getElementById('raffleModal').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('raffleModal').classList.remove('visible');
+  selectedBiz = null;
+}
+
+function updateCost() {
+  if (!selectedBiz) return;
+  const t   = Math.min(Math.max(1, parseInt(document.getElementById('ticketInput').value) || 1), selectedBiz.maxTickets);
+  const pp  = t * selectedBiz.ppPerTicket;
+  document.getElementById('ppCost').textContent = `Cost: ${pp} PP (fully refunded if you lose)`;
+}
+
+function confirmEntry() {
+  if (!selectedBiz) return;
+  const tickets = parseInt(document.getElementById('ticketInput').value) || 1;
+  if (mp) mp.trigger('client:permit:enterRaffle', selectedBiz.id, tickets);
+  closeModal();
+}
+
+function viewEntries(cycleId, bizName) {
+  document.getElementById('entriesPanelTitle').textContent = `Raffle Entries — ${bizName}`;
+  document.getElementById('entriesTbody').innerHTML = '<tr><td colspan="4" style="color:#8b949e;padding:8px">Loading...</td></tr>';
+  document.getElementById('entriesPanel').classList.add('visible');
+  if (mp) mp.trigger('client:permit:viewEntries', cycleId);
+}
+
+function doDelivery(bizId) {
+  if (mp) mp.trigger('server:permit:startDelivery', bizId);
+  closeBoard();
+}
+
+function closeBoard() {
+  if (mp) mp.trigger('client:permit:closeBoard');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 require('./houseManager');
 require('./familyManager');
 require('./familyCommands');
+require('./permitManager');
+require('./cityHall');
 require('./inventory');
 require('./dumpster');
 require('./returo');
