@@ -42,12 +42,17 @@ mp.events.add('playerReady', () => {
 });
 
 // --------------- APPLY WEATHER --------------------------------
-function applyWeather(gtaType) {
+function applyWeather(gtaType, transitionTime = 45.0) {
     try {
-        mp.game.misc.setWeatherTypePersist(gtaType);
-        mp.game.misc.setWeatherTypeNowPersist(gtaType);
-        mp.game.misc.setWeatherTypeNow(gtaType);
-    } catch (e) { /* safe fail */ }
+        // Smoothly transition over X seconds
+        mp.game.misc.setWeatherTypeOverTime(gtaType, transitionTime);
+        
+        // Let the game know this is the persistent weather going forward
+        setTimeout(() => {
+            mp.game.misc.setWeatherTypePersist(gtaType);
+        }, transitionTime * 1000);
+        
+    } catch (e) { console.error('[Weather] Transition error:', e); }
 }
 
 // --------------- WEATHER SYNC ---------------------------------

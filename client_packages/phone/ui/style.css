@@ -2513,7 +2513,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 16px 16px;
+    padding: 0px 16px 16px;
     gap: 4px;
     min-height: 0;
 }
@@ -2573,7 +2573,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.12);
     padding: 12px 12px 14px;
-    margin: 0 10px 14px;
+    margin: 0 10px 55px; /* <-- Changed bottom margin from 14px to 45px to lift it above the home bar */
     border-radius: 18px;
     flex-shrink: 0;
 }
