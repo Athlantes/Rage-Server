@@ -770,3 +770,41 @@ mp.events.add('client:leaveVehicle', () => {
         player.taskLeaveVehicle(player.vehicle.handle, 0);
     }
 });
+
+// ============================================================
+// WEATHER APP BRIDGE
+// ============================================================
+
+// Receive phone notification from weather system → push to phone UI
+mp.events.add('client:weather:triggerPhoneNotify', (emoji, title, message) => {
+    if (phoneBrowser) {
+        const safeTitle   = JSON.stringify(`${emoji} ${title}`);
+        const safeMessage = JSON.stringify(message);
+        phoneBrowser.execute(`
+            if (typeof app !== 'undefined' && app.notify) {
+                app.notify('weather', ${safeTitle}, ${safeMessage});
+            }
+        `);
+    }
+});
+
+// Refresh the weather view if it's open
+mp.events.add('client:weather:refreshPhoneApp', () => {
+    if (!phoneBrowser) return;
+    phoneBrowser.execute(`
+        if (typeof app !== 'undefined' && app.weatherApp && app.weatherApp.isOpen) {
+            app.weatherApp.render();
+        }
+    `);
+});
+
+// Bridge: when client:weather:sync fires (from weather.js), push data into phone UI
+mp.events.add('client:weather:sync', (payloadJson) => {
+    if (!phoneBrowser) return;
+    const safePayload = JSON.stringify(payloadJson);
+    phoneBrowser.execute(`
+        if (typeof app !== 'undefined' && app.weatherApp) {
+            app.weatherApp.receiveSync(${safePayload});
+        }
+    `);
+});

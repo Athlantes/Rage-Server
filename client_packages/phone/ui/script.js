@@ -1,14 +1,15 @@
 // CONFIGURATION: Define your apps here for easy modularity
 const NOTIFICATION_APPS = {
-    'mail':      { color: '#00a8ff', icon: 'fas fa-envelope', title: 'Mail' },
-    'phone':     { color: '#34c759', icon: 'fas fa-phone-alt', title: 'Phone' },
-    'bank':      { color: '#1abc9c', icon: 'fas fa-university', title: 'Fleeca' },
-    'scooter':   { color: '#56ab2f', icon: 'fas fa-bolt', title: 'eScootr' },
-    'quickeats': { color: '#ff9500', icon: 'fas fa-hamburger', title: 'QuickEats' },
-    'vehicles':  { color: '#f1c40f', icon: 'fas fa-car', title: 'Vehicles' },
-    'system':    { color: '#636366', icon: 'fas fa-cog', title: 'System' },
+    'mail':      { color: '#00a8ff', icon: 'fas fa-envelope',      title: 'Mail' },
+    'phone':     { color: '#34c759', icon: 'fas fa-phone-alt',      title: 'Phone' },
+    'bank':      { color: '#1abc9c', icon: 'fas fa-university',     title: 'Fleeca' },
+    'scooter':   { color: '#56ab2f', icon: 'fas fa-bolt',           title: 'eScootr' },
+    'quickeats': { color: '#ff9500', icon: 'fas fa-hamburger',      title: 'QuickEats' },
+    'vehicles':  { color: '#f1c40f', icon: 'fas fa-car',            title: 'Vehicles' },
+    'system':    { color: '#636366', icon: 'fas fa-cog',            title: 'System' },
     'maps':      { color: '#ff4757', icon: 'fas fa-map-marked-alt', title: 'Maps' },
-    'taxi':      { color: '#ffc300', icon: 'fas fa-taxi', title: 'Taxi' },
+    'taxi':      { color: '#ffc300', icon: 'fas fa-taxi',           title: 'Taxi' },
+    'weather':   { color: '#48c6ef', icon: 'fas fa-cloud-sun',      title: 'Weather' },
 };
 
 const app = {
@@ -1860,3 +1861,193 @@ document.addEventListener('DOMContentLoaded', () => {
         lockTimeGroup.addEventListener('click', () => app.unlock());
     }
 });
+
+// ============================================================
+// WEATHER APP
+// ============================================================
+
+app.weatherApp = {
+    isOpen:   false,
+    state:    'CLEAR',
+    label:    'Clear',
+    emoji:    '☀️',
+    endTime:  0,
+    forecast: [],
+    clockInterval: null,
+
+    init() {
+        // Nothing needed on DOM ready — data arrives via mp events
+    },
+
+    // Called when the player opens the Weather app
+    open() {
+        this.isOpen = true;
+        // Request fresh data from server
+        if ('mp' in window) {
+            mp.trigger('server:weather:request');
+        } else {
+            // Dev/preview mode: use mock data
+            this.loadMockData();
+        }
+        this.render();
+        this.startClock();
+    },
+
+    close() {
+        this.isOpen = false;
+        this.stopClock();
+    },
+
+    // Receive weather data pushed from the server via client:weather:sync
+    receiveData(payloadJson) {
+        try {
+            const data = typeof payloadJson === 'string' ? JSON.parse(payloadJson) : payloadJson;
+            this.state    = data.state    || 'CLEAR';
+            this.label    = data.label    || 'Clear';
+            this.emoji    = data.emoji    || '☀️';
+            this.endTime  = data.endTime  || 0;
+            this.forecast = data.forecast || [];
+            if (this.isOpen) this.render();
+        } catch(e) {
+            console.error('[WeatherApp] receiveData error:', e);
+        }
+    },
+
+    // Determine which background class to use based on time + weather
+    getBgClass() {
+        const hour = new Date().getHours();
+        if (this.state === 'THUNDER') return 'weather-bg-thunder';
+        if (this.state === 'RAIN')    return 'weather-bg-rain';
+        if (hour >= 6  && hour < 10) return 'weather-bg-morning';
+        if (hour >= 10 && hour < 19) return 'weather-bg-day';
+        if (hour >= 19 && hour < 22) return 'weather-bg-evening';
+        return 'weather-bg-night';
+    },
+
+    // Format ms timestamp to "HH:MM" string
+    formatTime(ms) {
+        if (!ms || ms <= 0) return '--:--';
+        const d = new Date(ms);
+        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    },
+
+    // How long until weather changes
+    getNextChangeText() {
+        if (!this.endTime || this.endTime <= Date.now()) return '';
+        const diffMs  = this.endTime - Date.now();
+        const diffMin = Math.round(diffMs / 60000);
+        if (diffMin < 60) return `Changes in ~${diffMin}m`;
+        const hrs = Math.floor(diffMin / 60);
+        const rem = diffMin % 60;
+        return rem > 0 ? `Changes in ~${hrs}h ${rem}m` : `Changes in ~${hrs}h`;
+    },
+
+    render() {
+        const wrapper = document.getElementById('weather-app-wrapper');
+        if (!wrapper) return;
+
+        // Background
+        wrapper.className = this.getBgClass();
+
+        // Current emoji + label
+        const emojiEl = document.getElementById('weather-main-emoji');
+        const labelEl = document.getElementById('weather-main-label');
+        if (emojiEl) emojiEl.textContent = this.emoji;
+        if (labelEl) labelEl.textContent = this.label;
+
+        // Current time
+        const now = new Date();
+        const timeEl = document.getElementById('weather-current-time');
+        if (timeEl) {
+            timeEl.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        }
+
+        // Next change hint
+        const nextEl = document.getElementById('weather-next-change');
+        if (nextEl) nextEl.textContent = this.getNextChangeText();
+
+        // Visibility pill — contextual text based on weather
+        const visMap = {
+            CLEAR:         'Clear skies',
+            PARTLY_CLOUDY: 'Mostly clear',
+            CLOUDY:        'Low visibility',
+            RAIN:          'Poor visibility',
+            THUNDER:       'Very poor',
+        };
+        const visEl = document.getElementById('weather-visibility-text');
+        if (visEl) visEl.textContent = visMap[this.state] || 'Clear skies';
+
+        // Forecast strip
+        const strip = document.getElementById('weather-forecast-strip');
+        if (!strip) return;
+        strip.innerHTML = '';
+
+        // First entry = "Now"
+        const nowItem = document.createElement('div');
+        nowItem.className = 'forecast-item active';
+        nowItem.innerHTML = `
+            <span class="forecast-time">Now</span>
+            <span class="forecast-emoji">${this.emoji}</span>
+            <span class="forecast-label">${this.label}</span>
+        `;
+        strip.appendChild(nowItem);
+
+        // Future entries from forecast
+        (this.forecast || []).slice(0, 5).forEach(f => {
+            const item = document.createElement('div');
+            item.className = 'forecast-item';
+            item.innerHTML = `
+                <span class="forecast-time">${this.formatTime(f.startTime)}</span>
+                <span class="forecast-emoji">${f.emoji}</span>
+                <span class="forecast-label">${f.label}</span>
+            `;
+            strip.appendChild(item);
+        });
+    },
+
+    // Tick the time display every minute while app is open
+    startClock() {
+        this.stopClock();
+        this.clockInterval = setInterval(() => {
+            if (this.isOpen) this.render();
+        }, 60 * 1000);
+    },
+
+    stopClock() {
+        if (this.clockInterval) {
+            clearInterval(this.clockInterval);
+            this.clockInterval = null;
+        }
+    },
+
+    loadMockData() {
+        const now = Date.now();
+        this.state    = 'PARTLY_CLOUDY';
+        this.label    = 'Partly Cloudy';
+        this.emoji    = '⛅';
+        this.endTime  = now + 45 * 60000;
+        this.forecast = [
+            { state: 'CLOUDY',  label: 'Cloudy',  emoji: '☁️', startTime: now + 45 * 60000 },
+            { state: 'RAIN',    label: 'Rain',    emoji: '🌧',  startTime: now + 105 * 60000 },
+            { state: 'CLOUDY',  label: 'Cloudy',  emoji: '☁️', startTime: now + 165 * 60000 },
+            { state: 'CLEAR',   label: 'Clear',   emoji: '☀️', startTime: now + 255 * 60000 },
+        ];
+    },
+};
+
+// Hook: when app.open('weather') is called, run weatherApp.open()
+const _originalOpen = app.open;
+app.open = function(appName) {
+    _originalOpen.call(app, appName);
+    if (appName === 'weather') {
+        app.weatherApp.open();
+    } else {
+        app.weatherApp.close();
+    }
+};
+
+// Receive weather sync data pushed from client_packages/phone/index.js
+// (The phone index bridges mp events → phoneBrowser.execute → this function)
+app.weatherApp.receiveSync = function(payloadJson) {
+    app.weatherApp.receiveData(payloadJson);
+};

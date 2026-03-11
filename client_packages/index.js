@@ -36,6 +36,7 @@ require('./systems/atm.js');
 require('./systems/photoHunt.js');
 require('./systems/cablecar.js');
 require('./systems/carCrafting.js');
+require('./systems/weather.js');
 
 // 5. Head-to-Head Race
 require('./systems/h2hRace.js');

@@ -115,6 +115,12 @@
                         </div>
                         <span class="app-name">Taxi</span>
                     </div>
+                    <div class="app-icon" onclick="app.open('weather')">
+                        <div class="icon-box" style="background: linear-gradient(135deg, #48c6ef, #6f86d6);">
+                            <i class="fas fa-cloud-sun"></i>
+                        </div>
+                        <span class="app-name">Weather</span>
+                    </div>
                     <div class="app-icon" onclick="app.open('phone-app')">
                         <div class="icon-box" style="background: linear-gradient(135deg, #4cd964, #2ecc71);">
                             <i class="fas fa-phone-alt"></i>
@@ -664,6 +670,42 @@
                             <i class="fas fa-star" data-star="5" onclick="app.taxiApp.selectStar(5)"></i>
                         </div>
                         <button class="taxi-submit-rating" id="taxi-submit-rating" onclick="app.taxiApp.submitRating()">Submit Rating</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================
+                 WEATHER APP VIEW
+            ================================================ -->
+            <div id="view-weather" class="view hidden">
+                <div id="weather-app-wrapper" class="weather-bg-day">
+                    <div class="weather-app-header">
+                        <button class="back-btn" onclick="app.goHome()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="weather-app-title">Weather</span>
+                    </div>
+
+                    <div class="weather-current-block">
+                        <div class="weather-main-emoji" id="weather-main-emoji">☀️</div>
+                        <div class="weather-main-label" id="weather-main-label">Clear</div>
+                        <div class="weather-current-time" id="weather-current-time">--:--</div>
+                        <div class="weather-next-change" id="weather-next-change"></div>
+                        <div class="weather-detail-row" id="weather-detail-row">
+                            <div class="weather-pill" id="weather-pill-wind">
+                                <i class="fas fa-wind"></i> <span>Los Santos</span>
+                            </div>
+                            <div class="weather-pill" id="weather-pill-visibility">
+                                <i class="fas fa-eye"></i> <span id="weather-visibility-text">Clear skies</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="weather-forecast-card">
+                        <div class="forecast-card-title">Upcoming</div>
+                        <div class="forecast-strip" id="weather-forecast-strip">
+                            <!-- Populated by weatherApp.render() -->
+                        </div>
                     </div>
                 </div>
             </div>
