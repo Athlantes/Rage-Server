@@ -167,6 +167,7 @@
   <!-- Tier tabs -->
   <div class="tier-tabs">
     <div class="tier-tab active" data-tier="all" onclick="setTier('all')">All</div>
+    <div class="tier-tab" data-tier="open" onclick="setTier('open')">🎟 Active Raffles</div> 
     <div class="tier-tab" data-tier="1" onclick="setTier('1')">🔴 Tier 1 — Premium</div>
     <div class="tier-tab" data-tier="2" onclick="setTier('2')">🟠 Tier 2 — Standard</div>
     <div class="tier-tab" data-tier="3" onclick="setTier('3')">🟢 Tier 3 — Starter</div>
@@ -273,10 +274,16 @@ function setTier(t) {
 function renderList() {
   const list = document.getElementById('bizList');
   let businesses = allBizinesses;
-  if (activeTier !== 'all') businesses = businesses.filter(b => String(b.tier) === activeTier);
+  
+  // Update the filter logic to handle our new "open" tab
+  if (activeTier === 'open') {
+    businesses = businesses.filter(b => b.status === 'open_raffle');
+  } else if (activeTier !== 'all') {
+    businesses = businesses.filter(b => String(b.tier) === activeTier);
+  }
 
   if (!businesses.length) {
-    list.innerHTML = '<div class="empty">No businesses in this tier.</div>';
+    list.innerHTML = '<div class="empty">No businesses found for this filter.</div>';
     return;
   }
 
@@ -299,11 +306,18 @@ function renderList() {
       const entryText = cached
         ? `${cached.entries.length} famil${cached.entries.length===1?'y':'ies'} · ${cached.total} ticket${cached.total===1?'':'s'}`
         : 'Loading...';
+      
       statusHtml  = `<span class="status-open">🎟 Raffle Open</span>`;
+      
+      // Conditionally render the Enter button based on b.canEnter (leader status)
+      const enterBtn = b.canEnter 
+        ? `<button class="btn btn-enter" onclick="openModal(${b.id})">Enter Raffle</button>`
+        : `<button class="btn btn-view" title="Only Family Officers (Rank 4+) can enter" style="opacity: 0.5; cursor: not-allowed;">Must be Leader</button>`;
+
       actionsHtml = `
         <div style="font-size:10px;color:#8b949e;text-align:right;margin-bottom:4px" id="entry-count-${b.id}">${entryText}</div>
-        <button class="btn btn-enter" onclick="openModal(${b.id})">Enter Raffle</button>
-        <button class="btn btn-view"  onclick="viewEntries(${b.cycleId}, ${b.id}, '${esc(b.name)}')">View Entries</button>`;
+        ${enterBtn}
+        <button class="btn btn-view" onclick="viewEntries(${b.cycleId}, ${b.id}, '${esc(b.name)}')">View Entries</button>`;
     } else {
       statusHtml = `<span style="color:#484f58;font-size:12px">No active cycle</span>`;
     }

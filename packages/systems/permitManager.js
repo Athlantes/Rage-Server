@@ -397,6 +397,12 @@ class PermitManager {
     // ── Data getters (for UI) ─────────────────────────────────────────────────
     getPermitBoardData(player) {
         const family = FamilyManager.getFamilyByPlayer(player);
+        
+        // --- ADD THESE TWO LINES ---
+        const memberData = family ? FamilyManager.getMemberData(family, player.data.dbId) : null;
+        const canEnter   = memberData ? memberData.rank >= 4 : false;
+        // ---------------------------
+
         const result = [];
 
         for (const [bizId, biz] of this.businesses) {
@@ -427,6 +433,7 @@ class PermitManager {
                 isOwnedByMe,
                 cycleId:        openCycle?.id || activeCycle?.id || null,
                 expiresAt:      activeCycle?.expires_at || null,
+                canEnter:       canEnter // <-- SEND TO UI
             });
         }
 
