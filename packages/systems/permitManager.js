@@ -477,8 +477,10 @@ mp.events.add('server:permit:getBoardData', (player) => {
 
 mp.events.add('server:permit:getRaffleEntries', async (player, cycleId) => {
     if (!player.logged) return;
-    const entries = await instance.getRaffleEntries(parseInt(cycleId));
-    player.call('client:permit:raffleEntries', [JSON.stringify(entries)]);
+    cycleId = parseInt(cycleId);
+    const entries = await instance.getRaffleEntries(cycleId);
+    // Always include cycleId so the client can identify the response even when entries is empty
+    player.call('client:permit:raffleEntries', [JSON.stringify({ cycleId, entries })]);
 });
 
 // Admin-only: manually trigger the raffle draw

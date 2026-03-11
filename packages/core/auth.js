@@ -211,7 +211,7 @@ async function startSession(player, userData) {
     player.data.premiumPoints = userData.premium_points || 0;
     player.data.mugshot = userData.mugshot || null;
     player.setVariable('money', userData.money);
-    player.setVariable('premiumPoints', userData.premiumPoints);
+    player.setVariable('premiumPoints', userData.premium_points || 0);
 
     // --- LOAD RPG STATS ---
     player.data.level = userData.level || 1;

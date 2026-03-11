@@ -1504,7 +1504,7 @@ function renderFamNone(el,families){el.innerHTML=`<div class="card" style="margi
 function renderFamilyList(families,filter){const list=document.getElementById('fam-list');if(!list)return;const filtered=filter?families.filter(f=>f.name.toLowerCase().includes(filter.toLowerCase())):families,pendingId=_famData?_famData.pendingApplicationFamilyId:null;if(!filtered.length){list.innerHTML=`<div class="empty"><i class="fas fa-search"></i><span>${filter?'No matches.':'No families yet.'}</span></div>`;return}list.innerHTML=filtered.map(f=>{const hasPending=pendingId!==null,isPending=pendingId===f.id;let badge=f.invitesOpen?'<span class="fbadge open"><i class="fas fa-door-open" style="margin-right:2px"></i>Direct Join</span>':f.applicationsOpen?'<span class="fbadge open"><i class="fas fa-envelope" style="margin-right:2px"></i>Apply</span>':'<span class="fbadge closed"><i class="fas fa-lock" style="margin-right:2px"></i>Closed</span>';let actions='';if(isPending)actions=`<button class="fbtn" style="background:rgba(255,45,78,.12);border:1px solid rgba(255,45,78,.3);color:var(--red)" onclick="cancelFamilyApp()"><i class="fas fa-xmark" style="margin-right:2px"></i>Cancel</button>`;else if(hasPending){actions=(f.applicationsOpen?`<button class="fbtn fbtn-apply" disabled style="opacity:.3;cursor:not-allowed">Apply</button>`:'')+( f.invitesOpen?`<button class="fbtn fbtn-join" disabled style="opacity:.3;cursor:not-allowed">Join</button>`:'');if(!actions)actions='<span style="font-size:9px;color:var(--muted)">Invite only</span>'}else{actions=(f.applicationsOpen?`<button class="fbtn fbtn-apply" onclick="familyApply(${f.id})"><i class="fas fa-paper-plane" style="margin-right:2px"></i>Apply</button>`:'')+( f.invitesOpen?`<button class="fbtn fbtn-join" onclick="familyDirectJoin(${f.id})"><i class="fas fa-door-open" style="margin-right:2px"></i>Join</button>`:'');if(!actions)actions='<span style="font-size:9px;color:var(--muted)">Invite only</span>'}return `<div class="fcard" style="border-left-color:${f.color};${isPending?'background:rgba(255,45,78,.04);':(hasPending&&!isPending?'opacity:.5;':'')}"><div class="fcard-info"><div class="ftag" style="color:${f.color}">[${f.tag}]</div><div class="fname">${f.name}${isPending?'<span style="font-size:9px;color:var(--orange-light);margin-left:5px"><i class="fas fa-clock"></i> Applied</span>':''}</div>${f.description?`<div class="fdesc">${f.description}</div>`:''}<div class="fmeta">${f.memberCount}/${f.memberCap} members</div><div class="fbadges">${badge}</div></div><div class="factions">${actions}</div></div>`}).join('')}
 function filterFamilies(v){if(_famData&&!_famData.inFamily)renderFamilyList(_famData.families||[],v)}
 function renderFamMember(el,fam){
-  const hasBiz=!!(fam.permit&&(fam.permit.ownedBusiness||fam.permit.openRaffles&&fam.permit.openRaffles.length));
+  const hasBiz=!!(fam.permit&&fam.permit.ownedBusiness);
   const bizNotif=hasBiz&&fam.permit.ownedBusiness&&!fam.permit.deliveryDone?'<span style="background:var(--orange-light);color:#000;font-size:8px;padding:1px 5px;border-radius:4px;margin-left:2px">!</span>':'';
   const mt=fam.isOwner?`<div class="fstab ${_famSub==='manage'?'active':''}" onclick="setFamSub('manage')"><i class="fas fa-cog" style="margin-right:3px"></i>Manage${fam.applications&&fam.applications.length?` <span style="background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:4px;margin-left:2px">${fam.applications.length}</span>`:''}</div>`:'';
   el.innerHTML=`<div class="fsubtabs"><div class="fstab ${_famSub==='info'?'active':''}" onclick="setFamSub('info')"><i class="fas fa-info-circle" style="margin-right:3px"></i>Info</div><div class="fstab ${_famSub==='members'?'active':''}" onclick="setFamSub('members')"><i class="fas fa-users" style="margin-right:3px"></i>Members</div><div class="fstab ${_famSub==='business'?'active':''}" onclick="setFamSub('business')"><i class="fas fa-store" style="margin-right:3px"></i>Business${bizNotif}</div>${mt}</div><div class="fsview ${_famSub==='info'?'active':''}" id="fsub-info">${buildFamInfo(fam)}</div><div class="fsview ${_famSub==='members'?'active':''}" id="fsub-members">${buildFamMembers(fam)}</div><div class="fsview ${_famSub==='business'?'active':''}" id="fsub-business">${buildFamBusiness(fam)}</div>${fam.isOwner?`<div class="fsview ${_famSub==='manage'?'active':''}" id="fsub-manage">${buildFamManage(fam)}</div>`:''}`
@@ -1523,7 +1523,7 @@ function buildFamBusiness(fam){
 
   let html='';
 
-  // ── Section 1: Active Permit ──────────────────────────────────
+  // ── Active Permit ─────────────────────────────────────────────
   if(p.ownedBusiness){
     const b=p.ownedBusiness;
     const tierClr=b.tier===1?'var(--red)':b.tier===2?'var(--orange-light)':'var(--lime)';
@@ -1571,80 +1571,26 @@ function buildFamBusiness(fam){
       </div>
     </div>`;
   } else {
+    // No permit — guide the player to City Hall to enter raffles
     html+=`<div class="card" style="margin-bottom:10px">
       <div class="card-head">
         <div class="card-head-icon" style="background:rgba(255,170,0,.1);color:var(--orange-light)"><i class="fas fa-store-slash"></i></div>
         <div class="card-head-title">No Active Permit</div>
       </div>
-      <div style="padding:10px 14px;font-size:11px;color:var(--muted)">Your family doesn't hold a business permit this cycle. Enter a raffle below to compete for one.</div>
-    </div>`;
-  }
-
-  // ── Section 2: Open Raffles ───────────────────────────────────
-  const raffles=p.openRaffles||[];
-  const entered=p.enteredRaffle;
-  const hasActiveLease=!!p.ownedBusiness;
-
-  html+=`<div class="fsection" style="margin-top:4px"><i class="fas fa-ticket" style="margin-right:4px;color:var(--blue-light)"></i>Open Raffles</div>`;
-
-  if(!raffles.length){
-    html+=`<div style="font-size:11px;color:var(--muted);padding:6px 0 10px">No raffles are open right now. Check back when the current cycle ends.</div>`;
-  } else if(hasActiveLease){
-    html+=`<div style="font-size:11px;color:var(--muted);padding:6px 0 10px"><i class="fas fa-lock" style="margin-right:4px;color:var(--orange-light)"></i>Your family already holds a permit. You can only hold one per cycle.</div>`;
-  } else if(entered){
-    html+=`<div style="background:rgba(22,87,255,.07);border:1px solid rgba(22,87,255,.2);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:11px">
-      <div style="color:var(--blue-light);font-weight:700;margin-bottom:3px"><i class="fas fa-clock" style="margin-right:4px"></i>Raffle Entered — ${entered.bizName}</div>
-      <div style="color:var(--muted)">${entered.tickets} ticket${entered.tickets>1?'s':''} — ${entered.ppSpent} PP locked (fully refunded if you don't win)</div>
-    </div>`;
-    html+=`<div style="font-size:11px;color:var(--muted);padding:2px 0 8px">You can only enter one raffle per cycle.</div>`;
-  } else {
-    html+=raffles.map(r=>{
-      const tierClr=r.tier===1?'var(--red)':r.tier===2?'var(--orange-light)':'var(--lime)';
-      const tierLabel=r.tier===1?'T1':'T2 — STANDARD'===r.tier?'T2':'T3';
-      return `<div class="card" style="margin-bottom:8px">
-        <div style="padding:10px 14px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-            <div>
-              <span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.05);color:${tierClr};border:1px solid ${tierClr}44;letter-spacing:1px;margin-right:6px">T${r.tier}</span>
-              <span style="font-size:13px;font-weight:700;color:var(--text)">${r.name}</span>
-            </div>
-            <span style="font-size:10px;color:var(--muted);white-space:nowrap">${r.ppPerTicket} PP/ticket · max ${r.maxTickets}</span>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${r.description||''}</div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input id="ptix-${r.id}" type="number" min="1" max="${r.maxTickets}" value="1" class="inp" style="width:54px;text-align:center" oninput="updateRaffleCost(${r.id},${r.maxTickets},${r.ppPerTicket})">
-            <span style="font-size:11px;color:var(--muted)">tickets =</span>
-            <span id="pcost-${r.id}" style="font-size:12px;font-weight:700;color:var(--orange-light)">${r.ppPerTicket} PP</span>
-            <button class="btn primary" style="margin-left:auto" onclick="enterRaffleFromMenu(${r.id},${r.maxTickets})"><i class="fas fa-ticket"></i> Enter</button>
+      <div style="padding:10px 14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Your family doesn't hold a business permit this cycle.</div>
+        <div style="background:rgba(22,87,255,.07);border:1px solid rgba(22,87,255,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px">
+          <i class="fas fa-landmark" style="color:var(--blue-light);margin-top:1px;flex-shrink:0"></i>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--blue-light);margin-bottom:3px">Visit City Hall to enter a Raffle</div>
+            <div style="font-size:11px;color:var(--muted)">Head to the <strong style="color:var(--text)">City Hall</strong> marker on the map and press <strong style="color:var(--text)">E</strong> to open the Permit Board. Use your family's PP to buy raffle tickets — fully refunded if you don't win.</div>
           </div>
         </div>
-      </div>`;
-    }).join('');
+      </div>
+    </div>`;
   }
 
   return html;
-}
-
-function updateRaffleCost(bizId,max,ppEach){
-  const inp=document.getElementById('ptix-'+bizId);
-  const costEl=document.getElementById('pcost-'+bizId);
-  if(!inp||!costEl)return;
-  let v=Math.min(Math.max(1,parseInt(inp.value)||1),max);
-  inp.value=v;
-  costEl.textContent=(v*ppEach)+' PP';
-}
-
-function enterRaffleFromMenu(bizId,maxTix){
-  const inp=document.getElementById('ptix-'+bizId);
-  const tickets=Math.min(Math.max(1,parseInt(inp?.value)||1),maxTix);
-  try{mp.trigger('client:permit:enterRaffle',bizId,tickets)}catch(e){}
-  showToast(`Entered raffle with ${tickets} ticket${tickets>1?'s':''}. PP locked — refunded if you lose.`,'info');
-  // Optimistically update UI
-  if(_famData&&_famData.permit){
-    const r=(_famData.permit.openRaffles||[]).find(r=>r.id===bizId);
-    if(r){_famData.permit.enteredRaffle={bizId,bizName:r.name,tickets,ppSpent:tickets*r.ppPerTicket}}
-    renderFamilyTab(_famData);setFamSub('business');
-  }
 }
 
 function startPermitDelivery(bizId){

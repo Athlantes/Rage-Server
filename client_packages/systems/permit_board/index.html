@@ -218,31 +218,47 @@
 let allBizinesses = [];
 let activeTier    = 'all';
 let selectedBiz   = null;
+let myFamilyEntries = {}; // cycleId → { tickets, ppSpent } — populated from server
 
 // ── Receive data from client script ──
 function onBoardData(jsonStr) {
   allBizinesses = JSON.parse(jsonStr);
   renderList();
+  // Request raffle entry counts for all open cycles
+  allBizinesses.forEach(b => {
+    if (b.status === 'open_raffle' && b.cycleId) {
+      if (mp) mp.trigger('client:permit:viewEntries', b.cycleId);
+    }
+  });
 }
 
-function onRaffleEntries(jsonStr) {
-  const entries = JSON.parse(jsonStr);
-  const total   = entries.reduce((s, e) => s + e.tickets, 0);
-  const tbody   = document.getElementById('entriesTbody');
-  tbody.innerHTML = '';
+// entryCounts: cycleId → { entries[], totalTickets }
+const _entryCounts = {};
 
-  if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:#484f58;text-align:center;padding:10px">No entries yet</td></tr>';
-  } else {
-    entries.forEach(e => {
-      const chance = total > 0 ? ((e.tickets / total) * 100).toFixed(1) : '0.0';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${e.family_name || 'Unknown'}</td><td>${e.tickets}</td><td>${e.pp_spent} PP</td><td>${chance}%</td>`;
-      tbody.appendChild(tr);
-    });
+function onRaffleEntries(jsonStr) {
+  const parsed  = JSON.parse(jsonStr);
+  const cycleId = parsed.cycleId;
+  const entries = parsed.entries || [];
+  const total   = entries.reduce((s, e) => s + e.tickets, 0);
+
+  _entryCounts[cycleId] = { entries, total };
+
+  // Update inline entry count badge on the matching card
+  const biz = allBizinesses.find(b => b.cycleId == cycleId);
+  if (biz) {
+    const countEl = document.getElementById(`entry-count-${biz.id}`);
+    if (countEl) {
+      countEl.textContent = entries.length
+        ? `${entries.length} famil${entries.length===1?'y':'ies'} · ${total} ticket${total===1?'':'s'}`
+        : 'No entries yet — be first!';
+    }
   }
 
-  document.getElementById('entriesPanel').classList.add('visible');
+  // If the entries panel for this cycle is open, refresh the table
+  const panelBizId = document.getElementById('entriesPanel').dataset.bizId;
+  if (panelBizId && String(biz?.id) === panelBizId) {
+    _renderEntriesTable(entries, total);
+  }
 }
 
 // ── Rendering ──
@@ -276,13 +292,18 @@ function renderList() {
         statusHtml  = `<span class="status-yours">✅ Your Permit — expires ${exp}</span>`;
         actionsHtml = `<button class="btn btn-deliver" onclick="doDelivery(${b.id})">🚚 Start Delivery</button>`;
       } else {
-        statusHtml  = `<span class="status-leased">🔒 Leased by ${b.ownerName || '?'}</span>`;
+        statusHtml  = `<span class="status-leased">🔒 Leased by ${esc(b.ownerName || '?')}</span>`;
       }
     } else if (b.status === 'open_raffle') {
+      const cached = b.cycleId ? _entryCounts[b.cycleId] : null;
+      const entryText = cached
+        ? `${cached.entries.length} famil${cached.entries.length===1?'y':'ies'} · ${cached.total} ticket${cached.total===1?'':'s'}`
+        : 'Loading...';
       statusHtml  = `<span class="status-open">🎟 Raffle Open</span>`;
       actionsHtml = `
+        <div style="font-size:10px;color:#8b949e;text-align:right;margin-bottom:4px" id="entry-count-${b.id}">${entryText}</div>
         <button class="btn btn-enter" onclick="openModal(${b.id})">Enter Raffle</button>
-        <button class="btn btn-view"  onclick="viewEntries(${b.cycleId}, '${esc(b.name)}')">View Entries</button>`;
+        <button class="btn btn-view"  onclick="viewEntries(${b.cycleId}, ${b.id}, '${esc(b.name)}')">View Entries</button>`;
     } else {
       statusHtml = `<span style="color:#484f58;font-size:12px">No active cycle</span>`;
     }
@@ -344,11 +365,35 @@ function confirmEntry() {
   closeModal();
 }
 
-function viewEntries(cycleId, bizName) {
+function viewEntries(cycleId, bizId, bizName) {
+  const panel = document.getElementById('entriesPanel');
+  panel.dataset.bizId = bizId;
   document.getElementById('entriesPanelTitle').textContent = `Raffle Entries — ${bizName}`;
   document.getElementById('entriesTbody').innerHTML = '<tr><td colspan="4" style="color:#8b949e;padding:8px">Loading...</td></tr>';
-  document.getElementById('entriesPanel').classList.add('visible');
-  if (mp) mp.trigger('client:permit:viewEntries', cycleId);
+  panel.classList.add('visible');
+
+  // Use cached data if available, else fetch
+  const cached = cycleId ? _entryCounts[cycleId] : null;
+  if (cached) {
+    _renderEntriesTable(cached.entries, cached.total);
+  } else {
+    if (mp) mp.trigger('client:permit:viewEntries', cycleId);
+  }
+}
+
+function _renderEntriesTable(entries, total) {
+  const tbody = document.getElementById('entriesTbody');
+  tbody.innerHTML = '';
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#484f58;text-align:center;padding:10px">No entries yet — be the first!</td></tr>';
+  } else {
+    entries.forEach(e => {
+      const chance = total > 0 ? ((e.tickets / total) * 100).toFixed(1) : '0.0';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${esc(e.family_name || 'Unknown')}</td><td>${e.tickets}</td><td>${e.pp_spent} PP</td><td>${chance}%</td>`;
+      tbody.appendChild(tr);
+    });
+  }
 }
 
 function doDelivery(bizId) {

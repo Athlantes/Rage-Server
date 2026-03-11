@@ -843,14 +843,16 @@ class FamilyManager {
         }
 
         // ── Permit data ───────────────────────────────────────────────────────
+        // The family menu only shows the active permit (owned business + delivery status).
+        // Raffle browsing and entry is handled exclusively through City Hall (/permits board).
         try {
             const PermitManager = require('./permitManager');
             const allBiz        = PermitManager.getPermitBoardData(player);
 
-            // Find business this family currently owns
+            // Find the business this family currently holds an active lease on
             const ownedBiz = allBiz.find(b => b.isOwnedByMe) || null;
 
-            // Check if this player already did a delivery this cycle
+            // Check if this player already completed a delivery this cycle
             let deliveryDone = false;
             if (ownedBiz && ownedBiz.cycleId) {
                 const [delRows] = await db.query(
@@ -860,32 +862,9 @@ class FamilyManager {
                 deliveryDone = delRows.length > 0;
             }
 
-            // Open raffles available (for the raffle-browsing section)
-            const openRaffles = allBiz.filter(b => b.status === 'open_raffle');
-
-            // Has the family already entered any open raffle?
-            let enteredRaffle = null;
-            if (openRaffles.length) {
-                for (const r of openRaffles) {
-                    if (r.cycleId) {
-                        const [entRows] = await db.query(
-                            'SELECT tickets, pp_spent FROM permit_entries WHERE cycle_id = ? AND family_id = ?',
-                            [r.cycleId, fam.id]
-                        );
-                        if (entRows.length) {
-                            enteredRaffle = { bizId: r.id, bizName: r.name, tickets: entRows[0].tickets, ppSpent: entRows[0].pp_spent };
-                            break;
-                        }
-                    }
-                }
-            }
-
             result.permit = {
                 ownedBusiness: ownedBiz,
                 deliveryDone,
-                openRaffles,
-                enteredRaffle,
-                ppPerTicket: 100,
             };
         } catch (e) {
             result.permit = null;

@@ -21,6 +21,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             xpMax: playerManager.calculateNextLevelXp(level),
             money: player.data.money || 0,
             bank: player.data.bank_money || 0,
+            premiumPoints: player.data.premiumPoints || 0,
             weight: typeof rawWeight === 'string' ? parseFloat(rawWeight) : (rawWeight || 0),
             maxWeight: 40.0,
             exposure: player.data.exposure || 0
