@@ -97,3 +97,4 @@ mp.events.add('client:mugshot:resetDone', () => {
     }
     mp.gui.chat.push('~y~Mugshot reset. Rejoin the server to take a new one.');
 });
+

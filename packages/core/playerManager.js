@@ -81,6 +81,7 @@ const playerManager = {
         const level = player.data.level || 1;
         const xp = player.data.xp || 0;
         const bank_money = player.data.bank_money || 0;
+        const premiumPoints = player.data.premiumPoints || 0;
         const hunger = player.data.hunger || 100;
         const thirst = player.data.thirst || 100;
         const paydayIn = (player.data.paydayIn !== undefined) ? player.data.paydayIn : 60;
@@ -98,19 +99,19 @@ const playerManager = {
             const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             
             await db.query(
-                `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, hunger=?, thirst=?,
+                `UPDATE users SET level=?, position=?, xp=?, bank_money=?, payday_in=?, hunger=?, thirst=?, premium_points=?,
                  total_playtime = COALESCE(total_playtime, 0) + ?,
                  daily_playtime = CASE WHEN daily_playtime_date = ? THEN COALESCE(daily_playtime, 0) + ? ELSE ? END,
                  daily_playtime_date = ?
                  WHERE id=?`, 
-                [level, currentPos, xp, bank_money, paydayIn, hunger, thirst, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
+                [level, currentPos, xp, bank_money, paydayIn, hunger, thirst, premiumPoints, sessionMinutes, today, sessionMinutes, sessionMinutes, today, dbId]
             );
 
             if (mp.players.exists(player)) {
                 player.data.dailyPlaytimeBase = (player.data.dailyPlaytimeBase || 0) + sessionMinutes;
                 player.data.activeMinutes = 0;
             }
-            console.log(`[Data] Saved ${name} (H:${hunger} T:${thirst})`);
+            console.log(`[Data] Saved ${name} (H:${hunger} T:${thirst} PP:${premiumPoints})`);
         } catch (e) {
             console.error(`[Data] Failed to save ${name}:`, e);
         }

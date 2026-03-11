@@ -46,6 +46,10 @@ mp.events.add('client:family:bankWithdraw', (amount) => {
     mp.events.callRemote('server:family:bankWithdraw', amount);
 });
 
+mp.events.add('client:family:depositPP', (amount) => {
+    mp.events.callRemote('server:family:depositPP', amount);
+});
+
 mp.events.add('client:family:upgrade', () => {
     mp.events.callRemote('server:family:upgrade');
 });

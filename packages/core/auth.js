@@ -208,9 +208,11 @@ async function startSession(player, userData) {
     player.model = (player.data.gender === 0) ? mp.joaat('mp_m_freemode_01') : mp.joaat('mp_f_freemode_01');
     player.data.money = userData.money;
     player.data.bank_money = userData.bank_money || 0;
+    player.data.premiumPoints = userData.premium_points || 0;
     player.data.mugshot = userData.mugshot || null;
     player.setVariable('money', userData.money);
-    
+    player.setVariable('premiumPoints', userData.premiumPoints);
+
     // --- LOAD RPG STATS ---
     player.data.level = userData.level || 1;
     player.data.xp = userData.xp || 0; 
