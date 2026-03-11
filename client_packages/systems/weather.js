@@ -85,8 +85,6 @@ mp.events.add('client:weather:sync', (payloadJson) => {
 mp.events.add('client:weather:phoneNotify', (emoji, title, message) => {
     // Pass to phone browser via bridge event
     mp.events.call('client:weather:triggerPhoneNotify', emoji, title, message);
-    // Also show overlay notification
-    mp.events.call('showNotification', `${emoji} ${title}`, message);
 });
 
 // --------------- EXPOSE DATA FOR PHONE APP --------------------

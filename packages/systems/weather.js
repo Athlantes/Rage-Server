@@ -2,6 +2,8 @@
 // packages/systems/weather.js  — Dynamic Weather System
 // ============================================================
 
+const db = require('../core/database'); // Import your database pool
+
 // --------------- STATE DEFINITIONS -------------------------
 const WEATHER_STATES = {
     CLEAR:         { gta: 'CLEAR',    label: 'Clear',         emoji: '☀️',  minMin: 90,  maxMin: 300 },
@@ -11,10 +13,6 @@ const WEATHER_STATES = {
     THUNDER:       { gta: 'THUNDER',  label: 'Thunderstorm',  emoji: '⛈',  minMin: 15,  maxMin: 45  },
 };
 
-// Weighted transitions: from state → [[nextState, weight], ...]
-// Designed so rain occurs roughly once every ~48 real hours.
-// Path to rain requires: CLEAR → PARTLY_CLOUDY → CLOUDY → RAIN
-// Each step has a 15% chance, so rain is rare and feels earned.
 const TRANSITIONS = {
     CLEAR:         [['CLEAR', 70], ['PARTLY_CLOUDY', 30]],
     PARTLY_CLOUDY: [['CLEAR', 50], ['PARTLY_CLOUDY', 35], ['CLOUDY', 15]],
@@ -23,7 +21,6 @@ const TRANSITIONS = {
     THUNDER:       [['RAIN', 80], ['CLOUDY', 20]],
 };
 
-// States that trigger a phone notification when they start
 const NOTIFY_ON_START = {
     RAIN:    { title: 'Rain Alert',        msg: "It's starting to rain in Los Santos." },
     THUNDER: { title: 'Thunderstorm',      msg: 'A thunderstorm is rolling in. Stay safe.' },
@@ -32,8 +29,8 @@ const NOTIFY_ON_START = {
 
 // --------------- INTERNAL STATE ----------------------------
 let currentState = 'CLEAR';
-let weatherEndTime = 0;     // ms timestamp when current state expires
-let forecast = [];          // Array of { state, startTime, endTime, label, emoji }
+let weatherEndTime = 0;     
+let forecast = [];          
 let isInitialized = false;
 
 // --------------- HELPERS ------------------------------------
@@ -52,7 +49,6 @@ function randMs(minMin, maxMin) {
     return Math.floor(minutes * 60 * 1000);
 }
 
-// Keep the forecast buffer topped up to 6 future entries
 function rebuildForecast() {
     while (forecast.length < 6) {
         const prevState    = forecast.length > 0 ? forecast[forecast.length - 1].state   : currentState;
@@ -105,17 +101,31 @@ function broadcastWeather(notifyChange) {
     });
 }
 
+// --------------- DATABASE SYNC ------------------------------
+async function saveWeatherToDB() {
+    try {
+        const forecastJson = JSON.stringify(forecast);
+        // Using UPSERT so it creates row 1 if it doesn't exist, or updates it if it does
+        await db.query(
+            `INSERT INTO server_weather (id, current_state, end_time, forecast_json) 
+             VALUES (1, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE current_state = ?, end_time = ?, forecast_json = ?`,
+            [currentState, weatherEndTime, forecastJson, currentState, weatherEndTime, forecastJson]
+        );
+    } catch (err) {
+        console.error('[Weather] Failed to save weather to DB:', err);
+    }
+}
+
 // --------------- ADVANCE LOGIC ------------------------------
 function advanceWeather() {
     const prevState = currentState;
 
-    // Consume first forecast entry as the new current state
     if (forecast.length > 0) {
         const next = forecast.shift();
         currentState    = next.state;
         weatherEndTime  = next.endTime;
     } else {
-        // Fallback (shouldn't normally happen)
         const nextState = weightedRandom(TRANSITIONS[currentState]);
         const data      = WEATHER_STATES[nextState];
         currentState    = nextState;
@@ -126,26 +136,87 @@ function advanceWeather() {
 
     const changed = prevState !== currentState;
     console.log(`[Weather] Changed: ${prevState} → ${currentState} | Next change in ${Math.round((weatherEndTime - Date.now()) / 60000)}m`);
+    
+    // Save to DB and broadcast to players
+    saveWeatherToDB();
     broadcastWeather(changed);
 }
 
+// ============================================================
+// REAL-TIME CLOCK SYNC
+// ============================================================
+
+function syncServerTime() {
+    const now = new Date();
+    
+    // Grab the actual hours, minutes, and seconds from the OS
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const second = now.getSeconds();
+
+    // Force the RAGE Multiplayer world to match
+    mp.world.time.set(hour, minute, second);
+}
+
+// Run it once immediately when the server boots
+syncServerTime();
+
+// Then update it every 60 seconds so it never drifts out of sync
+setInterval(syncServerTime, 60000);
+
 // --------------- INIT & TICK --------------------------------
-function init() {
-    const initData     = WEATHER_STATES['CLEAR'];
-    currentState       = 'CLEAR';
-    weatherEndTime     = Date.now() + randMs(initData.minMin, initData.maxMin);
-    forecast           = [];
-    rebuildForecast();
-    isInitialized      = true;
+async function init() {
+    try {
+        const [rows] = await db.query('SELECT * FROM server_weather WHERE id = 1');
+        
+        if (rows.length > 0) {
+            const dbData = rows[0];
+            currentState = dbData.current_state;
+            weatherEndTime = Number(dbData.end_time);
+            forecast = JSON.parse(dbData.forecast_json);
 
-    console.log(`[Weather] Initialized with CLEAR. First change in ${Math.round((weatherEndTime - Date.now()) / 60000)}m`);
+            // --- CATCH UP LOGIC ---
+            let missedCount = 0;
+            // Fast-forward if the server was offline and missed scheduled changes
+            while (Date.now() >= weatherEndTime && forecast.length > 0) {
+                const missed = forecast.shift();
+                currentState = missed.state;
+                weatherEndTime = missed.endTime;
+                missedCount++;
+            }
 
-    // Tick every 30 seconds to check if we should advance
-    setInterval(() => {
-        if (Date.now() >= weatherEndTime) {
-            advanceWeather();
+            rebuildForecast(); // Fill up the forecast array to 6 items again
+            isInitialized = true;
+
+            console.log(`[Weather] DB Loaded. Fast-forwarded ${missedCount} missed changes.`);
+            console.log(`[Weather] Current: ${currentState}. Next change in ${Math.max(0, Math.round((weatherEndTime - Date.now()) / 60000))}m`);
+            
+            // Save the newly adjusted timeline back to the DB immediately
+            if (missedCount > 0) saveWeatherToDB(); 
+            
+        } else {
+            // First time server startup fallback
+            const initData     = WEATHER_STATES['CLEAR'];
+            currentState       = 'CLEAR';
+            weatherEndTime     = Date.now() + randMs(initData.minMin, initData.maxMin);
+            forecast           = [];
+            rebuildForecast();
+            isInitialized      = true;
+            
+            console.log(`[Weather] Initialized with CLEAR. First change in ${Math.round((weatherEndTime - Date.now()) / 60000)}m`);
+            saveWeatherToDB(); // Save first state to DB
         }
-    }, 30 * 1000);
+
+        // Tick every 30 seconds to check if we should advance
+        setInterval(() => {
+            if (Date.now() >= weatherEndTime) {
+                advanceWeather();
+            }
+        }, 30 * 1000);
+
+    } catch (err) {
+        console.error('[Weather] Initialization error:', err);
+    }
 }
 
 init();
@@ -159,8 +230,6 @@ module.exports = {
 };
 
 // --------------- SERVER EVENTS ------------------------------
-
-// Player joins → send current weather immediately
 mp.events.add('playerReady', (player) => {
     if (!isInitialized) return;
     setTimeout(() => {
@@ -170,7 +239,6 @@ mp.events.add('playerReady', (player) => {
     }, 2000);
 });
 
-// Player opens weather phone app → send fresh data
 mp.events.add('server:weather:request', (player) => {
     if (!player.logged || !isInitialized) return;
     player.call('client:weather:sync', [buildSyncPayload()]);
