@@ -95,6 +95,7 @@ class FamilyManager {
             color:            row.color,
             ownerId:          row.owner_id,
             bank:             row.bank,
+            premiumPoints:    row.premium_points || 0,
             memberCap:        row.member_cap,
             hqHouseId:        row.hq_house_id || null,
             applicationsOpen: !!row.applications_open,
@@ -211,7 +212,7 @@ class FamilyManager {
             // Cache
             const family = {
                 id: newFamilyId, name, tag: finalTag, color,
-                ownerId: player.data.dbId, bank: 0,
+                ownerId: player.data.dbId, bank: 0, premiumPoints: 0,
                 memberCap: 25, hqHouseId: null,
                 applicationsOpen: false, invitesOpen: true,
                 description,
@@ -805,6 +806,7 @@ class FamilyManager {
             rankName:         fam.ranks[memberData.rank - 1].name,
             rankColor:        fam.ranks[memberData.rank - 1].color,
             bank:             fam.bank,
+            premiumPoints:    fam.premiumPoints,
             memberCap:        fam.memberCap,
             memberCount:      fam.members.length,
             hqHouseId:        fam.hqHouseId,

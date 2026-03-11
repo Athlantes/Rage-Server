@@ -90,11 +90,21 @@ class PermitManager {
         // Check open cycles that somehow passed the draw window (safety net)
         for (const [bizId, cycle] of this.openCycles) {
             if (new Date(cycle.expires_at).getTime() <= now) {
-                // No winner was drawn — just expire and open new
-                await db.query(`UPDATE permit_cycles SET status='expired' WHERE id=?`, [cycle.id]);
-                this.openCycles.delete(bizId);
-                await this._openNewCycle(bizId);
-                console.warn(`[PermitManager] Cycle ${cycle.id} expired with no draw. Opened new cycle.`);
+                
+                // Attempt to draw the raffle automatically
+                const drawResult = await this.drawRaffle(bizId);
+                
+                if (!drawResult.success) {
+                    // If it failed because NOBODY entered, just cycle it
+                    if (drawResult.error === 'No entries in this raffle.') {
+                        await db.query(`UPDATE permit_cycles SET status='expired' WHERE id=?`, [cycle.id]);
+                        this.openCycles.delete(bizId);
+                        await this._openNewCycle(bizId);
+                        console.log(`[PermitManager] Raffle for biz ${bizId} expired with zero entries. Resetting.`);
+                    } else {
+                        console.error(`[PermitManager] Failed to draw raffle for biz ${bizId}: ${drawResult.error}`);
+                    }
+                }
             }
         }
     }
@@ -198,8 +208,8 @@ class PermitManager {
             // Credit PP back to family bank
             const fam = FamilyManager.getFamilyById(entry.family_id);
             if (fam) {
-                fam.bank += entry.pp_spent;
-                await db.query('UPDATE families SET bank = ? WHERE id = ?', [fam.bank, entry.family_id]);
+                fam.premiumPoints += entry.pp_spent;
+                await db.query('UPDATE families SET premium_points = ? WHERE id = ?', [fam.premiumPoints, entry.family_id]);
             }
             await db.query('UPDATE permit_entries SET refunded = 1 WHERE id = ?', [entry.id]);
         } catch (err) {
@@ -256,11 +266,11 @@ class PermitManager {
         const ppCost = ticketCount * PP_PER_TICKET;
 
         // Deduct PP from family bank
-        if (family.bank < ppCost)
+        if (family.premiumPoints < ppCost)
             return player.outputChatBox(`!{FF0000}[Permits] Not enough PP in the family safe. Need ${ppCost} PP (${ticketCount} × ${PP_PER_TICKET}).`);
 
-        family.bank -= ppCost;
-        await db.query('UPDATE families SET bank = ? WHERE id = ?', [family.bank, family.id]);
+        family.premiumPoints -= ppCost;
+        await db.query('UPDATE families SET premium_points = ? WHERE id = ?', [family.premiumPoints, family.id]);
 
         await db.query(
             'INSERT INTO permit_entries (cycle_id, family_id, tickets, pp_spent) VALUES (?,?,?,?)',
