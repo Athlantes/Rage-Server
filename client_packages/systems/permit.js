@@ -29,7 +29,6 @@ mp.events.add('client:permit:openBoard', () => {
     permitBrowser.active = true;
 
     mp.gui.cursor.show(true, true);
-    mp.input.reset();
 
     // Request board data from server
     mp.events.callRemote('server:permit:getBoardData');

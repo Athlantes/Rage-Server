@@ -20,9 +20,11 @@ mp.blips.new(419, new mp.Vector3(CITY_HALL_POS.x, CITY_HALL_POS.y, CITY_HALL_POS
 // 2. Create an NPC (Ped)
 // 'a_m_y_business_01' is the model. We set the heading (rotation) to 0.0 and dimension to 0.
 mp.peds.new(mp.joaat('a_m_y_business_01'), new mp.Vector3(CITY_HALL_POS.x, CITY_HALL_POS.y, CITY_HALL_POS.z), {
-    heading: CITY_HALL_POS.h, // Adjust this angle so the NPC faces the right way
+    heading: CITY_HALL_POS.h,
     dimension: 0,
-    dynamic: false // Keeps the NPC from walking away
+    dynamic: false,
+    invincible: true, // Prevents the NPC from dying
+    frozen: true      // Prevents the NPC from moving/fleeing
 });
 
 // 3. Create a visual Marker on the ground

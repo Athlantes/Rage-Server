@@ -24,6 +24,7 @@ require('./systems/questTracker.js');
 require('./phone/index.js');
 
 // 3. Game Systems
+require('./systems/permit.js');
 require('./systems/citybox.js');
 require('./circleMenu/main.js');
 require('./systems/draw-zone.js');
