@@ -56,12 +56,12 @@ mp.events.add('client:permit:closeBoard', () => {
 
 mp.events.add('client:permit:boardData', (jsonStr) => {
     if (!permitBrowser || !permitBrowser.active) return;
-    permitBrowser.call('onBoardData', [jsonStr]);
+    permitBrowser.execute(`onBoardData(${JSON.stringify(jsonStr)})`);
 });
 
 mp.events.add('client:permit:raffleEntries', (jsonStr) => {
     if (!permitBrowser || !permitBrowser.active) return;
-    permitBrowser.call('onRaffleEntries', [jsonStr]);
+    permitBrowser.execute(`onRaffleEntries(${JSON.stringify(jsonStr)})`);
 });
 
 // ── UI → Server bridge ────────────────────────────────────────────────────────

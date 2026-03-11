@@ -558,6 +558,32 @@ class FamilyManager {
         await this._pushFreshData(player);
     }
 
+    async ppDeposit(player, amount) {
+        const fam = this.getFamilyByPlayer(player);
+        if (!fam) return player.outputChatBox('!{FF0000}You are not in a family.');
+        
+        amount = parseInt(amount);
+        if (isNaN(amount) || amount <= 0) return player.outputChatBox('!{FF0000}Invalid amount.');
+
+        // NOTE: Adjust 'player.data.premiumPoints' if your server stores PP under a different variable (e.g., player.data.pp)
+        if ((player.data.premiumPoints || 0) < amount) {
+            return player.outputChatBox('!{FF0000}Not enough Premium Points.');
+        }
+        
+        // 1. Deduct PP from the player 
+        player.data.premiumPoints -= amount;
+        // (You may need to add a db.query here to save the player's new PP balance to the users/accounts table)
+        await db.query('UPDATE users SET premium_points = ? WHERE id = ?', [player.data.premiumPoints, player.data.accountId]); 
+        
+        // 2. Add PP to the family
+        fam.premiumPoints += amount;
+        await db.query('UPDATE families SET premium_points = ? WHERE id = ?', [fam.premiumPoints, fam.id]);
+        
+        player.outputChatBox(`!{00FF00}Deposited ${amount.toLocaleString()} PP into the family. Balance: ${fam.premiumPoints.toLocaleString()} PP`);
+        this._broadcastToFamily(fam, `!{FFAA00}[Family] ${player.name} deposited ${amount.toLocaleString()} PP.`, [player.data.dbId]);
+        await this._pushFreshData(player);
+    }
+
     // ── HQ ────────────────────────────────────────────────────────────────────
     async setHQ(owner) {
         const fam = this.getFamilyByPlayer(owner);
@@ -967,6 +993,11 @@ mp.events.add('server:family:setHQ', async (player) => {
 mp.events.add('server:family:bankDeposit', async (player, amount) => {
     if (!player.logged) return;
     await instance.bankDeposit(player, amount);
+});
+
+mp.events.add('server:family:ppDeposit', async (player, amount) => {
+    if (!player.logged) return;
+    await instance.ppDeposit(player, amount);
 });
 
 mp.events.add('server:family:upgrade', async (player) => {
