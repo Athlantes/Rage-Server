@@ -17,7 +17,7 @@ const VEHICLE_CLASS_TRAIN = 21;
 const CONTROL_EXIT_VEHICLE = 75;
 const EXIT_ALLOW_SPEED = 1.0; 
 
-// ── FIXED: Added native track-snapping ───────────────────────────────────────
+// ── FIXED: Bypassing buggy RAGE:MP wrappers with raw natives ─────────────────
 mp.events.add('client:train:setupJob', (engineId, carriageIds, cap) => {
     jobEngineId = engineId;
     jobCarriageIds = carriageIds;
@@ -34,8 +34,8 @@ mp.events.add('client:train:setupJob', (engineId, carriageIds, cap) => {
         
         // Force the train to snap to the nearest rail node the moment you enter
         if (vehicle && vehicle.getClass() === VEHICLE_CLASS_TRAIN) {
-            // Replaced invoke with RAGE:MP function
-            vehicle.setMissionTrainCoords(vehicle.position.x, vehicle.position.y, vehicle.position.z);
+            // RAW NATIVE: Safely snaps to tracks without crashing V8
+            mp.game.invoke('0x591CA673AA6AB736', vehicle.handle, vehicle.position.x, vehicle.position.y, vehicle.position.z);
         }
         
         // Safely enforce the speed cap every 1 second
@@ -49,15 +49,14 @@ mp.events.add('client:train:setupJob', (engineId, carriageIds, cap) => {
             let currentVehicle = mp.players.local.vehicle;
             
             if (currentVehicle && currentVehicle.getClass() === VEHICLE_CLASS_TRAIN) {
-                // Replaced invoke with RAGE:MP function for the Engine
-                currentVehicle.setTrainCruiseSpeed(currentSpeedCap);
+                // RAW NATIVE: Safely limits speed without leaking memory
+                mp.game.invoke('0x16469284DB8C62B5', currentVehicle.handle, currentSpeedCap);
                 
                 // Keep carriages synced if they exist
                 jobCarriageIds.forEach(remoteId => {
                     let carriage = mp.vehicles.atRemoteId(remoteId);
                     if (carriage && carriage.handle !== 0) {
-                        // Replaced invoke with RAGE:MP function for Carriages
-                        carriage.setTrainCruiseSpeed(currentSpeedCap);
+                        mp.game.invoke('0x16469284DB8C62B5', carriage.handle, currentSpeedCap);
                     }
                 });
             }
