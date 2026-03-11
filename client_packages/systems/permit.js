@@ -23,14 +23,25 @@ const DELIVERY_ROUTES = {
 // ── City Hall Permit Board ────────────────────────────────────────────────────
 
 mp.events.add('client:permit:openBoard', () => {
-    if (permitBrowser) { permitBrowser.active = true; return; }
+    if (permitBrowser) {
+        permitBrowser.active = true;
+        mp.gui.cursor.show(true, true);
+        // Re-request fresh data when re-opening an existing browser
+        mp.events.callRemote('server:permit:getBoardData');
+        return;
+    }
 
     permitBrowser = mp.browsers.new('package://systems/permit_board/index.html');
     permitBrowser.active = true;
 
     mp.gui.cursor.show(true, true);
+    // NOTE: Do NOT call getBoardData here — the browser HTML fires
+    // mp.trigger('client:permit:browserReady') once its window.load event
+    // fires, guaranteeing the DOM + JS context is ready before data arrives.
+});
 
-    // Request board data from server
+// Browser signals it is fully loaded and ready to receive data
+mp.events.add('client:permit:browserReady', () => {
     mp.events.callRemote('server:permit:getBoardData');
 });
 

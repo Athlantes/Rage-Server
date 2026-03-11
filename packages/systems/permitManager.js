@@ -503,4 +503,6 @@ mp.events.add('server:permit:adminDraw', async (player, bizId) => {
     }
 });
 
+instance.loadAll();
+
 module.exports = instance;
