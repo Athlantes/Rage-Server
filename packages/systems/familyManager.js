@@ -565,7 +565,6 @@ class FamilyManager {
         amount = parseInt(amount);
         if (isNaN(amount) || amount <= 0) return player.outputChatBox('!{FF0000}Invalid amount.');
 
-        // NOTE: Adjust 'player.data.premiumPoints' if your server stores PP under a different variable (e.g., player.data.pp)
         if ((player.data.premiumPoints || 0) < amount) {
             return player.outputChatBox('!{FF0000}Not enough Premium Points.');
         }
