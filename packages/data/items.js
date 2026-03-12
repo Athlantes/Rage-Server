@@ -363,5 +363,15 @@ module.exports = {
         weight: 0.3,
         maxStack: 10,
         icon: "car_part_legendary.png"
-    }
+    },
+
+    // ── CARD PACKS ────────────────────────────────────────────────────────────
+    "tuning_pack": {
+        name: "Tuning Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "tuning_pack.png",
+        data: { packId: "tuning_pack" }
+    },
 };

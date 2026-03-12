@@ -42,6 +42,7 @@ require('./systems/weather.js');
 // 5. Head-to-Head Race
 require('./systems/h2hRace.js');
 require('./systems/atmSkimmer.js');
+require('./systems/cardPacks.js');
 
 // 4. Jobs
 require('./jobs/manager.js');

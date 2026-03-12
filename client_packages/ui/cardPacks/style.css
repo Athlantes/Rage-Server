@@ -1,0 +1,591 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   style.css — Card Packs Unboxing UI
+   AAA-quality animations: sandwich tear, 3D card flip, shuffle, dissolve
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── RESET & ROOT ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-bg:          #0a0b0f;
+  --c-surface:     #12141c;
+  --c-border:      rgba(255,255,255,0.07);
+  --c-text:        #e8eaf0;
+  --c-muted:       #6b7280;
+  --c-accent:      #c89b3c;   /* gold */
+  --c-accent-glow: rgba(200,155,60,0.35);
+
+  /* Rarity colours (mirrored from config) */
+  --r-common:    #9E9E9E;
+  --r-uncommon:  #4CAF50;
+  --r-rare:      #2196F3;
+  --r-epic:      #9C27B0;
+  --r-legendary: #FF6B35;
+
+  --card-w: 140px;
+  --card-h: 196px;
+  --card-radius: 12px;
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--c-text);
+  user-select: none;
+}
+
+/* ─── FULL-SCREEN OVERLAY ───────────────────────────────────────────────── */
+#overlay {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(200,155,60,0.06) 0%, rgba(10,11,15,0.97) 65%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#overlay.visible { opacity: 1; }
+
+/* Particle canvas behind everything */
+#particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+/* ─── SCREENS ─────────────────────────────────────────────────────────────
+   Each screen uses position:absolute + opacity/transform for transitions.
+   JS adds/removes .active class.
+────────────────────────────────────────────────────────────────────────── */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s var(--ease-out-expo);
+  transform: translateY(12px);
+  z-index: 1;
+}
+.screen.active {
+  opacity: 1; pointer-events: all;
+  transform: translateY(0);
+}
+
+/* ─── PREVIEW SCREEN ──────────────────────────────────────────────────── */
+#screen-preview {
+  gap: 20px;
+  padding: 32px;
+}
+
+.preview-header {
+  text-align: center;
+}
+.preview-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--c-accent);
+  text-shadow: 0 0 20px var(--c-accent-glow);
+  letter-spacing: 0.04em;
+}
+.preview-header p {
+  font-size: 13px;
+  color: var(--c-muted);
+  margin-top: 4px;
+}
+
+.preview-pack-image {
+  width: 120px; height: 180px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #2a1f0a 0%, #c89b3c 50%, #2a1f0a 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px;
+  box-shadow: 0 0 32px var(--c-accent-glow), 0 8px 32px rgba(0,0,0,0.7);
+  animation: packFloat 3s ease-in-out infinite;
+}
+@keyframes packFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%       { transform: translateY(-8px) rotate(1deg); }
+}
+
+.preview-table {
+  width: 480px; max-height: 280px;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,155,60,0.3) transparent;
+}
+.preview-table::-webkit-scrollbar { width: 4px; }
+.preview-table::-webkit-scrollbar-thumb { background: rgba(200,155,60,0.3); border-radius: 4px; }
+
+.preview-row {
+  display: flex; align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--c-border);
+  gap: 12px;
+  transition: background 0.2s;
+}
+.preview-row:last-child { border-bottom: none; }
+.preview-row:hover { background: rgba(255,255,255,0.04); }
+
+.preview-row .reward-icon { font-size: 22px; flex-shrink: 0; }
+.preview-row .reward-info { flex: 1; }
+.preview-row .reward-name { font-size: 13px; font-weight: 600; }
+.preview-row .reward-desc { font-size: 11px; color: var(--c-muted); }
+.preview-row .reward-rarity {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 2px 7px; border-radius: 20px;
+  border: 1px solid currentColor;
+}
+.preview-row .reward-chance {
+  font-size: 13px; font-weight: 700;
+  color: var(--c-accent);
+  min-width: 48px; text-align: right;
+}
+
+/* Rarity colour helpers */
+.rarity-common    { color: var(--r-common);    }
+.rarity-uncommon  { color: var(--r-uncommon);  }
+.rarity-rare      { color: var(--r-rare);      }
+.rarity-epic      { color: var(--r-epic);      }
+.rarity-legendary { color: var(--r-legendary); }
+
+.preview-buttons { display: flex; gap: 12px; }
+
+/* ─── BUTTON STYLES ───────────────────────────────────────────────────── */
+.btn {
+  padding: 11px 28px;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-spring),
+              box-shadow 0.15s ease,
+              filter 0.15s ease;
+}
+.btn:active { transform: scale(0.95) !important; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #c89b3c 0%, #f0c060 50%, #c89b3c 100%);
+  color: #0a0b0f;
+  box-shadow: 0 4px 18px rgba(200,155,60,0.4);
+}
+.btn-primary:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 28px rgba(200,155,60,0.6);
+  filter: brightness(1.1);
+}
+
+.btn-ghost {
+  background: rgba(255,255,255,0.07);
+  color: var(--c-muted);
+  border: 1px solid var(--c-border);
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.11);
+  color: var(--c-text);
+  transform: scale(1.02);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #7b1515 0%, #c0392b 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(192,57,43,0.4);
+}
+.btn-danger:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 24px rgba(192,57,43,0.6);
+  filter: brightness(1.1);
+}
+
+/* ─── UNBOXING SCREEN ─────────────────────────────────────────────────── */
+#screen-unboxing { gap: 0; }
+
+/* ─── PACK SANDWICH TEAR ──────────────────────────────────────────────── */
+#pack-stage {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  transition: opacity 0.4s ease;
+}
+
+.pack-sandwich {
+  position: relative;
+  width: 160px; height: 240px;
+}
+
+/* Both halves share the same pack background image */
+.pack-top, .pack-bot {
+  position: absolute;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--card-radius);
+  transform-origin: center;
+  will-change: transform;
+}
+.pack-top {
+  height: 50%; top: 0;
+  background: linear-gradient(180deg, #c89b3c 0%, #8a6520 100%);
+  box-shadow: 0 0 40px rgba(200,155,60,0.5);
+  display: flex; align-items: flex-end; justify-content: center;
+  font-size: 64px; padding-bottom: 4px;
+}
+.pack-bot {
+  height: 50%; bottom: 0;
+  background: linear-gradient(0deg, #8a6520 0%, #c89b3c 100%);
+  display: flex; align-items: flex-start; justify-content: center;
+  font-size: 64px; padding-top: 4px;
+}
+
+/* Shake then tear */
+@keyframes packShake {
+  0%,100%  { transform: rotate(0deg) scale(1); }
+  10%      { transform: rotate(-3deg) scale(1.02); }
+  20%      { transform: rotate(3deg) scale(1.03); }
+  30%      { transform: rotate(-4deg) scale(1.04); }
+  40%      { transform: rotate(4deg) scale(1.05); }
+  50%      { transform: rotate(-3deg) scale(1.06); }
+  60%      { transform: rotate(2deg) scale(1.07); }
+  70%      { transform: rotate(-2deg) scale(1.08); }
+  80%      { transform: rotate(1deg) scale(1.09); }
+  90%      { transform: rotate(-1deg) scale(1.1); }
+}
+.pack-sandwich.shaking { animation: packShake 0.9s ease forwards; }
+
+@keyframes tearTop {
+  0%   { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-180px) rotate(-18deg); opacity: 0; }
+}
+@keyframes tearBot {
+  0%   { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(180px) rotate(18deg); opacity: 0; }
+}
+.pack-sandwich.tearing .pack-top { animation: tearTop 0.55s var(--ease-out-expo) forwards; }
+.pack-sandwich.tearing .pack-bot { animation: tearBot 0.55s var(--ease-out-expo) forwards; }
+
+/* ─── CARD TABLE ──────────────────────────────────────────────────────── */
+#card-table {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  perspective: 1200px;
+}
+
+/* ─── CARD ────────────────────────────────────────────────────────────── */
+.card {
+  position: absolute;
+  width: var(--card-w); height: var(--card-h);
+  cursor: pointer;
+  perspective: 800px;
+  will-change: transform;
+  pointer-events: none;
+  --rarity-color: var(--r-common);
+  --rarity-glow:  rgba(158,158,158,0.5);
+}
+
+.card-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.55s var(--ease-spring);
+  border-radius: var(--card-radius);
+}
+
+/* Flipped state — reveal */
+.card.flipped .card-inner { transform: rotateY(180deg); }
+
+/* Face DOWN — card back */
+.card-back, .card-face {
+  position: absolute; inset: 0;
+  border-radius: var(--card-radius);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.card-back {
+  background:
+    linear-gradient(135deg, #1a1d2e 0%, #0e1020 100%);
+  border: 1px solid rgba(200,155,60,0.3);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+.card-back::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 1px solid rgba(200,155,60,0.15);
+  border-radius: 8px;
+}
+.card-back .card-back-logo {
+  font-size: 36px;
+  opacity: 0.35;
+}
+
+/* Face UP — reward reveal */
+.card-face {
+  transform: rotateY(180deg);
+  background: linear-gradient(145deg, #12141c 0%, #1c1f2e 100%);
+  border: 2px solid var(--rarity-color);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  box-shadow: 0 0 24px var(--rarity-glow), 0 8px 32px rgba(0,0,0,0.7);
+}
+.card-face .reward-emoji  { font-size: 40px; }
+.card-face .reward-title  {
+  font-size: 12px; font-weight: 700;
+  text-align: center; line-height: 1.3;
+  color: var(--c-text);
+}
+.card-face .reward-rarity-badge {
+  font-size: 9px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--rarity-color);
+  border: 1px solid var(--rarity-color);
+  padding: 2px 8px; border-radius: 20px;
+}
+.card-face::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, var(--rarity-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── CARD STATES ── */
+
+/* All cards start stacked in center */
+.card.stacked {
+  transform: translate(-50%, -50%);
+  left: 50%; top: 50%;
+  pointer-events: none;
+}
+
+/* Spread positions injected by JS as CSS custom props */
+.card.spread {
+  transition: transform 0.7s var(--ease-spring), left 0.7s var(--ease-spring), top 0.7s var(--ease-spring);
+}
+
+/* Selectable (after shuffle) */
+.card.selectable {
+  pointer-events: all;
+  cursor: pointer;
+}
+.card.selectable:hover .card-inner {
+  transform: translateY(-16px) scale(1.05);
+  box-shadow: 0 16px 48px var(--rarity-glow, rgba(200,155,60,0.4));
+}
+.card.selectable .card-back {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6),
+              0 0 0 0 var(--c-accent);
+  transition: box-shadow 0.25s ease;
+}
+.card.selectable:hover .card-back {
+  box-shadow: 0 12px 36px rgba(0,0,0,0.7),
+              0 0 24px rgba(200,155,60,0.5);
+  border-color: rgba(200,155,60,0.8);
+}
+
+/* Picked card (the one selected, flies to center) */
+.card.picked {
+  pointer-events: none;
+  transition: all 0.5s var(--ease-spring) !important;
+  z-index: 20;
+}
+
+/* Discarded by re-roll */
+@keyframes cardDissolve {
+  0%   { transform: var(--card-spread-transform) scale(1); opacity: 1; filter: none; }
+  30%  { transform: var(--card-spread-transform) scale(1.15) rotate(8deg); filter: brightness(2) saturate(0); }
+  100% { transform: var(--card-spread-transform) scale(0.3) translateY(-120px) rotate(20deg); opacity: 0; filter: brightness(4) saturate(0) blur(6px); }
+}
+.card.dissolving {
+  pointer-events: none;
+  animation: cardDissolve 0.65s var(--ease-out-expo) forwards;
+}
+
+/* Remaining unchosen cards dim out */
+.card.dimmed {
+  pointer-events: none;
+  transition: opacity 0.4s ease, filter 0.4s ease;
+  opacity: 0.25;
+  filter: saturate(0) blur(1px);
+}
+
+/* Legendary PULSE — for revealed legendary cards */
+@keyframes legendaryPulse {
+  0%,100% { box-shadow: 0 0 24px rgba(255,107,53,0.5), 0 8px 32px rgba(0,0,0,0.7); }
+  50%     { box-shadow: 0 0 56px rgba(255,107,53,0.9), 0 0 100px rgba(255,107,53,0.4), 0 8px 32px rgba(0,0,0,0.7); }
+}
+.card.legendary-pulse .card-face {
+  animation: legendaryPulse 1.2s ease-in-out infinite;
+}
+
+/* ─── SHUFFLE ANIMATION ───────────────────────────────────────────────── */
+@keyframes shuffleLeft {
+  0%   { transform: translate(-50%, -50%) rotateY(0); }
+  25%  { transform: translate(calc(-50% - 80px), -50%) rotateY(-25deg) scale(0.95); }
+  75%  { transform: translate(calc(-50% + 80px), -50%) rotateY(25deg) scale(0.95); }
+  100% { transform: translate(-50%, -50%) rotateY(0); }
+}
+@keyframes shuffleRight {
+  0%   { transform: translate(-50%, -50%) rotateY(0); }
+  25%  { transform: translate(calc(-50% + 80px), -50%) rotateY(25deg) scale(0.95); }
+  75%  { transform: translate(calc(-50% - 80px), -50%) rotateY(-25deg) scale(0.95); }
+  100% { transform: translate(-50%, -50%) rotateY(0); }
+}
+.card.shuffle-left  { animation: shuffleLeft  0.45s ease-in-out; }
+.card.shuffle-right { animation: shuffleRight 0.45s ease-in-out; }
+
+/* ─── FACE-UP BURST ANIMATION (5 cards spreading out) ────────────────── */
+@keyframes cardBurst {
+  0%   { opacity: 0; transform: var(--burst-origin) scale(0.4) rotateY(90deg); }
+  60%  { opacity: 1; transform: var(--burst-target) scale(1.08) rotateY(-5deg); }
+  100% { opacity: 1; transform: var(--burst-final); }
+}
+.card.bursting {
+  animation: cardBurst 0.6s var(--ease-spring) forwards;
+}
+
+/* ─── ACTION PANEL (claim / reroll buttons) ──────────────────────────── */
+#action-panel {
+  position: absolute;
+  bottom: 80px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+  z-index: 30;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s var(--ease-spring));
+  pointer-events: none;
+}
+#action-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.action-reward-label {
+  text-align: center;
+  font-size: 18px; font-weight: 700;
+  color: var(--c-accent);
+  text-shadow: 0 0 16px var(--c-accent-glow);
+  margin-bottom: 4px;
+}
+.action-reward-sub {
+  font-size: 12px; color: var(--c-muted);
+  text-align: center; margin-bottom: 4px;
+}
+
+.action-buttons { display: flex; gap: 12px; }
+
+.reroll-cost-badge {
+  font-size: 11px; color: var(--c-muted);
+  margin-top: 2px;
+}
+.reroll-cost-badge span { color: #f0c060; font-weight: 700; }
+
+/* ─── PHASE LABEL ─────────────────────────────────────────────────────── */
+#phase-label {
+  position: absolute;
+  top: 60px;
+  font-size: 13px;
+  color: var(--c-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+#phase-label.visible { opacity: 1; }
+
+/* ─── PP BALANCE INDICATOR ────────────────────────────────────────────── */
+#pp-balance {
+  position: absolute;
+  top: 20px; right: 24px;
+  font-size: 12px; color: #f0c060;
+  display: flex; align-items: center; gap: 5px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#pp-balance.visible { opacity: 1; }
+#pp-balance .pp-icon { font-size: 15px; }
+
+/* ─── COUNTDOWN BAR (face-up 5s timer) ───────────────────────────────── */
+#countdown-bar {
+  position: absolute;
+  bottom: 32px;
+  width: 200px; height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#countdown-bar.visible { opacity: 1; }
+#countdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-accent), #f0c060);
+  width: 100%;
+  border-radius: 4px;
+  transform-origin: left;
+}
+@keyframes countdown {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+#countdown-fill.running {
+  animation: countdown 5s linear forwards;
+}
+
+/* ─── RESULT SCREEN ───────────────────────────────────────────────────── */
+#screen-result {
+  gap: 16px;
+  padding: 40px;
+}
+#result-emoji { font-size: 72px; }
+#result-title {
+  font-size: 28px; font-weight: 800;
+  color: var(--c-accent);
+  text-shadow: 0 0 24px var(--c-accent-glow);
+}
+#result-desc {
+  font-size: 15px; color: var(--c-muted);
+  text-align: center; max-width: 320px;
+}
+
+@keyframes resultIn {
+  0%   { opacity: 0; transform: scale(0.6) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+#screen-result.active #result-emoji {
+  animation: resultIn 0.5s var(--ease-spring) 0.1s both;
+}
+#screen-result.active #result-title {
+  animation: resultIn 0.5s var(--ease-spring) 0.2s both;
+}
+#screen-result.active #result-desc {
+  animation: resultIn 0.5s var(--ease-spring) 0.3s both;
+}
+
+/* ─── GOLD PACK THEME OVERRIDES ───────────────────────────────────────── */
+[data-theme="gold"] #overlay {
+  background: radial-gradient(ellipse at 50% 40%, rgba(200,155,60,0.10) 0%, rgba(10,11,15,0.97) 65%);
+}
+[data-theme="gold"] .pack-top {
+  background: linear-gradient(180deg, #f0c060 0%, #c89b3c 100%);
+  box-shadow: 0 0 60px rgba(240,192,96,0.7);
+}
+[data-theme="gold"] .pack-bot {
+  background: linear-gradient(0deg, #c89b3c 0%, #f0c060 100%);
+}
+
+/* ─── SCROLLBAR ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(200,155,60,0.25); border-radius: 10px; }

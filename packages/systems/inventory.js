@@ -442,6 +442,12 @@ class InventorySystem {
             return;
         }
 
+        if (def.type === 'cardpack') {
+            player.call('client:inventory:forceClose');
+            mp.events.call('server:cardPack:triggerOpen', player, item);
+            return;
+        }
+
         if (def.type === 'weapon') {
             if (player.activeWeaponSlot === item.slot) {
                 await this.unequipCurrentWeapon(player);

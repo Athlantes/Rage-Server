@@ -19,3 +19,4 @@ require('./repoJob');
 require('./carCrafting');
 require('./h2hRace');
 require('./weather');
+require('./cardPacksManager');

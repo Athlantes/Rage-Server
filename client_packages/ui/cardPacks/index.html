@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Packs</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- Particle canvas (ambient background) -->
+<canvas id="particles"></canvas>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MAIN OVERLAY WRAPPER
+     data-theme is set by JS to 'bronze' or 'gold' for theme overrides
+════════════════════════════════════════════════════════════════════════ -->
+<div id="overlay" data-theme="bronze">
+
+    <!-- PP Balance (top right, shown during unboxing) -->
+    <div id="pp-balance">
+        <span class="pp-icon">⭐</span>
+        <span id="pp-amount">0</span> PP
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         SCREEN 1: PREVIEW
+         Shows the pack's full drop table before any item is consumed.
+    ───────────────────────────────────────────────────────────────────── -->
+    <div id="screen-preview" class="screen">
+
+        <div class="preview-header">
+            <h1 id="preview-pack-name">Loading Pack…</h1>
+            <p  id="preview-pack-desc">Hover over a reward to learn more.</p>
+        </div>
+
+        <div class="preview-pack-image">
+            <span id="preview-pack-emoji">📦</span>
+        </div>
+
+        <!-- Drop Table -->
+        <div class="preview-table" id="preview-table-body">
+            <!-- Rows injected by JS -->
+        </div>
+
+        <div class="preview-buttons">
+            <button id="btn-cancel" class="btn btn-ghost">✕ Cancel</button>
+            <button id="btn-open"   class="btn btn-primary">✦ Open Pack</button>
+        </div>
+
+    </div> <!-- /screen-preview -->
+
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         SCREEN 2: UNBOXING (the spectacle)
+         Contains:
+           • #pack-stage       — the CSS-sandwich pack that tears open
+           • #card-table       — where cards are dynamically injected
+           • #phase-label      — ambient status text
+           • #countdown-bar    — 5s timer during face-up display
+           • #action-panel     — claim / re-roll buttons
+    ───────────────────────────────────────────────────────────────────── -->
+    <div id="screen-unboxing" class="screen">
+
+        <!-- Phase hint -->
+        <div id="phase-label"></div>
+
+        <!-- ── CSS SANDWICH PACK ────────────────────────────────────────
+             Two div halves (.pack-top / .pack-bot) share the pack image
+             via background-position. On tear they translateY away from
+             each other, revealing the cards underneath.
+        ─────────────────────────────────────────────────────────────── -->
+        <div id="pack-stage">
+            <div class="pack-sandwich" id="pack-sandwich">
+                <div class="pack-top">📦</div>
+                <div class="pack-bot">📦</div>
+            </div>
+        </div>
+
+        <!-- ── CARD TABLE ──────────────────────────────────────────────
+             Cards (.card) are injected here by script.js.
+             Each card is a 3D flip container:
+               .card-back  — face down (dark with logo)
+               .card-face  — face up  (rarity glow, reward info)
+        ─────────────────────────────────────────────────────────────── -->
+        <div id="card-table"></div>
+
+        <!-- 5-second face-up countdown bar -->
+        <div id="countdown-bar">
+            <div id="countdown-fill"></div>
+        </div>
+
+        <!-- ── ACTION PANEL ────────────────────────────────────────────
+             Appears after a card is flipped, below the picked card.
+        ─────────────────────────────────────────────────────────────── -->
+        <div id="action-panel">
+            <div class="action-reward-label" id="action-reward-label">Reward Name</div>
+            <div class="action-reward-sub"   id="action-reward-sub">Description</div>
+
+            <div class="action-buttons">
+                <button id="btn-reroll" class="btn btn-danger">
+                    🔥 Discard &amp; Re-Roll
+                </button>
+                <button id="btn-claim"  class="btn btn-primary">
+                    ✔ Claim Reward
+                </button>
+            </div>
+
+            <div class="reroll-cost-badge" id="reroll-cost-badge"></div>
+        </div>
+
+    </div> <!-- /screen-unboxing -->
+
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         SCREEN 3: RESULT
+         Brief congratulations shown after claiming, before the UI closes.
+    ───────────────────────────────────────────────────────────────────── -->
+    <div id="screen-result" class="screen">
+        <div id="result-emoji">🎉</div>
+        <div id="result-title" class="rarity-common">You received…</div>
+        <div id="result-desc">Checking your wallet…</div>
+        <button class="btn btn-ghost" style="margin-top:16px"
+                onclick="trigger('client:cardPack:cef:forceClose')">
+            Close
+        </button>
+    </div>
+
+</div> <!-- /overlay -->
+
+<!-- RAGE:MP CEF bridge + choreography logic -->
+<script src="./script.js"></script>
+
+</body>
+</html>
