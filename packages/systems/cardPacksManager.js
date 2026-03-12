@@ -257,7 +257,7 @@ class CardPacksManager {
             rerollIdx: 0,      // index into rerollCosts
         };
 
-        const preview = buildPreviewData(packDef);
+        const preview = { ...buildPreviewData(packDef), itemSlot: item.slot };
         player.call('client:cardPack:openPreview', [JSON.stringify(preview)]);
     }
 
@@ -274,8 +274,8 @@ class CardPacksManager {
         const inv = getInventory();
         const item = player.inventory && player.inventory.find(i => i.slot === session.itemSlot);
 
-        if (!item || item.slot !== itemSlot) {
-            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack item not found.' })]);
+        if (!item) {
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack item not found in inventory.' })]);
             clearSession(player);
             return;
         }

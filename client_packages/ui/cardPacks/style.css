@@ -314,6 +314,8 @@ html, body {
   border: 1px solid rgba(200,155,60,0.3);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+  --rarity-color: rgba(200,155,60,0.3);  /* ← ADD: lock to gold, ignore actual rarity */
+  --rarity-glow:  rgba(0,0,0,0);         /* ← ADD: no glow bleed */
 }
 .card-back::before {
   content: '';
@@ -380,10 +382,10 @@ html, body {
   transform: translateY(-16px) scale(1.05);
   box-shadow: 0 16px 48px var(--rarity-glow, rgba(200,155,60,0.4));
 }
-.card.selectable .card-back {
-  box-shadow: 0 6px 24px rgba(0,0,0,0.6),
-              0 0 0 0 var(--c-accent);
-  transition: box-shadow 0.25s ease;
+.card.selectable:hover .card-back {
+  box-shadow: 0 12px 36px rgba(0,0,0,0.7),
+              0 0 24px rgba(200,155,60,0.5);
+  border-color: rgba(200,155,60,0.8);
 }
 .card.selectable:hover .card-back {
   box-shadow: 0 12px 36px rgba(0,0,0,0.7),
@@ -456,17 +458,18 @@ html, body {
 #action-panel {
   position: absolute;
   bottom: 80px;
+  left: 50%;                                          /* ← ADD */
   display: flex; flex-direction: column;
   align-items: center; gap: 10px;
   z-index: 30;
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.4s ease, transform 0.4s var(--ease-spring));
+  transform: translateX(-50%) translateY(20px);       /* ← CHANGE */
+  transition: opacity 0.4s ease, transform 0.4s var(--ease-spring);  /* ← REMOVE extra ) */
   pointer-events: none;
 }
 #action-panel.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);          /* ← CHANGE */
   pointer-events: all;
 }
 

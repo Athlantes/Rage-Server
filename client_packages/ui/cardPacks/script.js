@@ -327,6 +327,8 @@ window.onStartUnboxing = async function(data) {
     sandwich.classList.add('tearing');
     await wait(450);
 
+    document.getElementById('pack-stage').style.display = 'none'; // ← ADD THIS
+
     // Burst particles at center
     burstParticles(window.innerWidth / 2, window.innerHeight / 2, 50, '#c89b3c');
 
