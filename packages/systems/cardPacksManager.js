@@ -1,113 +1,72 @@
+'use strict';
+
 /**
  * cardPacksManager.js  (server-side)
- * ─────────────────────────────────────────────────────────────────────────────
- * Handles all server-side logic for the Card Packs unboxing system.
  *
  * SECURITY MODEL:
- *   - The client/CEF never learns which reward is behind which face-down card.
- *   - All rewards are stored in player.data.packSession (server memory only).
- *   - When the player picks a card (by visual index), the server pops a
- *     RANDOM reward from the session pool — positional index is irrelevant.
- *   - This means memory-reading the CEF page yields zero useful information.
+ *   - All rewards are stored server-side in a Map keyed by player.id.
+ *   - The client/CEF never learns which face-down card hides which reward.
+ *   - When a card is picked, the server draws RANDOMLY from the pool —
+ *     visual card position is irrelevant. Memory-reading the CEF is useless.
  *
- * INTEGRATION NOTES:
- *   ⚠  You must add the following to InventorySystem.useItem() in inventory.js
- *      inside the main type-switch, after the 'drink' block:
- *
- *      else if (def.type === 'cardpack') {
- *          player.call('client:inventory:forceClose');
- *          mp.events.call('server:cardPack:triggerOpen', player, item);
- *          return;
- *      }
- *
- *   ⚠  You must add pack items to packages/data/items.js. Example:
- *
- *      "bronze_pack": {
- *          name: "Bronze Starter Pack",
- *          type: "cardpack",
- *          weight: 0.1,
- *          maxStack: 10,
- *          icon: "bronze_pack.png",
- *          data: { packId: "bronze_pack" }
- *      },
- *      "gold_pack": {
- *          name: "Gold Premium Pack",
- *          type: "cardpack",
- *          weight: 0.1,
- *          maxStack: 10,
- *          icon: "gold_pack.png",
- *          data: { packId: "gold_pack" }
- *      },
- * ─────────────────────────────────────────────────────────────────────────────
+ * SESSION STORAGE:
+ *   Sessions are kept in a module-level Map<playerId, session> instead of
+ *   player.data, which avoids RAGE:MP entity-property snapshot issues that
+ *   cause mutations made across async gaps to be lost.
  */
-
-'use strict';
 
 const config       = require('../data/cardPacksConfig');
 const ItemRegistry = require('../data/items');
 const db           = require('../core/database');
 
-// Lazily resolved to avoid circular-require issues at startup
 let inventorySystem = null;
 const getInventory = () => {
     if (!inventorySystem) inventorySystem = require('./inventory');
     return inventorySystem;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PURE HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── SESSION STORE ────────────────────────────────────────────────────────────
+const sessions = new Map();
 
-/**
- * Weighted random selection from an array of reward objects.
- * Each reward must have a numeric `weight` property.
- * Returns one reward (does NOT mutate the source array).
- */
+function getSession(player)          { return sessions.get(player.id) || null; }
+function setSession(player, session) { sessions.set(player.id, session); }
+function clearSession(player)        { sessions.delete(player.id); }
+function hasSession(player)          { return sessions.has(player.id); }
+
+// ─── PURE HELPERS ─────────────────────────────────────────────────────────────
+
 function weightedRandom(rewards) {
-    const totalWeight = rewards.reduce((sum, r) => sum + r.weight, 0);
-    let roll = Math.random() * totalWeight;
-    for (const reward of rewards) {
-        roll -= reward.weight;
-        if (roll <= 0) return reward;
+    const total = rewards.reduce((s, r) => s + r.weight, 0);
+    let roll = Math.random() * total;
+    for (const r of rewards) {
+        roll -= r.weight;
+        if (roll <= 0) return r;
     }
-    return rewards[rewards.length - 1]; // fallback safety
+    return rewards[rewards.length - 1];
 }
 
-/**
- * Given an array of reward objects, find the one with the highest rarity rank
- * value (i.e., the weakest / cheapest item). Used for disconnect protection.
- */
 function findWorstReward(rewards) {
     return rewards.reduce((worst, r) => {
-        const wRank = config.rarityRank[r.rarity] ?? 99;
+        const wRank = config.rarityRank[r.rarity]     ?? 99;
         const cRank = config.rarityRank[worst.rarity] ?? 99;
         return wRank > cRank ? r : worst;
     }, rewards[0]);
 }
 
-/**
- * Build the "safe" reward payload that can be sent to the CEF without
- * leaking positional information. Just the reward details, no session index.
- */
-function buildClientReward(reward) {
+function buildClientReward(r) {
     return {
-        id:          reward.id,
-        type:        reward.type,
-        name:        reward.name,
-        icon:        reward.icon,
-        rarity:      reward.rarity,
-        description: reward.description,
-        // Safe to send value/itemId — player will see these in the reveal anyway
-        value:       reward.value  || 0,
-        itemId:      reward.itemId || null,
-        count:       reward.count  || 0,
+        id:          r.id,
+        type:        r.type,
+        name:        r.name,
+        icon:        r.icon,
+        rarity:      r.rarity,
+        description: r.description,
+        value:       r.value  || 0,
+        itemId:      r.itemId || null,
+        count:       r.count  || 0,
     };
 }
 
-/**
- * Build the drop-table preview data for the preview UI screen.
- * Shows all possible rewards with their calculated percentages.
- */
 function buildPreviewData(packDef) {
     const totalWeight = packDef.rewards.reduce((s, r) => s + r.weight, 0);
     return {
@@ -129,13 +88,8 @@ function buildPreviewData(packDef) {
     };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ECONOMY HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── ECONOMY HELPERS ──────────────────────────────────────────────────────────
 
-/**
- * Deduct Premium Points from a player. Returns false and notifies if insufficient.
- */
 async function deductPP(player, amount) {
     if ((player.data.premiumPoints || 0) < amount) {
         player.call('showNotification', ['Card Pack', `~r~Not enough Premium Points! Need ${amount} PP.`]);
@@ -147,78 +101,53 @@ async function deductPP(player, amount) {
     return true;
 }
 
-/**
- * Apply a reward to a player. Handles cash, PP, and item types.
- */
 async function applyReward(player, reward) {
     const inv = getInventory();
-
     if (reward.type === 'cash') {
         player.data.money = (player.data.money || 0) + reward.value;
         await db.query('UPDATE characters SET money = ? WHERE id = ?',
             [player.data.money, player.data.dbId]);
         player.call('showNotification', ['Card Pack', `~g~Received $${reward.value.toLocaleString()}!`]);
-    }
-    else if (reward.type === 'pp') {
+    } else if (reward.type === 'pp') {
         player.data.premiumPoints = (player.data.premiumPoints || 0) + reward.value;
         await db.query('UPDATE characters SET premium_points = ? WHERE id = ?',
             [player.data.premiumPoints, player.data.dbId]);
         player.call('showNotification', ['Card Pack', `~y~Received ${reward.value} Premium Points!`]);
-    }
-    else if (reward.type === 'item') {
+    } else if (reward.type === 'item') {
         await inv.addItem(player, reward.itemId, reward.count || 1);
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SESSION MANAGEMENT
-// ─────────────────────────────────────────────────────────────────────────────
-
-function clearSession(player) {
-    if (player.data) player.data.packSession = null;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  EVENT HANDLERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── MANAGER ─────────────────────────────────────────────────────────────────
 
 class CardPacksManager {
 
     constructor() {
-        // ── Step 0: Inventory hook ────────────────────────────────────────────
-        // Triggered from inventory.js useItem when def.type === 'cardpack'
+
         mp.events.add('server:cardPack:triggerOpen', (player, item) => {
             this.onTriggerOpen(player, item);
         });
 
-        // ── Step 1: Player confirmed OPEN (pack item consumed here) ───────────
-        mp.events.add('server:cardPack:confirmOpen', async (player, itemSlot) => {
-            await this.onConfirmOpen(player, itemSlot);
+        mp.events.add('server:cardPack:confirmOpen', async (player) => {
+            await this.onConfirmOpen(player);
         });
 
-        // ── Step 2: Player cancelled preview ─────────────────────────────────
         mp.events.add('server:cardPack:cancel', (player) => {
             clearSession(player);
         });
 
-        // ── Step 3: Player picks a face-down card ─────────────────────────────
         mp.events.add('server:cardPack:pickCard', async (player, visualIndex) => {
             await this.onPickCard(player, visualIndex);
         });
 
-        // ── Step 4a: Player claims the revealed reward ────────────────────────
         mp.events.add('server:cardPack:claimReward', async (player) => {
             await this.onClaimReward(player);
         });
 
-        // ── Step 4b: Player re-rolls (burns current card, picks again) ─────────
         mp.events.add('server:cardPack:reRoll', async (player) => {
             await this.onReRoll(player);
         });
 
-        // ── ANTI-EXPLOIT: Disconnect protection ───────────────────────────────
-        // If a player disconnects mid-session, forcibly deliver the worst
-        // remaining reward to their CityBox offline storage.
         mp.events.add('playerQuit', (player) => {
             this.onPlayerQuit(player);
         });
@@ -226,14 +155,8 @@ class CardPacksManager {
         console.log('[CardPacks] System initialized.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: triggerOpen — sends preview data to CEF without consuming item
-    // ─────────────────────────────────────────────────────────────────────────
     onTriggerOpen(player, item) {
-        if (!player.data) return;
-
-        // Prevent opening multiple packs simultaneously
-        if (player.data.packSession) {
+        if (hasSession(player)) {
             player.call('showNotification', ['Card Pack', '~r~You already have a pack open!']);
             return;
         }
@@ -247,146 +170,157 @@ class CardPacksManager {
             return;
         }
 
-        // Store the slot so confirmOpen can find and remove it
-        player.data.packSession = {
+        setSession(player, {
             status:    'preview',
             packId:    def.data.packId,
             itemSlot:  item.slot,
-            rewards:   null,   // generated on confirm
-            pending:   null,   // the revealed-but-not-yet-claimed reward
-            rerollIdx: 0,      // index into rerollCosts
-        };
+            rewards:   null,
+            pending:   null,
+            rerollIdx: 0,
+        });
 
         const preview = { ...buildPreviewData(packDef), itemSlot: item.slot };
         player.call('client:cardPack:openPreview', [JSON.stringify(preview)]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: confirmOpen — consumes item, generates session, starts spectacle
-    // ─────────────────────────────────────────────────────────────────────────
-    async onConfirmOpen(player, itemSlot) {
-        const session = player.data && player.data.packSession;
+    async onConfirmOpen(player) {
+        const session = getSession(player);
+
         if (!session || session.status !== 'preview') {
             player.call('client:cardPack:error', [JSON.stringify({ msg: 'No active preview session.' })]);
+            clearSession(player);
             return;
         }
 
-        const inv = getInventory();
+        // Lock immediately to block double-confirm
+        session.status = 'opening';
+        setSession(player, session);
+
+        const inv  = getInventory();
         const item = player.inventory && player.inventory.find(i => i.slot === session.itemSlot);
 
         if (!item) {
-            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack item not found in inventory.' })]);
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack item not found.' })]);
             clearSession(player);
             return;
         }
 
         const def = ItemRegistry[item.itemId];
-        if (!def || def.data.packId !== session.packId) {
+        if (!def || !def.data || def.data.packId !== session.packId) {
             player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack mismatch.' })]);
             clearSession(player);
             return;
         }
 
         const packDef = config.packs[session.packId];
-        if (!packDef) return;
+        if (!packDef) {
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Pack config not found.' })]);
+            clearSession(player);
+            return;
+        }
 
-        // ── Consume the item BEFORE the animation starts (anti-exploit) ───────
+        // Consume item before animation
         try {
             await inv.removeItem(player, item);
             inv.syncClient(player);
         } catch (err) {
-            console.error('[CardPacks] Failed to remove item:', err);
+            console.error('[CardPacks] removeItem failed:', err);
             player.call('client:cardPack:error', [JSON.stringify({ msg: 'Could not consume pack.' })]);
             clearSession(player);
             return;
         }
 
-        // ── Generate all 5 rewards (server-side only) ─────────────────────────
+        // Generate rewards
         const generatedRewards = [];
         for (let i = 0; i < packDef.cardCount; i++) {
             generatedRewards.push(weightedRandom(packDef.rewards));
         }
 
-        // Update session to 'active'
-        session.status  = 'active';
-        session.rewards = [...generatedRewards]; // mutable pool for picks
-        session.pending = null;
-        session.rerollIdx = 0;
+        // Write the fully updated session back to the Map atomically
+        setSession(player, {
+            status:    'active',
+            packId:    session.packId,
+            itemSlot:  session.itemSlot,
+            rewards:   generatedRewards.slice(),
+            pending:   null,
+            rerollIdx: 0,
+        });
 
-        // Send ALL reward details to CEF for the face-up spectacle.
-        // Position ≠ reward (server randomises at pick-time), so this is safe.
         const clientRewards = generatedRewards.map(buildClientReward);
-
         player.call('client:cardPack:startUnboxing', [JSON.stringify({
             packId:      session.packId,
             theme:       packDef.theme,
             cardCount:   packDef.cardCount,
-            rewards:     clientRewards,    // shown face-up for 5 seconds
+            rewards:     clientRewards,
             rerollCosts: config.rerollCosts,
         })]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: pickCard — draws a RANDOM reward from the remaining pool
-    //  The visualIndex param is ignored for reward assignment (anti-cheat).
-    // ─────────────────────────────────────────────────────────────────────────
     async onPickCard(player, visualIndex) {
-        const session = player.data && player.data.packSession;
-        if (!session || session.status !== 'active' || !session.rewards || session.rewards.length === 0) {
-            player.call('client:cardPack:error', [JSON.stringify({ msg: 'No active session or pool empty.' })]);
+        const session = getSession(player);
+
+        if (!session) {
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'No active session.' })]);
+            return;
+        }
+        if (session.status !== 'active') {
+            player.call('client:cardPack:error', [JSON.stringify({ msg: `Session not ready (${session.status}).` })]);
+            clearSession(player);
+            return;
+        }
+        if (!session.rewards || session.rewards.length === 0) {
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'Reward pool is empty.' })]);
+            clearSession(player);
             return;
         }
 
-        // Pop a RANDOM reward from the pool (index not correlated to visualIndex)
-        const poolSize = session.rewards.length;
-        const randomPoolIdx = Math.floor(Math.random() * poolSize);
-        const [chosenReward] = session.rewards.splice(randomPoolIdx, 1);
+        const randomIdx    = Math.floor(Math.random() * session.rewards.length);
+        const chosenReward = session.rewards.splice(randomIdx, 1)[0];
 
         session.pending = chosenReward;
         session.status  = 'awaiting_claim';
+        setSession(player, session);
 
         player.call('client:cardPack:revealCard', [JSON.stringify({
             visualIndex,
-            reward:       buildClientReward(chosenReward),
-            rerollCost:   config.rerollCosts[session.rerollIdx] || null,
-            canReroll:    session.rewards.length > 0,
+            reward:     buildClientReward(chosenReward),
+            rerollCost: config.rerollCosts[session.rerollIdx] || null,
+            canReroll:  session.rewards.length > 0,
         })]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: claimReward — applies the pending reward and ends the session
-    // ─────────────────────────────────────────────────────────────────────────
     async onClaimReward(player) {
-        const session = player.data && player.data.packSession;
+        const session = getSession(player);
+
         if (!session || session.status !== 'awaiting_claim' || !session.pending) {
             player.call('client:cardPack:error', [JSON.stringify({ msg: 'Nothing to claim.' })]);
+            clearSession(player);
             return;
         }
 
         const reward = session.pending;
+        clearSession(player); // clear first — prevents double-claim
 
         try {
             await applyReward(player, reward);
         } catch (err) {
-            console.error('[CardPacks] Failed to apply reward:', err);
+            console.error('[CardPacks] applyReward failed:', err);
         }
 
-        clearSession(player);
         player.call('client:cardPack:sessionEnd', [JSON.stringify({ success: true })]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: reRoll — deducts PP, discards pending reward, allows another pick
-    // ─────────────────────────────────────────────────────────────────────────
     async onReRoll(player) {
-        const session = player.data && player.data.packSession;
+        const session = getSession(player);
+
         if (!session || session.status !== 'awaiting_claim') {
             player.call('client:cardPack:error', [JSON.stringify({ msg: 'Cannot re-roll right now.' })]);
+            clearSession(player);
             return;
         }
-
         if (session.rewards.length === 0) {
-            player.call('client:cardPack:error', [JSON.stringify({ msg: 'No cards remaining to re-roll into.' })]);
+            player.call('client:cardPack:error', [JSON.stringify({ msg: 'No cards left to re-roll into.' })]);
+            clearSession(player);
             return;
         }
 
@@ -397,77 +331,49 @@ class CardPacksManager {
         }
 
         const ok = await deductPP(player, cost);
-        if (!ok) return; // deductPP sends its own notification
+        if (!ok) return;
 
-        // Discard pending, allow the player to pick again
         session.pending   = null;
         session.rerollIdx = Math.min(session.rerollIdx + 1, config.rerollCosts.length - 1);
         session.status    = 'active';
-
-        const nextCost = config.rerollCosts[session.rerollIdx] || null;
+        setSession(player, session);
 
         player.call('client:cardPack:rerollReady', [JSON.stringify({
-            ppBalance:     player.data.premiumPoints,
-            nextRerollCost: nextCost,
-            remaining:     session.rewards.length,
+            ppBalance:      player.data.premiumPoints,
+            nextRerollCost: config.rerollCosts[session.rerollIdx] || null,
+            remaining:      session.rewards.length,
         })]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HANDLER: playerQuit — ANTI-EXPLOIT disconnect protection
-    //
-    //  If a player disconnects with an open pack session (to avoid spending PP
-    //  on a re-roll by simply alt+F4ing), we forcibly deliver the WORST
-    //  remaining reward to their CityBox offline storage.
-    // ─────────────────────────────────────────────────────────────────────────
     async onPlayerQuit(player) {
-        if (!player.data || !player.data.packSession) return;
+        const session = getSession(player);
+        if (!session) return;
 
-        const session = player.data.packSession;
-        const userId  = player.data.dbId;
+        const userId = player.data && player.data.dbId;
+        if (!userId) { clearSession(player); return; }
 
-        if (!userId) return;
-
-        // Collect all unclaimed rewards
         const unclaimed = [];
-
-        if (session.pending)             unclaimed.push(session.pending);
+        if (session.pending)                               unclaimed.push(session.pending);
         if (session.rewards && session.rewards.length > 0) unclaimed.push(...session.rewards);
 
+        clearSession(player);
         if (unclaimed.length === 0) return;
 
-        const worstReward = findWorstReward(unclaimed);
-
-        console.log(`[CardPacks] Disconnect protection: player ${player.name} (id:${userId}) ` +
-                    `quit with active session. Delivering "${worstReward.name}" to CityBox.`);
+        const worst = findWorstReward(unclaimed);
+        console.log(`[CardPacks] Disconnect: ${player.name} (${userId}) — delivering "${worst.name}" to CityBox.`);
 
         try {
             const inv = getInventory();
-
-            if (worstReward.type === 'cash') {
-                // Can't send cash to citybox (no physical form), so send a note item or
-                // just credit money directly since they disconnected with the pack consumed.
-                // We insert a DB row directly here since player is already offline.
-                await db.query('UPDATE characters SET money = money + ? WHERE id = ?',
-                    [worstReward.value, userId]);
-                console.log(`[CardPacks] Credited $${worstReward.value} directly to offline character.`);
-            }
-            else if (worstReward.type === 'pp') {
-                await db.query('UPDATE characters SET premium_points = premium_points + ? WHERE id = ?',
-                    [worstReward.value, userId]);
-                console.log(`[CardPacks] Credited ${worstReward.value} PP to offline character.`);
-            }
-            else if (worstReward.type === 'item') {
-                // addItemToBox works with just a userId — perfect for offline delivery
-                await inv.addItemToBox(userId, worstReward.itemId, worstReward.count || 1);
-                console.log(`[CardPacks] Delivered ${worstReward.count}x ${worstReward.itemId} to CityBox.`);
+            if (worst.type === 'cash') {
+                await db.query('UPDATE characters SET money = money + ? WHERE id = ?', [worst.value, userId]);
+            } else if (worst.type === 'pp') {
+                await db.query('UPDATE characters SET premium_points = premium_points + ? WHERE id = ?', [worst.value, userId]);
+            } else if (worst.type === 'item') {
+                await inv.addItemToBox(userId, worst.itemId, worst.count || 1);
             }
         } catch (err) {
-            console.error('[CardPacks] Disconnect protection delivery failed:', err);
+            console.error('[CardPacks] Disconnect delivery failed:', err);
         }
-
-        // Clean up session
-        player.data.packSession = null;
     }
 }
 

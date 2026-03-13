@@ -104,8 +104,8 @@ mp.events.add('client:cardPack:error', (errorJson) => {
 // We expose this as a global function the CEF can call via browser.execute in
 // reverse: the CEF uses mp.trigger() via the RAGE CEF bridge.
 
-mp.events.add('client:cardPack:cef:confirmOpen', (itemSlot) => {
-    mp.events.callRemote('server:cardPack:confirmOpen', itemSlot);
+mp.events.add('client:cardPack:cef:confirmOpen', () => {
+    mp.events.callRemote('server:cardPack:confirmOpen');
 });
 
 mp.events.add('client:cardPack:cef:cancel', () => {
