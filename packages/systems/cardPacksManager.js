@@ -221,7 +221,12 @@ class CardPacksManager {
 
         // Consume item before animation
         try {
-            await inv.removeItem(player, item);
+            if (item.count > 1) {
+                item.count--;
+                await db.query('UPDATE character_inventory SET count = ? WHERE id = ?', [item.count, item.id]);
+            } else {
+                await inv.removeItem(player, item);
+            }
             inv.syncClient(player);
         } catch (err) {
             console.error('[CardPacks] removeItem failed:', err);
