@@ -96,7 +96,7 @@ async function deductPP(player, amount) {
         return false;
     }
     player.data.premiumPoints -= amount;
-    await db.query('UPDATE characters SET premium_points = ? WHERE id = ?',
+    await db.query('UPDATE users SET premium_points = ? WHERE id = ?',
         [player.data.premiumPoints, player.data.dbId]);
     return true;
 }
@@ -105,12 +105,12 @@ async function applyReward(player, reward) {
     const inv = getInventory();
     if (reward.type === 'cash') {
         player.data.money = (player.data.money || 0) + reward.value;
-        await db.query('UPDATE characters SET money = ? WHERE id = ?',
+        await db.query('UPDATE users SET money = ? WHERE id = ?',
             [player.data.money, player.data.dbId]);
         player.call('showNotification', ['Card Pack', `~g~Received $${reward.value.toLocaleString()}!`]);
     } else if (reward.type === 'pp') {
         player.data.premiumPoints = (player.data.premiumPoints || 0) + reward.value;
-        await db.query('UPDATE characters SET premium_points = ? WHERE id = ?',
+        await db.query('UPDATE users SET premium_points = ? WHERE id = ?',
             [player.data.premiumPoints, player.data.dbId]);
         player.call('showNotification', ['Card Pack', `~y~Received ${reward.value} Premium Points!`]);
     } else if (reward.type === 'item') {
@@ -365,9 +365,9 @@ class CardPacksManager {
         try {
             const inv = getInventory();
             if (worst.type === 'cash') {
-                await db.query('UPDATE characters SET money = money + ? WHERE id = ?', [worst.value, userId]);
+                await db.query('UPDATE users SET money = money + ? WHERE id = ?', [worst.value, userId]);
             } else if (worst.type === 'pp') {
-                await db.query('UPDATE characters SET premium_points = premium_points + ? WHERE id = ?', [worst.value, userId]);
+                await db.query('UPDATE users SET premium_points = premium_points + ? WHERE id = ?', [worst.value, userId]);
             } else if (worst.type === 'item') {
                 await inv.addItemToBox(userId, worst.itemId, worst.count || 1);
             }

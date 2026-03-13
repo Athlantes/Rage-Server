@@ -380,7 +380,7 @@ html, body {
 }
 .card.selectable:hover .card-inner {
   transform: translateY(-16px) scale(1.05);
-  box-shadow: 0 16px 48px var(--rarity-glow, rgba(200,155,60,0.4));
+  box-shadow: 0 16px 48px rgba(200,155,60,0.4);
 }
 .card.selectable:hover .card-back {
   box-shadow: 0 12px 36px rgba(0,0,0,0.7),

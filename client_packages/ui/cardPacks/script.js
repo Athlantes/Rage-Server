@@ -562,15 +562,18 @@ document.getElementById('btn-reroll')?.addEventListener('click', async () => {
 
     document.getElementById('action-panel')?.classList.remove('visible');
 
-    // Dissolve the picked card
+    // Dissolve from current center position using inline transition
+    // (The CSS keyframe snaps the card back to spread position — wrong)
     const picked = cardEls[state.currentPickedIndex];
     if (picked) {
-        picked.classList.remove('flipped', 'legendary-pulse');
+        picked.classList.remove('flipped', 'legendary-pulse', 'picked');
         await nextFrame();
-        picked.classList.add('dissolving');
-        await onAnimEnd(picked);
-        picked.classList.add('dimmed');
-        picked.classList.remove('dissolving', 'picked');
+        picked.style.transition = 'transform 0.5s ease, opacity 0.5s ease, filter 0.5s ease';
+        picked.style.transform  = 'translate(-50%, -50%) rotate(20deg) scale(0.2) translateY(-100px)';
+        picked.style.opacity    = '0';
+        picked.style.filter     = 'brightness(4) blur(6px)';
+        await wait(520);
+        picked.style.visibility = 'hidden';
     }
 
     trigger('client:cardPack:cef:reRoll');
@@ -585,14 +588,15 @@ window.onRerollReady = async function(payload) {
 
     setPhaseLabel('Choose your next card');
 
-    // Re-enable remaining (non-dimmed) cards for picking
+    // Un-dim and re-enable all cards except the dissolved one
     state.phase = 'picking';
 
     cardEls.forEach((card, i) => {
-        if (!card.classList.contains('dimmed') && i !== state.currentPickedIndex) {
-            card.classList.add('selectable');
-            card.addEventListener('click', () => onCardClicked(i), { once: true });
-        }
+        if (i === state.currentPickedIndex) return; // skip the dissolved card
+        if (card.style.visibility === 'hidden') return; // skip any earlier dissolved cards
+        card.classList.remove('dimmed');
+        card.classList.add('selectable');
+        card.addEventListener('click', () => onCardClicked(i), { once: true });
     });
 };
 
