@@ -282,6 +282,9 @@ mp.events.addCommand('duty', (player) => {
         // Clear any faction nametag color when off duty
         try { player.setVariable('factionNametagColor', null); } catch(e) {}
     }
+
+    // Notify systems that track duty state (e.g. EMS medic count for downed players)
+    mp.events.call('factionDutyChanged', player);
 });
 
 // ----------------------------------------------------------------------------

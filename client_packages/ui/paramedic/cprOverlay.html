@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CPR Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100vw; height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .cpr-container {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .cpr-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(10, 10, 10, 0.85);
+            border: 1.5px solid rgba(255, 71, 87, 0.55);
+            border-radius: 10px;
+            padding: 10px 22px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 20px rgba(255,71,87,0.2);
+        }
+
+        .cpr-icon {
+            color: #ff4757;
+            font-size: 18px;
+            animation: heartbeat 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes heartbeat {
+            from { transform: scale(1.0); }
+            to   { transform: scale(1.25); }
+        }
+
+        /* Progress bar */
+        .cpr-bar-wrap {
+            width: 300px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid rgba(255,71,87,0.3);
+        }
+
+        .cpr-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff4757, #ff6b6b);
+            border-radius: 99px;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 8px rgba(255,71,87,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="cpr-container" id="cprContainer" style="display:none;">
+        <div class="cpr-label">
+            <i class="fas fa-heart-pulse cpr-icon"></i>
+            <span>Performing CPR...</span>
+        </div>
+        <div class="cpr-bar-wrap">
+            <div class="cpr-bar" id="cprBar"></div>
+        </div>
+    </div>
+
+    <script>
+        let cprInterval  = null;
+        let cprStartTime = 0;
+        let cprDuration  = 5000;
+
+        function startCPR(durationMs) {
+            cprDuration  = durationMs || 5000;
+            cprStartTime = Date.now();
+            document.getElementById('cprContainer').style.display = 'flex';
+
+            if (cprInterval) clearInterval(cprInterval);
+            cprInterval = setInterval(() => {
+                const elapsed  = Date.now() - cprStartTime;
+                const progress = Math.min(elapsed / cprDuration * 100, 100);
+                document.getElementById('cprBar').style.width = progress + '%';
+
+                if (elapsed >= cprDuration) {
+                    clearInterval(cprInterval);
+                    cprInterval = null;
+                }
+            }, 50);
+        }
+
+        function stopCPR() {
+            if (cprInterval) { clearInterval(cprInterval); cprInterval = null; }
+            document.getElementById('cprContainer').style.display = 'none';
+            document.getElementById('cprBar').style.width = '0%';
+        }
+    </script>
+</body>
+</html>

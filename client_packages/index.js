@@ -39,6 +39,7 @@ require('./systems/photoHunt.js');
 require('./systems/cablecar.js');
 require('./systems/carCrafting.js');
 require('./systems/weather.js');
+require('./systems/entercar.js');
 
 // 5. Head-to-Head Race
 require('./systems/h2hRace.js');
@@ -61,6 +62,12 @@ require('./core/tuning.js');
 require('./factions/wardrobe/index.js');
 
 require('./factions/lspd/index.js');
+
+// Factions — Paramedic system
+require('./factions/paramedic/index.js');
+
+// Down state (all players — shows CEF when downed)
+require('./systems/downState.js');
 
 // Factions — Dispatch system
 require('./factions/dispatch/index.js');

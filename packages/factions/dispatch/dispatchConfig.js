@@ -54,6 +54,34 @@ const DISPATCH_CONFIGS = {
         emptyIcon: 'fas fa-road',
     },
 
+    // ── Paramedics (factionId: 3) ────────────────────────────────────────────
+    3: {
+        factionId: 3,
+        title: 'EMS Dispatch',
+        subtitle: 'Los Santos EMS',
+        accentColor: '#ff4757',
+        icon: 'fas fa-truck-medical',
+        callLabel: 'Medical Emergency',
+        chatTag: '[EMS]',
+        messages: {
+            onWay:     'A paramedic unit is responding to your location.',
+            arrived:   'Paramedics have arrived at your location. Help is here!',
+            completed: 'You have been revived. Stay safe out there.',
+        },
+        columns: [
+            { key: 'callerName', label: 'Patient',   width: '20%' },
+            { key: 'location',   label: 'Location',  width: '26%' },
+            { key: 'callType',   label: 'Type',      width: '16%' },
+            { key: 'distance',   label: 'Distance',  width: '14%' },
+            { key: 'waitTime',   label: 'Waiting',   width: '10%' },
+            { key: 'action',     label: 'Respond',   width: '14%' },
+        ],
+        actionButton: { label: 'Respond', icon: 'fas fa-truck-medical', color: 'red', event: 'dispatch:accept' },
+        hud: { icon: 'fas fa-truck-medical', color: '#ff4757', label: 'Active Call' },
+        emptyMessage: 'No medical emergencies.',
+        emptyIcon: 'fas fa-heart-pulse',
+    },
+
     // ── LSPD (factionId: 2) ──────────────────────────────────────────────────
     2: {
         factionId: 2,

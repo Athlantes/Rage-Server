@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Down State</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            user-select: none;
+        }
+
+        /* ── Red vignette border around the entire screen ─────────────────── */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            box-shadow:
+                inset 0  0  80px 30px rgba(220, 30, 30, 0.55),
+                inset 0  0 180px 60px rgba(180, 10, 10, 0.35);
+            animation: pulse 2.0s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        /* Top-edge hard glow line */
+        .vignette::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, transparent 5%, rgba(255,50,50,0.8) 30%, rgba(255,80,80,1) 50%, rgba(255,50,50,0.8) 70%, transparent 95%);
+            animation: linePulse 2.0s ease-in-out infinite;
+        }
+        .vignette::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, transparent 5%, rgba(255,50,50,0.8) 30%, rgba(255,80,80,1) 50%, rgba(255,50,50,0.8) 70%, transparent 95%);
+            animation: linePulse 2.0s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1.0; }
+            50%       { opacity: 0.65; }
+        }
+        @keyframes linePulse {
+            0%, 100% { opacity: 1.0; }
+            50%       { opacity: 0.45; }
+        }
+
+        /* ── Top text ─────────────────────────────────────────────────────── */
+        .top-message {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 36px;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .down-title {
+            font-size: 38px;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            text-shadow:
+                0 0 20px rgba(255, 60, 60, 1),
+                0 0 40px rgba(255, 60, 60, 0.6),
+                0 2px 4px rgba(0,0,0,0.9);
+            animation: titlePulse 2.0s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(255,60,60,1), 0 0 40px rgba(255,60,60,0.6), 0 2px 4px rgba(0,0,0,0.9); }
+            50%       { text-shadow: 0 0 12px rgba(255,60,60,0.6), 0 0 24px rgba(255,60,60,0.3), 0 2px 4px rgba(0,0,0,0.9); }
+        }
+
+        .down-subtitle {
+            font-size: 15px;
+            font-weight: 400;
+            color: rgba(255, 200, 200, 0.9);
+            letter-spacing: 1.5px;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+            max-width: 520px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* ── Bottom action bar ────────────────────────────────────────────── */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 44px;
+        }
+
+        /* Status row */
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            box-shadow: 0 0 8px rgba(46,204,113,0.8);
+            animation: dotBlink 1.5s ease-in-out infinite;
+        }
+        .status-dot.no-medic {
+            background: #888;
+            box-shadow: 0 0 8px rgba(100,100,100,0.4);
+            animation: none;
+        }
+        @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .status-text { color: rgba(255,255,255,0.75); }
+
+        /* Button row */
+        .btn-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background 0.18s;
+        }
+        .action-btn:hover:not(:disabled)::before { background: rgba(255,255,255,0.08); }
+        .action-btn:active:not(:disabled) { transform: scale(0.97); }
+
+        /* Call Medic */
+        .btn-medic {
+            background: rgba(255, 71, 87, 0.18);
+            border: 1.5px solid rgba(255, 71, 87, 0.65);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(255,71,87,0.25);
+        }
+        .btn-medic:hover:not(:disabled) {
+            background: rgba(255, 71, 87, 0.32);
+            box-shadow: 0 4px 28px rgba(255,71,87,0.45);
+        }
+        .btn-medic:disabled {
+            background: rgba(60,60,60,0.25);
+            border-color: rgba(120,120,120,0.35);
+            color: rgba(255,255,255,0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-medic .btn-icon { color: #ff4757; font-size: 16px; }
+        .btn-medic:disabled .btn-icon { color: rgba(255,255,255,0.25); }
+
+        /* Called state */
+        .btn-medic.called {
+            background: rgba(46, 204, 113, 0.18);
+            border-color: rgba(46, 204, 113, 0.65);
+            color: #2ecc71;
+            cursor: default;
+        }
+        .btn-medic.called .btn-icon { color: #2ecc71; }
+
+        /* Respawn */
+        .btn-respawn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255,255,255,0.85);
+        }
+        .btn-respawn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.13);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .btn-respawn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .btn-respawn .btn-icon { color: rgba(255,255,255,0.6); font-size: 16px; }
+
+        /* ── Respawn countdown ────────────────────────────────────────────── */
+        .respawn-timer {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Error toast ──────────────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30,10,10,0.92);
+            border: 1px solid rgba(255,71,87,0.5);
+            color: #ff7070;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .toast.visible { opacity: 1; }
+
+        /* ── Medic called confirmation ───────────────────────────────────── */
+        .medic-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(46,204,113,0.1);
+            border: 1px solid rgba(46,204,113,0.4);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 13px;
+            color: #2ecc71;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .medic-badge.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- Red vignette border -->
+    <div class="vignette"></div>
+
+    <!-- Top: YOU'RE DOWN title + subtitle -->
+    <div class="top-message">
+        <div class="down-title">You're Down</div>
+        <div class="down-subtitle" id="subtitle">Call a medic or respawn at the nearest hospital.</div>
+    </div>
+
+    <!-- Bottom: status + action buttons -->
+    <div class="bottom-bar">
+
+        <!-- Medic called confirmation badge -->
+        <div class="medic-badge" id="medicBadge">
+            <i class="fas fa-check-circle"></i>
+            <span>Medic dispatched — stay down!</span>
+        </div>
+
+        <!-- Medic availability row -->
+        <div class="status-row">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">Checking medic availability...</span>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-row">
+            <button class="action-btn btn-medic" id="btnMedic" onclick="callMedic()">
+                <i class="fas fa-truck-medical btn-icon"></i>
+                Call Medic
+            </button>
+            <button class="action-btn btn-respawn" id="btnRespawn" onclick="respawn()">
+                <i class="fas fa-hospital btn-icon"></i>
+                Respawn
+                <span class="respawn-timer" id="respawnTimer" style="display:none;"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Error toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let medicCount   = 0;
+        let medicCalled  = false;
+        let respawnLockTimer = null;
+        let respawnUnlockIn  = 30; // seconds before respawn is available
+        let respawnUnlocked  = false;
+
+        // ── Init ─────────────────────────────────────────────────────────────
+        function init(data) {
+            medicCount = data.medicCount || 0;
+            updateMedicUI();
+            startRespawnCountdown();
+        }
+
+        // ── Update medic-related UI ──────────────────────────────────────────
+        function updateMedicUI() {
+            const dot      = document.getElementById('statusDot');
+            const txt      = document.getElementById('statusText');
+            const btnMedic = document.getElementById('btnMedic');
+
+            if (medicCalled) {
+                dot.className = 'status-dot';
+                txt.textContent = 'Medic dispatched — help is on the way!';
+                btnMedic.disabled = true;
+                btnMedic.classList.add('called');
+                btnMedic.innerHTML = '<i class="fas fa-check btn-icon"></i> Medic Called';
+                document.getElementById('medicBadge').classList.add('visible');
+            } else if (medicCount > 0) {
+                dot.className = 'status-dot';
+                txt.textContent = `${medicCount} paramedic${medicCount !== 1 ? 's' : ''} on duty`;
+                btnMedic.disabled = false;
+                btnMedic.classList.remove('called');
+                btnMedic.innerHTML = '<i class="fas fa-truck-medical btn-icon"></i> Call Medic';
+            } else {
+                dot.className = 'status-dot no-medic';
+                txt.textContent = 'No paramedics on duty — respawn only';
+                btnMedic.disabled = true;
+                btnMedic.classList.remove('called');
+                btnMedic.innerHTML = '<i class="fas fa-truck-medical btn-icon"></i> Call Medic';
+            }
+        }
+
+        // ── Respawn countdown ────────────────────────────────────────────────
+        function startRespawnCountdown() {
+            const btn   = document.getElementById('btnRespawn');
+            const timer = document.getElementById('respawnTimer');
+
+            btn.disabled = true;
+            timer.style.display = 'inline';
+            timer.textContent = `(${respawnUnlockIn}s)`;
+
+            const iv = setInterval(() => {
+                respawnUnlockIn--;
+                if (respawnUnlockIn <= 0) {
+                    clearInterval(iv);
+                    respawnUnlocked = true;
+                    btn.disabled = false;
+                    timer.style.display = 'none';
+                } else {
+                    timer.textContent = `(${respawnUnlockIn}s)`;
+                }
+            }, 1000);
+        }
+
+        // ── Actions ──────────────────────────────────────────────────────────
+        function callMedic() {
+            if (medicCalled || medicCount === 0) return;
+            if (typeof mp !== 'undefined') {
+                mp.trigger('client:downState:requestCallMedic');
+            }
+        }
+
+        function respawn() {
+            if (!respawnUnlocked) return;
+            if (typeof mp !== 'undefined') {
+                mp.trigger('client:downState:requestRespawn');
+            }
+        }
+
+        // ── Called from client script ─────────────────────────────────────────
+        function updateMedicCount(count) {
+            medicCount = count;
+            if (!medicCalled) updateMedicUI();
+        }
+
+        function onMedicCalled() {
+            medicCalled = true;
+            updateMedicUI();
+        }
+
+        function showError(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3200);
+        }
+    </script>
+</body>
+</html>

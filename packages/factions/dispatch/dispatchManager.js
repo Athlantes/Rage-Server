@@ -130,6 +130,16 @@ class DispatchManager {
             }
         }
 
+        if (factionId === 3) {
+            // Notify paramedic client to start proximity-based arrival monitoring
+            driver.call('client:paramedic:dispatchAccepted', [JSON.stringify({
+                callId:     callId,
+                callerName: call.callerName,
+                coords:     call.coords,
+                location:   call.location,
+            })]);
+        }
+
         this._broadcastToFaction(factionId);
         console.log(`[Dispatch] Call #${callId} accepted by ${driver.name} (ID: ${driver.id}, Faction: ${factionId})`);
     }

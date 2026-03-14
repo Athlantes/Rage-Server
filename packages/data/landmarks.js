@@ -44,4 +44,13 @@ module.exports = [
         reward: 500
     },
 
+    {
+        id: 5,
+        name: "Vinewood Sign",
+        pos: { x: 719.68, y: 1195.52, z: 329.25},
+        height: 10,
+        radius: 10,
+        maxDist: 100,
+        reward: 200
+    }
 ];
