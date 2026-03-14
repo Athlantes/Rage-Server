@@ -378,6 +378,28 @@ mp.events.addCommand('aduty', (player) => {
     }
 });
 
+mp.events.addCommand('flymode', (player) => {
+    // Check if the player is at least a Moderator (change to RANKS.ADMIN if you want it stricter)
+    if (!checkRank(player, RANKS.MODERATOR)) return;
+
+    // Get current fly state (default to false)
+    let isFlying = player.getVariable('isFlying') || false;
+    
+    // Toggle state
+    isFlying = !isFlying;
+    player.setVariable('isFlying', isFlying);
+
+    // Call the client to actually enable/disable the physics of flying
+    player.call('client:toggleFlyMode', [isFlying]);
+
+    // Notify the admin
+    if (isFlying) {
+        player.outputChatBox(`${COLORS.SUCCESS}Flymode (NoClip) ENABLED. Use WASD to move, Space (Up), Ctrl (Down), Shift (Sprint).`);
+    } else {
+        player.outputChatBox(`${COLORS.INFO}Flymode (NoClip) DISABLED.`);
+    }
+});
+
 
 // --- ADMIN CHAT ---
 mp.events.addCommand('a', (player, fullText) => {
