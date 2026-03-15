@@ -378,8 +378,8 @@ const PERFORMANCE_MODS = {
                 description: 'Soft = more grip on bumps. Hard = sharper direction change.',
                 leftLabel: 'Soft', rightLabel: 'Hard', default: 0.5,
                 properties: {
-                    fSuspensionForce:  { min: -0.10, max: 0.10 },
-                    fAntiRollBarForce: { min: -0.06, max: 0.06 }
+                    fSuspensionForce:  { min: -0.07, max: 0.10 },
+                    fAntiRollBarForce: { min: -0.04, max: 0.06 }
                 }
             },
             {
@@ -550,9 +550,33 @@ const PI_CONFIG = {
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
+ * Hard safety caps applied AFTER all variant + slider math.
+ * Prevents extreme slider/variant combinations from making vehicles
+ * undriveable (excessive rolling, instant spin, zero traction, etc.)
+ *
+ * min = lowest allowed multiplier (floor)
+ * max = highest allowed multiplier (ceiling)
+ */
+const HANDLING_SAFETY_CAPS = {
+    // ── Stability / roll prevention ──────────────────────────────────
+    fAntiRollBarForce:      { min: 0.52 }, // below this → extreme body roll on corners
+    fSuspensionForce:       { min: 0.58 }, // below this → chassis bottoms out / instability
+    fRollCentreHeightFront: { min: 0.68 }, // roll cage + soft susp stacking too low
+    fRollCentreHeightRear:  { min: 0.68 },
+    // ── Traction floors ──────────────────────────────────────────────
+    fTractionCurveMax:      { min: 0.68 }, // drift tires + slider can strip all grip
+    fTractionCurveMin:      { min: 0.62 },
+    // ── Power / brake ceilings ───────────────────────────────────────
+    fInitialDriveForce:     { max: 2.30 }, // prevent uncontrollable wheelspin at all speeds
+    fBrakeForce:            { max: 2.20 }, // prevent instant front-lock / flip
+    fTractionLossMult:      { max: 1.65 }, // karin drift LSD + anti-lag stacking
+};
+
+/**
  * Get the combined handling multipliers from ALL installed parts.
  * Each part contributes its variant's handling curve at the installed stage,
  * plus any per-part slider offsets.  All combine multiplicatively.
+ * Safety caps are applied last to prevent extreme value stacking.
  *
  * @param {Object} stages     { catKey: stageNum }          — 0 = stock
  * @param {Object} variants   { catKey: variantKey }        — chosen brand per part
@@ -587,6 +611,14 @@ function calcAllHandling(stages, variants, sliderData) {
             }
         }
     }
+
+    // ── Apply safety caps (prevent extreme stacking from causing instability) ──
+    for (const [prop, caps] of Object.entries(HANDLING_SAFETY_CAPS)) {
+        if (combined[prop] === undefined) continue;
+        if (caps.min !== undefined) combined[prop] = Math.max(caps.min, combined[prop]);
+        if (caps.max !== undefined) combined[prop] = Math.min(caps.max, combined[prop]);
+    }
+
     return combined;
 }
 

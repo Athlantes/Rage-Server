@@ -100,6 +100,23 @@ function applyHandlingMultipliers(veh, multipliers) {
 }
 
 /**
+ * Hard safety caps — mirrors server-side HANDLING_SAFETY_CAPS in tuningConfig.js.
+ * Applied after all variant + slider math to prevent extreme stacking from
+ * causing vehicles to roll uncontrollably or become otherwise undriveable.
+ */
+const HANDLING_SAFETY_CAPS = {
+    fAntiRollBarForce:      { min: 0.52 },
+    fSuspensionForce:       { min: 0.58 },
+    fRollCentreHeightFront: { min: 0.68 },
+    fRollCentreHeightRear:  { min: 0.68 },
+    fTractionCurveMax:      { min: 0.68 },
+    fTractionCurveMin:      { min: 0.62 },
+    fInitialDriveForce:     { max: 2.30 },
+    fBrakeForce:            { max: 2.20 },
+    fTractionLossMult:      { max: 1.65 },
+};
+
+/**
  * Client-side replica of calcAllHandling from tuningConfig.js.
  * Computes combined handling multipliers from stages + variants + sliders.
  * Used for live preview during tuning (slider/variant changes).
@@ -130,6 +147,14 @@ function calcAllHandlingClient(stages, variants, sliderData, handlingConfig) {
             }
         }
     }
+
+    // ── Apply safety caps (mirrors server-side, prevents instability) ──
+    for (const [prop, caps] of Object.entries(HANDLING_SAFETY_CAPS)) {
+        if (combined[prop] === undefined) continue;
+        if (caps.min !== undefined) combined[prop] = Math.max(caps.min, combined[prop]);
+        if (caps.max !== undefined) combined[prop] = Math.min(caps.max, combined[prop]);
+    }
+
     return combined;
 }
 
