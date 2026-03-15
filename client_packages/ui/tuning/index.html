@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Tuning Shop</title>
 <style>
-/* ═══ Reset ═══ */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:transparent;color:#e4e6eb;user-select:none;cursor:default}
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -12,19 +11,19 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
 
-/* ═══ Variables ═══ */
 :root{
     --bg:rgba(12,14,18,.94);--bg2:rgba(20,23,30,.96);
     --card:rgba(28,32,42,.95);--card-h:rgba(38,44,58,.95);--card-sel:rgba(0,168,255,.07);
     --bdr:rgba(255,255,255,.06);--bdr-h:rgba(255,255,255,.12);
     --txt:#e4e6eb;--txt2:#a0a5b8;--txt3:#6b7084;
-    --accent:#00a8ff;--ok:#2ecc71;--danger:#ff4757;--warn:#f0a500;
-    --grip:#00a8ff;--power:#ff4757;--drift:#ff6b35;
+    --accent:#00a8ff;--ok:#2ecc71;--danger:#ff4757;--warn:#f0a500;--caution:#ffaa00;
+    --drift:#ff6b35;--race:#00a8ff;--drag:#ff4757;--offroad:#8b5e3c;--street:#8aaa30;
+    --zone-safe:rgba(46,204,113,.22);--zone-caution:rgba(240,165,0,.28);--zone-danger:rgba(255,71,87,.32);
     --r:10px;--rs:6px;
     --sidebar-w:270px;--panel-w:420px;--topbar-h:56px;
 }
 
-/* ═══ TOP BAR ═══ */
+/* TOP BAR */
 .top-bar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);display:flex;align-items:center;padding:0 20px;gap:14px;background:var(--bg);border-bottom:1px solid var(--bdr);z-index:100}
 .shop-logo{font-size:20px;opacity:.65}
 .shop-title{font-size:15px;font-weight:700;letter-spacing:.5px}
@@ -37,23 +36,31 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .pi-badge{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
 .pi-label{color:var(--txt3);font-size:12px}
 .pi-class{padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;color:#fff}
-.tendency-badge{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.06)}
+.tendency-badge{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.06);transition:all .35s}
+.tendency-badge.drift-mode{animation:driftPulse 2s ease-in-out infinite}
+@keyframes driftPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,53,.0)}50%{box-shadow:0 0 10px 3px rgba(255,107,53,.4)}}
 .tend-icon{font-size:14px}
 .tend-pct{opacity:.55;font-size:11px}
 .cash-display{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--ok)}
 .close-btn{width:34px;height:34px;border:none;border-radius:var(--rs);background:rgba(255,75,87,.1);color:var(--danger);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
 .close-btn:hover{background:rgba(255,75,87,.25)}
 
-/* ═══ TAB CONTENT ═══ */
+/* DRIFT MODE BANNER */
+.drift-mode-banner{display:none;position:fixed;top:calc(var(--topbar-h));left:var(--sidebar-w);right:var(--panel-w);z-index:95;padding:7px 20px;background:linear-gradient(90deg,rgba(255,107,53,.18),rgba(255,107,53,.08));border-bottom:2px solid rgba(255,107,53,.4);font-size:12px;font-weight:700;color:var(--drift);letter-spacing:.5px;text-align:center}
+.drift-mode-banner.visible{display:block}
+
+/* TAB CONTENT */
 .tab-content{display:none}
 .tab-content.visible{display:block}
 
-/* ═══ LEFT SIDEBAR ═══ */
+/* SIDEBAR */
 .sidebar{position:fixed;left:10px;top:calc(var(--topbar-h) + 8px);bottom:10px;width:var(--sidebar-w);overflow-y:auto;overflow-x:hidden;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr);z-index:90}
 .group-label{padding:16px 16px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--txt3)}
 .cat-item{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .12s;border-left:3px solid transparent}
 .cat-item:hover{background:rgba(255,255,255,.03)}
 .cat-item.active{background:var(--card-sel);border-left-color:var(--accent)}
+.cat-item.locked-cat{opacity:.6;cursor:pointer}
+.cat-item.locked-cat:hover{background:rgba(255,255,255,.02)}
 .cat-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0}
 .cat-info{flex:1;min-width:0}
 .cat-name{font-size:13px;font-weight:600;display:block;margin-bottom:3px}
@@ -62,8 +69,9 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .cat-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s}
 .cat-stage{font-size:11px;color:var(--txt3);font-weight:600;white-space:nowrap}
 .cat-brand{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.cat-lock-icon{font-size:12px;color:var(--txt3);opacity:.7}
 
-/* ═══ MAIN PANEL (right) ═══ */
+/* MAIN PANEL */
 .main-panel{position:fixed;right:10px;top:calc(var(--topbar-h) + 8px);bottom:10px;width:var(--panel-w);overflow-y:auto;overflow-x:hidden;background:var(--bg);border-radius:var(--r);border:1px solid var(--bdr);z-index:90;display:flex;flex-direction:column}
 .empty-state{display:flex;align-items:center;justify-content:center;flex:1;color:var(--txt3);font-size:14px}
 
@@ -71,21 +79,39 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .part-header{display:flex;align-items:center;gap:10px;padding:20px 22px 14px;border-bottom:1px solid var(--bdr)}
 .ph-icon{font-size:26px}
 .ph-name{font-size:20px;font-weight:700;flex:1}
-.ph-stage{font-size:13px;font-weight:700;padding:5px 12px;border-radius:5px;background:rgba(0,168,255,.1);color:var(--accent)}
+.ph-stage{font-size:13px;font-weight:700;padding:5px 12px;border-radius:5px}
+.ph-stage.active-stage{background:rgba(0,168,255,.1);color:var(--accent)}
 .ph-stage.maxed{background:rgba(240,165,0,.1);color:var(--warn)}
+.ph-stage.capped{background:rgba(240,165,0,.07);color:var(--caution)}
 .ph-stage.stock{background:rgba(255,255,255,.05);color:var(--txt3)}
 
-/* Part description */
+/* Description */
 .part-desc{padding:14px 22px;font-size:13px;color:var(--txt2);line-height:1.55;border-bottom:1px solid var(--bdr)}
 
 /* Stage progress */
 .progress-section{padding:14px 22px;border-bottom:1px solid var(--bdr)}
-.progress-bar{width:100%;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
-.progress-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s ease}
+.progress-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.progress-bar{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.progress-fill.normal{background:var(--accent)}
 .progress-fill.maxed{background:var(--warn)}
-.progress-labels{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--txt3);font-weight:500}
+.progress-fill.capped{background:var(--caution)}
+.progress-cap-label{font-size:10px;font-weight:700;color:var(--caution);white-space:nowrap}
+.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);font-weight:500}
+.cap-notice{font-size:11px;color:var(--caution);margin-top:5px;padding:5px 8px;background:rgba(240,165,0,.07);border-radius:4px;border-left:2px solid var(--caution)}
 
-/* ═══ BRAND SELECTION ═══ */
+/* LOCKED CATEGORY PANEL */
+.locked-panel{padding:22px;flex:1;display:flex;flex-direction:column;gap:16px}
+.lp-icon{font-size:36px;text-align:center;opacity:.5}
+.lp-title{font-size:16px;font-weight:700;text-align:center;color:var(--txt2)}
+.lp-reason{font-size:13px;color:var(--txt3);text-align:center;line-height:1.55}
+.lp-progress{margin-top:8px}
+.lp-prog-label{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:6px}
+.lp-prog-bar{width:100%;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.lp-prog-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s}
+.lp-hint{font-size:12px;color:var(--txt3);text-align:center;line-height:1.5;margin-top:4px}
+
+/* BRAND SECTION */
 .brand-section{padding:20px 22px}
 .bs-title{font-size:15px;font-weight:700;margin-bottom:4px}
 .bs-subtitle{font-size:12px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
@@ -97,13 +123,14 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .bc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .bc-name{font-size:15px;font-weight:700;flex:1}
 .bc-tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
-.bc-surcharge{font-size:11px;color:var(--warn);font-weight:700}
+.bc-surcharge{font-size:11px;color:var(--caution);font-weight:700}
+.bc-pi-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,.08);color:var(--txt3);border:1px solid var(--bdr)}
 .bc-desc{font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:10px}
 .bc-cost{display:flex;align-items:center;gap:14px;font-size:13px}
 .bc-money{color:var(--ok);font-weight:700}
 .bc-parts{color:var(--txt2);font-weight:500}
 
-/* ═══ LOCKED BRAND ═══ */
+/* LOCKED BRAND (brand lock) */
 .locked-section{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--bdr);background:rgba(255,255,255,.015)}
 .lock-icon{font-size:15px;color:var(--txt3)}
 .lock-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -113,28 +140,48 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .lock-reset:hover{color:var(--danger);border-color:rgba(255,75,87,.3);background:rgba(255,75,87,.06)}
 .lock-reset.confirm{color:#fff;border-color:var(--danger);background:var(--danger)}
 
-/* ═══ SLIDERS ═══ */
+/* ═══ ADVANCED SLIDERS ═══ */
 .slider-section{padding:18px 22px;border-bottom:1px solid var(--bdr)}
 .ss-title{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:14px}
-.slider-row{margin-bottom:16px}
+.slider-row{margin-bottom:20px}
 .slider-row:last-child{margin-bottom:0}
 .sr-top{display:flex;align-items:center;gap:5px;margin-bottom:5px}
 .sr-icon{font-size:14px}
 .sr-name{font-size:13px;font-weight:600;flex:1}
-.sr-val{font-size:12px;color:var(--accent);font-weight:700}
-.sr-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:5px}
-.slider-track{position:relative;width:100%;height:8px;background:rgba(255,255,255,.07);border-radius:4px;cursor:pointer}
-.slider-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:var(--accent);pointer-events:none;transition:width .05s}
-.slider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:2.5px solid var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:none}
-.slider-desc{font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.4}
-.slider-actions{display:flex;gap:8px;margin-top:16px}
+.sr-val{font-size:12px;font-weight:700;min-width:54px;text-align:right;transition:color .15s}
+.sr-val.val-ok{color:var(--ok)}
+.sr-val.val-caution{color:var(--caution)}
+.sr-val.val-danger{color:var(--danger)}
+.sr-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:6px}
+
+/* Zoned slider track */
+.slider-track{position:relative;width:100%;height:10px;border-radius:5px;cursor:pointer;overflow:visible}
+.slider-zones{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:5px;overflow:hidden;pointer-events:none}
+.zone-seg{position:absolute;top:0;bottom:0}
+.style-zone-overlay{position:absolute;top:0;bottom:0;border-radius:0;pointer-events:none;opacity:.55}
+.slider-fill{position:absolute;top:0;left:0;height:100%;border-radius:5px;background:rgba(255,255,255,.18);pointer-events:none;transition:width .04s}
+.slider-thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:2.5px solid var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:none;transition:border-color .15s}
+.slider-thumb.thumb-caution{border-color:var(--caution)}
+.slider-thumb.thumb-danger{border-color:var(--danger)}
+
+/* Dynamic warning */
+.sr-warn{font-size:11px;margin-top:6px;padding:5px 9px;border-radius:4px;line-height:1.4;display:none}
+.sr-warn.caution{display:block;background:rgba(240,165,0,.1);color:var(--caution);border-left:2px solid var(--caution)}
+.sr-warn.danger{display:block;background:rgba(255,71,87,.1);color:var(--danger);border-left:2px solid var(--danger)}
+
+/* Style zone legend */
+.style-zone-legend{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--txt3)}
+.szl-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* Slider actions */
+.slider-actions{display:flex;gap:8px;margin-top:18px}
 .btn-s{flex:1;padding:9px 0;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.12s}
 .btn-s.save{background:rgba(0,168,255,.15);color:var(--accent)}
 .btn-s.save:hover{background:rgba(0,168,255,.28)}
 .btn-s.reset{background:rgba(255,255,255,.04);color:var(--txt3)}
 .btn-s.reset:hover{background:rgba(255,255,255,.09)}
 
-/* ═══ UPGRADE SECTION ═══ */
+/* UPGRADE SECTION */
 .upgrade-section{padding:18px 22px;margin-top:auto}
 .us-label{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:10px}
 .us-cost{display:flex;gap:18px;margin-bottom:14px;font-size:13px;flex-wrap:wrap}
@@ -147,10 +194,10 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .btn-upgrade.ready{background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff}
 .btn-upgrade.ready:hover{filter:brightness(1.12);transform:scale(1.005)}
 .btn-upgrade.locked{background:rgba(255,255,255,.04);color:var(--txt3);cursor:not-allowed}
-.btn-upgrade.maxed{background:rgba(240,165,0,.08);color:var(--warn);cursor:default;letter-spacing:1px}
-.hint-text{text-align:center;color:var(--txt3);font-size:13px;padding:10px 0}
+.btn-upgrade.maxed{background:rgba(240,165,0,.08);color:var(--warn);cursor:default}
+.btn-upgrade.capped{background:rgba(240,165,0,.07);color:var(--caution);cursor:default}
 
-/* ═══ OPTIONS GRID ═══ */
+/* OPTIONS GRID */
 .opts-header{padding:18px 22px 12px;border-bottom:1px solid var(--bdr)}
 .opts-title{font-size:18px;font-weight:700}
 .opts-sub{font-size:12px;color:var(--txt3);margin-top:3px}
@@ -167,7 +214,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .opt-card.previewing .oc-badge{background:rgba(240,165,0,.2);color:var(--warn)}
 .action-footer{padding:16px 22px;border-top:1px solid var(--bdr);margin-top:auto}
 
-/* ═══ COLOR GRID ═══ */
+/* COLOR GRID */
 .color-grid{display:flex;flex-wrap:wrap;gap:7px;padding:16px 22px}
 .color-swatch{width:38px;height:38px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:.15s}
 .color-swatch:hover{transform:scale(1.08);border-color:rgba(255,255,255,.25)}
@@ -176,11 +223,10 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .ci-name{font-size:14px;font-weight:600;margin-bottom:4px}
 .ci-price{font-size:13px;color:var(--ok);font-weight:600}
 
-/* ═══ RGB PICKER ═══ */
+/* RGB PICKER */
 .rgb-section{padding:18px 22px;border-top:1px solid var(--bdr)}
 .rgb-title{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:12px}
 .rgb-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.rgb-row:last-child{margin-bottom:0}
 .rgb-label{width:14px;font-size:13px;font-weight:700;text-align:center}
 .rgb-slider-wrap{flex:1;position:relative;height:8px;background:rgba(255,255,255,.07);border-radius:4px;cursor:pointer}
 .rgb-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;pointer-events:none}
@@ -189,7 +235,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .rgb-preview{width:100%;height:40px;border-radius:var(--rs);margin-top:12px;border:1px solid var(--bdr)}
 .rgb-hex{text-align:center;margin-top:6px;font-size:12px;color:var(--txt3);font-weight:600}
 
-/* ═══ SPECIAL ═══ */
+/* SPECIAL */
 .spec-toggle{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--bdr)}
 .spec-toggle label{font-size:13px;font-weight:600;flex:1}
 .toggle-box{width:42px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;transition:.2s}
@@ -200,7 +246,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 .neon-btn{padding:8px 14px;border-radius:var(--rs);background:var(--card);border:2px solid var(--bdr);cursor:pointer;font-size:12px;font-weight:600;color:var(--txt2);transition:.15s}
 .neon-btn.on{border-color:var(--accent);color:var(--accent);background:var(--card-sel)}
 
-/* ═══ TOAST NOTIFICATIONS ═══ */
+/* TOAST */
 .toast-container{position:fixed;top:calc(var(--topbar-h) + 14px);left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .toast{padding:10px 22px;border-radius:var(--rs);font-size:13px;font-weight:600;backdrop-filter:blur(10px);animation:toastIn .3s ease-out;pointer-events:auto;border:1px solid}
 .toast.success{background:rgba(46,204,113,.18);color:#2ecc71;border-color:rgba(46,204,113,.3)}
@@ -211,17 +257,18 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 @keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}
 
-/* ═══ UTILITY ═══ */
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .fade{animation:fadeIn .2s ease-out}
 </style>
 </head>
 <body>
 
-<!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- ══ TOP BAR ══ -->
+<!-- DRIFT MODE BANNER -->
+<div class="drift-mode-banner" id="driftBanner">🌀 DRIFT MODE — Handling profile active. Rear grip reduced, oversteer promoted.</div>
+
+<!-- TOP BAR -->
 <div class="top-bar">
     <span class="shop-logo">⚙</span>
     <span class="shop-title">LOS SANTOS CUSTOMS</span>
@@ -249,935 +296,985 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
     <button class="close-btn" onclick="closeTuning()">✕</button>
 </div>
 
-<!-- ══ PERFORMANCE TAB ══ -->
+<!-- PERFORMANCE TAB -->
 <div class="tab-content visible" data-tab="performance">
     <div class="sidebar" id="perfSidebar"></div>
     <div class="main-panel" id="perfMain"><div class="empty-state">Select a category to begin</div></div>
 </div>
 
-<!-- ══ VISUAL TAB ══ -->
+<!-- VISUAL TAB -->
 <div class="tab-content" data-tab="visual">
     <div class="sidebar" id="visSidebar"></div>
     <div class="main-panel" id="visMain"><div class="empty-state">Select a mod type</div></div>
 </div>
 
-<!-- ══ PAINT TAB ══ -->
+<!-- PAINT TAB -->
 <div class="tab-content" data-tab="paint">
     <div class="sidebar" id="paintSidebar"></div>
     <div class="main-panel" id="paintMain"><div class="empty-state">Choose a color option</div></div>
 </div>
 
-<!-- ══ SPECIAL TAB ══ -->
+<!-- SPECIAL TAB -->
 <div class="tab-content" data-tab="special">
     <div class="sidebar" id="specSidebar"></div>
     <div class="main-panel" id="specMain"><div class="empty-state">Select a modification</div></div>
 </div>
 
 <script>
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // STATE
-// ═════════════════════════════════════════════════════════════
-let DATA = null;
-let activeTab = 'performance';
-// Performance
-let selCat = null, selBrand = null, pendingSliders = {}, resetPending = false;
+// ═════════════════════════════════════════════════════════════════════════════
+var DATA = null;
+var activeTab = 'performance';
+// Perf
+var selCat = null, selBrand = null, pendingSliders = {}, resetPending = false;
 // Visual
-let selVisCat = null, selVisIdx = -2; // -2 = none selected, -1 = stock, 0+ = option
+var selVisCat = null, selVisIdx = -2;
 // Paint
-let paintTarget = 'primary', paintState = {prim:{r:0,g:0,b:0},sec:{r:0,g:0,b:0},type:0,pearl:{r:254,g:254,b:254}}, selColorIdx = null;
-let rgbState = {r:128,g:128,b:128};
+var paintTarget = 'primary', paintState = {prim:{r:0,g:0,b:0},sec:{r:0,g:0,b:0},type:0}, selColorIdx = null;
+var rgbState = {r:128,g:128,b:128}, currentPearlIndex = 0;
 // Special
-let selSpecCat = null, selSpecOpt = null;
-// Wheels sub-state
-let wheelType = 0, wheelCount = 0, selWheelIdx = -1, wheelColorIdx = -1;
-// Neon sub-state
-let neonMask = 0, neonColor = {r:255,g:255,b:255};
-// Smoke sub-state
-let smokeOn = false, smokeColor = {r:255,g:255,b:255};
-// Xenon sub-state
-let xenonOn = false, xenonColor = -1;
-// Camber/Track sub-state
-let camberValue = 0, trackWidthValue = 0;
-// Camera orbit
-let isOrbit = false, lmx = 0, lmy = 0;
+var selSpecCat = null, selSpecOpt = null;
+var wheelType = 0, wheelCount = 0, selWheelIdx = -1, wheelColorIdx = -1;
+var neonMask = 0, neonColor = {r:255,g:255,b:255};
+var smokeOn = false, smokeColor = {r:255,g:255,b:255};
+var xenonOn = false, xenonColor = -1;
+var camberValue = 0, trackWidthValue = 0;
+// Camera
+var isOrbit = false, lmx = 0, lmy = 0;
 
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-const fmt = n => (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-function mp_trigger() { try { if (typeof mp !== 'undefined') mp.trigger.apply(mp, arguments); } catch(e) {} }
-
-// ═════════════════════════════════════════════════════════════
-// TOAST NOTIFICATION SYSTEM
-// ═════════════════════════════════════════════════════════════
-function showToast(msg, type, duration) {
-    type = type || 'info';
-    duration = duration || 2500;
-    const c = $('#toastContainer');
-    const t = document.createElement('div');
-    t.className = 'toast ' + type;
-    t.textContent = msg;
-    c.appendChild(t);
-    setTimeout(function() { t.classList.add('fadeOut'); setTimeout(function() { t.remove(); }, 300); }, duration);
+var $ = function(s){ return document.querySelector(s); };
+var $$ = function(s){ return document.querySelectorAll(s); };
+var fmt = function(n){ return (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,','); };
+function mp_trigger(){
+    try{ if(typeof mp!=='undefined') mp.trigger.apply(mp,arguments); }catch(e){}
 }
 
-// ═════════════════════════════════════════════════════════════
-// CAMERA — right-click orbit + scroll zoom
-// ═════════════════════════════════════════════════════════════
-document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-document.addEventListener('mousedown', function(e) { if (e.button===2) { isOrbit=true; lmx=e.clientX; lmy=e.clientY; } });
-document.addEventListener('mousemove', function(e) { if (!isOrbit) return; mp_trigger('cef:tuning:orbitCamera', e.clientX-lmx, e.clientY-lmy); lmx=e.clientX; lmy=e.clientY; });
-document.addEventListener('mouseup', function(e) { if (e.button===2) isOrbit=false; });
-document.addEventListener('wheel', function(e) {
-    if (e.target.closest('.sidebar,.main-panel')) return;
-    mp_trigger('cef:tuning:zoomCamera', e.deltaY);
-}, {passive:true});
+// ═════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═════════════════════════════════════════════════════════════════════════════
+function showToast(msg, type, duration){
+    type = type||'info'; duration = duration||2500;
+    var c = $('#toastContainer');
+    var t = document.createElement('div');
+    t.className = 'toast '+type; t.textContent = msg; c.appendChild(t);
+    setTimeout(function(){ t.classList.add('fadeOut'); setTimeout(function(){ t.remove(); },300); }, duration);
+}
 
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// CAMERA
+// ═════════════════════════════════════════════════════════════════════════════
+document.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+document.addEventListener('mousedown',function(e){ if(e.button===2){ isOrbit=true; lmx=e.clientX; lmy=e.clientY; }});
+document.addEventListener('mousemove',function(e){ if(!isOrbit) return; mp_trigger('cef:tuning:orbitCamera',e.clientX-lmx,e.clientY-lmy); lmx=e.clientX; lmy=e.clientY; });
+document.addEventListener('mouseup',function(e){ if(e.button===2) isOrbit=false; });
+document.addEventListener('wheel',function(e){
+    if(e.target.closest('.sidebar,.main-panel')) return;
+    mp_trigger('cef:tuning:zoomCamera',e.deltaY);
+},{passive:true});
+
+// ═════════════════════════════════════════════════════════════════════════════
 // TABS
-// ═════════════════════════════════════════════════════════════
-$$('.tab-btn').forEach(function(btn) { btn.addEventListener('click', function() {
-    $$('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    activeTab = btn.dataset.tab;
-    $$('.tab-content').forEach(function(tc) { tc.classList.toggle('visible', tc.dataset.tab === activeTab); });
-    mp_trigger('cef:tuning:switchTab', activeTab);
-    if (activeTab==='visual') initVisual();
-    else if (activeTab==='paint') initPaint();
-    else if (activeTab==='special') initSpecial();
-}); });
+// ═════════════════════════════════════════════════════════════════════════════
+$$('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+        $$('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        $$('.tab-content').forEach(function(tc){ tc.classList.toggle('visible', tc.dataset.tab===activeTab); });
+        mp_trigger('cef:tuning:switchTab', activeTab);
+        if(activeTab==='visual') initVisual();
+        else if(activeTab==='paint') initPaint();
+        else if(activeTab==='special') initSpecial();
+    });
+});
 
-// ═════════════════════════════════════════════════════════════
-// INIT / UPDATE
-// ═════════════════════════════════════════════════════════════
-function initTuning(json) {
-    DATA = typeof json === 'string' ? JSON.parse(json) : json;
-    selCat = null; selBrand = null; pendingSliders = {}; resetPending = false;
+// ═════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═════════════════════════════════════════════════════════════════════════════
+function initTuning(json){
+    DATA = typeof json==='string' ? JSON.parse(json) : json;
+    selCat=null; selBrand=null; pendingSliders={}; resetPending=false;
     renderTopBar();
     renderPerfSidebar();
     renderPerfMain();
 }
 
-function updateTuning(json) {
-    var d = typeof json === 'string' ? JSON.parse(json) : json;
-    Object.assign(DATA, d);
+function updateTuning(json){
+    var d = typeof json==='string' ? JSON.parse(json) : json;
+    Object.assign(DATA,d);
     renderTopBar();
     renderPerfSidebar();
-    if (selCat) { selBrand = null; pendingSliders = {}; resetPending = false; renderPerfMain(); }
+    if(selCat){ selBrand=null; pendingSliders={}; resetPending=false; renderPerfMain(); }
 }
 
-function updateCash(c) { if (DATA) DATA.playerCash = c; $('#cashValue').textContent = fmt(c); }
+function updateCash(c){ if(DATA) DATA.playerCash=c; $('#cashValue').textContent=fmt(c); }
 
-function updatePI(pi, cls) {
-    if (DATA) { DATA.pi = pi; DATA.piClass = typeof cls === 'string' ? JSON.parse(cls) : cls; }
+function updatePI(pi,cls,tendencyJson){
+    if(DATA){
+        DATA.pi=pi;
+        DATA.piClass = typeof cls==='string' ? JSON.parse(cls) : cls;
+        if(tendencyJson) DATA.tendency = typeof tendencyJson==='string' ? JSON.parse(tendencyJson) : tendencyJson;
+    }
     renderTopBar();
 }
 
-// Called from client after visual mod purchase confirmed
-function visualModConfirmed(modType, modIndex) {
-    if (!DATA || !DATA.visualData) return;
-    for (var vk in DATA.visualData) {
-        var vd = DATA.visualData[vk];
-        if (vd.modType === modType) {
-            vd.current = modIndex;
+function updateVisualData(visualData){
+    // Called by second-pass scan to update mod counts without full re-init
+    if(!DATA) return;
+    var changed = false;
+    for(var vk in visualData){
+        if(!DATA.visualData||!DATA.visualData[vk]) continue;
+        var newCount = visualData[vk].options || 0;
+        if(DATA.visualData[vk].options !== newCount){
+            DATA.visualData[vk].options = newCount;
+            changed = true;
+        }
+    }
+    if(changed && activeTab === 'visual'){
+        renderVisSidebar();
+        renderVisMain();
+    }
+}
+
+function visualModConfirmed(modType, modIndex){
+    if(!DATA||!DATA.visualData) return;
+    for(var vk in DATA.visualData){
+        if(DATA.visualData[vk].modType===modType){
+            DATA.visualData[vk].current = modIndex;
             selVisIdx = modIndex;
-            showToast('Mod installed successfully!', 'success');
-            renderVisMain();
-            renderVisSidebar();
+            showToast('Mod installed!','success');
+            renderVisMain(); renderVisSidebar();
             break;
         }
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-// TOP BAR
-// ═════════════════════════════════════════════════════════════
-function renderTopBar() {
-    if (!DATA) return;
-    $('#piValue').textContent = DATA.pi || '—';
-    var pc = DATA.piClass || {label:'—',color:'#555'};
-    var pe = $('#piClass'); pe.textContent = pc.label; pe.style.background = pc.color;
+// ═════════════════════════════════════════════════════════════════════════════
+// TOP BAR — includes drift mode badge update
+// ═════════════════════════════════════════════════════════════════════════════
+function renderTopBar(){
+    if(!DATA) return;
+    $('#piValue').textContent = DATA.pi||'—';
+    var pc = DATA.piClass||{label:'—',color:'#555'};
+    var pe = $('#piClass'); pe.textContent=pc.label; pe.style.background=pc.color;
 
-    var t = DATA.tendency || {dominant:'balanced',percentage:0};
-    var tl = (DATA.tendencyLabels||{})[t.dominant] || {name:'Balanced',color:'#8a8fa6',icon:'⚖'};
-    var b = $('#tendencyBadge');
-    b.style.borderColor = tl.color+'30'; b.style.background = tl.color+'10';
+    var t  = DATA.tendency||{dominant:'balanced',percentage:0,isDriftMode:false};
+    var bs = (DATA.buildStyles||{});
+    var tl = bs[t.dominant]||{name:'Balanced',color:'#8a8fa6',icon:'⚖'};
+    var b  = $('#tendencyBadge');
+    b.style.borderColor = tl.color+'30';
+    b.style.background  = tl.color+'10';
     b.querySelector('.tend-icon').textContent = tl.icon;
-    var nm = b.querySelector('.tend-name'); nm.textContent = tl.name; nm.style.color = tl.color;
-    b.querySelector('.tend-pct').textContent = t.percentage > 0 ? t.percentage+'%' : '';
+    var nm = b.querySelector('.tend-name'); nm.textContent=tl.name; nm.style.color=tl.color;
+    b.querySelector('.tend-pct').textContent  = t.percentage>0 ? t.percentage+'%' : '';
+    b.classList.toggle('drift-mode', !!t.isDriftMode);
+
+    // Drift mode banner
+    var banner = $('#driftBanner');
+    banner.classList.toggle('visible', !!t.isDriftMode);
 
     $('#cashValue').textContent = fmt(DATA.playerCash);
 }
 
-// ═════════════════════════════════════════════════════════════
-// PERFORMANCE — Sidebar
-// ═════════════════════════════════════════════════════════════
-function renderPerfSidebar() {
-    if (!DATA || !DATA.categories) return;
-    var el = $('#perfSidebar'); el.innerHTML = '';
-    var ord = (DATA.perfGroups||{}).order || ['power','drivetrain','handling','chassis'];
-    var lbl = (DATA.perfGroups||{}).labels || {};
+// ═════════════════════════════════════════════════════════════════════════════
+// SLIDER ZONE HELPERS
+// ═════════════════════════════════════════════════════════════════════════════
 
-    for (var gi = 0; gi < ord.length; gi++) {
-        var grp = ord[gi];
-        var h = document.createElement('div'); h.className = 'group-label'; h.textContent = lbl[grp] || grp; el.appendChild(h);
-        for (var ck in DATA.categories) {
-            var c = DATA.categories[ck];
-            if (c.group !== grp) continue;
-            var r = document.createElement('div');
-            r.className = 'cat-item' + (ck === selCat ? ' active' : '');
+/**
+ * Build a CSS gradient string for the zone track background.
+ * Segments: danger(red) | caution(yellow) | safe(green) | caution | danger
+ */
+function buildZoneGradient(zones){
+    if(!zones||!zones.safe) return 'rgba(255,255,255,.07)';
+    var s = zones.safe;
+    var c = zones.caution||[0,1];
+    var segs = [];
+    if(c[0]>0)    segs.push('rgba(255,71,87,.25) 0%, rgba(255,71,87,.25) '+(c[0]*100).toFixed(1)+'%');
+    if(s[0]>c[0]) segs.push('rgba(240,165,0,.28) '+(c[0]*100).toFixed(1)+'%, rgba(240,165,0,.28) '+(s[0]*100).toFixed(1)+'%');
+    segs.push('rgba(46,204,113,.22) '+(s[0]*100).toFixed(1)+'%, rgba(46,204,113,.22) '+(s[1]*100).toFixed(1)+'%');
+    if(s[1]<c[1]) segs.push('rgba(240,165,0,.28) '+(s[1]*100).toFixed(1)+'%, rgba(240,165,0,.28) '+(c[1]*100).toFixed(1)+'%');
+    if(c[1]<1)    segs.push('rgba(255,71,87,.25) '+(c[1]*100).toFixed(1)+'%, rgba(255,71,87,.25) 100%');
+    return 'linear-gradient(90deg,'+segs.join(',')+')';
+}
 
-            var pct = c.maxStage > 0 ? Math.round((c.currentStage / c.maxStage) * 100) : 0;
-            var isStock = c.currentStage === 0;
-            var isMax = c.currentStage >= c.maxStage;
+/**
+ * Get the zone state for a value: 'ok' | 'caution' | 'danger'
+ */
+function getZoneState(val, zones){
+    if(!zones||!zones.safe) return 'ok';
+    var s = zones.safe; var c = zones.caution||[0,1];
+    if(val>=s[0]&&val<=s[1])  return 'ok';
+    if(val>=c[0]&&val<=c[1])  return 'caution';
+    return 'danger';
+}
 
-            var meta = '';
-            if (isStock) {
-                meta = '<span class="cat-stage" style="color:var(--txt3)">Stock</span>';
+/**
+ * Get the best style zone for a slider given the current dominant build style.
+ */
+function getStyleZone(sl, dominant){
+    if(!sl.styleZones||!dominant||dominant==='balanced') return null;
+    return sl.styleZones[dominant]||null;
+}
+
+/**
+ * Get warn message for a value on a slider.
+ */
+function getWarnMsg(val, zones, sl){
+    var state = getZoneState(val, zones);
+    if(state==='ok') return null;
+    var s = zones.safe;
+    if(val<s[0]) return sl.warnLow||null;
+    return sl.warnHigh||null;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE SIDEBAR
+// ═════════════════════════════════════════════════════════════════════════════
+function renderPerfSidebar(){
+    if(!DATA||!DATA.categories) return;
+    var el = $('#perfSidebar'); el.innerHTML='';
+    var ord = (DATA.perfGroups||{}).order||['power','drivetrain','handling','chassis','exclusive'];
+    var lbl = (DATA.perfGroups||{}).labels||{};
+
+    for(var gi=0;gi<ord.length;gi++){
+        var grp=ord[gi];
+        var anyInGroup=false;
+        for(var ck in DATA.categories){ if(DATA.categories[ck].group===grp){ anyInGroup=true; break; } }
+        if(!anyInGroup) continue;
+        var h=document.createElement('div'); h.className='group-label'; h.textContent=lbl[grp]||grp; el.appendChild(h);
+
+        for(var ck in DATA.categories){
+            var c=DATA.categories[ck];
+            if(c.group!==grp) continue;
+            var isLocked = c.lockState&&c.lockState.locked;
+            var r=document.createElement('div');
+            r.className='cat-item'+(ck===selCat?' active':'')+(isLocked?' locked-cat':'');
+
+            var pct = c.effectiveMax>0 ? Math.round((c.currentStage/c.effectiveMax)*100) : 0;
+            var isStock=c.currentStage===0;
+            var isMax=c.currentStage>=c.effectiveMax;
+
+            var meta='';
+            if(isLocked){
+                meta='<span class="cat-stage" style="color:var(--txt3)">🔒 Locked</span>';
+            } else if(isStock){
+                meta='<span class="cat-stage" style="color:var(--txt3)">Stock</span>';
             } else {
-                var brandTag = '';
-                if (c.currentVariant) {
-                    var v = (c.variants||{})[c.currentVariant];
-                    if (v) brandTag = '<span class="cat-brand" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>';
+                var brandTag='';
+                if(c.currentVariant){
+                    var v=(c.variants||{})[c.currentVariant];
+                    if(v) brandTag='<span class="cat-brand" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>';
                 }
-                meta = '<div class="cat-bar"><div class="cat-fill" style="width:'+pct+'%;'+(isMax?'background:var(--warn)':'')+'"></div></div>'
-                    + '<span class="cat-stage">'+c.currentStage+'/'+c.maxStage+'</span>' + brandTag;
+                var capNote = c.currentStage>=c.maxStage ? '' : (c.currentStage>=c.effectiveMax ? ' 🔒' : '');
+                meta='<div class="cat-bar"><div class="cat-fill" style="width:'+pct+'%;'+(isMax?'background:var(--warn)':'')+'">'
+                    +'</div></div>'
+                    +'<span class="cat-stage">'+c.currentStage+'/'+c.effectiveMax+capNote+'</span>'+brandTag;
             }
 
-            r.innerHTML = '<span class="cat-icon">'+c.icon+'</span>'
-                + '<div class="cat-info"><span class="cat-name">'+c.name+'</span><div class="cat-meta">'+meta+'</div></div>';
-            (function(key) {
-                r.addEventListener('click', function() { selCat = key; selBrand = null; pendingSliders = {}; resetPending = false; renderPerfSidebar(); renderPerfMain(); });
+            r.innerHTML='<span class="cat-icon">'+c.icon+'</span>'
+                +'<div class="cat-info"><span class="cat-name">'+c.name+'</span>'
+                +'<div class="cat-meta">'+meta+'</div></div>';
+            (function(key){
+                r.addEventListener('click',function(){
+                    selCat=key; selBrand=null; pendingSliders={}; resetPending=false;
+                    renderPerfSidebar(); renderPerfMain();
+                });
             })(ck);
             el.appendChild(r);
         }
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-// PERFORMANCE — Main Panel
-// ═════════════════════════════════════════════════════════════
-function renderPerfMain() {
-    var panel = $('#perfMain');
-    if (!DATA || !selCat) { panel.innerHTML = '<div class="empty-state">Select a category to begin</div>'; return; }
-    var c = DATA.categories[selCat];
-    if (!c) return;
+// ═════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE MAIN PANEL
+// ═════════════════════════════════════════════════════════════════════════════
+function renderPerfMain(){
+    var panel=$('#perfMain');
+    if(!DATA||!selCat){ panel.innerHTML='<div class="empty-state">Select a category to begin</div>'; return; }
+    var c=DATA.categories[selCat];
+    if(!c) return;
 
-    var isStock = c.currentStage === 0;
-    var isMax = c.currentStage >= c.maxStage;
-    var variants = c.variants || {};
-    var vKeys = Object.keys(variants);
+    var dominant = (DATA.tendency||{}).dominant||'balanced';
+    var isLocked = c.lockState&&c.lockState.locked;
 
-    var html = '';
+    // ── LOCKED PANEL ──
+    if(isLocked){
+        var ls = c.lockState;
+        var html='<div class="part-header fade"><span class="ph-icon">'+c.icon+'</span>'
+            +'<span class="ph-name">'+c.name+'</span>'
+            +'<span class="ph-stage stock">🔒 Locked</span></div>';
+        html+='<div class="locked-panel fade">';
+        html+='<div class="lp-icon">🔒</div>';
+        html+='<div class="lp-title">'+c.name+' Locked</div>';
+        html+='<div class="lp-reason">'+ls.reason+'</div>';
 
-    // ── Header ──
-    var stageLabel = isStock ? 'Stock' : isMax ? '★ MAX' : 'Stage '+c.currentStage+' / '+c.maxStage;
-    var stageClass = isStock ? 'stock' : isMax ? 'maxed' : '';
-    html += '<div class="part-header fade"><span class="ph-icon">'+c.icon+'</span><span class="ph-name">'+c.name+'</span>'
-        + '<span class="ph-stage '+stageClass+'">'+stageLabel+'</span></div>';
-
-    // ── Description ──
-    html += '<div class="part-desc fade">'+ ((c.descriptions || [])[c.currentStage] || '') +'</div>';
-
-    // ── Progress bar ──
-    if (!isStock) {
-        var pct = Math.round((c.currentStage / c.maxStage) * 100);
-        html += '<div class="progress-section fade"><div class="progress-bar"><div class="progress-fill'+(isMax?' maxed':'')+'" style="width:'+pct+'%"></div></div>'
-            + '<div class="progress-labels"><span>Stage 0</span><span>Stage '+c.maxStage+'</span></div></div>';
+        // Style progress bar
+        if(ls.styleRequired&&ls.stylePercent!==undefined){
+            var pct2=ls.stylePercent||0;
+            var needed=ls.styleNeeded||60;
+            var bs2=(DATA.buildStyles||{})[ls.styleRequired]||{color:'#aaa',name:ls.styleRequired};
+            html+='<div class="lp-progress">';
+            html+='<div class="lp-prog-label">'
+                +'<span style="color:'+bs2.color+'">'+bs2.name+' Progress</span>'
+                +'<span style="color:var(--txt3)">'+pct2+'% / '+needed+'%</span></div>';
+            html+='<div class="lp-prog-bar"><div class="lp-prog-fill" style="width:'+Math.min(100,Math.round((pct2/needed)*100))+'%;background:'+bs2.color+'"></div></div>';
+            html+='</div>';
+            html+='<div class="lp-hint">Install more '+bs2.name.toLowerCase()+'-oriented parts to unlock this category.</div>';
+        }
+        html+='</div>';
+        panel.innerHTML=html;
+        return;
     }
 
-    if (isStock) {
-        // ══ BRAND SELECTION ══
-        if (vKeys.length === 1 && !selBrand) selBrand = vKeys[0];
+    var isStock=c.currentStage===0;
+    var isCapped=c.currentStage>=c.effectiveMax&&c.currentStage<c.maxStage;
+    var isMax=c.currentStage>=c.maxStage;
+    var variants=c.variants||{};
+    var vKeys=Object.keys(variants);
 
-        html += '<div class="brand-section fade"><div class="bs-title">Choose Your Manufacturer</div>'
-            + '<div class="bs-subtitle">This choice locks for this part. You\'ll upgrade through all stages with the selected brand.</div>';
+    var stageLabel, stageClass;
+    if(isStock){ stageLabel='Stock'; stageClass='stock'; }
+    else if(isMax){ stageLabel='★ MAX'; stageClass='maxed'; }
+    else if(isCapped){ stageLabel='Stage '+c.currentStage+' / '+c.effectiveMax+' (Capped)'; stageClass='capped'; }
+    else{ stageLabel='Stage '+c.currentStage+' / '+c.effectiveMax; stageClass='active-stage'; }
 
-        var req = c.nextReq;
-        for (var vi = 0; vi < vKeys.length; vi++) {
-            var vk = vKeys[vi];
-            var v = variants[vk];
-            var sel = vk === selBrand;
-            var price = req ? Math.round((req.money * (v.surcharge || 1)) / 100) * 100 : 0;
-            var surTxt = v.surcharge > 1 ? '<span class="bc-surcharge">+'+Math.round((v.surcharge-1)*100)+'%</span>' : '';
+    var html='<div class="part-header fade"><span class="ph-icon">'+c.icon+'</span>'
+        +'<span class="ph-name">'+c.name+'</span>'
+        +'<span class="ph-stage '+stageClass+'">'+stageLabel+'</span></div>';
 
-            html += '<div class="brand-card'+(sel?' selected':'')+'" style="border-left:4px solid '+v.tagColor+'" onclick="pickBrand(\''+vk+'\')">'
-                + '<div class="bc-top"><span class="bc-dot" style="background:'+v.tagColor+'"></span>'
-                + '<span class="bc-name">'+v.name+'</span>'
-                + '<span class="bc-tag" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>'+surTxt+'</div>'
-                + '<div class="bc-desc">'+v.desc+'</div>'
-                + '<div class="bc-cost"><span class="bc-money">$'+fmt(price)+'</span>'
-                + (req ? '<span class="bc-parts">'+req.partAmount+'× '+(req.partName || capitalize(req.partType)+' Parts')+'</span>' : '')
-                + '</div></div>';
+    html+='<div class="part-desc fade">'+((c.descriptions||[])[c.currentStage]||'')+'</div>';
+
+    // Progress bar uses effectiveMax
+    if(!isStock){
+        var pct=Math.round((c.currentStage/c.effectiveMax)*100);
+        var fillClass=isMax?'maxed':isCapped?'capped':'normal';
+        html+='<div class="progress-section fade">'
+            +'<div class="progress-row"><div class="progress-bar"><div class="progress-fill '+fillClass+'" style="width:'+pct+'%"></div></div>'
+            +(isCapped?'<span class="progress-cap-label">PI CAP</span>':'')
+            +'</div>'
+            +'<div class="progress-labels"><span>Stock</span><span>Stage '+c.effectiveMax+'</span></div>'
+            +(isCapped?'<div class="cap-notice">Your vehicle\'s PI class ('+DATA.grade+') caps this part at Stage '+c.effectiveMax+'. Upgrade your vehicle grade to unlock further stages.</div>':'')
+            +'</div>';
+    }
+
+    if(isStock){
+        // BRAND SELECTION
+        if(vKeys.length===1&&!selBrand) selBrand=vKeys[0];
+        html+='<div class="brand-section fade">'
+            +'<div class="bs-title">Choose Your Manufacturer</div>'
+            +'<div class="bs-subtitle">This brand locks for all future upgrades on this part. Choose carefully.</div>';
+
+        var req=c.nextReq;
+        for(var vi=0;vi<vKeys.length;vi++){
+            var vk=vKeys[vi]; var v=variants[vk];
+            var sel=vk===selBrand;
+            var price=req?Math.round(((req.money*(v.surcharge||1))/100)*100):0;
+            var surTxt=v.surcharge>1?'<span class="bc-surcharge">+'+Math.round((v.surcharge-1)*100)+'%</span>':'';
+            var piBadge=v.minPIClass&&v.minPIClass!=='F'?'<span class="bc-pi-badge">'+v.minPIClass+'+ class</span>':'';
+
+            html+='<div class="brand-card'+(sel?' selected':'')
+                +'" style="border-left:4px solid '+v.tagColor+'" onclick="pickBrand(\''+vk+'\')">'
+                +'<div class="bc-top"><span class="bc-dot" style="background:'+v.tagColor+'"></span>'
+                +'<span class="bc-name">'+v.name+'</span>'
+                +'<span class="bc-tag" style="background:'+v.tagColor+'18;color:'+v.tagColor+'">'+v.tag+'</span>'
+                +surTxt+piBadge+'</div>'
+                +'<div class="bc-desc">'+v.desc+'</div>'
+                +'<div class="bc-cost"><span class="bc-money">$'+fmt(price)+'</span>'
+                +(req?'<span class="bc-parts">'+req.partAmount+'× '+(req.partName||req.partType)+'</span>':'')
+                +'</div></div>';
         }
-        html += '</div>';
+        html+='</div>';
 
-        // ── Install button ──
-        if (selBrand && req) {
-            var v = variants[selBrand];
-            var price = Math.round((req.money * (v.surcharge || 1)) / 100) * 100;
-            var canM = DATA.playerCash >= price;
-            var hasP = req.playerHas !== undefined ? req.playerHas >= req.partAmount : true;
-            var canBuy = canM && hasP;
-
-            html += '<div class="upgrade-section"><div class="us-cost">'
-                + '<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price)+'</span></div>'
-                + '<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'+(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName || capitalize(req.partType))+'</span></div>'
-                + '</div><button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
-                + (canBuy ? 'Install '+v.name : 'Not enough resources') + '</button></div>';
+        if(selBrand&&req){
+            var v2=variants[selBrand]||{};
+            var price2=Math.round(((req.money*(v2.surcharge||1))/100)*100);
+            var canM=DATA.playerCash>=price2;
+            var hasP=req.playerHas!==undefined?req.playerHas>=req.partAmount:true;
+            var canBuy=canM&&hasP;
+            html+='<div class="upgrade-section">'
+                +'<div class="us-cost">'
+                +'<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price2)+'</span></div>'
+                +'<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'
+                +(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName||req.partType)+'</span></div>'
+                +'</div>'
+                +'<button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
+                +(canBuy?'Install '+v2.name:'Not enough resources')+'</button></div>';
         }
+
     } else {
-        // ══ LOCKED BRAND ══
-        if (c.currentVariant) {
-            var v = variants[c.currentVariant] || {};
-            html += '<div class="locked-section fade"><span class="lock-icon">🔒</span>'
-                + '<span class="lock-dot" style="background:'+(v.tagColor||'#888')+'"></span>'
-                + '<span class="lock-name" style="color:'+(v.tagColor||'#888')+'">'+(v.name || c.currentVariant)+'</span>'
-                + '<span class="lock-tag" style="background:'+(v.tagColor||'#888')+'18;color:'+(v.tagColor||'#888')+'">'+(v.tag || '')+'</span>'
-                + '<button class="lock-reset'+(resetPending?' confirm':'')+'" onclick="resetPartClick()">'+(resetPending?'⚠ Confirm':'Reset')+'</button></div>';
+        // LOCKED BRAND
+        if(c.currentVariant){
+            var v3=variants[c.currentVariant]||{};
+            html+='<div class="locked-section fade"><span class="lock-icon">🔒</span>'
+                +'<span class="lock-dot" style="background:'+(v3.tagColor||'#888')+'"></span>'
+                +'<span class="lock-name" style="color:'+(v3.tagColor||'#888')+'">'+(v3.name||c.currentVariant)+'</span>'
+                +'<span class="lock-tag" style="background:'+(v3.tagColor||'#888')+'18;color:'+(v3.tagColor||'#888')+'">'+(v3.tag||'')+'</span>'
+                +'<button class="lock-reset'+(resetPending?' confirm':'')
+                +'" onclick="resetPartClick()">'+(resetPending?'⚠ Confirm':'Reset')+'</button></div>';
         }
 
-        // ── Sliders ──
-        var sliders = (c.sliders || []).filter(function(s) { return c.currentStage >= s.minStage; });
-        if (sliders.length) {
-            var inner = '';
-            for (var si = 0; si < sliders.length; si++) {
-                var sl = sliders[si];
-                var sv = (c.sliderValues || {})[sl.key];
-                var val = pendingSliders[sl.key] !== undefined ? pendingSliders[sl.key] : (sv !== undefined ? sv : sl.default);
-                var pct = Math.round(val * 100);
-                inner += '<div class="slider-row" data-slider="'+sl.key+'">'
-                    + '<div class="sr-top"><span class="sr-icon">'+sl.icon+'</span><span class="sr-name">'+sl.name+'</span><span class="sr-val">'+pct+'%</span></div>'
-                    + '<div class="sr-labels"><span>'+sl.leftLabel+'</span><span>'+sl.rightLabel+'</span></div>'
-                    + '<div class="slider-track" data-key="'+sl.key+'"><div class="slider-fill" style="width:'+pct+'%"></div><div class="slider-thumb" style="left:'+pct+'%"></div></div>'
-                    + '<div class="slider-desc">'+sl.description+'</div></div>';
+        // SLIDERS
+        var sliders=(c.sliders||[]).filter(function(s){ return c.currentStage>=s.minStage; });
+        if(sliders.length){
+            var inner='';
+            for(var si=0;si<sliders.length;si++){
+                var sl=sliders[si];
+                var sv=(c.sliderValues||{})[sl.key];
+                var val=pendingSliders[sl.key]!==undefined?pendingSliders[sl.key]:(sv!==undefined?sv:sl.default);
+                var pct3=val;
+                var zoneState=getZoneState(val,sl.zones);
+                var valClass='sr-val '+(zoneState==='ok'?'val-ok':zoneState==='caution'?'val-caution':'val-danger');
+                var valLabel=zoneState==='ok'?Math.round(val*100)+'%':zoneState==='caution'?'⚠ CAUTION':'⛔ DANGER';
+                var warnMsg=getWarnMsg(val,sl.zones,sl);
+                var warnClass=zoneState==='ok'?'':'(zoneState)';
+                var styleZone=getStyleZone(sl,dominant);
+                var thumbClass='slider-thumb'+(zoneState==='caution'?' thumb-caution':zoneState==='danger'?' thumb-danger':'');
+                var gradient=buildZoneGradient(sl.zones);
+
+                // Style zone overlay dimensions
+                var szLeft='',szWidth='',szShow=false;
+                if(styleZone){
+                    szLeft=(styleZone[0]*100).toFixed(1)+'%';
+                    szWidth=((styleZone[1]-styleZone[0])*100).toFixed(1)+'%';
+                    szShow=true;
+                }
+                var bs3=(DATA.buildStyles||{})[dominant]||{color:'#aaa',name:'Style'};
+
+                inner+='<div class="slider-row" data-slider="'+sl.key+'">'
+                    +'<div class="sr-top"><span class="sr-icon">'+sl.icon+'</span>'
+                    +'<span class="sr-name">'+sl.name+'</span>'
+                    +'<span class="'+valClass+'" id="srv_'+sl.key+'">'+valLabel+'</span></div>'
+                    +'<div class="sr-labels"><span>'+sl.leftLabel+'</span><span>'+sl.rightLabel+'</span></div>'
+                    +'<div class="slider-track" data-key="'+sl.key+'">'
+                    +'<div class="slider-zones" style="background:'+gradient+'">'
+                    +(szShow?'<div class="style-zone-overlay" style="left:'+szLeft+';width:'+szWidth+';background:'+bs3.color+';opacity:.20;border:1px solid '+bs3.color+';border-radius:0"></div>':'')
+                    +'</div>'
+                    +'<div class="slider-fill" style="width:'+(pct3*100).toFixed(1)+'%"></div>'
+                    +'<div class="'+thumbClass+'" style="left:'+(pct3*100).toFixed(1)+'%"></div>'
+                    +'</div>'
+                    +(szShow?'<div class="style-zone-legend"><div class="szl-dot" style="background:'+bs3.color+'"></div><span>'+bs3.name+' recommended zone</span></div>':'')
+                    +'<div class="sr-warn'+(warnMsg?(' '+(zoneState==='caution'?'caution':'danger')):'')
+                    +'" id="srw_'+sl.key+'">'+(warnMsg||'')+'</div>'
+                    +'<div class="slider-desc">'+sl.description+'</div></div>';
             }
-            html += '<div class="slider-section fade"><div class="ss-title">Tuning Adjustments</div>'+inner
-                + '<div class="slider-actions"><button class="btn-s save" onclick="saveSliders()">Save Settings</button>'
-                + '<button class="btn-s reset" onclick="resetSliders()">Reset Defaults</button></div></div>';
+            html+='<div class="slider-section fade"><div class="ss-title">Tuning Adjustments</div>'+inner
+                +'<div class="slider-actions">'
+                +'<button class="btn-s save" onclick="saveSliders()">Save Settings</button>'
+                +'<button class="btn-s reset" onclick="resetSliders()">Reset Defaults</button>'
+                +'</div></div>';
         }
 
-        // ── Upgrade button ──
-        if (!isMax) {
-            var req = c.nextReq;
-            if (req) {
-                var v = variants[c.currentVariant] || {};
-                var price = Math.round((req.money * (v.surcharge || 1)) / 100) * 100;
-                var canM = DATA.playerCash >= price;
-                var hasP = req.playerHas !== undefined ? req.playerHas >= req.partAmount : true;
-                var canBuy = canM && hasP;
-
-                html += '<div class="upgrade-section"><div class="us-label">Upgrade to Stage '+(c.currentStage + 1)+'</div>'
-                    + '<div class="us-cost"><div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price)+'</span></div>'
-                    + '<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'+(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName || capitalize(req.partType))+'</span></div>'
-                    + '</div><button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
-                    + (canBuy ? 'Install Stage '+(c.currentStage+1) : 'Not enough resources') + '</button></div>';
+        // UPGRADE BUTTON
+        if(!isMax&&!isCapped){
+            var req2=c.nextReq;
+            if(req2){
+                var v4=variants[c.currentVariant]||{};
+                var price3=Math.round(((req2.money*(v4.surcharge||1))/100)*100);
+                var canM2=DATA.playerCash>=price3;
+                var hasP2=req2.playerHas!==undefined?req2.playerHas>=req2.partAmount:true;
+                var canBuy2=canM2&&hasP2;
+                html+='<div class="upgrade-section"><div class="us-label">Upgrade to Stage '+(c.currentStage+1)+'</div>'
+                    +'<div class="us-cost">'
+                    +'<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM2?'has':'miss')+'">$'+fmt(price3)+'</span></div>'
+                    +'<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP2?'has':'miss')+'">'
+                    +(req2.playerHas!==undefined?req2.playerHas:'?')+'/'+req2.partAmount+' '+(req2.partName||req2.partType)+'</span></div>'
+                    +'</div>'
+                    +'<button class="btn-upgrade '+(canBuy2?'ready':'locked')+'" '+(canBuy2?'onclick="purchaseUpgrade()"':'disabled')+'>'
+                    +(canBuy2?'Install Stage '+(c.currentStage+1):'Not enough resources')+'</button></div>';
             }
+        } else if(isCapped){
+            html+='<div class="upgrade-section"><button class="btn-upgrade capped">PI CLASS CAP — Upgrade Vehicle Grade</button></div>';
         } else {
-            html += '<div class="upgrade-section"><button class="btn-upgrade maxed">★ Fully Upgraded ★</button></div>';
+            html+='<div class="upgrade-section"><button class="btn-upgrade maxed">★ Fully Upgraded ★</button></div>';
         }
     }
 
-    panel.innerHTML = html;
+    panel.innerHTML=html;
     bindSliders();
 }
 
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function capitalize(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):''; }
 
-function pickBrand(vk) {
-    selBrand = vk;
-    renderPerfMain();
+function pickBrand(vk){
+    selBrand=vk; renderPerfMain();
     mp_trigger('cef:tuning:previewVariant', selCat, vk);
 }
 
-function purchaseUpgrade() {
-    if (!selCat) return;
-    var c = DATA.categories[selCat];
-    if (!c) return;
-    var vk = c.currentStage === 0 ? selBrand : c.currentVariant;
-    if (!vk) return;
+function purchaseUpgrade(){
+    if(!selCat) return;
+    var c=DATA.categories[selCat]; if(!c) return;
+    var vk=c.currentStage===0?selBrand:c.currentVariant;
+    if(!vk) return;
     mp_trigger('cef:tuning:perfUpgrade', selCat, vk);
 }
 
-function resetPartClick() {
-    if (resetPending) {
-        mp_trigger('cef:tuning:resetPart', selCat);
-        resetPending = false;
-    } else {
-        resetPending = true;
-        renderPerfMain();
-    }
+function resetPartClick(){
+    if(resetPending){ mp_trigger('cef:tuning:resetPart', selCat); resetPending=false; }
+    else{ resetPending=true; renderPerfMain(); }
 }
 
-// ═════════════════════════════════════════════════════════════
-// SLIDERS
-// ═════════════════════════════════════════════════════════════
-function bindSliders() {
-    $$('.slider-track:not(.stance-slider)').forEach(function(track) {
-        var key = track.dataset.key;
-        function upd(e) {
-            var r = track.getBoundingClientRect();
-            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-            pendingSliders[key] = Math.round(p * 100) / 100;
-            track.querySelector('.slider-fill').style.width = (p*100)+'%';
-            track.querySelector('.slider-thumb').style.left = (p*100)+'%';
-            track.closest('.slider-row').querySelector('.sr-val').textContent = Math.round(p*100)+'%';
-            if (selCat) {
-                var all = Object.assign({}, DATA.categories[selCat].sliderValues||{}, pendingSliders);
+// ═════════════════════════════════════════════════════════════════════════════
+// SLIDERS — bind mouse drag + live zone updates
+// ═════════════════════════════════════════════════════════════════════════════
+function bindSliders(){
+    $$('.slider-track:not(.stance-slider)').forEach(function(track){
+        var key=track.dataset.key;
+        if(!key) return;
+        var c=DATA.categories[selCat]; if(!c) return;
+        var sl=(c.sliders||[]).find(function(s){ return s.key===key; });
+        var dominant=(DATA.tendency||{}).dominant||'balanced';
+
+        function upd(e){
+            var r=track.getBoundingClientRect();
+            var p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+            pendingSliders[key]=Math.round(p*100)/100;
+
+            // Update fill and thumb
+            track.querySelector('.slider-fill').style.width=(p*100)+'%';
+            track.querySelector('.slider-thumb').style.left=(p*100)+'%';
+
+            // Update zone-based value label
+            var zoneState=sl?getZoneState(p,sl.zones):'ok';
+            var valLabel=zoneState==='ok'?Math.round(p*100)+'%':zoneState==='caution'?'⚠ CAUTION':'⛔ DANGER';
+            var valEl=document.getElementById('srv_'+key);
+            if(valEl){
+                valEl.textContent=valLabel;
+                valEl.className='sr-val '+(zoneState==='ok'?'val-ok':zoneState==='caution'?'val-caution':'val-danger');
+            }
+
+            // Update thumb color class
+            var thumb=track.querySelector('.slider-thumb');
+            thumb.className='slider-thumb'+(zoneState==='caution'?' thumb-caution':zoneState==='danger'?' thumb-danger':'');
+
+            // Update warn message
+            var warnEl=document.getElementById('srw_'+key);
+            if(warnEl&&sl){
+                var warnMsg=getWarnMsg(p,sl.zones,sl);
+                if(warnMsg){
+                    warnEl.textContent=warnMsg;
+                    warnEl.className='sr-warn '+(zoneState==='caution'?'caution':'danger');
+                } else {
+                    warnEl.textContent='';
+                    warnEl.className='sr-warn';
+                }
+            }
+
+            // Live preview
+            if(selCat){
+                var all=Object.assign({},c.sliderValues||{},pendingSliders);
                 mp_trigger('cef:tuning:previewSliders', selCat, JSON.stringify(all));
             }
         }
-        track.addEventListener('mousedown', function(e) {
+
+        track.addEventListener('mousedown',function(e){
             upd(e);
-            var mv = function(ev) { upd(ev); };
-            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
-            document.addEventListener('mousemove', mv);
-            document.addEventListener('mouseup', up);
+            var mv=function(ev){ upd(ev); };
+            var up=function(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+            document.addEventListener('mousemove',mv);
+            document.addEventListener('mouseup',up);
         });
     });
 }
 
-function saveSliders() {
-    if (!selCat || !Object.keys(pendingSliders).length) return;
-    var merged = Object.assign({}, DATA.categories[selCat].sliderValues||{}, pendingSliders);
+function saveSliders(){
+    if(!selCat||!Object.keys(pendingSliders).length) return;
+    var merged=Object.assign({},DATA.categories[selCat].sliderValues||{},pendingSliders);
     mp_trigger('cef:tuning:saveSliders', selCat, JSON.stringify(merged));
-    DATA.categories[selCat].sliderValues = merged;
-    pendingSliders = {};
-    showToast('Tuning settings saved!', 'success');
+    DATA.categories[selCat].sliderValues=merged;
+    pendingSliders={};
+    showToast('Tuning settings saved!','success');
 }
 
-function resetSliders() {
-    if (!selCat) return;
-    var c = DATA.categories[selCat];
-    pendingSliders = {};
-    for (var si = 0; si < (c.sliders||[]).length; si++) {
-        var sl = c.sliders[si];
-        if (c.currentStage >= sl.minStage) pendingSliders[sl.key] = sl.default;
+function resetSliders(){
+    if(!selCat) return;
+    var c=DATA.categories[selCat];
+    pendingSliders={};
+    for(var si=0;si<(c.sliders||[]).length;si++){
+        var sl=c.sliders[si];
+        if(c.currentStage>=sl.minStage) pendingSliders[sl.key]=sl.default;
     }
     renderPerfMain();
-    mp_trigger('cef:tuning:previewSliders', selCat, JSON.stringify(Object.assign({}, c.sliderValues||{}, pendingSliders)));
+    mp_trigger('cef:tuning:previewSliders', selCat, JSON.stringify(Object.assign({},c.sliderValues||{},pendingSliders)));
 }
 
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // VISUAL TAB
-// ═════════════════════════════════════════════════════════════
-function initVisual() {
-    if (!DATA || !DATA.visualData) return;
-    renderVisSidebar();
-    renderVisMain();
-}
+// ═════════════════════════════════════════════════════════════════════════════
+function initVisual(){ if(!DATA||!DATA.visualData) return; renderVisSidebar(); renderVisMain(); }
 
-function renderVisSidebar() {
-    var el = $('#visSidebar'); el.innerHTML = '';
-    var grps = {body:'Body',exterior:'Exterior',enginebay:'Engine Bay',interior:'Interior',livery:'Livery',other:'Other'};
-    for (var g in grps) {
-        var any = false;
-        for (var k in DATA.visualData) { if (DATA.visualData[k].group === g && (DATA.visualData[k].options||0) > 0) { any = true; break; } }
-        if (!any) continue;
-        var h = document.createElement('div'); h.className = 'group-label'; h.textContent = grps[g]; el.appendChild(h);
-        for (var k in DATA.visualData) {
-            var m = DATA.visualData[k];
-            if (m.group !== g || (m.options||0) <= 0) continue;
-            var r = document.createElement('div'); r.className = 'cat-item' + (k === selVisCat ? ' active' : '');
-            var installed = m.current != null && m.current >= 0;
-            r.innerHTML = '<div class="cat-info"><span class="cat-name">'+m.name+'</span>'
-                + '<div class="cat-meta"><span class="cat-stage">'+m.options+' options'+(installed ? ' · ✓' : '')+'</span></div></div>';
-            (function(key) {
-                r.addEventListener('click', function() { selVisCat = key; selVisIdx = -2; renderVisSidebar(); renderVisMain(); });
-            })(k);
+function renderVisSidebar(){
+    var el=$('#visSidebar'); el.innerHTML='';
+    var grps={body:'Body',exterior:'Exterior',enginebay:'Engine Bay',interior:'Interior',livery:'Livery',other:'Other'};
+    for(var g in grps){
+        var any=false;
+        for(var k in DATA.visualData){ if(DATA.visualData[k].group===g&&(DATA.visualData[k].options||0)>0){ any=true; break; } }
+        if(!any) continue;
+        var h=document.createElement('div'); h.className='group-label'; h.textContent=grps[g]; el.appendChild(h);
+        for(var k in DATA.visualData){
+            var m=DATA.visualData[k];
+            if(m.group!==g||(m.options||0)<=0) continue;
+            var r=document.createElement('div'); r.className='cat-item'+(k===selVisCat?' active':'');
+            var installed=m.current!=null&&m.current>=0;
+            r.innerHTML='<div class="cat-info"><span class="cat-name">'+m.name+'</span>'
+                +'<div class="cat-meta"><span class="cat-stage">'+m.options+' options'+(installed?' · ✓':'')+'</span></div></div>';
+            (function(key){ r.addEventListener('click',function(){ selVisCat=key; selVisIdx=-2; renderVisSidebar(); renderVisMain(); }); })(k);
             el.appendChild(r);
         }
     }
 }
 
-function renderVisMain() {
-    var panel = $('#visMain');
-    if (!selVisCat || !DATA.visualData) { panel.innerHTML = '<div class="empty-state">Select a mod type</div>'; return; }
-    var vd = DATA.visualData[selVisCat];
-    if (!vd) return;
-    var cnt = vd.options || 0;
-    var currentInstalled = vd.current != null ? vd.current : -1;
-
-    var html = '<div class="opts-header"><div class="opts-title">'+vd.name+'</div><div class="opts-sub">'+cnt+' options · $'+fmt(vd.price||0)+' each</div></div>';
-    html += '<div class="option-grid">';
-    for (var i = -1; i < cnt; i++) {
-        var label = i === -1 ? 'Stock' : 'Option '+(i+1);
-        var isInstalled = i === currentInstalled;
-        var isPreviewing = i === selVisIdx && !isInstalled;
-        var cls = 'opt-card';
-        var badge = '';
-        if (isInstalled) { cls += ' installed'; badge = '<span class="oc-badge">✓ OWNED</span>'; }
-        else if (isPreviewing) { cls += ' previewing'; badge = '<span class="oc-badge">👁 PREVIEW</span>'; }
-
-        html += '<div class="'+cls+'" onclick="prevVisual('+vd.modType+','+i+')">'
-            + badge
-            + '<span class="oc-name">'+label+'</span>'
-            + (i > -1 ? (isInstalled ? '<span class="oc-price" style="color:var(--txt3)">Owned</span>' : '<span class="oc-price">$'+fmt(vd.price||0)+'</span>') : '<span class="oc-price" style="color:var(--txt3)">Free</span>')
-            + '</div>';
+function renderVisMain(){
+    var panel=$('#visMain');
+    if(!selVisCat||!DATA.visualData){ panel.innerHTML='<div class="empty-state">Select a mod type</div>'; return; }
+    var vd=DATA.visualData[selVisCat]; if(!vd) return;
+    var cnt=vd.options||0; var curInstalled=vd.current!=null?vd.current:-1;
+    var html='<div class="opts-header"><div class="opts-title">'+vd.name+'</div>'
+        +'<div class="opts-sub">'+cnt+' options · $'+fmt(vd.price||0)+' each</div></div>';
+    html+='<div class="option-grid">';
+    for(var i=-1;i<cnt;i++){
+        var label=i===-1?'Stock':'Option '+(i+1);
+        var isInst=i===curInstalled;
+        var isPrev=i===selVisIdx&&!isInst;
+        var cls='opt-card'; var badge='';
+        if(isInst){ cls+=' installed'; badge='<span class="oc-badge">✓ OWNED</span>'; }
+        else if(isPrev){ cls+=' previewing'; badge='<span class="oc-badge">👁 PREVIEW</span>'; }
+        html+='<div class="'+cls+'" onclick="prevVisual('+vd.modType+','+i+')">'+badge
+            +'<span class="oc-name">'+label+'</span>'
+            +(i>-1?(isInst?'<span class="oc-price" style="color:var(--txt3)">Owned</span>':'<span class="oc-price">$'+fmt(vd.price||0)+'</span>')
+            :'<span class="oc-price" style="color:var(--txt3)">Free</span>')+'</div>';
     }
-    html += '</div>';
-
-    var canInstall = selVisIdx !== -2 && selVisIdx !== currentInstalled;
-    var btnLabel = selVisIdx === currentInstalled ? 'Already Installed' : selVisIdx === -2 ? 'Select an Option' : 'Install Selected';
-    var btnClass = canInstall ? 'ready' : 'locked';
-
-    html += '<div class="action-footer"><button class="btn-upgrade '+btnClass+'" '+(canInstall?'onclick="instVisual()"':'disabled')+'>'+btnLabel+'</button></div>';
-    panel.innerHTML = html;
+    html+='</div>';
+    var canInstall=selVisIdx!==-2&&selVisIdx!==curInstalled;
+    html+='<div class="action-footer"><button class="btn-upgrade '+(canInstall?'ready':'locked')+'" '
+        +(canInstall?'onclick="instVisual()"':'disabled')+'>'
+        +(canInstall?'Install Selected':selVisIdx===-2?'Select an Option':'Already Installed')+'</button></div>';
+    panel.innerHTML=html;
 }
 
-function prevVisual(modType, idx) {
-    selVisIdx = idx;
-    mp_trigger('cef:tuning:previewVisual', modType, idx);
-    renderVisMain();
-    showToast('Previewing '+(idx === -1 ? 'Stock' : 'Option '+(idx+1)), 'info', 1200);
+function prevVisual(modType,idx){ selVisIdx=idx; mp_trigger('cef:tuning:previewVisual',modType,idx); renderVisMain(); showToast('Previewing '+(idx===-1?'Stock':'Option '+(idx+1)),'info',1200); }
+function instVisual(){
+    if(!selVisCat) return; var vd=DATA.visualData[selVisCat]; if(!vd) return;
+    if(selVisIdx===(vd.current!=null?vd.current:-1)){ showToast('Already installed!','warn'); return; }
+    mp_trigger('cef:tuning:visualMod',vd.modType,selVisIdx);
 }
 
-function instVisual() {
-    if (!selVisCat) return;
-    var vd = DATA.visualData[selVisCat];
-    if (!vd) return;
-    if (selVisIdx === (vd.current != null ? vd.current : -1)) {
-        showToast('Already installed!', 'warn');
-        return;
-    }
-    mp_trigger('cef:tuning:visualMod', vd.modType, selVisIdx);
-}
-
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // PAINT TAB
-// ═════════════════════════════════════════════════════════════
-function initPaint() {
-    if (!DATA || !DATA.paintData) return;
-    var cur = DATA.paintData.current || {};
-    paintState = {
-        prim: cur.primRGB || {r:0,g:0,b:0},
-        sec: cur.secRGB || {r:0,g:0,b:0},
-        type: cur.paintType || 0,
-        pearl: cur.pearlRGB || {r:254,g:254,b:254}
-    };
-    selColorIdx = null;
-    rgbState = {r:128,g:128,b:128};
-    renderPaintSidebar();
-    renderPaintMain();
+// ═════════════════════════════════════════════════════════════════════════════
+function initPaint(){
+    if(!DATA||!DATA.paintData) return;
+    var cur=DATA.paintData.current||{};
+    paintState={prim:cur.primRGB||{r:0,g:0,b:0},sec:cur.secRGB||{r:0,g:0,b:0},type:cur.paintType||0};
+    selColorIdx=null; rgbState={r:128,g:128,b:128};
+    renderPaintSidebar(); renderPaintMain();
 }
 
-function renderPaintSidebar() {
-    var el = $('#paintSidebar'); el.innerHTML = '';
-    var h = document.createElement('div'); h.className = 'group-label'; h.textContent = 'Paint'; el.appendChild(h);
-    var items = [
-        {k:'primary',n:'Primary Color'},
-        {k:'secondary',n:'Secondary Color'},
-        {k:'custom',n:'Custom RGB'},
-        {k:'pearlescent',n:'Pearlescent'},
-        {k:'type',n:'Paint Finish'}
-    ];
-    for (var ti = 0; ti < items.length; ti++) {
-        var t = items[ti];
-        var r = document.createElement('div'); r.className = 'cat-item' + (t.k === paintTarget ? ' active' : '');
-        r.innerHTML = '<div class="cat-info"><span class="cat-name">'+t.n+'</span></div>';
-        (function(key) {
-            r.addEventListener('click', function() { paintTarget = key; selColorIdx = null; renderPaintSidebar(); renderPaintMain(); });
-        })(t.k);
+function renderPaintSidebar(){
+    var el=$('#paintSidebar'); el.innerHTML='';
+    var h=document.createElement('div'); h.className='group-label'; h.textContent='Paint'; el.appendChild(h);
+    var items=[{k:'primary',n:'Primary Color'},{k:'secondary',n:'Secondary Color'},{k:'custom',n:'Custom RGB'},{k:'pearlescent',n:'Pearlescent'},{k:'type',n:'Paint Finish'}];
+    for(var ti=0;ti<items.length;ti++){
+        var t=items[ti]; var r=document.createElement('div');
+        r.className='cat-item'+(t.k===paintTarget?' active':'');
+        r.innerHTML='<div class="cat-info"><span class="cat-name">'+t.n+'</span></div>';
+        (function(key){ r.addEventListener('click',function(){ paintTarget=key; selColorIdx=null; renderPaintSidebar(); renderPaintMain(); }); })(t.k);
         el.appendChild(r);
     }
 }
 
-function renderPaintMain() {
-    var panel = $('#paintMain');
-    if (!DATA || !DATA.paintData) return;
-
-    if (paintTarget === 'type') {
-        var html = '<div class="opts-header"><div class="opts-title">Paint Finish</div><div class="opts-sub">Change the paint type</div></div>';
-        html += '<div class="option-grid">';
-        var types = DATA.paintData.types || [];
-        for (var ti = 0; ti < types.length; ti++) {
-            var t = types[ti];
-            var sel = t.id === paintState.type;
-            html += '<div class="opt-card'+(sel?' selected':'')+'" onclick="setPaintType('+t.id+')">'
-                + '<span class="oc-name">'+(t.icon||'')+' '+t.name+'</span>'
-                + '<span class="oc-price">$'+fmt(DATA.paintData.typePrice||0)+'</span></div>';
+function renderPaintMain(){
+    var panel=$('#paintMain'); if(!DATA||!DATA.paintData) return;
+    if(paintTarget==='type'){
+        var html='<div class="opts-header"><div class="opts-title">Paint Finish</div><div class="opts-sub">Change the paint type</div></div>';
+        html+='<div class="option-grid">';
+        var types=DATA.paintData.types||[];
+        for(var ti=0;ti<types.length;ti++){
+            var t=types[ti]; var sel=t.id===paintState.type;
+            html+='<div class="opt-card'+(sel?' selected':'')
+                +'" onclick="setPaintType('+t.id+')">'
+                +'<span class="oc-name">'+(t.icon||'')+' '+t.name+'</span>'
+                +'<span class="oc-price">$'+fmt(DATA.paintData.typePrice||0)+'</span></div>';
         }
-        html += '</div>';
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyPaint(\'paintType\')">Apply Finish</button></div>';
-        panel.innerHTML = html;
-        return;
+        html+='</div><div class="action-footer"><button class="btn-upgrade ready" onclick="applyPaint(\'paintType\')">Apply Finish</button></div>';
+        panel.innerHTML=html; return;
     }
-
-    if (paintTarget === 'custom') {
-        var html = '<div class="opts-header"><div class="opts-title">Custom RGB Color</div><div class="opts-sub">Set any color · $'+fmt(DATA.paintData.customPrice||0)+'</div></div>';
-        html += '<div class="rgb-section">';
-        html += '<div class="rgb-title">Adjust Colors</div>';
-        var channels = [{k:'r',label:'R',color:'#ff4444'},{k:'g',label:'G',color:'#44cc44'},{k:'b',label:'B',color:'#4488ff'}];
-        for (var ci = 0; ci < channels.length; ci++) {
-            var ch = channels[ci];
-            var pct = (rgbState[ch.k]/255)*100;
-            html += '<div class="rgb-row"><span class="rgb-label" style="color:'+ch.color+'">'+ch.label+'</span>'
-                + '<div class="rgb-slider-wrap" data-rgb="'+ch.k+'"><div class="rgb-fill" style="width:'+pct+'%;background:'+ch.color+';opacity:.5"></div><div class="rgb-thumb" style="left:'+pct+'%"></div></div>'
-                + '<span class="rgb-val">'+rgbState[ch.k]+'</span></div>';
+    if(paintTarget==='custom'){
+        var html='<div class="opts-header"><div class="opts-title">Custom RGB</div><div class="opts-sub">Set any color · $'+fmt(DATA.paintData.customPrice||0)+'</div></div>';
+        html+='<div class="rgb-section"><div class="rgb-title">Adjust Color</div>';
+        var channels=[{k:'r',label:'R',color:'#ff4444'},{k:'g',label:'G',color:'#44cc44'},{k:'b',label:'B',color:'#4488ff'}];
+        for(var ci=0;ci<channels.length;ci++){
+            var ch=channels[ci]; var pct=(rgbState[ch.k]/255)*100;
+            html+='<div class="rgb-row"><span class="rgb-label" style="color:'+ch.color+'">'+ch.label+'</span>'
+                +'<div class="rgb-slider-wrap" data-rgb="'+ch.k+'">'
+                +'<div class="rgb-fill" style="width:'+pct+'%;background:'+ch.color+';opacity:.5"></div>'
+                +'<div class="rgb-thumb" style="left:'+pct+'%"></div></div>'
+                +'<span class="rgb-val">'+rgbState[ch.k]+'</span></div>';
         }
-        html += '<div class="rgb-preview" style="background:rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')"></div>';
-        html += '<div class="rgb-hex">#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2)+'</div>';
-        html += '</div>';
-        html += '<div class="option-grid" style="padding-top:8px">';
-        html += '<div class="opt-card" onclick="applyRGBToPrimary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Primary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div>';
-        html += '<div class="opt-card" onclick="applyRGBToSecondary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Secondary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div>';
-        html += '</div>';
-        panel.innerHTML = html;
-        bindRGBSliders();
-        return;
+        html+='<div class="rgb-preview" style="background:rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')"></div>';
+        html+='<div class="rgb-hex">#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2)+'</div></div>';
+        html+='<div class="option-grid" style="padding-top:8px">'
+            +'<div class="opt-card" onclick="applyRGBToPrimary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Primary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div>'
+            +'<div class="opt-card" onclick="applyRGBToSecondary()" style="width:calc(50% - 4px)"><span class="oc-name">Set as Secondary</span><span class="oc-price">$'+fmt(DATA.paintData.customPrice||0)+'</span></div></div>';
+        panel.innerHTML=html; bindRGBSliders(); return;
     }
-
-    if (paintTarget === 'pearlescent') {
-        var pearls = DATA.paintData.pearls || [];
-        var html = '<div class="opts-header"><div class="opts-title">Pearlescent Color</div>'
-            + '<div class="opts-sub">' + (paintState.type === 2 ? 'Choose pearl overlay · $'+fmt(DATA.paintData.typePrice||0) : '⚠ Set paint finish to Pearl first') + '</div></div>';
-        if (pearls.length) {
-            html += '<div class="color-grid">';
-            for (var i = 0; i < pearls.length; i++) {
-                var c = pearls[i];
-                var sel = selColorIdx === i;
-                html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickPearl('+i+')" title="'+c.name+'"></div>';
-            }
-            html += '</div>';
-            if (selColorIdx !== null && pearls[selColorIdx]) {
-                var c = pearls[selColorIdx];
-                html += '<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.typePrice||0)+'</div></div>';
-            }
-            html += '<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null&&paintState.type===2?'ready':'locked')+'" '+(selColorIdx!==null&&paintState.type===2?'onclick="applyPearl()"':'disabled')+'>Apply Pearlescent</button></div>';
-        } else {
-            html += '<div class="empty-state">Pearl colors not available</div>';
+    if(paintTarget==='pearlescent'){
+        var pearls=DATA.paintData.pearls||[];
+        var html='<div class="opts-header"><div class="opts-title">Pearlescent</div>'
+            +'<div class="opts-sub">'+(paintState.type===2?'Pick overlay · $'+fmt(DATA.paintData.typePrice||0):'Set paint finish to Pearl first')+'</div></div>';
+        html+='<div class="color-grid">';
+        for(var i=0;i<pearls.length;i++){
+            var c=pearls[i]; var sel=selColorIdx===i;
+            html+='<div class="color-swatch'+(sel?' selected':'')
+                +'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickPearl('+i+')" title="'+c.name+'"></div>';
         }
-        panel.innerHTML = html;
-        return;
-    }
-
-    // Primary or Secondary
-    var isPrimary = paintTarget === 'primary';
-    var html = '<div class="opts-header"><div class="opts-title">'+(isPrimary?'Primary':'Secondary')+' Color</div>'
-        + '<div class="opts-sub">Choose a color · $'+fmt(DATA.paintData.presetPrice||0)+'</div></div>';
-    html += '<div class="color-grid">';
-    var presets = DATA.paintData.presets || [];
-    for (var i = 0; i < presets.length; i++) {
-        var c = presets[i];
-        var sel = selColorIdx === i;
-        html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickColor('+i+')" title="'+c.name+'"></div>';
-    }
-    html += '</div>';
-    if (selColorIdx !== null && presets[selColorIdx]) {
-        var c = presets[selColorIdx];
-        html += '<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.presetPrice||0)+'</div></div>';
-    }
-    html += '<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null?'ready':'locked')+'" '+(selColorIdx!==null?'onclick="applyPaint(\'preset\')"':'disabled')+'>Apply Color</button></div>';
-    panel.innerHTML = html;
-}
-
-function pickColor(i) {
-    selColorIdx = i;
-    var c = (DATA.paintData.presets||[])[i]; if (!c) return;
-    if (paintTarget === 'primary') paintState.prim = {r:c.r,g:c.g,b:c.b};
-    else paintState.sec = {r:c.r,g:c.g,b:c.b};
-    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
-    renderPaintMain();
-}
-
-function setPaintType(id) {
-    paintState.type = id;
-    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
-    renderPaintMain();
-}
-
-function pickPearl(i) {
-    selColorIdx = i;
-    var c = (DATA.paintData.pearls||[])[i]; if (!c) return;
-    paintState.pearl = {r:c.r,g:c.g,b:c.b};
-    mp_trigger('cef:tuning:previewPearl', c.gtaIndex);
-    renderPaintMain();
-}
-
-function applyPearl() {
-    if (selColorIdx === null || paintState.type !== 2) return;
-    var c = (DATA.paintData.pearls||[])[selColorIdx]; if (!c) return;
-    var colorData = { primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, pearlRGB: {r:c.r,g:c.g,b:c.b}, pearlIndex: c.gtaIndex, type: 'paintType' };
-    mp_trigger('cef:tuning:applyColor', JSON.stringify(colorData));
-    showToast('Pearlescent applied!', 'success');
-}
-
-function applyPaint(type) {
-    var colorData = { primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: type || 'preset' };
-    mp_trigger('cef:tuning:applyColor', JSON.stringify(colorData));
-    showToast('Color applied!', 'success');
-}
-
-// ═════════════════════════════════════════════════════════════
-// CUSTOM RGB PICKER
-// ═════════════════════════════════════════════════════════════
-function bindRGBSliders() {
-    $$('.rgb-slider-wrap').forEach(function(wrap) {
-        var ch = wrap.dataset.rgb;
-        function upd(e) {
-            var r = wrap.getBoundingClientRect();
-            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-            rgbState[ch] = Math.round(p * 255);
-            wrap.querySelector('.rgb-fill').style.width = (p*100)+'%';
-            wrap.querySelector('.rgb-thumb').style.left = (p*100)+'%';
-            wrap.closest('.rgb-row').querySelector('.rgb-val').textContent = rgbState[ch];
-            var prev = document.querySelector('.rgb-preview');
-            if (prev) prev.style.background = 'rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')';
-            var hex = document.querySelector('.rgb-hex');
-            if (hex) hex.textContent = '#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2);
-            mp_trigger('cef:tuning:previewColor', rgbState.r, rgbState.g, rgbState.b, paintState.sec.r, paintState.sec.g, paintState.sec.b, paintState.type);
+        html+='</div>';
+        if(selColorIdx!==null&&pearls[selColorIdx]){
+            var c=pearls[selColorIdx];
+            html+='<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.typePrice||0)+'</div></div>';
         }
-        wrap.addEventListener('mousedown', function(e) {
-            upd(e);
-            var mv = function(ev) { upd(ev); };
-            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
-            document.addEventListener('mousemove', mv);
-            document.addEventListener('mouseup', up);
-        });
+        html+='<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null&&paintState.type===2?'ready':'locked')+'" '
+            +(selColorIdx!==null&&paintState.type===2?'onclick="applyPearl()"':'disabled')+'>Apply Pearlescent</button></div>';
+        panel.innerHTML=html; return;
+    }
+    var isPrimary=paintTarget==='primary';
+    var html='<div class="opts-header"><div class="opts-title">'+(isPrimary?'Primary':'Secondary')+' Color</div>'
+        +'<div class="opts-sub">$'+fmt(DATA.paintData.presetPrice||0)+' per color</div></div>';
+    html+='<div class="color-grid">';
+    var presets=DATA.paintData.presets||[];
+    for(var i=0;i<presets.length;i++){
+        var c=presets[i]; var sel=selColorIdx===i;
+        html+='<div class="color-swatch'+(sel?' selected':'')
+            +'" style="background:rgb('+c.r+','+c.g+','+c.b+')" onclick="pickColor('+i+')" title="'+c.name+'"></div>';
+    }
+    html+='</div>';
+    if(selColorIdx!==null&&presets[selColorIdx]){
+        var c=presets[selColorIdx];
+        html+='<div class="color-info"><div class="ci-name">'+c.name+'</div><div class="ci-price">$'+fmt(DATA.paintData.presetPrice||0)+'</div></div>';
+    }
+    html+='<div class="action-footer"><button class="btn-upgrade '+(selColorIdx!==null?'ready':'locked')+'" '
+        +(selColorIdx!==null?'onclick="applyPaint(\'preset\')"':'disabled')+'>Apply Color</button></div>';
+    panel.innerHTML=html;
+}
+
+function pickColor(i){ selColorIdx=i; var c=(DATA.paintData.presets||[])[i]; if(!c) return; if(paintTarget==='primary') paintState.prim={r:c.r,g:c.g,b:c.b}; else paintState.sec={r:c.r,g:c.g,b:c.b}; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,paintState.sec.r,paintState.sec.g,paintState.sec.b,paintState.type); renderPaintMain(); }
+function setPaintType(id){ paintState.type=id; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,paintState.sec.r,paintState.sec.g,paintState.sec.b,paintState.type); renderPaintMain(); }
+function pickPearl(i){ selColorIdx=i; var c=(DATA.paintData.pearls||[])[i]; if(!c) return; mp_trigger('cef:tuning:previewPearl',c.gtaIndex); renderPaintMain(); }
+function applyPearl(){ if(selColorIdx===null||paintState.type!==2) return; var c=(DATA.paintData.pearls||[])[selColorIdx]; if(!c) return; mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,pearlRGB:{r:c.r,g:c.g,b:c.b},pearlIndex:c.gtaIndex,type:'paintType'})); showToast('Pearlescent applied!','success'); }
+function applyPaint(type){ mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:type||'preset'})); showToast('Color applied!','success'); }
+function applyRGBToPrimary(){ paintState.prim={r:rgbState.r,g:rgbState.g,b:rgbState.b}; mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:'custom'})); showToast('Custom primary applied!','success'); }
+function applyRGBToSecondary(){ paintState.sec={r:rgbState.r,g:rgbState.g,b:rgbState.b}; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,rgbState.r,rgbState.g,rgbState.b,paintState.type); mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:'custom'})); showToast('Custom secondary applied!','success'); }
+
+function bindRGBSliders(){
+    $$('.rgb-slider-wrap').forEach(function(wrap){
+        var ch=wrap.dataset.rgb;
+        function upd(e){ var r=wrap.getBoundingClientRect(); var p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); rgbState[ch]=Math.round(p*255); wrap.querySelector('.rgb-fill').style.width=(p*100)+'%'; wrap.querySelector('.rgb-thumb').style.left=(p*100)+'%'; wrap.closest('.rgb-row').querySelector('.rgb-val').textContent=rgbState[ch]; var prev=document.querySelector('.rgb-preview'); if(prev) prev.style.background='rgb('+rgbState.r+','+rgbState.g+','+rgbState.b+')'; var hex=document.querySelector('.rgb-hex'); if(hex) hex.textContent='#'+('0'+rgbState.r.toString(16)).slice(-2)+('0'+rgbState.g.toString(16)).slice(-2)+('0'+rgbState.b.toString(16)).slice(-2); mp_trigger('cef:tuning:previewColor',rgbState.r,rgbState.g,rgbState.b,paintState.sec.r,paintState.sec.g,paintState.sec.b,paintState.type); }
+        wrap.addEventListener('mousedown',function(e){ upd(e); var mv=function(ev){ upd(ev); }; var up=function(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); }; document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
     });
 }
 
-function applyRGBToPrimary() {
-    paintState.prim = {r:rgbState.r, g:rgbState.g, b:rgbState.b};
-    mp_trigger('cef:tuning:applyColor', JSON.stringify({ primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: 'custom' }));
-    showToast('Custom primary color applied!', 'success');
-}
-
-function applyRGBToSecondary() {
-    paintState.sec = {r:rgbState.r, g:rgbState.g, b:rgbState.b};
-    mp_trigger('cef:tuning:previewColor', paintState.prim.r, paintState.prim.g, paintState.prim.b, rgbState.r, rgbState.g, rgbState.b, paintState.type);
-    mp_trigger('cef:tuning:applyColor', JSON.stringify({ primRGB: paintState.prim, secRGB: paintState.sec, paintType: paintState.type, type: 'custom' }));
-    showToast('Custom secondary color applied!', 'success');
-}
-
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // SPECIAL TAB
-// ═════════════════════════════════════════════════════════════
-function initSpecial() {
-    if (!DATA || !DATA.specialData) return;
-    var sd = DATA.specialData;
-    if (sd.wheels && sd.wheels.current) { wheelType = sd.wheels.current.wheelType||0; selWheelIdx = sd.wheels.current.wheelIndex!=null?sd.wheels.current.wheelIndex:-1; wheelColorIdx = sd.wheels.current.wheelColor||-1; }
-    if (sd.xenon && sd.xenon.current) { xenonOn = !!sd.xenon.current.enabled; xenonColor = sd.xenon.current.colorId||-1; }
-    if (sd.neon && sd.neon.current) { neonMask = sd.neon.current.bitmask||0; neonColor = sd.neon.current.color||{r:255,g:255,b:255}; }
-    if (sd.smoke && sd.smoke.current) { smokeOn = !!sd.smoke.current.enabled; smokeColor = sd.smoke.current.color||{r:255,g:255,b:255}; }
-    if (sd.stance && sd.stance.current) { camberValue = sd.stance.current.camber||0; trackWidthValue = sd.stance.current.trackWidth||0; }
-    renderSpecSidebar();
-    renderSpecMain();
+// ═════════════════════════════════════════════════════════════════════════════
+function initSpecial(){
+    if(!DATA||!DATA.specialData) return;
+    var sd=DATA.specialData;
+    if(sd.wheels&&sd.wheels.current){ wheelType=sd.wheels.current.wheelType||0; selWheelIdx=sd.wheels.current.wheelIndex!=null?sd.wheels.current.wheelIndex:-1; wheelColorIdx=sd.wheels.current.wheelColor||-1; }
+    if(sd.xenon&&sd.xenon.current){ xenonOn=!!sd.xenon.current.enabled; xenonColor=sd.xenon.current.colorId||-1; }
+    if(sd.neon&&sd.neon.current){ neonMask=sd.neon.current.bitmask||0; neonColor=sd.neon.current.color||{r:255,g:255,b:255}; }
+    if(sd.smoke&&sd.smoke.current){ smokeOn=!!sd.smoke.current.enabled; smokeColor=sd.smoke.current.color||{r:255,g:255,b:255}; }
+    if(sd.stance&&sd.stance.current){ camberValue=sd.stance.current.camber||0; trackWidthValue=sd.stance.current.trackWidth||0; }
+    renderSpecSidebar(); renderSpecMain();
 }
 
-function renderSpecSidebar() {
-    var el = $('#specSidebar'); el.innerHTML = '';
-    var h = document.createElement('div'); h.className = 'group-label'; h.textContent = 'Special Mods'; el.appendChild(h);
-    for (var k in DATA.specialData) {
-        var s = DATA.specialData[k];
-        var r = document.createElement('div'); r.className = 'cat-item' + (k === selSpecCat ? ' active' : '');
-        r.innerHTML = '<div class="cat-info"><span class="cat-name">'+(s.name || k)+'</span><div class="cat-meta"><span class="cat-stage">$'+fmt(s.price||0)+'</span></div></div>';
-        (function(key) {
-            r.addEventListener('click', function() { selSpecCat = key; selSpecOpt = null; renderSpecSidebar(); renderSpecMain(); });
-        })(k);
+function renderSpecSidebar(){
+    var el=$('#specSidebar'); el.innerHTML='';
+    var h=document.createElement('div'); h.className='group-label'; h.textContent='Special Mods'; el.appendChild(h);
+    for(var k in DATA.specialData){
+        var s=DATA.specialData[k]; var r=document.createElement('div');
+        r.className='cat-item'+(k===selSpecCat?' active':'');
+        r.innerHTML='<div class="cat-info"><span class="cat-name">'+(s.name||k)+'</span><div class="cat-meta"><span class="cat-stage">$'+fmt(s.price||0)+'</span></div></div>';
+        (function(key){ r.addEventListener('click',function(){ selSpecCat=key; selSpecOpt=null; renderSpecSidebar(); renderSpecMain(); }); })(k);
         el.appendChild(r);
     }
 }
 
-function renderSpecMain() {
-    var panel = $('#specMain');
-    if (!selSpecCat || !DATA.specialData) { panel.innerHTML = '<div class="empty-state">Select a modification</div>'; return; }
-    var sp = DATA.specialData[selSpecCat];
-    if (!sp) return;
+function renderSpecMain(){
+    var panel=$('#specMain');
+    if(!selSpecCat||!DATA.specialData){ panel.innerHTML='<div class="empty-state">Select a modification</div>'; return; }
+    var sp=DATA.specialData[selSpecCat]; if(!sp) return;
+    var html='<div class="opts-header"><div class="opts-title">'+sp.name+'</div><div class="opts-sub">$'+fmt(sp.price||0)+'</div></div>';
 
-    var html = '<div class="opts-header"><div class="opts-title">'+sp.name+'</div><div class="opts-sub">$'+fmt(sp.price||0)+'</div></div>';
-
-    if (selSpecCat === 'wheels') {
-        // Wheel type selector
-        html += '<div class="option-grid" style="border-bottom:1px solid var(--bdr)">';
-        var opts = sp.options || [];
-        for (var oi = 0; oi < opts.length; oi++) {
-            var wt = opts[oi];
-            html += '<div class="opt-card'+(wt.id===wheelType?' selected':'')+'" onclick="changeWheelType('+wt.id+')"><span class="oc-name">'+wt.name+'</span></div>';
-        }
-        html += '</div>';
-        // Wheel options with stock/default
-        html += '<div class="option-grid">';
-        html += '<div class="opt-card'+(selWheelIdx===-1?' selected':'')+'" onclick="prevWheel(-1)"><span class="oc-name">Default</span><span class="oc-price" style="color:var(--txt3)">Free</span></div>';
-        if (wheelCount > 0) {
-            for (var i = 0; i < wheelCount; i++) {
-                html += '<div class="opt-card'+(i===selWheelIdx?' selected':'')+'" onclick="prevWheel('+i+')"><span class="oc-name">Wheel '+(i+1)+'</span></div>';
+    if(selSpecCat==='wheels'){
+        html+='<div class="option-grid" style="border-bottom:1px solid var(--bdr)">';
+        var opts=sp.options||[];
+        for(var oi=0;oi<opts.length;oi++){ var wt2=opts[oi]; html+='<div class="opt-card'+(wt2.id===wheelType?' selected':'')
+            +'" onclick="changeWheelType('+wt2.id+')"><span class="oc-name">'+wt2.name+'</span></div>'; }
+        html+='</div><div class="option-grid">';
+        html+='<div class="opt-card'+(selWheelIdx===-1?' selected':'')
+            +'" onclick="prevWheel(-1)"><span class="oc-name">Default</span><span class="oc-price" style="color:var(--txt3)">Free</span></div>';
+        if(wheelCount>0){ for(var i=0;i<wheelCount;i++){ html+='<div class="opt-card'+(i===selWheelIdx?' selected':'')
+            +'" onclick="prevWheel('+i+')"><span class="oc-name">Wheel '+(i+1)+'</span></div>'; } }
+        html+='</div>';
+        var wColors=sp.wheelColors||[];
+        if(wColors.length){
+            html+='<div style="padding:6px 22px 0"><div class="ss-title" style="margin-bottom:8px">Wheel Color</div></div>';
+            html+='<div class="color-grid" style="padding-top:0">';
+            for(var i=0;i<wColors.length;i++){
+                var wc=wColors[i]; var sel2=wheelColorIdx===i;
+                var bg2=wc.r===-1?'linear-gradient(135deg,#555,#888)':'rgb('+wc.r+','+wc.g+','+wc.b+')';
+                html+='<div class="color-swatch'+(sel2?' selected':'')
+                    +'" style="background:'+bg2+'" onclick="pickWheelColor('+i+')" title="'+wc.name+'"></div>';
             }
+            html+='</div>';
         }
-        html += '</div>';
-        // Wheel colors
-        var wColors = sp.wheelColors || [];
-        if (wColors.length) {
-            html += '<div style="padding:6px 22px 0"><div class="ss-title" style="margin-bottom:8px">Wheel Color</div></div>';
-            html += '<div class="color-grid" style="padding-top:0">';
-            for (var i = 0; i < wColors.length; i++) {
-                var wc = wColors[i];
-                var sel = wheelColorIdx === i;
-                var bg = wc.r === -1 ? 'linear-gradient(135deg,#555,#888)' : 'rgb('+wc.r+','+wc.g+','+wc.b+')';
-                html += '<div class="color-swatch'+(sel?' selected':'')+'" style="background:'+bg+'" onclick="pickWheelColor('+i+')" title="'+wc.name+'"></div>';
+        html+='<div class="action-footer"><button class="btn-upgrade ready" onclick="applyWheels()">Install Wheels</button></div>';
+
+    } else if(selSpecCat==='xenon'){
+        html+='<div class="spec-toggle"><label>Xenon Headlights</label>'
+            +'<div class="toggle-box'+(xenonOn?' on':'')
+            +'" onclick="toggleXenon()"><div class="toggle-knob"></div></div></div>';
+        if(xenonOn&&sp.options){
+            html+='<div class="option-grid">';
+            for(var xi=0;xi<sp.options.length;xi++){
+                var x=sp.options[xi];
+                html+='<div class="opt-card'+(x.id===xenonColor?' selected':'')
+                    +'" onclick="pickXenon('+x.id+')">'
+                    +'<span class="oc-name" style="color:'+(x.hex||'#fff')+'">'+x.name+'</span></div>';
             }
-            html += '</div>';
+            html+='</div>';
         }
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyWheels()">Install Wheels</button></div>';
+        html+='<div class="action-footer"><button class="btn-upgrade ready" onclick="applyXenon()">Apply Xenon</button></div>';
 
-    } else if (selSpecCat === 'xenon') {
-        html += '<div class="spec-toggle"><label>Xenon Headlights</label>'
-            + '<div class="toggle-box'+(xenonOn?' on':'')+'" onclick="toggleXenon()"><div class="toggle-knob"></div></div></div>';
-        if (xenonOn && sp.options) {
-            html += '<div class="option-grid">';
-            for (var xi = 0; xi < sp.options.length; xi++) {
-                var x = sp.options[xi];
-                html += '<div class="opt-card'+(x.id===xenonColor?' selected':'')+'" onclick="pickXenon('+x.id+')">'
-                    + '<span class="oc-name" style="color:'+(x.hex||'#fff')+'">'+x.name+'</span></div>';
+    } else if(selSpecCat==='plate'){
+        html+='<div class="option-grid">';
+        var plateOpts=sp.options||[];
+        for(var pi=0;pi<plateOpts.length;pi++){
+            var p=plateOpts[pi]; var isActPrev=selSpecOpt===p.id; var isCur=p.id===(sp.current||0);
+            var cls2='opt-card'; var badge2='';
+            if(isCur&&!isActPrev){ cls2+=' installed'; badge2='<span class="oc-badge">✓ CURRENT</span>'; }
+            else if(isActPrev){ cls2+=' previewing'; badge2='<span class="oc-badge">👁 PREVIEW</span>'; }
+            html+='<div class="'+cls2+'" onclick="prevPlate('+p.id+')">'+badge2+'<span class="oc-name">'+p.name+'</span></div>';
+        }
+        html+='</div><div class="action-footer"><button class="btn-upgrade ready" onclick="applyPlate()">Apply Plate</button></div>';
+
+    } else if(selSpecCat==='neon'){
+        html+='<div class="neon-sides">';
+        var sides=['Left','Right','Front','Rear'];
+        for(var i=0;i<4;i++){ var on=(neonMask&(1<<i))!==0; html+='<div class="neon-btn'+(on?' on':'')
+            +'" onclick="toggleNeonSide('+i+')">'+sides[i]+'</div>'; }
+        html+='</div><div class="option-grid">';
+        var nOpts=sp.options||[];
+        for(var ni=0;ni<nOpts.length;ni++){
+            var n=nOpts[ni]; var r3=255,g3=255,b3=255;
+            var m3=(n.hex||'').match(/(\d+)/g);
+            if(m3&&m3.length>=3){ r3=parseInt(m3[0]); g3=parseInt(m3[1]); b3=parseInt(m3[2]); }
+            var isSel3=neonColor.r===r3&&neonColor.g===g3&&neonColor.b===b3;
+            html+='<div class="opt-card'+(isSel3?' selected':'')
+                +'" onclick="pickNeonColor('+r3+','+g3+','+b3+')" style="border-left:3px solid '+(n.hex||'#fff')+'">'
+                +'<span class="oc-name">'+n.name+'</span></div>';
+        }
+        html+='</div><div class="action-footer"><button class="btn-upgrade ready" onclick="applyNeon()">Apply Neon</button></div>';
+
+    } else if(selSpecCat==='smoke'){
+        html+='<div class="spec-toggle"><label>Tyre Smoke</label>'
+            +'<div class="toggle-box'+(smokeOn?' on':'')
+            +'" onclick="toggleSmoke()"><div class="toggle-knob"></div></div></div>';
+        if(smokeOn){
+            html+='<div class="option-grid">';
+            var sOpts=sp.options||[];
+            for(var si2=0;si2<sOpts.length;si2++){
+                var n2=sOpts[si2]; var r4=255,g4=255,b4=255;
+                var m4=(n2.hex||'').match(/(\d+)/g);
+                if(m4&&m4.length>=3){ r4=parseInt(m4[0]); g4=parseInt(m4[1]); b4=parseInt(m4[2]); }
+                var isSel4=smokeColor.r===r4&&smokeColor.g===g4&&smokeColor.b===b4;
+                html+='<div class="opt-card'+(isSel4?' selected':'')
+                    +'" onclick="pickSmokeColor('+r4+','+g4+','+b4+')" style="border-left:3px solid '+(n2.hex||'#fff')+'">'
+                    +'<span class="oc-name">'+n2.name+'</span></div>';
             }
-            html += '</div>';
+            html+='</div>';
         }
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyXenon()">Apply Xenon</button></div>';
+        html+='<div class="action-footer"><button class="btn-upgrade ready" onclick="applySmoke()">Apply Smoke</button></div>';
 
-    } else if (selSpecCat === 'plate') {
-        html += '<div class="option-grid">';
-        var plateOpts = sp.options || [];
-        for (var pi = 0; pi < plateOpts.length; pi++) {
-            var p = plateOpts[pi];
-            var isActivePreview = selSpecOpt === p.id;
-            var isCurrent = p.id === (sp.current || 0);
-            var cls = 'opt-card';
-            var badge = '';
-            if (isCurrent && !isActivePreview) { cls += ' installed'; badge = '<span class="oc-badge">✓ CURRENT</span>'; }
-            else if (isActivePreview) { cls += ' previewing'; badge = '<span class="oc-badge">👁 PREVIEW</span>'; }
-            html += '<div class="'+cls+'" onclick="prevPlate('+p.id+')">'+badge+'<span class="oc-name">'+p.name+'</span></div>';
-        }
-        html += '</div>';
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyPlate()">Apply Plate</button></div>';
-
-    } else if (selSpecCat === 'neon') {
-        html += '<div class="neon-sides">';
-        var sides = ['Left','Right','Front','Rear'];
-        for (var i = 0; i < 4; i++) {
-            var on = (neonMask & (1 << i)) !== 0;
-            html += '<div class="neon-btn'+(on?' on':'')+'" onclick="toggleNeonSide('+i+')">'+sides[i]+'</div>';
-        }
-        html += '</div>';
-        html += '<div class="option-grid">';
-        var nOpts = sp.options || [];
-        for (var ni = 0; ni < nOpts.length; ni++) {
-            var n = nOpts[ni];
-            var r=255,g=255,b=255;
-            var m = (n.hex||'').match(/(\d+)/g);
-            if (m && m.length>=3) { r=parseInt(m[0]); g=parseInt(m[1]); b=parseInt(m[2]); }
-            var isSelected = neonColor.r===r && neonColor.g===g && neonColor.b===b;
-            html += '<div class="opt-card'+(isSelected?' selected':'')+'" onclick="pickNeonColor('+r+','+g+','+b+')" style="border-left:3px solid '+(n.hex||'#fff')+'">'
-                + '<span class="oc-name">'+n.name+'</span></div>';
-        }
-        html += '</div>';
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyNeon()">Apply Neon</button></div>';
-
-    } else if (selSpecCat === 'smoke') {
-        html += '<div class="spec-toggle"><label>Tyre Smoke</label>'
-            + '<div class="toggle-box'+(smokeOn?' on':'')+'" onclick="toggleSmoke()"><div class="toggle-knob"></div></div></div>';
-        if (smokeOn) {
-            html += '<div class="option-grid">';
-            var sOpts = sp.options || [];
-            for (var si = 0; si < sOpts.length; si++) {
-                var n = sOpts[si];
-                var r=255,g=255,b=255;
-                var m = (n.hex||'').match(/(\d+)/g);
-                if (m && m.length>=3) { r=parseInt(m[0]); g=parseInt(m[1]); b=parseInt(m[2]); }
-                var isSelected = smokeColor.r===r && smokeColor.g===g && smokeColor.b===b;
-                html += '<div class="opt-card'+(isSelected?' selected':'')+'" onclick="pickSmokeColor('+r+','+g+','+b+')" style="border-left:3px solid '+(n.hex||'#fff')+'">'
-                    + '<span class="oc-name">'+n.name+'</span></div>';
-            }
-            html += '</div>';
-        }
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applySmoke()">Apply Smoke</button></div>';
-
-    } else if (selSpecCat === 'stance') {
-        // Camber & Track Width sliders
-        html += '<div class="slider-section" style="border-top:none">';
-        html += '<div class="ss-title">Stance Tuning</div>';
-
-        var camPct = Math.round(((camberValue + 1) / 2) * 100);
-        html += '<div class="slider-row"><div class="sr-top"><span class="sr-icon">↕</span><span class="sr-name">Camber</span><span class="sr-val">'+camberValue.toFixed(2)+'</span></div>'
-            + '<div class="sr-labels"><span>Negative</span><span>Positive</span></div>'
-            + '<div class="slider-track stance-slider" data-stance="camber"><div class="slider-fill" style="width:'+camPct+'%"></div><div class="slider-thumb" style="left:'+camPct+'%"></div></div>'
-            + '<div class="slider-desc">Negative = wheels tilt inward at top. Positive = wheels tilt outward.</div></div>';
-
-        var twPct = Math.round(((trackWidthValue + 1) / 2) * 100);
-        html += '<div class="slider-row"><div class="sr-top"><span class="sr-icon">↔</span><span class="sr-name">Wheel Distance</span><span class="sr-val">'+trackWidthValue.toFixed(2)+'</span></div>'
-            + '<div class="sr-labels"><span>Narrower</span><span>Wider</span></div>'
-            + '<div class="slider-track stance-slider" data-stance="trackWidth"><div class="slider-fill" style="width:'+twPct+'%"></div><div class="slider-thumb" style="left:'+twPct+'%"></div></div>'
-            + '<div class="slider-desc">Adjust how wide the wheels sit from the body.</div></div>';
-
-        html += '</div>';
-        html += '<div class="action-footer"><button class="btn-upgrade ready" onclick="applyStance()">Apply Stance · $'+fmt(sp.price||0)+'</button></div>';
+    } else if(selSpecCat==='stance'){
+        html+='<div class="slider-section" style="border-top:none"><div class="ss-title">Stance Tuning</div>';
+        var camPct=((camberValue+1)/2)*100;
+        html+='<div class="slider-row">'
+            +'<div class="sr-top"><span class="sr-icon">↕</span><span class="sr-name">Camber</span>'
+            +'<span class="sr-val val-ok" id="camberVal">'+camberValue.toFixed(2)+'</span></div>'
+            +'<div class="sr-labels"><span>Negative</span><span>Positive</span></div>'
+            +'<div class="slider-track stance-slider" data-stance="camber">'
+            +'<div class="slider-zones" style="background:linear-gradient(90deg,rgba(255,71,87,.2) 0%,rgba(46,204,113,.22) 15%,rgba(46,204,113,.22) 85%,rgba(255,71,87,.2) 100%)"></div>'
+            +'<div class="slider-fill" style="width:'+camPct.toFixed(1)+'%"></div>'
+            +'<div class="slider-thumb" style="left:'+camPct.toFixed(1)+'%"></div></div>'
+            +'<div class="slider-desc">Negative = wheels tilt inward at top (racing). Positive = outward (show stance).</div></div>';
+        var twPct=((trackWidthValue+1)/2)*100;
+        html+='<div class="slider-row">'
+            +'<div class="sr-top"><span class="sr-icon">↔</span><span class="sr-name">Wheel Distance</span>'
+            +'<span class="sr-val val-ok" id="trackVal">'+trackWidthValue.toFixed(2)+'</span></div>'
+            +'<div class="sr-labels"><span>Narrower</span><span>Wider</span></div>'
+            +'<div class="slider-track stance-slider" data-stance="trackWidth">'
+            +'<div class="slider-zones" style="background:linear-gradient(90deg,rgba(255,71,87,.2) 0%,rgba(46,204,113,.22) 15%,rgba(46,204,113,.22) 85%,rgba(255,71,87,.2) 100%)"></div>'
+            +'<div class="slider-fill" style="width:'+twPct.toFixed(1)+'%"></div>'
+            +'<div class="slider-thumb" style="left:'+twPct.toFixed(1)+'%"></div></div>'
+            +'<div class="slider-desc">Adjust how wide the wheels sit from the body.</div></div>';
+        html+='</div>';
+        html+='<div class="action-footer"><button class="btn-upgrade ready" onclick="applyStance()">Apply Stance · $'+fmt(sp.price||0)+'</button></div>';
     }
 
-    panel.innerHTML = html;
+    panel.innerHTML=html;
     bindStanceSliders();
 }
 
-// ── Wheels ──
-function changeWheelType(typeId) { wheelType = typeId; wheelCount = 0; selWheelIdx = -1; mp_trigger('cef:tuning:changeWheelType', typeId); renderSpecMain(); }
-function updateWheelOptions(type, count) { wheelType = type; wheelCount = count; renderSpecMain(); }
-function prevWheel(idx) { selWheelIdx = idx; mp_trigger('cef:tuning:previewWheel', idx); renderSpecMain(); }
-function pickWheelColor(idx) {
-    wheelColorIdx = idx;
-    var wc = (DATA.specialData.wheels.wheelColors||[])[idx];
-    if (wc) mp_trigger('cef:tuning:previewWheelColor', wc.gtaIndex);
-    renderSpecMain();
-}
-function applyWheels() { mp_trigger('cef:tuning:applyWheels', wheelType, selWheelIdx, wheelColorIdx); }
+function changeWheelType(typeId){ wheelType=typeId; wheelCount=0; selWheelIdx=-1; mp_trigger('cef:tuning:changeWheelType',typeId); renderSpecMain(); }
+function updateWheelOptions(type,count){ wheelType=type; wheelCount=count; renderSpecMain(); }
+function prevWheel(idx){ selWheelIdx=idx; mp_trigger('cef:tuning:previewWheel',idx); renderSpecMain(); }
+function pickWheelColor(idx){ wheelColorIdx=idx; var wc=(DATA.specialData.wheels.wheelColors||[])[idx]; if(wc) mp_trigger('cef:tuning:previewWheelColor',wc.gtaIndex); renderSpecMain(); }
+function applyWheels(){ mp_trigger('cef:tuning:applyWheels',wheelType,selWheelIdx,wheelColorIdx); }
+function toggleXenon(){ xenonOn=!xenonOn; mp_trigger('cef:tuning:previewXenon',xenonOn?'true':'false',xenonColor); renderSpecMain(); }
+function pickXenon(id){ xenonColor=id; mp_trigger('cef:tuning:previewXenon','true',id); renderSpecMain(); }
+function applyXenon(){ mp_trigger('cef:tuning:applyXenon',xenonOn?'true':'false',xenonColor); }
+function prevPlate(id){ selSpecOpt=id; mp_trigger('cef:tuning:previewPlate',id); showToast('Previewing plate style','info',1200); renderSpecMain(); }
+function applyPlate(){ if(selSpecOpt!==null) mp_trigger('cef:tuning:applyPlate',selSpecOpt); }
+function toggleNeonSide(idx){ neonMask^=(1<<idx); mp_trigger('cef:tuning:previewNeon',neonMask,neonColor.r,neonColor.g,neonColor.b); renderSpecMain(); }
+function pickNeonColor(r,g,b){ neonColor={r:r,g:g,b:b}; mp_trigger('cef:tuning:previewNeon',neonMask,r,g,b); renderSpecMain(); }
+function applyNeon(){ mp_trigger('cef:tuning:applyNeon',neonMask,neonColor.r,neonColor.g,neonColor.b); }
+function toggleSmoke(){ smokeOn=!smokeOn; mp_trigger('cef:tuning:previewSmoke',smokeOn?'true':'false',smokeColor.r,smokeColor.g,smokeColor.b); renderSpecMain(); }
+function pickSmokeColor(r,g,b){ smokeColor={r:r,g:g,b:b}; mp_trigger('cef:tuning:previewSmoke','true',r,g,b); renderSpecMain(); }
+function applySmoke(){ mp_trigger('cef:tuning:applySmoke',smokeOn?'true':'false',smokeColor.r,smokeColor.g,smokeColor.b); }
 
-// ── Xenon ──
-function toggleXenon() { xenonOn = !xenonOn; mp_trigger('cef:tuning:previewXenon', xenonOn?'true':'false', xenonColor); renderSpecMain(); }
-function pickXenon(id) { xenonColor = id; mp_trigger('cef:tuning:previewXenon', 'true', id); renderSpecMain(); }
-function applyXenon() { mp_trigger('cef:tuning:applyXenon', xenonOn?'true':'false', xenonColor); }
-
-// ── Plate ──
-function prevPlate(id) { selSpecOpt = id; mp_trigger('cef:tuning:previewPlate', id); showToast('Previewing plate style', 'info', 1200); renderSpecMain(); }
-function applyPlate() { if (selSpecOpt !== null) mp_trigger('cef:tuning:applyPlate', selSpecOpt); }
-
-// ── Neon ──
-function toggleNeonSide(idx) { neonMask ^= (1 << idx); mp_trigger('cef:tuning:previewNeon', neonMask, neonColor.r, neonColor.g, neonColor.b); renderSpecMain(); }
-function pickNeonColor(r,g,b) { neonColor = {r:r,g:g,b:b}; mp_trigger('cef:tuning:previewNeon', neonMask, r, g, b); renderSpecMain(); }
-function applyNeon() { mp_trigger('cef:tuning:applyNeon', neonMask, neonColor.r, neonColor.g, neonColor.b); }
-
-// ── Smoke ──
-function toggleSmoke() { smokeOn = !smokeOn; mp_trigger('cef:tuning:previewSmoke', smokeOn?'true':'false', smokeColor.r, smokeColor.g, smokeColor.b); renderSpecMain(); }
-function pickSmokeColor(r,g,b) { smokeColor = {r:r,g:g,b:b}; mp_trigger('cef:tuning:previewSmoke', 'true', r, g, b); renderSpecMain(); }
-function applySmoke() { mp_trigger('cef:tuning:applySmoke', smokeOn?'true':'false', smokeColor.r, smokeColor.g, smokeColor.b); }
-
-// ── Stance (Camber & Track Width) ──
-function bindStanceSliders() {
-    $$('.stance-slider').forEach(function(track) {
-        var type = track.dataset.stance;
-        function upd(e) {
-            var r = track.getBoundingClientRect();
-            var p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-            var val = (p * 2) - 1; // 0-1 → -1 to +1
-            if (type === 'camber') camberValue = Math.round(val * 100) / 100;
-            else trackWidthValue = Math.round(val * 100) / 100;
-            track.querySelector('.slider-fill').style.width = (p*100)+'%';
-            track.querySelector('.slider-thumb').style.left = (p*100)+'%';
-            track.closest('.slider-row').querySelector('.sr-val').textContent = val.toFixed(2);
-            mp_trigger('cef:tuning:previewStance', camberValue, trackWidthValue);
+function bindStanceSliders(){
+    $$('.stance-slider').forEach(function(track){
+        var type=track.dataset.stance;
+        function upd(e){
+            var r=track.getBoundingClientRect();
+            var p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+            var val=(p*2)-1;
+            if(type==='camber') camberValue=Math.round(val*100)/100;
+            else trackWidthValue=Math.round(val*100)/100;
+            track.querySelector('.slider-fill').style.width=(p*100)+'%';
+            track.querySelector('.slider-thumb').style.left=(p*100)+'%';
+            var lbl=document.getElementById(type==='camber'?'camberVal':'trackVal');
+            if(lbl) lbl.textContent=val.toFixed(2);
+            mp_trigger('cef:tuning:previewStance',camberValue,trackWidthValue);
         }
-        track.addEventListener('mousedown', function(e) {
+        track.addEventListener('mousedown',function(e){
             upd(e);
-            var mv = function(ev) { upd(ev); };
-            var up = function() { document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
-            document.addEventListener('mousemove', mv);
-            document.addEventListener('mouseup', up);
+            var mv=function(ev){ upd(ev); };
+            var up=function(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+            document.addEventListener('mousemove',mv);
+            document.addEventListener('mouseup',up);
         });
     });
 }
 
-function applyStance() { mp_trigger('cef:tuning:applyStance', camberValue, trackWidthValue); }
+function applyStance(){ mp_trigger('cef:tuning:applyStance',camberValue,trackWidthValue); }
 
-// ═════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // CLOSE
-// ═════════════════════════════════════════════════════════════
-function closeTuning() { mp_trigger('cef:tuning:close'); }
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeTuning(); });
+// ═════════════════════════════════════════════════════════════════════════════
+function closeTuning(){ mp_trigger('cef:tuning:close'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeTuning(); });
 </script>
 </body>
 </html>

@@ -4,18 +4,18 @@
  * Central configuration for all Card Pack loot tables.
  *
  * WEIGHT SYSTEM:
- *   Each reward has a `weight` value. The drop chance is:
- *     chance% = (weight / totalWeightOfAllRewards) * 100
+ * Each reward has a `weight` value. The drop chance is:
+ * chance% = (weight / totalWeightOfAllRewards) * 100
  *
- *   Example: weight 400 in a pool totalling 1000 = 40% drop chance.
+ * Example: weight 400 in a pool totalling 1000 = 40% drop chance.
  *
  * REWARD TYPES:
- *   'cash'  → Adds player.data.money
- *   'pp'    → Adds player.data.premiumPoints
- *   'item'  → Calls inventorySystem.addItem(player, itemId, count)
+ * 'cash'  → Adds player.data.money
+ * 'pp'    → Adds player.data.premiumPoints
+ * 'item'  → Calls inventorySystem.addItem(player, itemId, count)
  *
  * RARITY ORDER (worst → best, used by disconnect protection):
- *   common < uncommon < rare < epic < legendary
+ * common < uncommon < rare < epic < legendary
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -39,7 +39,7 @@ module.exports = {
     // ── PACK DEFINITIONS ─────────────────────────────────────────────────────
     packs: {
 
-        // ─ BRONZE STARTER PACK ───────────────────────────────────────────────
+        // ─ BRONZE STARTER PACK (Tuning Pack) ─────────────────────────────────
         tuning_pack: {
             id:          'tuning_pack',
             name:        'Tuning Card Pack',
@@ -52,86 +52,86 @@ module.exports = {
                 {
                     id: 'cash_250', type: 'cash', name: '$250 Cash',
                     value: 250, rarity: 'common', weight: 350,
-                    icon: '💵', description: 'A couple of crumpled bills.'
+                    icon: 'cash', description: 'A couple of crumpled bills.'
                 },
                 {
                     id: 'cash_500', type: 'cash', name: '$500 Cash',
                     value: 500, rarity: 'common', weight: 300,
-                    icon: '💵', description: 'Enough for a decent meal.'
+                    icon: 'cash', description: 'Enough for a decent meal.'
                 },
                 {
                     id: 'common_part_x5', type: 'item', name: 'Common Car Part ×5',
                     itemId: 'car_part_common', count: 5, rarity: 'common', weight: 280,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
                 {
                     id: 'common_part_x2', type: 'item', name: 'Common Car Part ×2',
                     itemId: 'car_part_common', count: 2, rarity: 'common', weight: 300,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
                 // UNCOMMON ───────────────────────────────────────────────────
                 {
                     id: 'cash_1500', type: 'cash', name: '$1,500 Cash',
                     value: 1500, rarity: 'uncommon', weight: 180,
-                    icon: '💰', description: 'A nice little bonus.'
+                    icon: 'cash', description: 'A nice little bonus.'
                 },
                 {
                     id: 'cash_3000', type: 'cash', name: '$3,000 Cash',
                     value: 3000, rarity: 'uncommon', weight: 140,
-                    icon: '💰', description: 'Getting somewhere.'
+                    icon: 'cash', description: 'Getting somewhere.'
                 },
                 {
                     id: 'uncommon_part_x2', type: 'item', name: 'Uncommon Car Part ×2',
                     itemId: 'car_part_uncommon', count: 2, rarity: 'uncommon', weight: 130,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
                 {
                     id: 'pp_15', type: 'pp', name: '15 Premium Points',
                     value: 15, rarity: 'uncommon', weight: 120,
-                    icon: '⭐', description: 'A sprinkle of premium currency.'
+                    icon: 'premium_points', description: 'A sprinkle of premium currency.'
                 },
                 // RARE ────────────────────────────────────────────────────────
                 {
                     id: 'cash_7500', type: 'cash', name: '$7,500 Cash',
                     value: 7500, rarity: 'rare', weight: 70,
-                    icon: '💎', description: 'A generous sum.'
+                    icon: 'cash', description: 'A generous sum.'
                 },
                 {
                     id: 'pp_50', type: 'pp', name: '50 Premium Points',
                     value: 50, rarity: 'rare', weight: 55,
-                    icon: '🌟', description: 'Almost enough for a re-roll.'
+                    icon: 'premium_points', description: 'Almost enough for a re-roll.'
                 },
                 {
                     id: 'rare_part_x2', type: 'item', name: 'Rare Car Part ×2',
                     itemId: 'car_part_rare', count: 2, rarity: 'rare', weight: 55,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
                 // EPIC ────────────────────────────────────────────────────────
                 {
                     id: 'cash_20000', type: 'cash', name: '$20,000 Cash',
                     value: 20000, rarity: 'epic', weight: 20,
-                    icon: '🏆', description: 'Big money from a small pack!'
+                    icon: 'cash', description: 'Big money from a small pack!'
                 },
                 {
                     id: 'pp_100', type: 'pp', name: '100 Premium Points',
                     value: 100, rarity: 'epic', weight: 15,
-                    icon: '👑', description: 'A hundred points of premium power.'
+                    icon: 'premium_points', description: 'A hundred points of premium power.'
                 },
                 {
                     id: 'epic_part_x2', type: 'item', name: 'Epic Car Part ×2',
                     itemId: 'car_part_epic', count: 2, rarity: 'epic', weight: 15,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
                 // LEGENDARY ───────────────────────────────────────────────────
                 {
                     id: 'bronze_jackpot', type: 'cash', name: '🎰 $75,000 JACKPOT!',
                     value: 75000, rarity: 'legendary', weight: 5,
-                    icon: '🎰', description: 'Against all odds, you hit the jackpot!'
+                    icon: 'cash', description: 'Against all odds, you hit the jackpot!'
                 },
                 {
                     id: 'legendary_part_x2', type: 'item', name: 'Legendary Car Part ×2',
                     itemId: 'car_part_legendary', count: 2, rarity: 'legendary', weight: 5,
-                    icon: '🔧', description: 'Car parts used for tuning.'
+                    icon: 'car_parts', description: 'Car parts used for tuning.'
                 },
             ],
         },

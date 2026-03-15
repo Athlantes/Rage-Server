@@ -60,13 +60,14 @@ const OFFROAD_VEHICLE_TYPES   = new Set(['suv','offroad','truck','military','uti
 // DRIFT MODE — stacked on normal handling when drift tendency >= 80%
 // ═══════════════════════════════════════════════════════════════════════════════
 const DRIFT_MODE_HANDLING = {
-    fTractionLossMult:  1.38,
-    fTractionCurveMin:  0.82,
-    fTractionCurveMax:  0.85,
-    fAntiRollBarForce:  0.78,
-    fSuspensionForce:   0.83,
-    fTractionBiasFront: 0.94,
-    fHandBrakeForce:    1.30
+    // Core drift properties — confirmed correct per GTA V handling docs
+    fTractionCurveMin:         0.79,  // Reduce sustained grip → sustain slides on tarmac
+    fTractionCurveMax:         0.86,  // Reduce peak grip ceiling → initiate slides easier
+    fTractionBiasFront:        0.93,  // Slight rear bias → RWD drift feel
+    fAntiRollBarForce:         0.76,  // Softer ARB → more weight transfer for initiation
+    fSuspensionForce:          0.82,  // Softer → body leans, rear unloads under power
+    fHandBrakeForce:           1.32,  // Stronger handbrake → easier entry
+    fLowSpeedTractionLossMult: 1.55   // More wheelspin at low speed → easier initiation/burnout
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -82,10 +83,11 @@ const HANDLING_SAFETY_CAPS = {
     fTractionCurveMax:       { min: 0.66 },
     fTractionCurveMin:       { min: 0.60 },
     fTractionBiasFront:      { min: 0.76, max: 1.24 },
-    fInitialDriveForce:      { max: 2.40 },
+    fInitialDriveForce:      { max: 2.10 },
     fBrakeForce:             { max: 2.30 },
     fHandBrakeForce:         { max: 2.60 },
-    fTractionLossMult:       { max: 1.70 }
+    fTractionLossMult:       { max: 1.70 },
+    fLowSpeedTractionLossMult:{ min: 0.20, max: 3.50 }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -143,10 +145,10 @@ const PERFORMANCE_MODS = {
             inverto:{
                 name:'Inverto Race Engine', tag:'Race', tagColor:'#c070ff',
                 surcharge:1.45, minPIClass:'B', tendency:{ race:3 },
-                desc:'High-revving race unit. Every component engineered to the limit.',
+                desc:'High-revving race unit. Every component engineered to the limit. Screams to redline instantly.',
                 handling:{
                     fInitialDriveForce:[1.0,1.06,1.14,1.23,1.34,1.47],
-                    fDriveInertia:     [1.0,0.96,0.91,0.86,0.80,0.74]
+                    fDriveInertia:     [1.0,1.04,1.09,1.14,1.20,1.28]
                 }
             }
         },
@@ -196,10 +198,10 @@ const PERFORMANCE_MODS = {
             dinka:{
                 name:'Dinka Twin-Scroll', tag:'Responsive', tagColor:'#00a8ff',
                 surcharge:1.0, minPIClass:'F', tendency:{ race:2, street:1 },
-                desc:'Quick-spooling twin scroll. Minimal lag, smooth power.',
+                desc:'Quick-spooling twin scroll. Minimal lag, smooth linear power delivery.',
                 handling:{
                     fInitialDriveForce:[1.0,1.06,1.14,1.24],
-                    fDriveInertia:     [1.0,0.96,0.92,0.87]
+                    fDriveInertia:     [1.0,1.02,1.04,1.07]
                 }
             },
             bravado:{
@@ -220,10 +222,10 @@ const PERFORMANCE_MODS = {
             inverto:{
                 name:'Inverto Sequential Compound', tag:'Race', tagColor:'#c070ff',
                 surcharge:1.50, minPIClass:'B', tendency:{ race:3 },
-                desc:'Variable geometry race turbo. Instant response, massive peak power.',
+                desc:'Variable geometry race turbo. Zero lag, instant spool, massive peak power.',
                 handling:{
                     fInitialDriveForce:[1.0,1.09,1.20,1.34],
-                    fDriveInertia:     [1.0,0.93,0.86,0.78]
+                    fDriveInertia:     [1.0,1.06,1.13,1.22]
                 }
             }
         },
@@ -295,10 +297,10 @@ const PERFORMANCE_MODS = {
             inverto:{
                 name:'Inverto Motorsport ECU', tag:'Race', tagColor:'#c070ff',
                 surcharge:1.35, minPIClass:'B', tendency:{ race:3 },
-                desc:'Full standalone unit. Lap-optimised fuel and ignition maps.',
+                desc:'Full standalone unit. Lap-optimised fuel maps. Razor-sharp throttle response.',
                 handling:{
                     fInitialDriveForce:[1.0,1.04,1.10,1.17],
-                    fDriveInertia:     [1.0,0.95,0.90,0.85]
+                    fDriveInertia:     [1.0,1.03,1.06,1.10]
                 }
             }
         },
@@ -405,11 +407,11 @@ const PERFORMANCE_MODS = {
             inverto:{
                 name:'Inverto Paddleshift Pro', tag:'Race', tagColor:'#c070ff',
                 surcharge:1.55, minPIClass:'B', tendency:{ race:3 },
-                desc:'Motorsport-grade paddleshift. Shifts in milliseconds, optimal ratios.',
+                desc:'Motorsport-grade paddleshift. Shifts in milliseconds. Revs match perfectly on downshifts.',
                 handling:{
                     fClutchChangeRateScaleUpShift:  [1.0,1.22,1.46,1.74,2.06],
                     fClutchChangeRateScaleDownShift:[1.0,1.18,1.38,1.62,1.90],
-                    fDriveInertia:                  [1.0,0.93,0.86,0.78,0.70]
+                    fDriveInertia:                  [1.0,1.04,1.09,1.15,1.22]
                 }
             }
         },
@@ -722,10 +724,11 @@ const PERFORMANCE_MODS = {
             bison:{
                 name:'Bison All-Terrain', tag:'Off-Road', tagColor:'#8b5e3c',
                 surcharge:1.15, minPIClass:'D', tendency:{ offroad:3 },
-                desc:'Aggressive off-road compound. Bites on any surface.',
+                desc:'Aggressive off-road compound. Bites on any surface. Less grip loss on dirt/gravel.',
                 handling:{
                     fTractionCurveMax:[1.0,1.04,1.09,1.15,1.22],
-                    fTractionCurveMin:[1.0,1.06,1.13,1.21,1.30]
+                    fTractionCurveMin:[1.0,1.06,1.13,1.21,1.30],
+                    fTractionLossMult:[1.0,0.92,0.84,0.76,0.68]
                 }
             },
             declasse:{
@@ -767,20 +770,32 @@ const PERFORMANCE_MODS = {
             standard:{
                 name:'Standard Chromoly Cage', tag:'Universal', tagColor:'#8a8fa6',
                 surcharge:1.0, minPIClass:'F', tendency:{ race:1, street:1 },
-                desc:'Chromoly steel cage. Better chassis rigidity.',
-                handling:{ fRollCentreHeightFront:[1.0,0.90,0.80], fRollCentreHeightRear:[1.0,0.90,0.80] }
+                desc:'Chromoly steel cage. Ties chassis together — reduces flex and body roll.',
+                handling:{
+                    fRollCentreHeightFront:[1.0,1.12,1.26],
+                    fRollCentreHeightRear: [1.0,1.12,1.26],
+                    fAntiRollBarForce:     [1.0,1.08,1.18]
+                }
             },
             bravado:{
                 name:'Bravado Street Cage', tag:'Power', tagColor:'#ff4757',
                 surcharge:1.10, minPIClass:'F', tendency:{ drag:1, street:2 },
-                desc:'Practical roll cage. Strong without being full track-spec.',
-                handling:{ fRollCentreHeightFront:[1.0,0.88,0.76], fRollCentreHeightRear:[1.0,0.88,0.76] }
+                desc:'Practical roll cage. Stiffens the chassis without full race-spec complexity.',
+                handling:{
+                    fRollCentreHeightFront:[1.0,1.10,1.22],
+                    fRollCentreHeightRear: [1.0,1.10,1.22],
+                    fAntiRollBarForce:     [1.0,1.06,1.14]
+                }
             },
             inverto:{
                 name:'Inverto FIA Race Cage', tag:'Race', tagColor:'#c070ff',
                 surcharge:1.45, minPIClass:'B', tendency:{ race:3 },
-                desc:'Full FIA-spec cage. Zero flex. Designed for the most extreme circuit loads.',
-                handling:{ fRollCentreHeightFront:[1.0,0.85,0.72], fRollCentreHeightRear:[1.0,0.85,0.72] }
+                desc:'Full FIA-spec cage. Chassis is essentially a rigid unit. Flat, planted, precise.',
+                handling:{
+                    fRollCentreHeightFront:[1.0,1.18,1.38],
+                    fRollCentreHeightRear: [1.0,1.18,1.38],
+                    fAntiRollBarForce:     [1.0,1.12,1.26]
+                }
             }
         },
         sliders:[]
@@ -893,13 +908,23 @@ const PERFORMANCE_MODS = {
         sliders:[
             {
                 key:'launchRPM', name:'Launch RPM', icon:'🚀', minStage:1, default:0.55,
-                description:'Target RPM held on the 2-step. Higher = more boost, harder on drivetrain.',
+                description:'Target RPM held on the 2-step. Higher = more boost off the line, harder on drivetrain.',
                 leftLabel:'Low RPM', rightLabel:'Max RPM',
-                properties:{ fInitialDriveForce:{ min:-0.03, max:0.08 }, fTractionCurveMin:{ min:-0.02, max:0.06 } },
+                properties:{ fInitialDriveForce:{ min:-0.03, max:0.08 }, fTractionCurveMin:{ min:-0.02, max:0.06 }, fLowSpeedTractionLossMult:{ min:0.04, max:-0.10 } },
                 zones:{ safe:[0.20,0.80], caution:[0.10,0.92] },
                 styleZones:{ drift:[0.30,0.65], race:[0.35,0.70], drag:[0.60,0.92], offroad:[0.20,0.58], street:[0.28,0.68] },
                 warnLow:'Low launch RPM — slow off the line, boost not ready',
                 warnHigh:'Extreme launch RPM — massive drivetrain stress, tire smoke guaranteed'
+            },
+            {
+                key:'tractionMgmt', name:'Traction Management', icon:'🛞', minStage:2, default:0.5,
+                description:'How aggressively TC cuts power during launch. Full = clean hook-up. Off = raw wheelspin.',
+                leftLabel:'Full TC', rightLabel:'Raw Launch',
+                properties:{ fLowSpeedTractionLossMult:{ min:-0.08, max:0.18 } },
+                zones:{ safe:[0.20,0.78], caution:[0.10,0.90] },
+                styleZones:{ drift:[0.60,0.95], race:[0.15,0.55], drag:[0.55,0.88], offroad:[0.20,0.65], street:[0.15,0.60] },
+                warnLow:'Aggressive TC cuts — power strangled at launch start',
+                warnHigh:'Full wheelspin — depends entirely on driver skill to hook up'
             }
         ]
     },
@@ -933,7 +958,7 @@ const PERFORMANCE_MODS = {
                 key:'liftHeight', name:'Lift Height', icon:'⬆️', minStage:1, default:0.5,
                 description:'Dial in exact height. Higher clears obstacles; lower is more stable.',
                 leftLabel:'Min', rightLabel:'Max',
-                properties:{ fSuspensionRaise:{ min:-0.04, max:0.10 } },
+                properties:{ fSuspensionRaise:{ min:0.02, max:0.14 } },
                 zones:{ safe:[0.15,0.82], caution:[0.05,0.92] },
                 styleZones:{ drift:[0.10,0.45], race:[0.10,0.50], drag:[0.05,0.35], offroad:[0.55,0.92], street:[0.20,0.60] },
                 warnLow:'Very low lift — minimal clearance improvement over stock',

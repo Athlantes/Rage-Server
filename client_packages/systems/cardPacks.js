@@ -3,8 +3,6 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Manages the Card Packs CEF browser lifecycle and acts as the relay layer
  * between the RAGE:MP game client (server events) and the CEF UI.
- *
- * Bridge pattern mirrors the existing inventory.js / citybox.js conventions.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -41,9 +39,6 @@ function closePackUI() {
 
 // ─── SERVER → CEF (via client bridge) ────────────────────────────────────────
 
-/**
- * Server sends pack preview data → open browser and show preview screen
- */
 mp.events.add('client:cardPack:openPreview', (previewJson) => {
     openPackUI();
 
@@ -55,41 +50,26 @@ mp.events.add('client:cardPack:openPreview', (previewJson) => {
     }, 350);
 });
 
-/**
- * Server consumed the item and generated rewards → start the unboxing spectacle
- */
 mp.events.add('client:cardPack:startUnboxing', (sessionJson) => {
     if (!packBrowser) return;
     packBrowser.execute(`window.onStartUnboxing(${sessionJson})`);
 });
 
-/**
- * Server revealed the chosen card reward
- */
 mp.events.add('client:cardPack:revealCard', (payloadJson) => {
     if (!packBrowser) return;
     packBrowser.execute(`window.onCardRevealed(${payloadJson})`);
 });
 
-/**
- * Re-roll accepted — allow the player to pick another card
- */
 mp.events.add('client:cardPack:rerollReady', (payloadJson) => {
     if (!packBrowser) return;
     packBrowser.execute(`window.onRerollReady(${payloadJson})`);
 });
 
-/**
- * Session ended cleanly (after claiming)
- */
 mp.events.add('client:cardPack:sessionEnd', (_payloadJson) => {
     // Give the UI a moment to play its closing animation before destroying
     setTimeout(() => closePackUI(), 2400);
 });
 
-/**
- * Server-side error (item missing, etc.)
- */
 mp.events.add('client:cardPack:error', (errorJson) => {
     if (packBrowser) {
         packBrowser.execute(`window.onServerError(${errorJson})`);
@@ -98,14 +78,11 @@ mp.events.add('client:cardPack:error', (errorJson) => {
     setTimeout(() => closePackUI(), 2500);
 });
 
-// ─── CEF → SERVER (triggered from script.js via window.triggerEvent) ─────────
+// ─── CEF → SERVER ────────────────────────────────────────────────────────────
 
-// script.js calls: window.triggerEvent('eventName', payload)
-// We expose this as a global function the CEF can call via browser.execute in
-// reverse: the CEF uses mp.trigger() via the RAGE CEF bridge.
-
-mp.events.add('client:cardPack:cef:confirmOpen', () => {
-    mp.events.callRemote('server:cardPack:confirmOpen');
+// NOTE: Added 'itemSlot' here to match the CEF's trigger call
+mp.events.add('client:cardPack:cef:confirmOpen', (itemSlot) => {
+    mp.events.callRemote('server:cardPack:confirmOpen', itemSlot);
 });
 
 mp.events.add('client:cardPack:cef:cancel', () => {
@@ -129,7 +106,7 @@ mp.events.add('client:cardPack:cef:forceClose', () => {
     closePackUI();
 });
 
-// ─── ESC key closes the pack UI if it's open ─────────────────────────────────
+// ─── ESC KEY BIND ────────────────────────────────────────────────────────────
 mp.keys.bind(0x1B, true, () => {
     if (isPackOpen) {
         // Only allow ESC on the preview screen (not mid-unboxing)

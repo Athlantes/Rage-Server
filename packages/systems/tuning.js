@@ -403,17 +403,16 @@ async function sendTuningData(player) {
     const currentPI   = calcPI(grade, upgradeStages);
     const piClassInfo = getPIClass(currentPI);
 
-    // Visual mods
+    // Visual mods — option counts are client-only (model data not loaded server-side).
+    // We send options:0 for all; client fills in real counts via getNumMods after setModKit.
     const vPricing   = VISUAL_PRICES[grade] || VISUAL_PRICES['E'];
     const visualData = {};
     for (const [vk, vm] of Object.entries(VISUAL_MODS)) {
-        let optionCount = 0;
-        try { optionCount = veh.getNumMods(vm.modType); } catch(e) {}
         visualData[vk] = {
             name:    vm.name,
             group:   vm.group,
             modType: vm.modType,
-            options: optionCount,
+            options: 0,
             current: modsMap[vm.modType] !== undefined ? modsMap[vm.modType] : -1,
             price:   vPricing.base + vPricing.perMod
         };

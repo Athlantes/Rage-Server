@@ -90,10 +90,11 @@ function applyHandlingMultipliers(veh, multipliers) {
         // For properties with zero base (e.g. fSuspensionRaise), use additive: mult-1.0
         const value = (base === 0) ? (mult - 1.0) : (base * mult);
         try { veh.setHandling(prop, value); } catch(e) {}
-        // Use RageMP API for immediate visual suspension height update
+        // fSuspensionRaise: handling.meta positive=raise, setSuspensionHeight positive=LOWERS.
+        // Negate so both agree: positive config value = car raised.
         if (prop === 'fSuspensionRaise') {
-            try { veh.setSuspensionHeight(value); } catch(e) {}
-            activeSuspHeight = (value !== 0) ? value : null; // keep render loop in sync
+            try { veh.setSuspensionHeight(-value); } catch(e) {}
+            activeSuspHeight = (value !== 0) ? -value : null; // render loop uses negated value
         }
     }
     handlingApplied = true;
@@ -401,26 +402,72 @@ mp.events.add('client:tuning:open', (initDataJson) => {
         originalSpecial = null;
     }
 
-    // Init UI with data — delay so mod kit has taken effect and browser is ready
+    // ─── Visual mod scanning — polling loop ──────────────────────────────────
+    // getNumMods only works AFTER setModKit(0) is processed by the game engine.
+    // Exotic/high-poly vehicles (Adder, T20, etc.) can take several seconds.
+    // Strategy:
+    //   1. Open the UI immediately so the player sees the Performance tab fast.
+    //   2. Poll every 250ms until the vehicle has mods, or 12s timeout.
+    //   3. On first successful scan, push a delta update to the live UI.
+    //   Horn (modType 14) always exists, so "has real mods" = total count > 1 slot.
+
+    let _visPollAttempts = 0;
+    const _visPollMax    = 48;   // 48 × 250ms = 12 seconds max
+
+    // Open UI immediately with empty visual counts (player sees Performance tab)
     setTimeout(() => {
+        if (!tuningBrowser || !mp.browsers.exists(tuningBrowser)) return;
+        const curVeh = mp.players.local.vehicle;
+        if (!curVeh) return;
+        try { curVeh.setModKit(0); } catch(e) {}
+        tuningBrowser.execute(`initTuning(${JSON.stringify(tuningData)})`);
+    }, 400);
+
+    // Start polling for visual mods
+    function _pollVisualMods() {
+        if (!tuningOpen || !tuningData) return;  // tuning was closed
         if (!tuningBrowser || !mp.browsers.exists(tuningBrowser)) return;
 
         const curVeh = mp.players.local.vehicle;
         if (!curVeh) return;
 
-        // Re-apply mod kit just in case
+        // Re-apply mod kit on every attempt — benign if already set
         try { curVeh.setModKit(0); } catch(e) {}
 
-        // Scan available visual mods now (after mod kit is active on client)
+        // Scan all visual mod types
+        let totalSlots = 0;
         if (tuningData.visualData) {
             for (const [vk, vd] of Object.entries(tuningData.visualData)) {
                 const count = curVeh.getNumMods(vd.modType);
-                if (count > 0) tuningData.visualData[vk].options = count;
+                tuningData.visualData[vk].options = count;
+                totalSlots += count;
             }
         }
 
-        tuningBrowser.execute(`initTuning(${JSON.stringify(tuningData)})`);
-    }, 500);
+        _visPollAttempts++;
+
+        // Horn alone (modType 14) has 1 slot. If total > 1 we have real visual mods.
+        // Also stop if we've hit the max attempts (some vehicles truly have nothing).
+        const hasRealMods = totalSlots > 1;
+        const giveUp      = _visPollAttempts >= _visPollMax;
+
+        if (hasRealMods || giveUp) {
+            // Push updated counts to the live UI
+            tuningBrowser.execute(
+                `if(typeof updateVisualData==='function')updateVisualData(${JSON.stringify(tuningData.visualData)})`
+            );
+            if (!hasRealMods && giveUp) {
+                // Truly no visual mods — nothing more to do
+            }
+            return; // stop polling
+        }
+
+        // Not found yet — try again in 250ms
+        setTimeout(_pollVisualMods, 250);
+    }
+
+    // First poll fires after UI is open
+    setTimeout(_pollVisualMods, 500);
 });
 
 // ─── Update cash after purchase ───
@@ -555,7 +602,7 @@ mp.events.add('cef:tuning:perfUpgrade', (catKey, variantKey) => {
 });
 
 // ─── Server confirmed perf upgrade — re-apply handling with pre-computed multipliers ───
-mp.events.add('client:tuning:perfConfirmed', (multipliersJson, piValue, piClassJson) => {
+mp.events.add('client:tuning:perfConfirmed', (multipliersJson, piValue, piClassJson, tendencyJson) => {
     try {
         const multipliers = JSON.parse(multipliersJson);
         const veh = mp.players.local.vehicle;
@@ -563,9 +610,10 @@ mp.events.add('client:tuning:perfConfirmed', (multipliersJson, piValue, piClassJ
             applyHandlingMultipliers(veh, multipliers);
         }
 
-        // Update UI with new PI
+        // Update UI with new PI + tendency (drift mode badge)
         if (tuningBrowser && mp.browsers.exists(tuningBrowser)) {
-            tuningBrowser.execute(`if(typeof updatePI==='function')updatePI(${piValue},${piClassJson})`);
+            const tendArg = tendencyJson ? `,${tendencyJson}` : '';
+            tuningBrowser.execute(`if(typeof updatePI==='function')updatePI(${piValue},${piClassJson}${tendArg})`);
         }
     } catch(e) {}
 });
@@ -1111,11 +1159,12 @@ function applyVehicleCosmetics(vehicle) {
         }
     } catch(e) {}
 
-    // Suspension height via RageMP API
+    // Suspension height — server stores physics value (positive=raised).
+    // setSuspensionHeight has inverted sign, so negate here.
     try {
         const sh = vehicle.getVariable('suspensionHeight');
         if (sh !== undefined && sh !== null) {
-            vehicle.setSuspensionHeight(parseFloat(sh));
+            vehicle.setSuspensionHeight(-parseFloat(sh));
         }
     } catch(e) {}
 
@@ -1150,8 +1199,9 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
     } catch(e) { activeStance = null; }
     try {
         const sh = vehicle.getVariable('suspensionHeight');
-        activeSuspHeight = (sh !== undefined && sh !== null) ? parseFloat(sh) : null;
-        if (activeSuspHeight === 0) activeSuspHeight = null;
+        // Server stores positive=raised; we negate for setSuspensionHeight calls in render loop
+        const shVal = (sh !== undefined && sh !== null) ? parseFloat(sh) : null;
+        activeSuspHeight = (shVal && shVal !== 0) ? -shVal : null;
     } catch(e) { activeSuspHeight = null; }
     stanceBaseWheelTW = [null, null, null, null]; // re-cache on new vehicle
 });

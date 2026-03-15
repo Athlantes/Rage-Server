@@ -4,15 +4,15 @@
  * cardPacksManager.js  (server-side)
  *
  * SECURITY MODEL:
- *   - All rewards are stored server-side in a Map keyed by player.id.
- *   - The client/CEF never learns which face-down card hides which reward.
- *   - When a card is picked, the server draws RANDOMLY from the pool —
- *     visual card position is irrelevant. Memory-reading the CEF is useless.
+ * - All rewards are stored server-side in a Map keyed by player.id.
+ * - The client/CEF never learns which face-down card hides which reward.
+ * - When a card is picked, the server draws RANDOMLY from the pool —
+ * visual card position is irrelevant. Memory-reading the CEF is useless.
  *
  * SESSION STORAGE:
- *   Sessions are kept in a module-level Map<playerId, session> instead of
- *   player.data, which avoids RAGE:MP entity-property snapshot issues that
- *   cause mutations made across async gaps to be lost.
+ * Sessions are kept in a module-level Map<playerId, session> instead of
+ * player.data, which avoids RAGE:MP entity-property snapshot issues that
+ * cause mutations made across async gaps to be lost.
  */
 
 const config       = require('../data/cardPacksConfig');
@@ -179,7 +179,12 @@ class CardPacksManager {
             rerollIdx: 0,
         });
 
-        const preview = { ...buildPreviewData(packDef), itemSlot: item.slot };
+        // --- UPDATED: Pass ppBalance to the CEF ---
+        const preview = { 
+            ...buildPreviewData(packDef), 
+            itemSlot: item.slot,
+            ppBalance: player.data.premiumPoints || 0
+        };
         player.call('client:cardPack:openPreview', [JSON.stringify(preview)]);
     }
 
@@ -252,12 +257,15 @@ class CardPacksManager {
         });
 
         const clientRewards = generatedRewards.map(buildClientReward);
+        
+        // --- UPDATED: Pass ppBalance to the CEF ---
         player.call('client:cardPack:startUnboxing', [JSON.stringify({
             packId:      session.packId,
             theme:       packDef.theme,
             cardCount:   packDef.cardCount,
             rewards:     clientRewards,
             rerollCosts: config.rerollCosts,
+            ppBalance:   player.data.premiumPoints || 0
         })]);
     }
 
@@ -286,11 +294,13 @@ class CardPacksManager {
         session.status  = 'awaiting_claim';
         setSession(player, session);
 
+        // --- UPDATED: Pass ppBalance to the CEF ---
         player.call('client:cardPack:revealCard', [JSON.stringify({
             visualIndex,
             reward:     buildClientReward(chosenReward),
             rerollCost: config.rerollCosts[session.rerollIdx] || null,
             canReroll:  session.rewards.length > 0,
+            ppBalance:  player.data.premiumPoints || 0
         })]);
     }
 
