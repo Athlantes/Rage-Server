@@ -12,6 +12,7 @@ module.exports = [
         maxDist: 60,
         reward: 250
     },
+    
     {
         id: 2,
         name: "Chilliad Church",
@@ -21,6 +22,7 @@ module.exports = [
         maxDist: 120,
         reward: 300
     },
+
     {
         id: 3,
         name: "Chilliad Lake",
@@ -104,8 +106,8 @@ module.exports = [
     {
         id: 11,
         name: "Waterfall Bridge",
-        pos: { x: -534.26, y: 4425.32, z: 41.15 },
-        height: 80,
+        pos: { x: -534.26, y: 4425.32, z: 31.15 },
+        height: 90,
         radius: 60,
         maxDist: 200,
         reward: 200
