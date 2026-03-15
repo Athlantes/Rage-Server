@@ -1,8 +1,5 @@
 // packages/data/landmarks.js
-// pos    = base/center coordinate of the landmark
-// height = how tall the landmark is in meters (samples base, mid, top)
-// radius = horizontal spread in meters (samples 4 cardinal sides)
-// maxDist= max distance the player can be to photograph it (default: 150m)
+
 module.exports = [
 
     // --- Entries from saved_landmarks.txt ---
@@ -37,10 +34,10 @@ module.exports = [
     {
         id: 4,
         name: "Maze Bank Tower",
-        pos: { x: -75.02, y: -818.22, z: 44.23 },  // base of tower
-        height: 230,   // very tall — system samples base, mid (115m), top (230m)
-        radius: 25,    // building footprint
-        maxDist: 500,  // skyscraper visible from far, generous distance
+        pos: { x: -75.02, y: -818.22, z: 44.23 },
+        height: 230,
+        radius: 25,
+        maxDist: 500,
         reward: 500
     },
 
@@ -51,6 +48,66 @@ module.exports = [
         height: 10,
         radius: 10,
         maxDist: 100,
+        reward: 200
+    },
+
+    {
+        id: 6,
+        name: "Fountain Davis City Hall",
+        pos: { x: 288.42, y: -1601.22, z: 34.57 },
+        height: 5,
+        radius: 15,
+        maxDist: 80,
+        reward: 150
+    },
+
+    {
+        id: 7,
+        name: "Los Santos Church",
+        pos: { x: -775.75, y: -6.99, z: 44.49 },
+        height: 20,
+        radius: 40,
+        maxDist: 150,
+        reward: 250
+    },
+
+    {
+        id: 8,
+        name: "Rockford Hills Sign",
+        pos: { x: -851.87, y: -64.81, z: 39.49 },
+        height: 5,
+        radius: 10,
+        maxDist: 80,
+        reward: 150
+    }, 
+
+    {
+        id: 9,
+        name: "LS Beach Boat",
+        pos: { x: -1431.48, y: -1387.20, z: 4.85 },
+        height: 2,
+        radius: 15,
+        maxDist: 100,
+        reward: 200
+    }, 
+
+    {
+        id: 10,
+        name: "LS Airport Planes Statue", 
+        pos: { x: -877.40, y: -2458.34, z: 20.63 },
+        height: 10,
+        radius: 20,
+        maxDist: 100,
+        reward: 250
+    },
+
+    {
+        id: 11,
+        name: "Waterfall Bridge",
+        pos: { x: -534.26, y: 4425.32, z: 41.15 },
+        height: 80,
+        radius: 60,
+        maxDist: 200,
         reward: 200
     }
 ];
