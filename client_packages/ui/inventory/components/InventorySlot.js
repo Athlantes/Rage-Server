@@ -36,6 +36,23 @@ const InventorySlot = {
       }
       return null
     },
+
+    // For car_component items: use base componentType image + rarity border
+    itemImgSrc() {
+      if (!this.item) return '../items/default.png'
+      if (this.item.type === 'car_component' && this.item.componentType) {
+        return '../items/' + this.item.componentType + '.png'
+      }
+      if (this.item.type === 'raw_material') {
+        return '../items/' + this.item.itemId + '.png'
+      }
+      return '../items/' + this.item.itemId + '.png'
+    },
+
+    rarityBorderClass() {
+      if (!this.item || this.item.type !== 'car_component') return ''
+      return 'rarity-border--' + (this.item.rarity || 'common')
+    },
   },
 
   template: `
@@ -47,13 +64,18 @@ const InventorySlot = {
       @contextmenu.prevent="item && $emit('context', $event, item)"
     >
       <template v-if="item">
-        <img
-          :src="'../items/' + item.itemId + '.png'"
-          class="item-img"
-          draggable="true"
-          @error="$event.target.src = '../items/default.png'"
-          @dragstart.stop="$emit('dragstart', slotId)"
-        />
+        <div
+          class="item-img-wrap"
+          :class="rarityBorderClass"
+        >
+          <img
+            :src="itemImgSrc"
+            class="item-img"
+            draggable="true"
+            @error="$event.target.src = '../items/default.png'"
+            @dragstart.stop="$emit('dragstart', slotId)"
+          />
+        </div>
         <span
           v-if="countLabel"
           class="item-count"

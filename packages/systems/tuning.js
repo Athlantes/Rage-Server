@@ -351,10 +351,14 @@ async function sendTuningData(player) {
         const vkForCost = variantKey || Object.keys(uiVariants)[0] || Object.keys(modInfo.variants || {})[0];
         const nextReq   = (nextStage <= effectiveMax) ? calcUpgradeReq(key, grade, nextStage, vkForCost) : null;
 
-        let playerParts = 0;
-        if (nextReq) {
-            const partItemId = PART_ITEMS[nextReq.partType];
-            playerParts = countPlayerItem(player, partItemId);
+        // Enrich items with player inventory counts + display names
+        if (nextReq && nextReq.items) {
+            nextReq.items = nextReq.items.map(item => ({
+                itemId:    item.itemId,
+                count:     item.count,
+                name:      ItemRegistry[item.itemId] ? ItemRegistry[item.itemId].name : item.itemId,
+                playerHas: countPlayerItem(player, item.itemId)
+            }));
         }
 
         // Sliders — strip properties from client payload, keep zone data
@@ -389,12 +393,9 @@ async function sendTuningData(player) {
             sliderValues:   sliderVals,
             lockState,              // { locked, reason, styleRequired?, stylePercent?, styleNeeded? }
             nextReq: nextReq ? {
-                stage:      nextReq.stage,
-                money:      nextReq.money,
-                partType:   nextReq.partType,
-                partAmount: nextReq.partAmount,
-                partName:   ItemRegistry[PART_ITEMS[nextReq.partType]] ? ItemRegistry[PART_ITEMS[nextReq.partType]].name : nextReq.partType,
-                playerHas:  playerParts
+                stage: nextReq.stage,
+                money: nextReq.money,
+                items: nextReq.items || []
             } : null
         };
     }
@@ -614,13 +615,15 @@ mp.events.add('server:tuning:perfUpgrade', async (player, modKey, variantKey) =>
         ]);
     }
 
-    const partItemId    = PART_ITEMS[nextReq.partType];
-    const playerParts   = countPlayerItem(player, partItemId);
-    if (playerParts < nextReq.partAmount) {
-        const partName = ItemRegistry[partItemId] ? ItemRegistry[partItemId].name : nextReq.partType;
-        return player.call('showNotification', ['Tuning',
-            `Need ${nextReq.partAmount}x ${partName} (have ${playerParts}).`
-        ]);
+    // Check every required component
+    for (const item of (nextReq.items || [])) {
+        const playerHas = countPlayerItem(player, item.itemId);
+        if (playerHas < item.count) {
+            const name = ItemRegistry[item.itemId] ? ItemRegistry[item.itemId].name : item.itemId;
+            return player.call('showNotification', ['Tuning',
+                `Need ${item.count}× ${name} (have ${playerHas}).`
+            ]);
+        }
     }
 
     // ── Deduct ──
@@ -628,7 +631,9 @@ mp.events.add('server:tuning:perfUpgrade', async (player, modKey, variantKey) =>
         `Tuning: ${modInfo.name} Stage ${nextReq.stage} [${variantKey}]`);
     if (!moneyOk) return player.call('showNotification', ['Tuning', 'Payment failed.']);
 
-    await removePlayerItems(player, partItemId, nextReq.partAmount);
+    for (const item of (nextReq.items || [])) {
+        await removePlayerItems(player, item.itemId, item.count);
+    }
 
     // ── Apply mod ──
     const newModIndex = currentStage; // stage N = modIndex N-1

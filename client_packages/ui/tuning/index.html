@@ -18,6 +18,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
     --txt:#e4e6eb;--txt2:#a0a5b8;--txt3:#6b7084;
     --accent:#00a8ff;--ok:#2ecc71;--danger:#ff4757;--warn:#f0a500;--caution:#ffaa00;
     --drift:#ff6b35;--race:#00a8ff;--drag:#ff4757;--offroad:#8b5e3c;--street:#8aaa30;
+    --common:#a0a0a0;--uncommon:#2ecc71;--rare:#3498db;--epic:#9b59b6;--legendary:#f1c40f;
     --zone-safe:rgba(46,204,113,.22);--zone-caution:rgba(240,165,0,.28);--zone-danger:rgba(255,71,87,.32);
     --r:10px;--rs:6px;
     --sidebar-w:270px;--panel-w:420px;--topbar-h:56px;
@@ -184,7 +185,15 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
 /* UPGRADE SECTION */
 .upgrade-section{padding:18px 22px;margin-top:auto}
 .us-label{font-size:13px;font-weight:700;color:var(--txt2);margin-bottom:10px}
-.us-cost{display:flex;gap:18px;margin-bottom:14px;font-size:13px;flex-wrap:wrap}
+.us-cost{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;font-size:13px}
+    /* ── Item images in upgrade requirements ── */
+    .uc-item-img{width:22px;height:22px;border-radius:3px;object-fit:contain;flex-shrink:0;padding:1px;background:rgba(255,255,255,.05);}
+    .uc-item-img.rar-common    {box-shadow:inset 0 0 0 1px #a0a0a0;}
+    .uc-item-img.rar-uncommon  {box-shadow:inset 0 0 0 1px #2ecc71;}
+    .uc-item-img.rar-rare      {box-shadow:inset 0 0 0 1px #3498db;}
+    .uc-item-img.rar-epic      {box-shadow:inset 0 0 0 1px #9b59b6;}
+    .uc-item-img.rar-legendary {box-shadow:inset 0 0 0 1px #f1c40f;}
+
 .uc-item{display:flex;align-items:center;gap:6px}
 .uc-lbl{color:var(--txt3);font-size:11px;font-weight:600}
 .uc-val{font-weight:700}
@@ -589,6 +598,28 @@ function renderPerfSidebar(){
 // ═════════════════════════════════════════════════════════════════════════════
 // PERFORMANCE MAIN PANEL
 // ═════════════════════════════════════════════════════════════════════════════
+function buildReqRows(req, price, canM) {
+    if (!req) return '';
+    var rows = '<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price)+'</span></div>';
+    var items = req.items || [];
+    for (var ii = 0; ii < items.length; ii++) {
+        var it = items[ii]; var hasIt = it.playerHas||0; var needIt = it.count||1; var okIt = hasIt >= needIt;
+        var rar = 'common';
+        ['legendary','epic','rare','uncommon'].forEach(function(rv){ if(it.itemId && it.itemId.endsWith('_'+rv)) rar=rv; });
+        var compBase = it.itemId.replace(/_(?:common|uncommon|rare|epic|legendary)$/, '');
+        rows += '<div class="uc-item">'
+            + '<img class="uc-item-img rar-'+rar+'" src="../items/'+compBase+'.png" onerror="this.src='../items/default.png'">'
+            + '<span class="uc-lbl" style="color:var(--'+rar+')">'+(it.name||it.itemId)+'</span>'
+            + '<span class="uc-val '+(okIt?'has':'miss')+'">'+hasIt+'/'+needIt+'</span></div>';
+    }
+    return rows;
+}
+function canUpgradeReq(req, price, playerCash) {
+    if (!req) return false;
+    if (playerCash < price) return false;
+    return (req.items||[]).every(function(it){ return (it.playerHas||0) >= it.count; });
+}
+
 function renderPerfMain(){
     var panel=$('#perfMain');
     if(!DATA||!selCat){ panel.innerHTML='<div class="empty-state">Select a category to begin</div>'; return; }
@@ -681,7 +712,7 @@ function renderPerfMain(){
                 +surTxt+piBadge+'</div>'
                 +'<div class="bc-desc">'+v.desc+'</div>'
                 +'<div class="bc-cost"><span class="bc-money">$'+fmt(price)+'</span>'
-                +(req?'<span class="bc-parts">'+req.partAmount+'× '+(req.partName||req.partType)+'</span>':'')
+                +(req&&req.items&&req.items.length?'<span class="bc-parts">'+(req.items.map(function(it){return it.count+'× '+(it.name||it.itemId);}).join(' · '))+'</span>':'')
                 +'</div></div>';
         }
         html+='</div>';

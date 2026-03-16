@@ -47,93 +47,43 @@ module.exports = {
             theme:       'bronze', // drives CSS theming in the UI
             cardCount:   5,
 
+
             rewards: [
-                // COMMON ─────────────────────────────────────────────────────
-                {
-                    id: 'cash_250', type: 'cash', name: '$250 Cash',
-                    value: 250, rarity: 'common', weight: 350,
-                    icon: 'cash', description: 'A couple of crumpled bills.'
-                },
-                {
-                    id: 'cash_500', type: 'cash', name: '$500 Cash',
-                    value: 500, rarity: 'common', weight: 300,
-                    icon: 'cash', description: 'Enough for a decent meal.'
-                },
-                {
-                    id: 'common_part_x5', type: 'item', name: 'Common Car Part ×5',
-                    itemId: 'car_part_common', count: 5, rarity: 'common', weight: 280,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
-                {
-                    id: 'common_part_x2', type: 'item', name: 'Common Car Part ×2',
-                    itemId: 'car_part_common', count: 2, rarity: 'common', weight: 300,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
-                // UNCOMMON ───────────────────────────────────────────────────
-                {
-                    id: 'cash_1500', type: 'cash', name: '$1,500 Cash',
-                    value: 1500, rarity: 'uncommon', weight: 180,
-                    icon: 'cash', description: 'A nice little bonus.'
-                },
-                {
-                    id: 'cash_3000', type: 'cash', name: '$3,000 Cash',
-                    value: 3000, rarity: 'uncommon', weight: 140,
-                    icon: 'cash', description: 'Getting somewhere.'
-                },
-                {
-                    id: 'uncommon_part_x2', type: 'item', name: 'Uncommon Car Part ×2',
-                    itemId: 'car_part_uncommon', count: 2, rarity: 'uncommon', weight: 130,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
-                {
-                    id: 'pp_15', type: 'pp', name: '15 Premium Points',
-                    value: 15, rarity: 'uncommon', weight: 120,
-                    icon: 'premium_points', description: 'A sprinkle of premium currency.'
-                },
-                // RARE ────────────────────────────────────────────────────────
-                {
-                    id: 'cash_7500', type: 'cash', name: '$7,500 Cash',
-                    value: 7500, rarity: 'rare', weight: 70,
-                    icon: 'cash', description: 'A generous sum.'
-                },
-                {
-                    id: 'pp_50', type: 'pp', name: '50 Premium Points',
-                    value: 50, rarity: 'rare', weight: 55,
-                    icon: 'premium_points', description: 'Almost enough for a re-roll.'
-                },
-                {
-                    id: 'rare_part_x2', type: 'item', name: 'Rare Car Part ×2',
-                    itemId: 'car_part_rare', count: 2, rarity: 'rare', weight: 55,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
-                // EPIC ────────────────────────────────────────────────────────
-                {
-                    id: 'cash_20000', type: 'cash', name: '$20,000 Cash',
-                    value: 20000, rarity: 'epic', weight: 20,
-                    icon: 'cash', description: 'Big money from a small pack!'
-                },
-                {
-                    id: 'pp_100', type: 'pp', name: '100 Premium Points',
-                    value: 100, rarity: 'epic', weight: 15,
-                    icon: 'premium_points', description: 'A hundred points of premium power.'
-                },
-                {
-                    id: 'epic_part_x2', type: 'item', name: 'Epic Car Part ×2',
-                    itemId: 'car_part_epic', count: 2, rarity: 'epic', weight: 15,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
-                // LEGENDARY ───────────────────────────────────────────────────
-                {
-                    id: 'bronze_jackpot', type: 'cash', name: '🎰 $75,000 JACKPOT!',
-                    value: 75000, rarity: 'legendary', weight: 5,
-                    icon: 'cash', description: 'Against all odds, you hit the jackpot!'
-                },
-                {
-                    id: 'legendary_part_x2', type: 'item', name: 'Legendary Car Part ×2',
-                    itemId: 'car_part_legendary', count: 2, rarity: 'legendary', weight: 5,
-                    icon: 'car_parts', description: 'Car parts used for tuning.'
-                },
+                // ─ COMMON ────────────────────────────────────────────────────
+                { id:'cash_250',           type:'cash', name:'$250 Cash',               value:250,   rarity:'common',    weight:220, icon:'cash',         description:'A couple of crumpled bills.' },
+                { id:'cash_500',           type:'cash', name:'$500 Cash',               value:500,   rarity:'common',    weight:180, icon:'cash',         description:'Enough for a decent meal.' },
+                { id:'piston_x4',          type:'item', name:'Common Piston ×4',        itemId:'piston_common',          count:4, rarity:'common',    weight:160, icon:'piston',  description:'Basic pistons for entry-level engine work.' },
+                { id:'brake_pad_x4',       type:'item', name:'Common Brake Pad ×4',     itemId:'brake_pad_common',       count:4, rarity:'common',    weight:150, icon:'brake_pad',  description:'Entry-grade brake friction material.' },
+                { id:'tire_compound_x4',   type:'item', name:'Common Tire Compound ×4', itemId:'tire_compound_common',   count:4, rarity:'common',    weight:140, icon:'tire_compound',  description:'Standard rubber compound.' },
+                { id:'exhaust_manifold_x2',type:'item', name:'Common Exhaust Manifold ×2',itemId:'exhaust_manifold_common',count:2,rarity:'common',  weight:130, icon:'exhaust_manifold',  description:'Stock-replacement exhaust collector.' },
+                { id:'scrap_metal_x8',     type:'item', name:'Scrap Metal ×8',          itemId:'scrap_metal',            count:8, rarity:'common',    weight:120, icon:'scrap_metal',           description:'Raw salvage for crafting.' },
+                { id:'machine_oil_x4',     type:'item', name:'Machine Oil ×4',          itemId:'machine_oil',            count:4, rarity:'common',    weight:120, icon:'machine_oil',           description:'Lubricant for mechanical components.' },
+                // ─ UNCOMMON ──────────────────────────────────────────────────
+                { id:'cash_1500',          type:'cash', name:'$1,500 Cash',             value:1500,  rarity:'uncommon',  weight:130, icon:'cash',         description:'A nice bonus.' },
+                { id:'cash_3000',          type:'cash', name:'$3,000 Cash',             value:3000,  rarity:'uncommon',  weight:100, icon:'cash',         description:'Getting somewhere.' },
+                { id:'gear_set_unc',       type:'item', name:'Uncommon Gear Set',       itemId:'gear_set_uncommon',      count:1, rarity:'uncommon',  weight:90,  icon:'gear_set',description:'Improved ratio gear set.' },
+                { id:'coilover_unc_x2',    type:'item', name:'Uncommon Coilover Spring ×2',itemId:'coilover_spring_uncommon',count:2,rarity:'uncommon',weight:85,  icon:'coilover_spring',description:'Sport-grade lowering springs.' },
+                { id:'brake_rotor_unc',    type:'item', name:'Uncommon Brake Rotor',    itemId:'brake_rotor_uncommon',   count:1, rarity:'uncommon',  weight:80,  icon:'brake_rotor',description:'Drilled and slotted performance rotor.' },
+                { id:'turbo_manifold_unc_x2',type:'item',name:'Uncommon Turbo Manifold ×2',itemId:'turbo_manifold_uncommon',count:2,rarity:'uncommon',weight:75,  icon:'turbo_manifold',description:'Improved exhaust routing for boost.' },
+                { id:'carbon_fiber_x3',    type:'item', name:'Carbon Fiber ×3',         itemId:'carbon_fiber',           count:3, rarity:'uncommon',  weight:70,  icon:'carbon_fiber',          description:'High-value lightweight material.' },
+                { id:'pp_15',              type:'pp',   name:'15 Premium Points',       value:15,    rarity:'uncommon',  weight:65,  icon:'premium_points', description:'A sprinkle of premium currency.' },
+                // ─ RARE ──────────────────────────────────────────────────────
+                { id:'cash_7500',          type:'cash', name:'$7,500 Cash',             value:7500,  rarity:'rare',      weight:50,  icon:'cash',         description:'A generous sum.' },
+                { id:'crankshaft_rare',    type:'item', name:'Rare Crankshaft',         itemId:'crankshaft_rare',        count:1, rarity:'rare',      weight:45,  icon:'crankshaft',    description:'Forged billet crankshaft.' },
+                { id:'shock_absorber_rare_x2',type:'item',name:'Rare Shock Absorber ×2',itemId:'shock_absorber_rare',   count:2, rarity:'rare',      weight:40,  icon:'shock_absorber',    description:'Motorsport-grade dampers.' },
+                { id:'intercooler_rare',   type:'item', name:'Rare Intercooler',        itemId:'intercooler_rare',       count:1, rarity:'rare',      weight:38,  icon:'intercooler',    description:'High-flow bar and plate intercooler.' },
+                { id:'pp_50',              type:'pp',   name:'50 Premium Points',       value:50,    rarity:'rare',      weight:35,  icon:'premium_points', description:'Almost enough for a re-roll.' },
+                // ─ EPIC ──────────────────────────────────────────────────────
+                { id:'cash_20000',         type:'cash', name:'$20,000 Cash',            value:20000, rarity:'epic',      weight:18,  icon:'cash',         description:'Big money from a small pack!' },
+                { id:'engine_block_epic',  type:'item', name:'Epic Engine Block',       itemId:'engine_block_epic',      count:1, rarity:'epic',      weight:12,  icon:'engine_block',    description:'Competition-spec billet engine block.' },
+                { id:'carbon_panel_epic_x2',type:'item',name:'Epic Carbon Panel ×2',   itemId:'carbon_panel_epic',      count:2, rarity:'epic',      weight:10,  icon:'carbon_panel',    description:'Full-dry carbon replacement panels.' },
+                { id:'pp_100',             type:'pp',   name:'100 Premium Points',      value:100,   rarity:'epic',      weight:9,   icon:'premium_points', description:'A hundred points of premium power.' },
+                // ─ LEGENDARY ─────────────────────────────────────────────────
+                { id:'bronze_jackpot',     type:'cash', name:'🎰 $75,000 JACKPOT!',    value:75000, rarity:'legendary', weight:4,   icon:'cash',         description:'Against all odds, you hit the jackpot!' },
+                { id:'crankshaft_leg',     type:'item', name:'Legendary Crankshaft',    itemId:'crankshaft_legendary',   count:1, rarity:'legendary', weight:3,   icon:'crankshaft',description:'Titanium competition crankshaft.' },
+                { id:'carbon_wing_leg',    type:'item', name:'Legendary Carbon Wing',   itemId:'carbon_wing_legendary',  count:1, rarity:'legendary', weight:2,   icon:'carbon_wing',description:'Full active aero carbon wing element.' },
             ],
+
         },
     }, // end packs
 };

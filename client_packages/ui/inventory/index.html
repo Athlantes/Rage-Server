@@ -249,6 +249,40 @@
     /* ════════════════════════════════════════════════════════
        ITEM INSIDE SLOT
        ════════════════════════════════════════════════════════ */
+
+    /* ── Rarity borders for car components ── */
+    .item-img-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+    .rarity-border--common    { box-shadow: inset 0 0 0 2px #a0a0a0; }
+    .rarity-border--uncommon  { box-shadow: inset 0 0 0 2px #2ecc71, 0 0 6px rgba(46,204,113,.35); }
+    .rarity-border--rare      { box-shadow: inset 0 0 0 2px #3498db, 0 0 6px rgba(52,152,219,.40); }
+    .rarity-border--epic      { box-shadow: inset 0 0 0 2px #9b59b6, 0 0 8px rgba(155,89,182,.50); }
+    .rarity-border--legendary { box-shadow: inset 0 0 0 2px #f1c40f, 0 0 10px rgba(241,196,15,.55); }
+
+    /* Rarity corner badge */
+    .rarity-border--uncommon::after,
+    .rarity-border--rare::after,
+    .rarity-border--epic::after,
+    .rarity-border--legendary::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .rarity-border--uncommon::after  { background: #2ecc71; }
+    .rarity-border--rare::after      { background: #3498db; }
+    .rarity-border--epic::after      { background: #9b59b6; }
+    .rarity-border--legendary::after { background: #f1c40f; box-shadow: 0 0 4px #f1c40f; }
+
     .item-img {
       width: 70%;
       height: 70%;

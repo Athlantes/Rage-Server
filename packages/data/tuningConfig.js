@@ -1267,6 +1267,97 @@ function calcDriftModeActive(variants, stages) {
     return calcBuildTendency(variants, stages).isDriftMode;
 }
 
+// Per-category upgrade item requirements (independent of vehicle grade)
+// Stage index = stage - 1.  Items are the real named car components.
+const STAGE_ITEMS_DATA = {
+    engine: [
+        [{itemId:'piston_common',count:4}, {itemId:'engine_block_common',count:1}],
+        [{itemId:'crankshaft_uncommon',count:1}, {itemId:'piston_uncommon',count:4}, {itemId:'engine_block_rare',count:1}],
+        [{itemId:'crankshaft_rare',count:1}, {itemId:'piston_rare',count:2}, {itemId:'engine_block_rare',count:1}],
+        [{itemId:'crankshaft_epic',count:1}, {itemId:'engine_block_epic',count:1}, {itemId:'piston_epic',count:2}],
+        [{itemId:'crankshaft_legendary',count:1}, {itemId:'engine_block_legendary',count:1}],
+    ],
+    turbo: [
+        [{itemId:'turbo_manifold_common',count:2}, {itemId:'wastegate_common',count:1}],
+        [{itemId:'intercooler_uncommon',count:1}, {itemId:'turbo_manifold_uncommon',count:2}, {itemId:'wastegate_uncommon',count:1}],
+        [{itemId:'intercooler_rare',count:1}, {itemId:'turbo_manifold_rare',count:2}, {itemId:'wastegate_rare',count:1}],
+    ],
+    ecu: [
+        [{itemId:'ecu_chip_common',count:2}, {itemId:'fuel_injector_common',count:2}],
+        [{itemId:'ecu_chip_uncommon',count:1}, {itemId:'fuel_injector_uncommon',count:3}],
+        [{itemId:'ecu_chip_rare',count:1}, {itemId:'fuel_injector_rare',count:2}],
+    ],
+    exhaust_perf: [
+        [{itemId:'exhaust_manifold_common',count:2}],
+        [{itemId:'exhaust_header_uncommon',count:1}, {itemId:'exhaust_manifold_uncommon',count:2}],
+        [{itemId:'exhaust_header_rare',count:1}, {itemId:'exhaust_manifold_rare',count:1}],
+    ],
+    transmission: [
+        [{itemId:'clutch_kit_common',count:2}],
+        [{itemId:'gear_set_uncommon',count:1}, {itemId:'clutch_kit_uncommon',count:2}],
+        [{itemId:'gear_set_rare',count:1}, {itemId:'clutch_kit_rare',count:1}],
+        [{itemId:'gear_set_epic',count:1}, {itemId:'clutch_kit_epic',count:1}],
+    ],
+    differential: [
+        [{itemId:'lsd_pack_common',count:2}],
+        [{itemId:'ring_pinion_uncommon',count:1}, {itemId:'lsd_pack_uncommon',count:2}],
+        [{itemId:'ring_pinion_rare',count:1}, {itemId:'lsd_pack_rare',count:1}],
+    ],
+    brakes: [
+        [{itemId:'brake_pad_common',count:4}, {itemId:'brake_rotor_common',count:1}],
+        [{itemId:'brake_rotor_uncommon',count:1}, {itemId:'brake_pad_uncommon',count:4}, {itemId:'brake_caliper_uncommon',count:1}],
+        [{itemId:'brake_rotor_rare',count:1}, {itemId:'brake_caliper_rare',count:1}, {itemId:'brake_pad_rare',count:2}],
+        [{itemId:'brake_rotor_epic',count:1}, {itemId:'brake_caliper_epic',count:1}],
+    ],
+    suspension: [
+        [{itemId:'coilover_spring_common',count:2}, {itemId:'shock_absorber_common',count:1}],
+        [{itemId:'coilover_spring_uncommon',count:2}, {itemId:'shock_absorber_uncommon',count:2}, {itemId:'sway_bar_uncommon',count:1}],
+        [{itemId:'coilover_spring_rare',count:1}, {itemId:'shock_absorber_rare',count:2}, {itemId:'sway_bar_rare',count:1}],
+        [{itemId:'coilover_spring_epic',count:1}, {itemId:'shock_absorber_epic',count:1}, {itemId:'sway_bar_epic',count:1}],
+    ],
+    tires: [
+        [{itemId:'tire_compound_common',count:4}],
+        [{itemId:'tire_compound_uncommon',count:3}, {itemId:'wheel_bearing_uncommon',count:2}],
+        [{itemId:'tire_compound_rare',count:2}, {itemId:'wheel_bearing_rare',count:1}],
+        [{itemId:'tire_compound_epic',count:2}],
+    ],
+    rollcage: [
+        [{itemId:'chromoly_tube_common',count:4}],
+        [{itemId:'chromoly_tube_uncommon',count:4}, {itemId:'gusset_plate_uncommon',count:2}],
+    ],
+    weight: [
+        [{itemId:'aluminum_hardware_common',count:4}],
+        [{itemId:'carbon_panel_uncommon',count:2}, {itemId:'aluminum_hardware_uncommon',count:2}],
+        [{itemId:'carbon_panel_rare',count:2}, {itemId:'aluminum_hardware_rare',count:1}],
+        [{itemId:'carbon_panel_epic',count:2}],
+    ],
+    hydraulicHandbrake: [
+        [{itemId:'hydraulic_cylinder_common',count:2}, {itemId:'bias_valve_common',count:1}],
+        [{itemId:'hydraulic_cylinder_uncommon',count:1}, {itemId:'bias_valve_uncommon',count:2}],
+        [{itemId:'hydraulic_cylinder_rare',count:1}, {itemId:'bias_valve_rare',count:1}],
+    ],
+    launchControl: [
+        [{itemId:'launch_module_common',count:2}, {itemId:'rev_limiter_common',count:1}],
+        [{itemId:'launch_module_uncommon',count:1}, {itemId:'rev_limiter_uncommon',count:2}],
+        [{itemId:'launch_module_rare',count:1}, {itemId:'rev_limiter_rare',count:1}],
+    ],
+    liftKit: [
+        [{itemId:'lift_spacer_common',count:4}],
+        [{itemId:'lift_spacer_uncommon',count:2}, {itemId:'extended_shock_uncommon',count:2}],
+        [{itemId:'extended_shock_rare',count:2}, {itemId:'lift_spacer_rare',count:1}],
+    ],
+    activeAero: [
+        [{itemId:'carbon_wing_uncommon',count:1}, {itemId:'actuator_motor_uncommon',count:2}],
+        [{itemId:'carbon_wing_rare',count:2}, {itemId:'actuator_motor_rare',count:1}],
+        [{itemId:'carbon_wing_epic',count:2}, {itemId:'actuator_motor_epic',count:1}],
+    ],
+    streetKit: [
+        [{itemId:'tune_kit_common',count:2}],
+        [{itemId:'tune_kit_uncommon',count:1}, {itemId:'sport_spring_uncommon',count:2}],
+        [{itemId:'tune_kit_rare',count:1}, {itemId:'sport_spring_rare',count:1}],
+    ],
+};
+
 function calcUpgradeReq(catKey, grade, stage, variantKey) {
     const cat = PERF_COST_FORMULA.categories[catKey];
     if (!cat) return null;
@@ -1279,12 +1370,13 @@ function calcUpgradeReq(catKey, grade, stage, variantKey) {
     if (variantKey && mod.variants && mod.variants[variantKey]) {
         sc = mod.variants[variantKey].surcharge || 1.0;
     }
-    const money    = Math.round((cat.baseMoney * gs * ss * sc) / 100) * 100;
-    const parts    = Math.min(cat.baseParts + (stage - 1) * cat.partsPerStage, cat.maxParts);
-    const gi       = PERF_COST_FORMULA.gradeIndex[grade] || 0;
-    const tier     = Math.min(gi + (stage - 1), PERF_COST_FORMULA.rarityByTier.length - 1);
-    const partType = PERF_COST_FORMULA.rarityByTier[tier];
-    return { stage, money, partType, partAmount: parts };
+    const money = Math.round((cat.baseMoney * gs * ss * sc) / 100) * 100;
+
+    // Specific component items required for this category + stage
+    const stageData = STAGE_ITEMS_DATA[catKey];
+    const items = (stageData && stageData[stage - 1]) ? stageData[stage - 1] : [];
+
+    return { stage, money, items };
 }
 
 function calcPI(grade, stages) {
@@ -1463,7 +1555,7 @@ module.exports = {
     DRIFT_MODE_THRESHOLD, STYLE_UNLOCK_THRESHOLD, OFFROAD_VEHICLE_TYPES,
     DRIFT_MODE_HANDLING, HANDLING_SAFETY_CAPS,
     PERFORMANCE_MODS, PERF_GROUP_LABELS, PERF_GROUP_ORDER,
-    PI_CONFIG, PERF_COST_FORMULA,
+    PI_CONFIG, PERF_COST_FORMULA, STAGE_ITEMS_DATA,
     isPIClassAtLeast, getEffectiveMaxStage, getAvailableVariants,
     getCategoryLockState, calcAllHandling, calcBuildTendency,
     calcDriftModeActive, calcUpgradeReq, calcPI, getPIClass,

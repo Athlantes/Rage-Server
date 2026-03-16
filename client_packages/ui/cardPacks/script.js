@@ -1,3 +1,35 @@
+// ── Icon path resolver ──────────────────────────────────────────────────────
+// Card pack rewards can reference:
+//   cash, premium_points  → ./assets/{icon}.png
+//   Any car component     → ../items/{icon}.png  (base componentType image)
+//   Raw materials         → ../items/{icon}.png
+const ITEM_FOLDER_ICONS = new Set([
+    'crankshaft','piston','engine_block',
+    'turbo_manifold','intercooler','wastegate',
+    'ecu_chip','fuel_injector',
+    'exhaust_header','exhaust_manifold',
+    'gear_set','clutch_kit',
+    'lsd_pack','ring_pinion',
+    'brake_rotor','brake_caliper','brake_pad',
+    'coilover_spring','shock_absorber','sway_bar',
+    'tire_compound','wheel_bearing',
+    'chromoly_tube','gusset_plate',
+    'carbon_panel','aluminum_hardware',
+    'hydraulic_cylinder','bias_valve',
+    'launch_module','rev_limiter',
+    'lift_spacer','extended_shock',
+    'carbon_wing','actuator_motor',
+    'tune_kit','sport_spring',
+    'machine_oil','rubber_compound','aluminum_sheet','carbon_fiber','scrap_metal'
+]);
+
+function resolveIconPath(icon) {
+    if (!icon) return './assets/default.png';
+    if (ITEM_FOLDER_ICONS.has(icon)) return '../items/' + icon + '.png';
+    return './assets/' + icon + '.png';
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
  * script.js — Lag-Free, Tearing Card Pack Unboxing UI
  */
@@ -63,7 +95,7 @@ function createCard(index, reward) {
                 <img src="./assets/logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
             </div>
             <div class="card-face">
-                <img src="./assets/${reward?.icon ?? 'default'}.png" class="reward-img" onerror="this.src='./assets/default.png'">
+                <img src="${resolveIconPath(reward?.icon)}" class="reward-img" onerror="this.src='./assets/default.png'">
                 <div class="reward-title">${reward?.name ?? 'Mystery'}</div>
                 <div class="reward-rarity-badge">${reward?.rarity ?? 'common'}</div>
             </div>
@@ -110,7 +142,7 @@ window.onPreviewData = function(data) {
         const row = document.createElement('div');
         row.className = 'preview-row';
         row.innerHTML = `
-            <img src="./assets/${r.icon}.png" class="reward-img" onerror="this.src='./assets/default.png'">
+            <img src="${resolveIconPath(r.icon)}" class="reward-img" onerror="this.src='./assets/default.png'">
             <div class="reward-info">
                 <div class="reward-name">${r.name}</div>
                 <div class="reward-desc">${r.description}</div>
@@ -299,7 +331,7 @@ window.onCardRevealed = async function(payload) {
 
     const face = picked.querySelector('.card-face');
     if (face) {
-        face.querySelector('.reward-img').src = `./assets/${reward.icon}.png`;
+        face.querySelector('.reward-img').src = resolveIconPath(reward.icon);
         face.querySelector('.reward-title').textContent = reward.name;
         face.querySelector('.reward-rarity-badge').textContent = reward.rarity;
     }
@@ -372,7 +404,7 @@ window.onRerollReady = async function(payload) {
 };
 
 function showResultScreen(reward) {
-    document.getElementById('result-image').src = `./assets/${reward.icon}.png`;
+    document.getElementById('result-image').src = resolveIconPath(reward.icon);
     document.getElementById('result-title').textContent = reward.name;
     document.getElementById('result-desc').textContent = reward.description ?? '';
     document.getElementById('result-title').className = `rarity-${reward.rarity}`;
