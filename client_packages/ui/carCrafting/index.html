@@ -270,7 +270,7 @@ function renderList() {
             btn.className = 'recipe-btn' + (r.id === selId ? ' active' : '');
             var compType = r.id.replace(/_(?:common|uncommon|rare|epic|legendary)$/, '');
             btn.innerHTML =
-                '<img class="rb-icon rar-' + r.rarity + '" src="../items/' + compType + '.png" onerror="this.src='../items/default.png'">'
+                '<img class="rb-icon rar-' + r.rarity + '" src="../items/' + compType + '.png" onerror="this.src=\'../items/default.png\'">'
                 + '<div class="rb-left">'
                 + '<span class="rb-name">' + r.name + '</span>'
                 + '<span class="rb-sub rarity-' + r.rarity + '">' + r.rarity + '</span>'
@@ -323,7 +323,7 @@ function selectRecipe(id) {
             '<div class="req-row">'
             + '<span class="req-item-name">'
             + '<div class="item-img-wrap rar-' + rarityClue + '">'
-            + '<img src="../items/' + compBase + '.png" onerror="this.src='../items/default.png'">'
+            + '<img src="../items/' + compBase + '.png" onerror="this.src=\'../items/default.png\'">'
             + '</div>'
             + inp.name + '</span>'
             + '<span class="req-val ' + (ok?'ok':'bad') + '">'

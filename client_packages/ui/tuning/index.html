@@ -608,7 +608,7 @@ function buildReqRows(req, price, canM) {
         ['legendary','epic','rare','uncommon'].forEach(function(rv){ if(it.itemId && it.itemId.endsWith('_'+rv)) rar=rv; });
         var compBase = it.itemId.replace(/_(?:common|uncommon|rare|epic|legendary)$/, '');
         rows += '<div class="uc-item">'
-            + '<img class="uc-item-img rar-'+rar+'" src="../items/'+compBase+'.png" onerror="this.src='../items/default.png'">'
+            + '<img class="uc-item-img rar-'+rar+'" src="../items/'+compBase+'.png" onerror="this.src=\'../items/default.png\'">'
             + '<span class="uc-lbl" style="color:var(--'+rar+')">'+(it.name||it.itemId)+'</span>'
             + '<span class="uc-val '+(okIt?'has':'miss')+'">'+hasIt+'/'+needIt+'</span></div>';
     }
