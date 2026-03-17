@@ -4,20 +4,32 @@ let pendingRecipes = null, pendingInfo = null;
 mp.events.add('client:crafting:open', (recipesJson, playerInfoJson) => {
     pendingRecipes = recipesJson;
     pendingInfo    = playerInfoJson;
+    
     if (!craftingBrowser) {
         craftingBrowser = mp.browsers.new('package://ui/carCrafting/index.html');
         mp.gui.cursor.show(true, true);
-        // don't call initCrafting yet — wait for ready signal
     } else {
-        craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
+        sendDataToUI();
     }
 });
 
 mp.events.add('client:crafting:ready', () => {
-    if (craftingBrowser && pendingRecipes) {
-        craftingBrowser.execute(`initCrafting(${pendingRecipes}, ${pendingInfo});`);
-    }
+    sendDataToUI();
 });
+
+function sendDataToUI() {
+    if (craftingBrowser && pendingRecipes && pendingInfo) {
+        // Safely encode the JSON to prevent CEF syntax errors when evaluating strings
+        let safeRecipes = encodeURIComponent(pendingRecipes);
+        let safeInfo = encodeURIComponent(pendingInfo);
+        
+        craftingBrowser.execute(`
+            var decodedRecipes = JSON.parse(decodeURIComponent("${safeRecipes}"));
+            var decodedInfo = JSON.parse(decodeURIComponent("${safeInfo}"));
+            initCrafting(decodedRecipes, decodedInfo);
+        `);
+    }
+}
 
 mp.events.add('client:crafting:close', () => {
     if (craftingBrowser) {
@@ -27,12 +39,10 @@ mp.events.add('client:crafting:close', () => {
     mp.gui.cursor.show(false, false);
 });
 
-// Pass boost boolean to server
 mp.events.add('client:crafting:tryCraft', (recipeId, useBoost) => {
     mp.events.callRemote('server:crafting:craft', recipeId, useBoost);
 });
 
-// Play sound/effect based on result
 mp.events.add('client:crafting:result', (success, message) => {
     if (craftingBrowser) {
         craftingBrowser.execute(`showResult(${success}, '${message.replace(/'/g, "\\'")}');`);

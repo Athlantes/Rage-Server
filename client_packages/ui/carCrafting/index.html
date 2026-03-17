@@ -400,6 +400,19 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeUI();
 });
 
+// ADD THIS POLLING CODE:
+let mpCheckInterval = setInterval(function() {
+    if (typeof mp !== 'undefined') {
+        clearInterval(mpCheckInterval);
+        mp.trigger('client:crafting:ready');
+    }
+}, 50);
+
+// Safety fallback to stop checking after 3 seconds so it doesn't run forever
+setTimeout(function() { 
+    clearInterval(mpCheckInterval); 
+}, 3000);
+
 window.addEventListener('DOMContentLoaded', function() {
     if (typeof mp !== 'undefined') {
         mp.trigger('client:crafting:ready');
