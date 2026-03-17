@@ -399,6 +399,12 @@ function closeUI() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeUI();
 });
+
+window.addEventListener('DOMContentLoaded', function() {
+    if (typeof mp !== 'undefined') {
+        mp.trigger('client:crafting:ready');
+    }
+});
 </script>
 </body>
 </html>
