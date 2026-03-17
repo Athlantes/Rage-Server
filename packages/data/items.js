@@ -1664,4 +1664,44 @@ module.exports = {
         icon: "tuning_pack.png",
         data: { packId: "tuning_pack" }
     },
+    "power_pack": {
+        name: "Power Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "power_pack.png",
+        data: { packId: "power_pack" }
+    },
+    "drivetrain_pack": {
+        name: "Drivetrain Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "drivetrain_pack.png",
+        data: { packId: "drivetrain_pack" }
+    },
+    "handling_pack": {
+        name: "Handling Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "handling_pack.png",
+        data: { packId: "handling_pack" }
+    },
+    "chassis_pack": {
+        name: "Chassis Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "chassis_pack.png",
+        data: { packId: "chassis_pack" }
+    },
+    "special_pack": {
+        name: "Special Card Pack",
+        type: "cardpack",
+        weight: 0.1,
+        maxStack: 10,
+        icon: "special_pack.png",
+        data: { packId: "special_pack" }
+    },
 };

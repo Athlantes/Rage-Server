@@ -468,6 +468,8 @@ mp.events.add('server:crafting:open', (player) => {
     sendCraftingData(player);
 });
 
+const SEND_CHUNK_SIZE = 15; // recipes per player.call — keeps each payload well under 64KB
+
 async function sendCraftingData(player) {
     const recipeData = RECIPES.map(r => {
         const inputData = r.inputs.map(input => {
@@ -490,7 +492,16 @@ async function sendCraftingData(player) {
     });
 
     const playerInfo = { cash: player.data.money || 0 };
-    player.call('client:crafting:open', [JSON.stringify(recipeData), JSON.stringify(playerInfo)]);
+    const totalChunks = Math.ceil(recipeData.length / SEND_CHUNK_SIZE);
+
+    // Tell client how many chunks to expect + send playerInfo (tiny payload)
+    player.call('client:crafting:start', [totalChunks, JSON.stringify(playerInfo)]);
+
+    // Send each chunk separately — each is ~6KB, safe under RAGEMP's 64KB limit
+    for (let i = 0; i < recipeData.length; i += SEND_CHUNK_SIZE) {
+        const chunk = recipeData.slice(i, i + SEND_CHUNK_SIZE);
+        player.call('client:crafting:chunk', [JSON.stringify(chunk)]);
+    }
 }
 
 mp.events.add('server:crafting:craft', async (player, recipeId, useBoost) => {

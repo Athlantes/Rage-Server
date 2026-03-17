@@ -403,40 +403,12 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeUI();
 });
 
-// ── Chunk-based data loader ──
-// The client sends data in small base64 chunks to stay under the CEF execute() limit.
-// startCraftLoad() is called first, then receiveCraftChunk() once per chunk.
-// When all chunks arrive, initCrafting() is called automatically.
-var _craftChunksExpected = 0;
-var _craftChunksReceived = [];
-var _craftInfo = null;
-
-function startCraftLoad(totalChunks, infoB64) {
-    _craftChunksExpected = totalChunks;
-    _craftChunksReceived = [];
-    _craftInfo = JSON.parse(atob(infoB64));
-}
-
-function receiveCraftChunk(chunkB64) {
-    var chunk = JSON.parse(atob(chunkB64));
-    _craftChunksReceived = _craftChunksReceived.concat(chunk);
-    if (_craftChunksReceived.length > 0 && _craftChunksExpected > 0) {
-        // Check if we've received all chunks by counting instead of tracking index
-        var totalSoFar = _craftChunksReceived.length;
-        // Each chunk is CHUNK_SIZE (20), last may be smaller — use a flag approach
-        _craftChunksExpected--;
-        if (_craftChunksExpected === 0) {
-            initCrafting(_craftChunksReceived, _craftInfo);
-        }
-    }
-}
-
-// Signal client that the page is ready to receive data
+// Signal the client script that the page is ready to receive data.
+// The client accumulates chunks server-side and calls initCrafting() once all arrive.
 window.addEventListener('DOMContentLoaded', function() {
     if (typeof mp !== 'undefined') {
         mp.trigger('client:crafting:ready');
     } else {
-        // Fallback polling for when DOMContentLoaded fires before mp is injected
         var t = setInterval(function() {
             if (typeof mp !== 'undefined') {
                 clearInterval(t);
