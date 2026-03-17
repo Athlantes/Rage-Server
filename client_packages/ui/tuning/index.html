@@ -194,6 +194,10 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Segoe UI',system
     .uc-item-img.rar-epic      {box-shadow:inset 0 0 0 1px #9b59b6;}
     .uc-item-img.rar-legendary {box-shadow:inset 0 0 0 1px #f1c40f;}
 
+.us-item { display:block; }
+.us-item.ok  { color: var(--succ); }
+.us-item.bad { color: var(--dngr); }
+
 .uc-item{display:flex;align-items:center;gap:6px}
 .uc-lbl{color:var(--txt3);font-size:11px;font-weight:600}
 .uc-val{font-weight:700}
@@ -724,10 +728,14 @@ function renderPerfMain(){
             var hasP=req.playerHas!==undefined?req.playerHas>=req.partAmount:true;
             var canBuy=canM&&hasP;
             html+='<div class="upgrade-section">'
-                +'<div class="us-cost">'
-                +'<div class="uc-item"><span class="uc-lbl">Cost</span><span class="uc-val '+(canM?'has':'miss')+'">$'+fmt(price2)+'</span></div>'
-                +'<div class="uc-item"><span class="uc-lbl">Parts</span><span class="uc-val '+(hasP?'has':'miss')+'">'
-                +(req.playerHas!==undefined?req.playerHas:'?')+'/'+req.partAmount+' '+(req.partName||req.partType)+'</span></div>'
+                +'<div class=\"us-cost\">'
+                +(req.items&&req.items.length ? req.items.map(function(it){
+                    var ok = it.playerHas >= it.count;
+                    return '<span class=\"us-item '+(ok?'ok':'bad')+'\">'
+                        +(it.playerHas !== undefined ? it.playerHas : '?')+'/'+it.count+' '+it.name
+                        +'</span>';
+                }).join('') : '')
+                +'</div>'
                 +'</div>'
                 +'<button class="btn-upgrade '+(canBuy?'ready':'locked')+'" '+(canBuy?'onclick="purchaseUpgrade()"':'disabled')+'>'
                 +(canBuy?'Install '+v2.name:'Not enough resources')+'</button></div>';
@@ -1306,6 +1314,9 @@ function applyStance(){ mp_trigger('cef:tuning:applyStance',camberValue,trackWid
 // ═════════════════════════════════════════════════════════════════════════════
 function closeTuning(){ mp_trigger('cef:tuning:close'); }
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeTuning(); });
+
+try { mp.trigger('client:crafting:ready'); } catch(e) {}
+
 </script>
 </body>
 </html>

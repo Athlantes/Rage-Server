@@ -1,14 +1,21 @@
 let craftingBrowser = null;
+let pendingRecipes = null, pendingInfo = null;
 
 mp.events.add('client:crafting:open', (recipesJson, playerInfoJson) => {
+    pendingRecipes = recipesJson;
+    pendingInfo    = playerInfoJson;
     if (!craftingBrowser) {
         craftingBrowser = mp.browsers.new('package://ui/carCrafting/index.html');
         mp.gui.cursor.show(true, true);
-        setTimeout(() => {
-            if (craftingBrowser) craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
-        }, 150);
+        // don't call initCrafting yet — wait for ready signal
     } else {
         craftingBrowser.execute(`initCrafting(${recipesJson}, ${playerInfoJson});`);
+    }
+});
+
+mp.events.add('client:crafting:ready', () => {
+    if (craftingBrowser && pendingRecipes) {
+        craftingBrowser.execute(`initCrafting(${pendingRecipes}, ${pendingInfo});`);
     }
 });
 
