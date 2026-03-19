@@ -20,3 +20,5 @@ require('./carCrafting');
 require('./h2hRace');
 require('./downState');
 require('./cardPacksManager');
+require('./weather');
+require('./lotto');

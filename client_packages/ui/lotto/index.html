@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Lotto 6/49</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --gold:#c9a84c;--gold-light:#e8c46a;--gold-dim:#8a6f2e;
+  --bg-deep:#080c0e;--bg-panel:#0e1518;--bg-card:#131b1f;--bg-card-hover:#1a2428;
+  --border:#1e2d33;--border-active:#2e4450;
+  --text-primary:#d8e4e8;--text-muted:#567080;--text-dim:#2c4050;
+  --green:#3ddc84;--green-dim:#1a4030;
+  --red:#ff5555;--red-dim:#3d1515;
+  --yellow:#FFD700;--yellow-dim:#3d3000;
+  --number-size:52px;
+}
+
+body{
+  font-family:'Rajdhani',sans-serif;
+  background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  height:100vh;width:100vw;
+  color:var(--text-primary);
+}
+
+/* ── Panel ────────────────────────────────────────────────── */
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--border-active);
+  border-radius:4px;
+  width:820px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 0 80px rgba(0,0,0,.9),0 0 0 1px rgba(201,168,76,.08) inset;
+  position:relative;
+}
+.panel::before,.panel::after{
+  content:'';position:absolute;width:24px;height:24px;
+  border-color:var(--gold);border-style:solid;z-index:10;
+}
+.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+
+/* ── Header ───────────────────────────────────────────────── */
+.header{
+  padding:14px 24px;
+  background:linear-gradient(90deg,#0a1214 0%,#0d1a1e 60%,#0a1214 100%);
+  border-bottom:1px solid var(--border-active);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-left{display:flex;align-items:center;gap:12px;}
+.header-icon{font-size:28px;}
+.header-title{font-size:22px;font-weight:700;color:var(--gold-light);letter-spacing:2px;}
+.header-sub{font-size:12px;color:var(--text-muted);letter-spacing:1px;}
+.btn-close{
+  background:none;border:1px solid var(--border-active);color:var(--text-muted);
+  width:32px;height:32px;border-radius:3px;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.btn-close:hover{background:var(--red-dim);color:var(--red);border-color:var(--red);}
+
+/* ── Jackpot Banner ───────────────────────────────────────── */
+.jackpot-banner{
+  padding:10px 24px;
+  background:linear-gradient(90deg,var(--yellow-dim),#2d2500,var(--yellow-dim));
+  border-bottom:1px solid var(--gold-dim);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.jackpot-label{font-size:12px;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;}
+.jackpot-value{font-size:26px;font-weight:700;color:var(--yellow);font-family:'Share Tech Mono',monospace;}
+.jackpot-draw{font-size:11px;color:var(--text-muted);}
+
+/* ── Body ─────────────────────────────────────────────────── */
+.body{padding:20px 24px;display:flex;flex-direction:column;gap:18px;}
+
+/* ── Section labels ───────────────────────────────────────── */
+.section-label{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── Number Grid ──────────────────────────────────────────── */
+.number-grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:7px;
+}
+.num-btn{
+  width:100%;aspect-ratio:1;border-radius:50%;
+  border:2px solid var(--border-active);
+  background:var(--bg-card);
+  color:var(--text-muted);
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;font-weight:700;
+  cursor:pointer;
+  transition:all .12s;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;
+}
+.num-btn:hover:not(.selected):not(.disabled-num){
+  border-color:var(--gold-dim);color:var(--text-primary);background:var(--bg-card-hover);
+}
+.num-btn.selected{
+  border-color:var(--yellow);
+  background:radial-gradient(circle,#3a2e00 0%,#1a1400 100%);
+  color:var(--yellow);
+  box-shadow:0 0 10px rgba(255,215,0,.25);
+}
+.num-btn.disabled-num{opacity:.35;cursor:default;pointer-events:none;}
+
+/* ── Selection tray ───────────────────────────────────────── */
+.selection-tray{
+  display:flex;gap:10px;align-items:center;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:4px;padding:10px 14px;
+}
+.tray-slot{
+  width:44px;height:44px;border-radius:50%;
+  border:2px dashed var(--border-active);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:var(--text-dim);
+  transition:all .15s;
+  font-family:'Share Tech Mono',monospace;
+}
+.tray-slot.filled{
+  border-color:var(--yellow);border-style:solid;
+  background:radial-gradient(circle,#3a2e00,#1a1400);
+  color:var(--yellow);
+  box-shadow:0 0 8px rgba(255,215,0,.2);
+}
+.tray-count{margin-left:auto;font-size:13px;color:var(--text-muted);}
+.tray-count span{color:var(--text-primary);font-weight:700;}
+
+/* ── Bet Section ──────────────────────────────────────────── */
+.bet-row{display:flex;align-items:center;gap:14px;}
+.bet-input-wrap{
+  position:relative;flex:1;
+}
+.bet-prefix{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--gold);font-weight:700;font-size:16px;pointer-events:none;
+}
+.bet-input{
+  width:100%;padding:10px 12px 10px 28px;
+  background:var(--bg-card);border:1px solid var(--border-active);
+  color:var(--text-primary);font-family:'Share Tech Mono',monospace;
+  font-size:18px;border-radius:4px;outline:none;
+  transition:border-color .15s;
+}
+.bet-input:focus{border-color:var(--gold);}
+.bet-slider{flex:2;accent-color:var(--gold);cursor:pointer;height:6px;}
+.bet-presets{display:flex;gap:6px;}
+.btn-preset{
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-muted);font-size:12px;font-family:'Rajdhani',sans-serif;
+  font-weight:700;padding:5px 10px;border-radius:3px;cursor:pointer;
+  transition:all .12s;letter-spacing:1px;
+}
+.btn-preset:hover{border-color:var(--gold-dim);color:var(--gold-light);}
+
+/* ── Cash info ────────────────────────────────────────────── */
+.cash-info{
+  font-size:12px;color:var(--text-muted);
+  display:flex;gap:20px;padding:6px 0;
+}
+.cash-info span{color:var(--text-primary);font-weight:700;}
+
+/* ── Action Row ───────────────────────────────────────────── */
+.action-row{display:flex;gap:12px;padding-bottom:4px;}
+.btn-buy{
+  flex:1;padding:13px;border:1px solid var(--gold-dim);
+  background:linear-gradient(180deg,#2a2000,#1a1400);
+  color:var(--yellow);font-family:'Rajdhani',sans-serif;
+  font-size:17px;font-weight:700;letter-spacing:2px;
+  border-radius:4px;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;
+}
+.btn-buy:hover:not(:disabled){
+  background:linear-gradient(180deg,#3a2e00,#2a2000);
+  border-color:var(--gold);box-shadow:0 0 18px rgba(255,215,0,.15);
+}
+.btn-buy:disabled{opacity:.4;cursor:default;}
+
+/* ── Error / Status ───────────────────────────────────────── */
+.status-bar{
+  min-height:28px;padding:6px 12px;border-radius:3px;
+  font-size:13px;font-weight:600;letter-spacing:1px;
+  display:none;
+}
+.status-bar.error{display:block;background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+.status-bar.success{display:block;background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+
+/* ── Ticket Receipt (shown after purchase) ────────────────── */
+.receipt{
+  display:none;flex-direction:column;gap:14px;
+  background:var(--bg-card);border:1px solid var(--gold-dim);
+  border-radius:4px;padding:18px 20px;
+}
+.receipt.visible{display:flex;}
+.receipt-title{font-size:15px;font-weight:700;color:var(--gold-light);letter-spacing:1px;}
+.receipt-numbers{display:flex;gap:8px;flex-wrap:wrap;}
+.receipt-num{
+  width:40px;height:40px;border-radius:50%;
+  border:2px solid var(--yellow);
+  background:radial-gradient(circle,#3a2e00,#1a1400);
+  color:var(--yellow);font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;
+}
+.receipt-detail{font-size:13px;color:var(--text-muted);}
+.receipt-detail span{color:var(--text-primary);font-weight:700;}
+.receipt-good-luck{font-size:14px;color:var(--gold);font-weight:600;}
+
+/* ── Already-has-ticket state ────────────────────────────── */
+.existing-notice{
+  background:var(--bg-card);border:1px solid var(--border-active);
+  border-radius:4px;padding:12px 16px;
+  font-size:13px;color:var(--text-muted);
+}
+.existing-notice b{color:var(--text-primary);}
+</style>
+</head>
+<body>
+
+<div class="panel" id="panel">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">🎰</div>
+      <div>
+        <div class="header-title">LOTTO 6/49</div>
+        <div class="header-sub">Pick 6 numbers · Win the jackpot</div>
+      </div>
+    </div>
+    <button class="btn-close" onclick="closeUI()">✕</button>
+  </div>
+
+  <!-- Jackpot Banner -->
+  <div class="jackpot-banner">
+    <div>
+      <div class="jackpot-label">Current Jackpot</div>
+      <div class="jackpot-value" id="jackpotValue">$0</div>
+    </div>
+    <div style="text-align:right">
+      <div class="jackpot-label">Next Draw</div>
+      <div class="jackpot-draw" id="nextDraw">—</div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Status bar -->
+    <div class="status-bar" id="statusBar"></div>
+
+    <!-- Existing ticket notice / receipt area -->
+    <div class="receipt" id="receipt">
+      <div class="receipt-title">🎟 Your Ticket for This Week</div>
+      <div class="receipt-numbers" id="receiptNumbers"></div>
+      <div class="receipt-detail">Bet: <span id="receiptBet">—</span></div>
+      <div class="receipt-good-luck">Good luck on Saturday at 20:00! 🍀</div>
+    </div>
+
+    <!-- Pick numbers (hidden once ticket bought) -->
+    <div id="buySection">
+      <!-- Number grid -->
+      <div class="section-label">Pick 6 Numbers</div>
+      <div class="number-grid" id="numberGrid"></div>
+
+      <!-- Selection tray -->
+      <div class="selection-tray" style="margin-top:14px">
+        <div class="tray-slot" id="slot0">?</div>
+        <div class="tray-slot" id="slot1">?</div>
+        <div class="tray-slot" id="slot2">?</div>
+        <div class="tray-slot" id="slot3">?</div>
+        <div class="tray-slot" id="slot4">?</div>
+        <div class="tray-slot" id="slot5">?</div>
+        <div class="tray-count">Selected: <span id="selCount">0</span> / 6</div>
+      </div>
+
+      <!-- Bet amount -->
+      <div style="margin-top:14px">
+        <div class="section-label">Bet Amount</div>
+        <div class="bet-row">
+          <div class="bet-input-wrap">
+            <span class="bet-prefix">$</span>
+            <input class="bet-input" type="number" id="betInput" value="100" min="100" max="10000" step="100"/>
+          </div>
+          <input class="bet-slider" type="range" id="betSlider" min="100" max="10000" step="100" value="100"/>
+        </div>
+        <div class="bet-presets" style="margin-top:8px">
+          <button class="btn-preset" onclick="setBet(100)">$100</button>
+          <button class="btn-preset" onclick="setBet(500)">$500</button>
+          <button class="btn-preset" onclick="setBet(1000)">$1K</button>
+          <button class="btn-preset" onclick="setBet(5000)">$5K</button>
+          <button class="btn-preset" onclick="setBet(10000)">MAX</button>
+        </div>
+      </div>
+
+      <!-- Cash info -->
+      <div class="cash-info">
+        <div>Your cash: <span id="playerCash">$0</span></div>
+        <div>Min bet: <span>$100</span></div>
+        <div>Max bet: <span>$10,000</span></div>
+      </div>
+
+      <!-- Buy button -->
+      <div class="action-row">
+        <button class="btn-buy" id="buyBtn" onclick="buyTicket()" disabled>
+          🎟 BUY TICKET
+        </button>
+      </div>
+    </div><!-- /buySection -->
+
+  </div><!-- /body -->
+</div><!-- /panel -->
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let selected   = [];      // currently picked numbers
+let config     = {};      // data from server
+let ticketBought = false;
+
+// ── Entry point called by client JS ─────────────────────────
+function loadData(jsonStr) {
+    config = JSON.parse(jsonStr);
+
+    // Jackpot
+    document.getElementById('jackpotValue').textContent = '$' + Number(config.jackpot).toLocaleString();
+
+    // Next draw
+    const drawDate = new Date(config.nextDraw);
+    document.getElementById('nextDraw').textContent = drawDate.toLocaleDateString('en-GB', {
+        weekday:'short', day:'numeric', month:'short', year:'numeric',
+        hour:'2-digit', minute:'2-digit'
+    });
+
+    // Player cash
+    document.getElementById('playerCash').textContent = '$' + Number(config.playerCash).toLocaleString();
+
+    // Slider & input limits
+    const slider = document.getElementById('betSlider');
+    const input  = document.getElementById('betInput');
+    slider.min   = config.minBet;
+    slider.max   = config.maxBet;
+    input.min    = config.minBet;
+    input.max    = config.maxBet;
+
+    // If player already has a ticket this week, show receipt
+    if (config.existingTicket) {
+        showReceipt(config.existingTicket.numbers, config.existingTicket.bet);
+        document.getElementById('buySection').style.display = 'none';
+        ticketBought = true;
+    } else {
+        buildGrid();
+        syncBuyButton();
+    }
+}
+
+// ── Build the 1–49 number grid ───────────────────────────────
+function buildGrid() {
+    const grid = document.getElementById('numberGrid');
+    grid.innerHTML = '';
+    for (let n = 1; n <= config.numbersPool; n++) {
+        const btn = document.createElement('button');
+        btn.className   = 'num-btn';
+        btn.textContent = n;
+        btn.dataset.num = n;
+        btn.addEventListener('click', () => toggleNumber(n, btn));
+        grid.appendChild(btn);
+    }
+}
+
+// ── Toggle a number on/off ───────────────────────────────────
+function toggleNumber(n, btn) {
+    if (ticketBought) return;
+    if (selected.includes(n)) {
+        selected = selected.filter(x => x !== n);
+        btn.classList.remove('selected');
+    } else {
+        if (selected.length >= config.pickCount) return; // already 6
+        selected.push(n);
+        btn.classList.add('selected');
+    }
+    updateTray();
+    syncBuyButton();
+}
+
+// ── Update the tray slots ────────────────────────────────────
+function updateTray() {
+    const sorted = [...selected].sort((a, b) => a - b);
+    for (let i = 0; i < 6; i++) {
+        const slot = document.getElementById('slot' + i);
+        if (sorted[i] !== undefined) {
+            slot.textContent = sorted[i];
+            slot.classList.add('filled');
+        } else {
+            slot.textContent = '?';
+            slot.classList.remove('filled');
+        }
+    }
+    document.getElementById('selCount').textContent = selected.length;
+}
+
+// ── Bet syncing ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const input  = document.getElementById('betInput');
+    const slider = document.getElementById('betSlider');
+    input.addEventListener('input', () => {
+        let v = parseInt(input.value) || config.minBet;
+        v = Math.min(Math.max(v, config.minBet), config.maxBet);
+        slider.value = v;
+        syncBuyButton();
+    });
+    slider.addEventListener('input', () => {
+        input.value = slider.value;
+        syncBuyButton();
+    });
+});
+
+function setBet(amount) {
+    document.getElementById('betInput').value  = amount;
+    document.getElementById('betSlider').value = amount;
+    syncBuyButton();
+}
+
+function getBet() {
+    return parseInt(document.getElementById('betInput').value) || 0;
+}
+
+// ── Enable/disable buy button ────────────────────────────────
+function syncBuyButton() {
+    const btn = document.getElementById('buyBtn');
+    const bet = getBet();
+    const ok  = selected.length === 6
+             && bet >= (config.minBet || 100)
+             && bet <= (config.maxBet || 10000)
+             && bet <= (config.playerCash || 0)
+             && !ticketBought;
+    btn.disabled = !ok;
+}
+
+// ── Buy ticket ───────────────────────────────────────────────
+function buyTicket() {
+    if (ticketBought) return;
+    clearStatus();
+    const bet = getBet();
+    if (selected.length !== 6) { showError('Select exactly 6 numbers.'); return; }
+    if (bet < 100 || bet > 10000) { showError('Bet must be between $100 and $10,000.'); return; }
+    if (bet > config.playerCash) { showError('Not enough cash.'); return; }
+
+    // Disable buy button to prevent double-click
+    document.getElementById('buyBtn').disabled = true;
+
+    mp.trigger('client:lotto:buy', JSON.stringify(selected), bet);
+}
+
+// ── Called by server on success ──────────────────────────────
+function onTicketConfirmed(numbersStr, bet, newJackpot) {
+    ticketBought = true;
+    config.jackpot = newJackpot;
+    document.getElementById('jackpotValue').textContent = '$' + Number(newJackpot).toLocaleString();
+    document.getElementById('buySection').style.display = 'none';
+    showReceipt(numbersStr, bet);
+}
+
+// ── Show receipt ─────────────────────────────────────────────
+function showReceipt(numbersStr, bet) {
+    const nums = numbersStr.split(',').map(Number);
+    const container = document.getElementById('receiptNumbers');
+    container.innerHTML = '';
+    nums.forEach(n => {
+        const div = document.createElement('div');
+        div.className   = 'receipt-num';
+        div.textContent = n;
+        container.appendChild(div);
+    });
+    document.getElementById('receiptBet').textContent = '$' + Number(bet).toLocaleString();
+    document.getElementById('receipt').classList.add('visible');
+}
+
+// ── Error/status display ─────────────────────────────────────
+function onError(message) {
+    showError(message);
+    document.getElementById('buyBtn').disabled = false;
+    syncBuyButton();
+}
+
+function showError(msg) {
+    const bar = document.getElementById('statusBar');
+    bar.className   = 'status-bar error';
+    bar.textContent = '⚠ ' + msg;
+}
+
+function clearStatus() {
+    const bar = document.getElementById('statusBar');
+    bar.className   = 'status-bar';
+    bar.textContent = '';
+}
+
+// ── Close ────────────────────────────────────────────────────
+function closeUI() {
+    mp.trigger('client:lotto:close');
+}
+</script>
+</body>
+</html>
