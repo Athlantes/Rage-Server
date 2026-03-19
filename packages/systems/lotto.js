@@ -18,6 +18,7 @@ const CONFIG = {
 
     // Prize multipliers for sub-jackpot tiers (applied to ticket bet)
     // These amounts are ALSO deducted from the weekly pool before the jackpot
+    PRIZE_3_MULTIPLIER: 1,           // 3 matched → no prize, but still count as "wins" for the pool
     PRIZE_4_MULTIPLIER: 5,           // 4 matched → 5× ticket bet
     PRIZE_5_MULTIPLIER: 20,          // 5 matched → 20× ticket bet
 
@@ -114,6 +115,7 @@ function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, wee
     if (matches === 6)      title = `🏆 JACKPOT! Lotto Draw #${weekId} Results`;
     else if (matches === 5) title = `🎉 You matched 5 numbers! Draw #${weekId}`;
     else if (matches === 4) title = `🎉 You matched 4 numbers! Draw #${weekId}`;
+    else if (matches === 3) title = `🎉 You matched 3 numbers! Draw #${weekId}`;
     else                    title = `🎰 Lotto Draw #${weekId} Results`;
 
     // ── Format number lists ───────────────────────────────────
@@ -129,7 +131,7 @@ function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, wee
     } else if (matches === 4) {
         resultLine = `✅ You matched 4 out of 6 numbers.\nPrize awarded: $${prize.toLocaleString()}`;
     } else if (matches === 3) {
-        resultLine = `You matched 3 numbers — no prize this time.`;
+        resultLine = `✅ You matched 3 out of 6 numbers.\nPrize awarded: $${prize.toLocaleString()}`;
     } else if (matches === 2) {
         resultLine = `You matched 2 numbers — no prize this time.`;
     } else if (matches === 1) {
@@ -243,6 +245,10 @@ async function executeDraw(forcedBy = null) {
             prize = bet * CONFIG.PRIZE_4_MULTIPLIER;
             await awardPrize(ticket.player_id, prize, `Lotto 4/6 win — week #${state.weekId}`);
             broadcast(`!{88FF88}🎉 ${ticket.username} matched 4 numbers and won !{FFD700}$${prize.toLocaleString()}!`);
+        } else if (matches === 3) {
+            prize = bet * CONFIG.PRIZE_3_MULTIPLIER;
+            await awardPrize(ticket.player_id, prize, `Lotto 3/6 win — week #${state.weekId}`);
+            broadcast(`!{AAAAAA}🎉 ${ticket.username} matched 3 numbers and won back their ticket (!{FFD700}$${prize.toLocaleString()}!{AAAAAA})!`);
         }
 
         ticketResults.push({ ticket, picked, matches, prize });
