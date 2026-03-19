@@ -33,11 +33,14 @@ body{
   border:1px solid var(--border-active);
   border-radius:4px;
   width:820px;
+  max-height: 90vh; /* in case they buy many, though 3 is small */
   display:flex;flex-direction:column;
-  overflow:hidden;
+  overflow-y:auto;
   box-shadow:0 0 80px rgba(0,0,0,.9),0 0 0 1px rgba(201,168,76,.08) inset;
   position:relative;
 }
+.panel::-webkit-scrollbar { width: 6px; }
+.panel::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
 .panel::before,.panel::after{
   content:'';position:absolute;width:24px;height:24px;
   border-color:var(--gold);border-style:solid;z-index:10;
@@ -113,7 +116,6 @@ body{
   color:var(--yellow);
   box-shadow:0 0 10px rgba(255,215,0,.25);
 }
-.num-btn.disabled-num{opacity:.35;cursor:default;pointer-events:none;}
 
 /* ── Selection tray ───────────────────────────────────────── */
 .selection-tray{
@@ -141,9 +143,7 @@ body{
 
 /* ── Bet Section ──────────────────────────────────────────── */
 .bet-row{display:flex;align-items:center;gap:14px;}
-.bet-input-wrap{
-  position:relative;flex:1;
-}
+.bet-input-wrap{ position:relative;flex:1; }
 .bet-prefix{
   position:absolute;left:12px;top:50%;transform:translateY(-50%);
   color:var(--gold);font-weight:700;font-size:16px;pointer-events:none;
@@ -165,6 +165,15 @@ body{
   transition:all .12s;letter-spacing:1px;
 }
 .btn-preset:hover{border-color:var(--gold-dim);color:var(--gold-light);}
+.btn-quickpick{
+  height: 100%; padding: 0 16px; font-size: 14px; 
+  border-color: var(--gold-dim); color: var(--gold-light);
+  background: linear-gradient(180deg, #1a1400, #0a0800);
+}
+.btn-quickpick:hover {
+  background: linear-gradient(180deg, #2a2000, #1a1400);
+  border-color: var(--yellow); color: var(--yellow);
+}
 
 /* ── Cash info ────────────────────────────────────────────── */
 .cash-info{
@@ -189,6 +198,16 @@ body{
 }
 .btn-buy:disabled{opacity:.4;cursor:default;}
 
+.btn-cancel{
+  padding:13px 20px;border:1px solid var(--border-active);
+  background:var(--bg-card);
+  color:var(--text-muted);font-family:'Rajdhani',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:1px;
+  border-radius:4px;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;
+}
+.btn-cancel:hover{ background:var(--bg-card-hover); color:var(--text-primary); }
+
 /* ── Error / Status ───────────────────────────────────────── */
 .status-bar{
   min-height:28px;padding:6px 12px;border-radius:3px;
@@ -198,13 +217,12 @@ body{
 .status-bar.error{display:block;background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
 .status-bar.success{display:block;background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
 
-/* ── Ticket Receipt (shown after purchase) ────────────────── */
+/* ── Ticket Receipt (shown in overview) ────────────────── */
 .receipt{
-  display:none;flex-direction:column;gap:14px;
+  display:flex;flex-direction:column;gap:14px;
   background:var(--bg-card);border:1px solid var(--gold-dim);
   border-radius:4px;padding:18px 20px;
 }
-.receipt.visible{display:flex;}
 .receipt-title{font-size:15px;font-weight:700;color:var(--gold-light);letter-spacing:1px;}
 .receipt-numbers{display:flex;gap:8px;flex-wrap:wrap;}
 .receipt-num{
@@ -217,22 +235,13 @@ body{
 }
 .receipt-detail{font-size:13px;color:var(--text-muted);}
 .receipt-detail span{color:var(--text-primary);font-weight:700;}
-.receipt-good-luck{font-size:14px;color:var(--gold);font-weight:600;}
 
-/* ── Already-has-ticket state ────────────────────────────── */
-.existing-notice{
-  background:var(--bg-card);border:1px solid var(--border-active);
-  border-radius:4px;padding:12px 16px;
-  font-size:13px;color:var(--text-muted);
-}
-.existing-notice b{color:var(--text-primary);}
 </style>
 </head>
 <body>
 
 <div class="panel" id="panel">
 
-  <!-- Header -->
   <div class="header">
     <div class="header-left">
       <div class="header-icon">🎰</div>
@@ -244,7 +253,6 @@ body{
     <button class="btn-close" onclick="closeUI()">✕</button>
   </div>
 
-  <!-- Jackpot Banner -->
   <div class="jackpot-banner">
     <div>
       <div class="jackpot-label">Current Jackpot</div>
@@ -256,38 +264,39 @@ body{
     </div>
   </div>
 
-  <!-- Body -->
   <div class="body">
 
-    <!-- Status bar -->
     <div class="status-bar" id="statusBar"></div>
 
-    <!-- Existing ticket notice / receipt area -->
-    <div class="receipt" id="receipt">
-      <div class="receipt-title">🎟 Your Ticket for This Week</div>
-      <div class="receipt-numbers" id="receiptNumbers"></div>
-      <div class="receipt-detail">Bet: <span id="receiptBet">—</span></div>
-      <div class="receipt-good-luck">Good luck on Saturday at 20:00! 🍀</div>
+    <div id="ticketsOverview" style="display:none; flex-direction:column; gap:14px;">
+      <div class="section-label">Your Tickets This Week (<span id="ticketCountLabel">0/3</span>)</div>
+      
+      <div id="ticketsList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      
+      <button class="btn-buy" id="btnBuyAnother" onclick="showBuySection()" style="margin-top:10px;">
+        🎟 BUY ANOTHER TICKET
+      </button>
     </div>
 
-    <!-- Pick numbers (hidden once ticket bought) -->
-    <div id="buySection">
-      <!-- Number grid -->
+    <div id="buySection" style="display:none;">
       <div class="section-label">Pick 6 Numbers</div>
       <div class="number-grid" id="numberGrid"></div>
 
-      <!-- Selection tray -->
-      <div class="selection-tray" style="margin-top:14px">
-        <div class="tray-slot" id="slot0">?</div>
-        <div class="tray-slot" id="slot1">?</div>
-        <div class="tray-slot" id="slot2">?</div>
-        <div class="tray-slot" id="slot3">?</div>
-        <div class="tray-slot" id="slot4">?</div>
-        <div class="tray-slot" id="slot5">?</div>
-        <div class="tray-count">Selected: <span id="selCount">0</span> / 6</div>
+      <div style="display:flex; justify-content: space-between; align-items: stretch; margin-top:14px; gap: 10px;">
+        <div class="selection-tray" style="margin-top:0; flex:1;">
+          <div class="tray-slot" id="slot0">?</div>
+          <div class="tray-slot" id="slot1">?</div>
+          <div class="tray-slot" id="slot2">?</div>
+          <div class="tray-slot" id="slot3">?</div>
+          <div class="tray-slot" id="slot4">?</div>
+          <div class="tray-slot" id="slot5">?</div>
+          <div class="tray-count">Selected: <span id="selCount">0</span> / 6</div>
+        </div>
+        <button class="btn-preset btn-quickpick" onclick="handleQuickPick()">
+          ⚡ QUICK PICK
+        </button>
       </div>
 
-      <!-- Bet amount -->
       <div style="margin-top:14px">
         <div class="section-label">Bet Amount</div>
         <div class="bet-row">
@@ -306,33 +315,30 @@ body{
         </div>
       </div>
 
-      <!-- Cash info -->
       <div class="cash-info">
         <div>Your cash: <span id="playerCash">$0</span></div>
         <div>Min bet: <span>$100</span></div>
         <div>Max bet: <span>$10,000</span></div>
       </div>
 
-      <!-- Buy button -->
       <div class="action-row">
+        <button class="btn-cancel" id="cancelBuyBtn" onclick="renderTicketsOverview()" style="display:none;">CANCEL</button>
         <button class="btn-buy" id="buyBtn" onclick="buyTicket()" disabled>
-          🎟 BUY TICKET
+          🎟 CONFIRM PURCHASE
         </button>
       </div>
-    </div><!-- /buySection -->
-
-  </div><!-- /body -->
-</div><!-- /panel -->
-
-<script>
+    </div></div></div><script>
 // ── State ────────────────────────────────────────────────────
 let selected   = [];      // currently picked numbers
 let config     = {};      // data from server
-let ticketBought = false;
+let isProcessingBuy = false;
 
 // ── Entry point called by client JS ─────────────────────────
 function loadData(jsonStr) {
     config = JSON.parse(jsonStr);
+    
+    // Ensure existingTickets is an array
+    if(!config.existingTickets) config.existingTickets = [];
 
     // Jackpot
     document.getElementById('jackpotValue').textContent = '$' + Number(config.jackpot).toLocaleString();
@@ -344,8 +350,7 @@ function loadData(jsonStr) {
         hour:'2-digit', minute:'2-digit'
     });
 
-    // Player cash
-    document.getElementById('playerCash').textContent = '$' + Number(config.playerCash).toLocaleString();
+    updateCashUI();
 
     // Slider & input limits
     const slider = document.getElementById('betSlider');
@@ -355,15 +360,91 @@ function loadData(jsonStr) {
     input.min    = config.minBet;
     input.max    = config.maxBet;
 
-    // If player already has a ticket this week, show receipt
-    if (config.existingTicket) {
-        showReceipt(config.existingTicket.numbers, config.existingTicket.bet);
-        document.getElementById('buySection').style.display = 'none';
-        ticketBought = true;
+    // DECIDE WHICH SECTION TO SHOW INITIALLY
+    if (config.ticketsBought > 0) {
+        renderTicketsOverview();
     } else {
-        buildGrid();
-        syncBuyButton();
+        showBuySection(false); // false means no cancel button since they have no tickets to go back to
     }
+}
+
+// ── Render Tickets Overview ──────────────────────────────────
+function renderTicketsOverview() {
+    clearStatus();
+    document.getElementById('buySection').style.display = 'none';
+    const overview = document.getElementById('ticketsOverview');
+    overview.style.display = 'flex';
+    
+    document.getElementById('ticketCountLabel').textContent = `${config.ticketsBought}/${config.maxTickets}`;
+    
+    const list = document.getElementById('ticketsList');
+    list.innerHTML = '';
+    
+    if (config.existingTickets && config.existingTickets.length > 0) {
+        config.existingTickets.forEach((t, index) => {
+            const tDiv = document.createElement('div');
+            tDiv.className = 'receipt';
+            
+            const title = document.createElement('div');
+            title.className = 'receipt-title';
+            title.textContent = `🎟 Ticket #${index + 1}`;
+            
+            const numsCont = document.createElement('div');
+            numsCont.className = 'receipt-numbers';
+            
+            t.numbers.split(',').map(Number).forEach(n => {
+                const nDiv = document.createElement('div');
+                nDiv.className = 'receipt-num';
+                nDiv.textContent = n;
+                numsCont.appendChild(nDiv);
+            });
+            
+            const betDiv = document.createElement('div');
+            betDiv.className = 'receipt-detail';
+            betDiv.innerHTML = `Bet: <span>$${Number(t.bet).toLocaleString()}</span>`;
+            
+            tDiv.appendChild(title);
+            tDiv.appendChild(numsCont);
+            tDiv.appendChild(betDiv);
+            list.appendChild(tDiv);
+        });
+    }
+    
+    // Hide or show "Buy Another" button depending on max tickets
+    const btnBuyAnother = document.getElementById('btnBuyAnother');
+    if (config.ticketsBought >= config.maxTickets) {
+        btnBuyAnother.style.display = 'none';
+    } else {
+        btnBuyAnother.style.display = 'block';
+    }
+}
+
+// ── Show Buy Section ─────────────────────────────────────────
+function showBuySection(canCancel = true) {
+    clearStatus();
+    document.getElementById('ticketsOverview').style.display = 'none';
+    document.getElementById('buySection').style.display = 'block';
+    
+    // Reset selection every time they open this
+    selected = [];
+    isProcessingBuy = false;
+    document.getElementById('buyBtn').disabled = true;
+    
+    // Show/hide cancel button if they have an overview to go back to
+    const cancelBtn = document.getElementById('cancelBuyBtn');
+    if (canCancel && config.ticketsBought > 0) {
+        cancelBtn.style.display = 'block';
+    } else {
+        cancelBtn.style.display = 'none';
+    }
+    
+    buildGrid();
+    updateTray();
+    syncBuyButton();
+}
+
+function updateCashUI() {
+    document.getElementById('playerCash').textContent = '$' + Number(config.playerCash).toLocaleString();
 }
 
 // ── Build the 1–49 number grid ───────────────────────────────
@@ -380,9 +461,39 @@ function buildGrid() {
     }
 }
 
+// ── Quick Pick Logic ─────────────────────────────────────────
+function handleQuickPick() {
+    if (isProcessingBuy) return;
+    
+    const pool = new Set();
+    const maxNum = config.numbersPool || 49;
+    
+    // Generate 6 unique random numbers
+    while (pool.size < 6) {
+        pool.add(Math.floor(Math.random() * maxNum) + 1);
+    }
+    
+    // Convert to sorted array
+    selected = Array.from(pool).sort((a, b) => a - b);
+    
+    // Update visual buttons on the grid
+    document.querySelectorAll('.num-btn').forEach(btn => {
+        const n = parseInt(btn.dataset.num);
+        if (selected.includes(n)) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+    
+    // Update tray and buy button
+    updateTray();
+    syncBuyButton();
+}
+
 // ── Toggle a number on/off ───────────────────────────────────
 function toggleNumber(n, btn) {
-    if (ticketBought) return;
+    if (isProcessingBuy) return;
     if (selected.includes(n)) {
         selected = selected.filter(x => x !== n);
         btn.classList.remove('selected');
@@ -445,20 +556,22 @@ function syncBuyButton() {
              && bet >= (config.minBet || 100)
              && bet <= (config.maxBet || 10000)
              && bet <= (config.playerCash || 0)
-             && !ticketBought;
+             && !isProcessingBuy;
     btn.disabled = !ok;
 }
 
 // ── Buy ticket ───────────────────────────────────────────────
 function buyTicket() {
-    if (ticketBought) return;
+    if (isProcessingBuy) return;
     clearStatus();
+    
     const bet = getBet();
     if (selected.length !== 6) { showError('Select exactly 6 numbers.'); return; }
     if (bet < 100 || bet > 10000) { showError('Bet must be between $100 and $10,000.'); return; }
     if (bet > config.playerCash) { showError('Not enough cash.'); return; }
 
-    // Disable buy button to prevent double-click
+    // Lock button and set state
+    isProcessingBuy = true;
     document.getElementById('buyBtn').disabled = true;
 
     mp.trigger('client:lotto:buy', JSON.stringify(selected), bet);
@@ -466,32 +579,33 @@ function buyTicket() {
 
 // ── Called by server on success ──────────────────────────────
 function onTicketConfirmed(numbersStr, bet, newJackpot) {
-    ticketBought = true;
+    isProcessingBuy = false;
+    
+    // Update local variables based on purchase
     config.jackpot = newJackpot;
     document.getElementById('jackpotValue').textContent = '$' + Number(newJackpot).toLocaleString();
-    document.getElementById('buySection').style.display = 'none';
-    showReceipt(numbersStr, bet);
-}
-
-// ── Show receipt ─────────────────────────────────────────────
-function showReceipt(numbersStr, bet) {
-    const nums = numbersStr.split(',').map(Number);
-    const container = document.getElementById('receiptNumbers');
-    container.innerHTML = '';
-    nums.forEach(n => {
-        const div = document.createElement('div');
-        div.className   = 'receipt-num';
-        div.textContent = n;
-        container.appendChild(div);
-    });
-    document.getElementById('receiptBet').textContent = '$' + Number(bet).toLocaleString();
-    document.getElementById('receipt').classList.add('visible');
+    
+    config.playerCash -= bet; // Deduct money from UI visually
+    updateCashUI();
+    
+    // Add new ticket to array and increment
+    config.existingTickets.push({ numbers: numbersStr, bet: bet });
+    config.ticketsBought++;
+    
+    // Send user back to the overview screen
+    renderTicketsOverview();
+    
+    // Show a success message temporarily
+    const bar = document.getElementById('statusBar');
+    bar.className = 'status-bar success';
+    bar.textContent = '✔ Ticket purchased successfully!';
+    setTimeout(() => clearStatus(), 4000);
 }
 
 // ── Error/status display ─────────────────────────────────────
 function onError(message) {
+    isProcessingBuy = false;
     showError(message);
-    document.getElementById('buyBtn').disabled = false;
     syncBuyButton();
 }
 
