@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Lotto Draw</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --gold:#FFD700;
+  --gold2:#c9a84c;
+  --dim:#8a9aaa;
+  --ball-size:32px;
+}
+
+html,body{
+  width:100vw;height:100vh;
+  background:transparent;
+  overflow:hidden;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  font-family:'Oswald',sans-serif;
+  padding-top:18px;
+}
+
+/* ── Main container ── */
+#container{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  opacity:0;
+  transform:translateY(-16px);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.22,.68,0,1.4);
+}
+#container.visible{ opacity:1; transform:translateY(0); }
+#container.hiding{
+  opacity:0;
+  transform:translateY(-16px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+
+/* ── Draw label ── */
+#draw-label{
+  font-size:9px;
+  letter-spacing:5px;
+  text-transform:uppercase;
+  color:var(--gold2);
+  text-align:center;
+  opacity:0;
+  transform:translateY(-6px);
+  transition:all .4s ease .2s;
+}
+#draw-label.show{ opacity:1; transform:translateY(0); }
+
+/* ── Jackpot display ── */
+#jackpot-display{
+  font-size:8px;letter-spacing:2px;color:var(--dim);text-align:center;
+  opacity:0;transition:all .4s ease .3s;
+  line-height:1.4;
+}
+#jackpot-display.show{ opacity:1; }
+#jackpot-amt{
+  color:var(--gold);font-size:13px;
+  font-family:'Share Tech Mono',monospace;
+  display:block;margin-top:1px;
+}
+
+/* ── The pill track ── */
+#track{
+  position:relative;
+  width:330px;
+  height:44px;
+  background:linear-gradient(180deg,#0d1117,#070a0d);
+  border-radius:22px;
+  border:1px solid rgba(201,168,76,0.3);
+  box-shadow:
+    0 0 0 1px rgba(255,215,0,.05) inset,
+    0 2px 20px rgba(0,0,0,.7),
+    0 0 40px rgba(255,215,0,.03);
+  overflow:hidden;
+}
+
+#track::before{
+  content:'';position:absolute;inset:0;border-radius:22px;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%,rgba(255,215,0,.05),transparent),
+    radial-gradient(ellipse 40% 100% at 0% 50%,rgba(255,215,0,.04),transparent 60%);
+  pointer-events:none;
+}
+
+/* ── Ball slot indicators ── */
+#slot-guides{
+  position:absolute;
+  left:6px;
+  display:flex;gap:4px;
+  top:50%;transform:translateY(-50%);
+}
+.slot-guide{
+  width:var(--ball-size);height:var(--ball-size);border-radius:50%;
+  border:1px dashed rgba(255,215,0,.12);
+  background:rgba(255,215,0,.02);
+  flex-shrink:0;
+}
+
+/* ── Ball entry glow ── */
+#entry-glow{
+  position:absolute;right:0;top:0;bottom:0;width:60px;
+  background:radial-gradient(ellipse 80% 80% at 90% 50%,rgba(255,215,0,.2),transparent 70%);
+  border-radius:0 22px 22px 0;
+  opacity:0;transition:opacity .2s;pointer-events:none;
+}
+#entry-glow.lit{opacity:1;}
+
+/* ── Balls ── */
+.ball{
+  position:absolute;
+  width:var(--ball-size);height:var(--ball-size);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;font-weight:400;color:#fff;
+  user-select:none;will-change:left,transform;
+  top:50%;transform:translateY(-50%);
+}
+.ball::before{
+  content:'';position:absolute;
+  width:32%;height:22%;background:rgba(255,255,255,.42);
+  border-radius:50%;top:16%;left:24%;filter:blur(1px);pointer-events:none;
+}
+.ball-c0{background:radial-gradient(circle at 38% 35%,#e8483a,#8b1a10);box-shadow:0 2px 8px rgba(200,60,40,.5),0 0 0 1px rgba(255,120,100,.15) inset;}
+.ball-c1{background:radial-gradient(circle at 38% 35%,#4a9ff5,#1a4fa0);box-shadow:0 2px 8px rgba(60,110,220,.5),0 0 0 1px rgba(100,160,255,.15) inset;}
+.ball-c2{background:radial-gradient(circle at 38% 35%,#3dd68c,#166a40);box-shadow:0 2px 8px rgba(50,180,100,.5),0 0 0 1px rgba(80,220,140,.15) inset;}
+.ball-c3{background:radial-gradient(circle at 38% 35%,#f5a623,#9a5a00);box-shadow:0 2px 8px rgba(220,140,30,.5),0 0 0 1px rgba(255,180,60,.15) inset;}
+.ball-c4{background:radial-gradient(circle at 38% 35%,#c84bff,#6610a0);box-shadow:0 2px 8px rgba(170,50,240,.5),0 0 0 1px rgba(200,100,255,.15) inset;}
+.ball-c5{background:radial-gradient(circle at 38% 35%,#FFD700,#9a7000);box-shadow:0 2px 8px rgba(255,200,0,.55),0 0 0 1px rgba(255,230,80,.2) inset;}
+
+@keyframes roll-enter{
+  0%  {left:310px;transform:translateY(-50%) rotate(0deg);opacity:0;}
+  6%  {opacity:1;}
+  100%{left:var(--target-x);transform:translateY(-50%) rotate(var(--spin));opacity:1;}
+}
+
+/* ── Status text ── */
+#status-text{
+  font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--dim);text-align:center;min-height:12px;
+  transition:color .3s,opacity .3s;
+}
+
+/* ── Summary row ── */
+#summary{
+  display:flex;gap:5px;align-items:center;
+  opacity:0;transform:translateY(5px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+#summary.show{opacity:1;transform:translateY(0);}
+.sum-ball{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:#fff;
+  position:relative;
+  transition:opacity .35s ease,transform .35s cubic-bezier(.22,.68,0,1.4);
+}
+.sum-ball::before{
+  content:'';position:absolute;width:32%;height:22%;
+  background:rgba(255,255,255,.4);border-radius:50%;
+  top:16%;left:24%;filter:blur(1px);
+}
+
+/* ── Countdown bar ── */
+#countdown-bar{
+  width:330px;height:2px;
+  background:rgba(255,255,255,.06);
+  border-radius:1px;
+  overflow:hidden;
+  opacity:0;transition:opacity .3s;
+}
+#countdown-bar.show{opacity:1;}
+#countdown-fill{
+  height:100%;width:100%;
+  background:linear-gradient(90deg,var(--gold2),var(--gold));
+  border-radius:1px;
+  transform-origin:left;
+}
+
+/* ── Pulse ring ── */
+@keyframes pulse-ring{
+  0%  {transform:translateY(-50%) scale(1);opacity:.7;}
+  100%{transform:translateY(-50%) scale(2.2);opacity:0;}
+}
+.pulse-ring{
+  position:absolute;width:var(--ball-size);height:var(--ball-size);
+  border-radius:50%;border:2px solid rgba(255,215,0,.8);top:50%;
+  animation:pulse-ring .55s ease-out forwards;pointer-events:none;
+}
+
+/* ── Particles ── */
+@keyframes particle-fly{
+  0%  {transform:translate(0,0) scale(1);opacity:1;}
+  100%{transform:translate(var(--px),var(--py)) scale(0);opacity:0;}
+}
+.particle{
+  position:absolute;width:3px;height:3px;border-radius:50%;
+  pointer-events:none;top:50%;margin-top:-1.5px;
+  animation:particle-fly .65s ease-out forwards;
+}
+</style>
+</head>
+<body>
+
+<div id="container">
+  <div id="draw-label">🎰 &nbsp;Lotto 6/49&nbsp;—&nbsp;Draw <span id="week-num">#1</span></div>
+
+  <div id="jackpot-display">
+    Jackpot Pool
+    <span id="jackpot-amt">$0</span>
+  </div>
+
+  <div id="track">
+    <div id="slot-guides"></div>
+    <div id="entry-glow"></div>
+  </div>
+
+  <div id="status-text">Preparing the draw…</div>
+  <div id="summary"></div>
+  <div id="countdown-bar"><div id="countdown-fill"></div></div>
+</div>
+
+<script>
+const BALL_SIZE    = 32;
+const BALL_GAP     = 4;
+const TRACK_PAD    = 6;
+const BALL_COLORS  = ['ball-c0','ball-c1','ball-c2','ball-c3','ball-c4','ball-c5'];
+const COLOR_HEX    = ['#e8483a','#4a9ff5','#3dd68c','#f5a623','#c84bff','#FFD700'];
+const ORDINALS     = ['1st','2nd','3rd','4th','5th','6th'];
+const BALL_DELAY   = 3000;
+const INTRO_DELAY  = 1400;
+const OUTRO_DELAY  = 1800;
+const AUTO_HIDE_MS = 5000;
+
+let drawData  = null;
+let ballCount = 0;
+
+function startDraw(payloadJson) {
+  drawData = typeof payloadJson === 'string' ? JSON.parse(payloadJson) : payloadJson;
+  init();
+}
+
+function init() {
+  document.getElementById('week-num').textContent = '#' + drawData.weekId;
+  document.getElementById('jackpot-amt').textContent = '$' + Number(drawData.jackpot).toLocaleString();
+
+  const guides = document.getElementById('slot-guides');
+  guides.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const g = document.createElement('div');
+    g.className = 'slot-guide';
+    guides.appendChild(g);
+  }
+
+  requestAnimationFrame(() => {
+    document.getElementById('container').classList.add('visible');
+    document.getElementById('draw-label').classList.add('show');
+    document.getElementById('jackpot-display').classList.add('show');
+  });
+
+  drawData.balls.forEach((n, i) => {
+    setTimeout(() => revealBall(i, n), INTRO_DELAY + i * BALL_DELAY);
+  });
+
+  const allDone = INTRO_DELAY + drawData.balls.length * BALL_DELAY + OUTRO_DELAY;
+  setTimeout(showSummary, allDone);
+  setTimeout(startCountdown, allDone + 600);
+  setTimeout(dismiss, allDone + 600 + AUTO_HIDE_MS);
+}
+
+function revealBall(index, number) {
+  const track   = document.getElementById('track');
+  const targetX = TRACK_PAD + index * (BALL_SIZE + BALL_GAP);
+  const spin    = 360 + Math.floor(Math.random() * 480);
+  const dur     = 900 + index * 50;
+
+  document.getElementById('status-text').textContent = `Drawing ${ORDINALS[index]} ball…`;
+
+  const eg = document.getElementById('entry-glow');
+  eg.classList.add('lit');
+  setTimeout(() => eg.classList.remove('lit'), 380);
+
+  const ball = document.createElement('div');
+  ball.className = `ball ${BALL_COLORS[index]}`;
+  ball.textContent = number;
+  ball.style.setProperty('--target-x', targetX + 'px');
+  ball.style.setProperty('--spin', spin + 'deg');
+  ball.style.animation = `roll-enter ${dur}ms cubic-bezier(.18,.89,.32,1.28) forwards`;
+  track.appendChild(ball);
+
+  setTimeout(() => {
+    ball.style.animation = 'none';
+    ball.style.left = targetX + 'px';
+    ball.style.transform = 'translateY(-50%)';
+    spawnPulse(targetX, track);
+    spawnParticles(targetX, index, track);
+  }, dur + 8);
+
+  ballCount = index + 1;
+}
+
+function spawnPulse(x, parent) {
+  const r = document.createElement('div');
+  r.className = 'pulse-ring';
+  r.style.left = x + 'px';
+  parent.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+function spawnParticles(x, ci, parent) {
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const a = (Math.random() * 360) * Math.PI / 180;
+    const d = 14 + Math.random() * 18;
+    p.style.setProperty('--px', Math.cos(a) * d + 'px');
+    p.style.setProperty('--py', Math.sin(a) * d + 'px');
+    p.style.background = COLOR_HEX[ci];
+    p.style.left = (x + BALL_SIZE / 2 - 1.5) + 'px';
+    parent.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+function showSummary() {
+  document.getElementById('status-text').textContent = 'Winning numbers';
+
+  const summary = document.getElementById('summary');
+  summary.innerHTML = '';
+  const sorted = [...drawData.balls].sort((a, b) => a - b);
+
+  sorted.forEach((n, i) => {
+    const b = document.createElement('div');
+    b.className = `sum-ball ${BALL_COLORS[i]}`;
+    b.textContent = n;
+    b.style.opacity = '0';
+    b.style.transform = 'scale(.3)';
+    b.style.transition = `opacity .35s ease ${i * 70}ms, transform .35s cubic-bezier(.22,.68,0,1.4) ${i * 70}ms`;
+    summary.appendChild(b);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      b.style.opacity = '1';
+      b.style.transform = 'scale(1)';
+    }));
+  });
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    summary.classList.add('show');
+  }));
+}
+
+function startCountdown() {
+  const bar  = document.getElementById('countdown-bar');
+  const fill = document.getElementById('countdown-fill');
+  bar.classList.add('show');
+  fill.style.transition = `transform ${AUTO_HIDE_MS}ms linear`;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fill.style.transform = 'scaleX(0)';
+  }));
+}
+
+function dismiss() {
+  const c = document.getElementById('container');
+  c.classList.remove('visible');
+  c.classList.add('hiding');
+  setTimeout(() => {
+    if (typeof mp !== 'undefined') mp.trigger('client:lotto:drawDismiss');
+  }, 500);
+}
+
+if (typeof mp === 'undefined') {
+  setTimeout(() => startDraw({
+    weekId: 42,
+    balls:  [7, 14, 23, 31, 38, 46],
+    jackpot: 1250000
+  }), 400);
+}
+</script>
+</body>
+</html>

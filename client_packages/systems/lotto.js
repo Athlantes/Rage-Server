@@ -91,11 +91,43 @@ mp.events.add('client:lotto:error', (message) => {
     }
 });
 
-/** Prize notification — player won something from a past draw (shown in chat) */
-mp.events.add('client:lotto:prizeNotification', (amount, reason) => {
-    mp.game.ui.setNotificationTextEntry('STRING');
-    mp.game.ui.addTextComponentSubstringPlayerName(`~y~🎰 LOTTO WIN~w~\n$${amount.toLocaleString()} — ${reason}`);
-    mp.game.ui.drawNotification(false, true);
+/** Prize notification — delivered via phone mail only, no GTA overlay */
+mp.events.add('client:lotto:prizeNotification', (_amount, _reason) => {
+    // Results are sent via phone mail — no additional notification needed
+});
+
+// ────────────────────────────────────────────────────────────
+//  Draw Overlay Browser
+// ────────────────────────────────────────────────────────────
+let drawBrowser = null;
+
+function openDrawOverlay(payload) {
+    if (drawBrowser) {
+        drawBrowser.destroy();
+        drawBrowser = null;
+    }
+    drawBrowser = mp.browsers.new('package://ui/lotto/draw-overlay.html');
+    setTimeout(() => {
+        if (drawBrowser) drawBrowser.execute(`startDraw('${JSON.stringify(payload)}')`);
+    }, 200);
+}
+
+function closeDrawOverlay() {
+    if (drawBrowser) {
+        drawBrowser.destroy();
+        drawBrowser = null;
+    }
+}
+
+/** Server broadcasts the draw — show cinematic overlay to all players */
+mp.events.add('client:lotto:drawStart', (payloadJson) => {
+    const payload = JSON.parse(payloadJson);
+    openDrawOverlay(payload);
+});
+
+/** Called from the overlay HTML when animation is done */
+mp.events.add('client:lotto:drawDismiss', () => {
+    closeDrawOverlay();
 });
 
 // ────────────────────────────────────────────────────────────
