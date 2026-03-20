@@ -23,9 +23,9 @@ const ACTIVE_DAYS = 7;
 
 // Reward tiers based on vehicle tier
 const REWARDS = {
-    low:  { cashMin: 800,  cashMax: 1500,  xp: 150, partChance: 0.15, partPool: ['car_part_common'] },
-    mid:  { cashMin: 2000, cashMax: 4000,  xp: 300, partChance: 0.35, partPool: ['car_part_common', 'car_part_uncommon'] },
-    high: { cashMin: 5000, cashMax: 10000, xp: 500, partChance: 0.55, partPool: ['car_part_uncommon', 'car_part_rare', 'car_part_epic'] }
+    low:  { cashMin: 800,  cashMax: 1500,  xp: 150, partChance: 0.15, partPool: ['power_pack', 'drivetrain_pack', 'handling_pack', 'chassis_pack', 'special_pack'] },
+    mid:  { cashMin: 2000, cashMax: 4000,  xp: 300, partChance: 0.35, partPool: ['power_pack', 'drivetrain_pack', 'handling_pack', 'chassis_pack', 'special_pack'] },
+    high: { cashMin: 5000, cashMax: 10000, xp: 500, partChance: 0.55, partPool: ['power_pack', 'drivetrain_pack', 'handling_pack', 'chassis_pack', 'special_pack'] }
 };
 
 // NPC dialogue lines (random pick)

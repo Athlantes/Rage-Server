@@ -12,12 +12,13 @@ mp.events.add('playerEnterVehicle', (vehicle, seat) => {
 
 // 2. Keep engine running when exiting (GTA natively turns it off)
 mp.events.add('playerLeaveVehicle', (vehicle, seat) => {
-    let isEngineOn = vehicle.getVariable('engine') === true;
-    if (isEngineOn) {
-        vehicle.setEngineOn(true, true, false);
+    if (vehicle) {
+        let isEngineOn = vehicle.getVariable('engine') === true;
+        if (isEngineOn) {
+            vehicle.setEngineOn(true, true, false);
+        }
     }
 });
-
 // 3. Listen for changes from the server (e.g., when you press '2')
 mp.events.add('entityDataChange', (entity, key, value) => {
     if (entity.type === 'vehicle') {
