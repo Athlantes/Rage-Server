@@ -394,6 +394,8 @@ const app = {
             if (container.innerHTML.includes('No Mail')) container.innerHTML = '';
 
             const timeAgo = app.getRelativeTime(mail.created_at);
+            const isHtmlMsg = typeof mail.message === 'string' && mail.message.trimStart().startsWith('<');
+            const previewText = isHtmlMsg ? 'Tap to see your results →' : mail.message;
             const div = document.createElement('div');
             div.id = 'mail-item-' + mail.id;
             div.className = `mail-item`; 
@@ -405,7 +407,7 @@ const app = {
                     <div class="mail-time" style="font-size:11px; color:rgba(0,0,0,0.35);">${timeAgo}</div>
                 </div>
                 <div class="mail-title">${mail.title}</div>
-                <div class="mail-msg">${mail.message}</div>
+                <div class="mail-msg">${previewText}</div> 
             `;
             
             container.prepend(div);
