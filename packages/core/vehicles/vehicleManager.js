@@ -31,6 +31,9 @@ const vehicles = {
             engine: false
         });
 
+        veh.setVariable('engine', false);
+        veh.setVariable('locked', true);
+
         veh.dbId = data.id; 
         veh.ownerId = data.owner_id;
         
@@ -211,9 +214,6 @@ const vehicles = {
     findActiveVehicle: (dbId) => {
         return mp.vehicles.toArray().find(v => v.dbId === parseInt(dbId));
     },
-
-    // 8. Auto-Despawn Loop
-    // packages/core/vehicles/vehicleManager.js
 
     startAutoDespawnLoop: () => {
         setInterval(() => {
