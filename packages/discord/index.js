@@ -78,28 +78,11 @@ function handleBotMessage(msg) {
             targetPlayer.outputChatBox(`!{00A8FF}[Discord] !{FFFFFF}You received a verification code via email on your phone!`);
 
             // 2. Use phone system to deliver mail
-            const discordMailHtml = `
-            <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f4f6; color: #333; border-radius: 8px; overflow: hidden; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div style="background: #5865F2; padding: 16px; text-align: center;">
-                    <div style="color: #ffffff; font-size: 18px; font-weight: 800; letter-spacing: 1px;">DISCORD INTEGRATION</div>
-                </div>
-                <div style="padding: 20px; text-align: center; background: #ffffff;">
-                    <p style="font-size: 13px; color: #555; margin-top: 0; line-height: 1.5;">Please use the following PIN code to link your account. Return to the Discord window and enter this code.</p>
-                    
-                    <div style="background: #e3e5e8; padding: 12px; border-radius: 6px; font-size: 28px; font-family: monospace; font-weight: 800; letter-spacing: 6px; color: #5865F2; margin: 18px 0;">
-                        ${msg.pin}
-                    </div>
-                    
-                    <p style="font-size: 11px; color: #999; margin-bottom: 0;">If you did not request this, please ignore this email.</p>
-                </div>
-            </div>`;
-
-            mp.events.call(
-                'server:phone:sendMail', 
+            mp.events.call('server:phone:sendMail', 
                 targetPlayer.data.dbId,               // targetDbId
-                'Discord Auth',                       // sender
-                'Verification PIN',                   // title
-                discordMailHtml                       // message
+                'Discord',                            // sender
+                'Verify Account',                     // title
+                `Hello,\n\nYour verification code is: ${msg.pin}\n\nPlease enter this code in the Discord window to verify your account.\n\nThank you` // message
             );
         } else {
             console.warn('[Discord] sendLinkPin: target player not found (userId:', msg.userId, 'username:', msg.username, ')');

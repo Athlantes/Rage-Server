@@ -27,26 +27,29 @@ mp.events.add('playerExitVehicle', (player, vehicle) => {
 mp.events.add('vehicle:toggleEngine', (player) => {
     const veh = player.vehicle;
     if (!veh) return;
-    if (player.seat !== -1 && player.seat !== 0) return; // Driver only
-    if (veh.frozen) return player.call('showNotification', ['Vehicle System', 'Cannot start engine while loading!']);
+    
+    // Check if driver
+    if (player.seat !== -1 && player.seat !== 0) return;
 
+    // PREVENT STARTING IF LOADING/FROZEN
+    if (veh.frozen) {
+        return player.call('showNotification', ['Vehicle System', 'Cannot start engine while loading!']);
+    }
+
+    // Check Fuel
     let currentFuel = veh.getVariable('fuel');
     if (currentFuel <= 0) {
         return player.call('showNotification', ['Vehicle System', 'Out of fuel!']);
     }
 
-    // Rely on the shared variable, not the native property
-    let isEngineOn = veh.getVariable('engine') === true;
-    let newState = !isEngineOn;
-
-    veh.engine = newState; // Tell RageMP
-    veh.setVariable('engine', newState); // Tell all clients
-    
-    player.call('showNotification', ['Vehicle System', newState ? 'Engine Started.' : 'Engine Stopped.']);
+    // Toggle
+    veh.engine = !veh.engine;
+    player.call('showNotification', ['Vehicle System', veh.engine ? 'Engine Started.' : 'Engine Stopped.']);
 });
 
 mp.events.add('vehicle:toggleLock', (player) => {
     let veh = player.vehicle;
+    
     if (!veh) {
         veh = mp.vehicles.getClosest(player.position);
         if (!veh || player.dist(veh.position) > 5) return;
@@ -57,15 +60,12 @@ mp.events.add('vehicle:toggleLock', (player) => {
         return;
     }
 
-    // Toggle the lock
-    let isLocked = veh.getVariable('locked') === true;
-    let newState = !isLocked;
-
-    veh.locked = newState; // Tell RageMP
-    veh.setVariable('locked', newState); // Tell all clients
+    veh.locked = !veh.locked;
+    veh.setVariable('locked', veh.locked);
     
-    player.call('showNotification', ['Vehicle System', newState ? 'Vehicle Locked.' : 'Vehicle Unlocked.']);
-    if(newState) player.call('client:playLockSound'); 
+    player.call('showNotification', ['Vehicle System', veh.locked ? 'Vehicle Locked.' : 'Vehicle Unlocked.']);
+    
+    if(veh.locked) player.call('client:playLockSound'); 
 });
 
 function hasKeys(player, veh) {

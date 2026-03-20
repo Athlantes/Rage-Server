@@ -82,43 +82,14 @@ class BankingService {
             [targetDbId, sender.data.dbId, amount, `From: ${sender.name} (${note})`]);
 
         // 4. NOTIFICATION (Offline & Online)
-        const fleecaHtml = `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background: #ffffff; color: #333; border-radius: 8px; border: 1px solid #e1e4e8; max-width: 340px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-            <div style="background: #0a4f3e; padding: 18px; text-align: center;">
-                <div style="color: #4cd964; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; font-weight: 700;">Fleeca Bank</div>
-                <div style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 4px; letter-spacing: 1px;">TRANSFER RECEIVED</div>
-            </div>
-            <div style="padding: 20px;">
-                <p style="font-size: 13px; color: #555; margin-top: 0; line-height: 1.5; text-align: center;">An incoming wire transfer has cleared and is now available in your account.</p>
-                
-                <div style="text-align: center; margin: 15px 0;">
-                    <span style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Amount Received</span><br>
-                    <strong style="font-size: 28px; color: #1e824c;">+$${amount.toLocaleString()}</strong>
-                </div>
-                
-                <div style="background: #f8f9fa; border-radius: 8px; padding: 14px; margin-top: 15px; border-left: 3px solid #0a4f3e;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 11px; color: #888; text-transform: uppercase;">From</span>
-                        <strong style="font-size: 13px; color: #111;">${sender.name}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="font-size: 11px; color: #888; text-transform: uppercase;">Ref</span>
-                        <strong style="font-size: 13px; color: #111;">${note || 'N/A'}</strong>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 18px; text-align: center; font-size: 10px; color: #aaa;">
-                    Fleeca Bank — It's your money, we just hold on to it.
-                </div>
-            </div>
-        </div>`;
-
-        mp.events.call(
-            'server:phone:sendMail', 
+        // We use the Mail system to send a persistent notification.
+        // If online: Phone Manager sends 'client:phone:receiveMail' (Popup)
+        // If offline: It stays in DB and shows up as unread mail when they login.
+        mp.events.call('server:phone:sendMail', 
             targetDbId, 
             'Fleeca Bank', 
             'Transfer Received', 
-            fleecaHtml
+            `You received $${amount} from ${sender.name}.\nRef: ${note}`
         );
 
         return { success: true, message: "Transfer successful." };

@@ -146,55 +146,20 @@ function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, wee
     const headerBg    = isJackpot ? '#1a1200' : '#0f1923';
     const headerColor = isJackpot ? '#FFD700'  : '#c9a84c';
 
-    const message = `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;border-radius:10px;overflow:hidden;max-width:340px;">` +
-
-        // ── Header ──
-        `<div style="background:${headerBg};padding:16px 18px 14px;text-align:center;">` +
-            `<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${headerColor};opacity:0.7;">Lotto 6/49</div>` +
-            `<div style="font-size:20px;font-weight:800;color:${headerColor};letter-spacing:1px;margin-top:2px;">DRAW #${weekId}</div>` +
-        `</div>` +
-
-        // ── Result banner ──
-        `<div style="background:${resultBg};padding:12px 18px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06);">` +
-            `<span style="font-size:20px;line-height:1;">${resultIcon}</span>` +
-            `<span style="font-size:13px;color:${resultColor};line-height:1.5;">${resultText}</span>` +
-        `</div>` +
-
-        // ── Numbers section ──
-        `<div style="padding:14px 18px;background:#fff;">` +
-
-            `<div style="margin-bottom:12px;">` +
-                `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Your Numbers</div>` +
-                `<div>${numPills(pickedNums.slice().sort((a,b)=>a-b), true)}</div>` +
-            `</div>` +
-
-            `<div style="margin-bottom:14px;">` +
-                `<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Winning Numbers</div>` +
-                `<div>${drawnPills(drawnNums.slice().sort((a,b)=>a-b))}</div>` +
-            `</div>` +
-
-            // Match + bet row
-            `<div style="display:flex;gap:8px;margin-bottom:4px;">` +
-                `<div style="flex:1;background:#f7f7f7;border-radius:8px;padding:10px;text-align:center;">` +
-                    `<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Matched</div>` +
-                    `<div style="font-size:20px;font-weight:800;color:${isWin ? '#2d7a2d' : '#ccc'};">${matches}<span style="font-size:13px;color:#bbb;font-weight:400;">/6</span></div>` +
-                `</div>` +
-                `<div style="flex:1;background:#f7f7f7;border-radius:8px;padding:10px;text-align:center;">` +
-                    `<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Your Bet</div>` +
-                    `<div style="font-size:16px;font-weight:700;color:#333;">$${bet.toLocaleString()}</div>` +
-                `</div>` +
-            `</div>` +
-
-        `</div>` +
-
-        // ── Footer / next jackpot ──
-        `<div style="background:#f7f7f9;border-top:1px solid #eee;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">` +
-            `<span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:1px;">Next Week's Jackpot</span>` +
-            `<span style="font-size:15px;font-weight:800;color:#c9a84c;">$${nextJackpot.toLocaleString()}</span>` +
-        `</div>` +
-
-    `</div>`;
-
+    const message =
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `  LOTTO 6/49 — DRAW #${weekId}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Your numbers:\n  ${pickedStr}\n\n` +
+        `Winning numbers:\n  ${drawnStr}\n\n` +
+        `Matched: ${matches} / 6\n` +
+        `Your bet: $${bet.toLocaleString()}\n\n` +
+        `${resultLine}\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `Next week's jackpot pool:\n  $${nextJackpot.toLocaleString()}\n` +
+        `Next draw: Saturday at 20:00\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+ 
     mp.events.call('server:phone:sendMail', playerId, 'Lotto 6/49', title, message);
 }
 

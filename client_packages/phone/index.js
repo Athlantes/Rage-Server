@@ -226,11 +226,9 @@ mp.events.add('client:camera:photoSaved', (filename) => {
 
 mp.events.add('client:phone:receiveMail', (id, sender, title, message) => {
     if(phoneBrowser) {
-        const escapeCEF = (str) => str ? str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$') : '';
-
-        const safeSender = escapeCEF(JSON.stringify(sender));
-        const safeTitle = escapeCEF(JSON.stringify(title));
-        const safeBody = escapeCEF(JSON.stringify(message));
+        const safeSender = JSON.stringify(sender);
+        const safeTitle = JSON.stringify(title);
+        const safeBody = JSON.stringify(message);
         
         phoneBrowser.execute(`
             if(typeof app.receiveMail === 'function') {
@@ -579,17 +577,12 @@ mp.events.add('client:phone:initialize', (mailsJson, photosJson, mediaUrl, setti
     mp.gui.chat.push(`[Phone Debug] Init Data Received.`);
 
     if(phoneBrowser) {
-        const escapeCEF = (str) => {
-            if (!str) return '[]';
-            return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        };
-
-        const safeMails = escapeCEF(mailsJson);
-        const safePhotos = escapeCEF(photosJson && photosJson.length > 2 ? photosJson : '[]');
-        const safeSettings = escapeCEF(settingsJson || '{}');
-        const safeContacts = escapeCEF(contactsJson || '[]');
-        const safeMessages = escapeCEF(messagesJson || '[]');
+        const safeMails = mailsJson || '[]';
+        const safePhotos = (photosJson && photosJson.length > 2) ? photosJson : '[]';
+        const safeSettings = settingsJson || '{}';
         const safeMediaUrl = mediaUrl || '';
+        const safeContacts = contactsJson || '[]';
+        const safeMessages = messagesJson || '[]';
 
         phoneBrowser.execute(`
             (function() {
