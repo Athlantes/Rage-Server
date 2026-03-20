@@ -285,17 +285,13 @@ const app = {
             div.id = 'mail-item-' + mail.id;
             div.className = `mail-item ${mail.is_read ? 'read' : ''}`;
             div.onclick = () => app.openMailDetail(mail);
-            const isHtmlMsg = typeof mail.message === 'string' && mail.message.trimStart().startsWith('<');
-            const previewText = isHtmlMsg
-                ? 'Tap to see your results →'
-                : mail.message;
             div.innerHTML = `
                 <div class="mail-header-row" style="display:flex; justify-content:space-between; align-items:baseline;">
                     <div class="mail-sender">${mail.sender}</div>
                     <div class="mail-time" style="font-size:11px; color:rgba(0,0,0,0.35);">${timeAgo}</div>
                 </div>
                 <div class="mail-title">${mail.title}</div>
-                <div class="mail-msg">${previewText}</div>
+                <div class="mail-msg">${mail.message}</div>
             `;
             container.appendChild(div);
             if (!mail.is_read) unreadCount++;
@@ -327,37 +323,8 @@ const app = {
         notifs.forEach(el => el.remove());
 
         document.getElementById('mail-detail-sender').innerText = `From: ${mail.sender}`;
-        const titleEl     = document.getElementById('mail-detail-title');
-        const bodyEl      = document.getElementById('mail-detail-body');
-        const statBox     = document.getElementById('mail-detail-statbox');
-        const containerEl = document.getElementById('mail-detail-container');
-        const isHtml = typeof mail.message === 'string' && mail.message.trimStart().startsWith('<');
-        if (isHtml) {
-            titleEl.style.display = 'none';
-            bodyEl.style.whiteSpace = 'normal';
-            bodyEl.style.color = '';
-            bodyEl.style.padding = '0';
-            bodyEl.style.margin = '0';
-            statBox.style.padding = '0';
-            statBox.style.border = 'none';
-            statBox.style.background = 'transparent';
-            statBox.style.borderRadius = '0';
-            containerEl.style.padding = '0';
-            bodyEl.innerHTML = mail.message;
-        } else {
-            titleEl.style.display = '';
-            titleEl.innerText = mail.title;
-            bodyEl.style.whiteSpace = 'pre-wrap';
-            bodyEl.style.color = '#555';
-            bodyEl.style.padding = '';
-            bodyEl.style.margin = '0';
-            statBox.style.padding = '';
-            statBox.style.border = '';
-            statBox.style.background = '';
-            statBox.style.borderRadius = '';
-            containerEl.style.padding = '';
-            bodyEl.innerText = mail.message;
-        }
+        document.getElementById('mail-detail-title').innerText = mail.title;
+        document.getElementById('mail-detail-body').innerText = mail.message;
 
         if (!mail.is_read) {
             if ('mp' in window) mp.trigger('client:proxyAction', 'readMail', mail.id);

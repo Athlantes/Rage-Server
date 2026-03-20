@@ -84,67 +84,17 @@ async function awardPrize(playerId, amount, reason) {
 }
 
 function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, weekId, nextJackpot) {
-    // ── Subject line ──
-    let title;
-    if      (matches === 6) title = `🏆 JACKPOT! Draw #${weekId}`;
-    else if (matches >= 3)  title = `🎉 ${matches} matches — Draw #${weekId}`;
-    else                    title = `🎰 Draw #${weekId} Results`;
+    let title = matches >= 3 ? `🎉 You matched ${matches} numbers! Draw #${weekId}` : `🎰 Lotto Draw #${weekId} Results`;
+    if (matches === 6) title = `🏆 JACKPOT! Lotto Draw #${weekId} Results`;
 
-    // ── Determine outcome style ──
-    const isJackpot = matches === 6;
-    const isWin     = matches >= 3;
+    const pickedStr = pickedNums.join('  ·  ');
+    const drawnStr  = drawnNums.join('  ·  ');
 
-    const drawnSet = new Set(drawnNums);
-    const pickedSet = new Set(pickedNums);
-
-    // Build number pill HTML — highlight matching numbers
-    function numPills(nums, highlight) {
-        return nums.map(n => {
-            const hit = highlight && drawnSet.has(n);
-            const style = hit
-                ? 'background:#FFD700;color:#1a1200;font-weight:700;'
-                : 'background:#f0f0f0;color:#444;';
-            return `<span style="display:inline-block;${style}border-radius:50%;width:30px;height:30px;line-height:30px;text-align:center;font-size:12px;font-family:monospace;margin:2px;">${n}</span>`;
-        }).join('');
-    }
-
-    // Winning numbers — highlight ones that match player picks
-    function drawnPills(nums) {
-        return nums.map(n => {
-            const hit = pickedSet.has(n);
-            const style = hit
-                ? 'background:#FFD700;color:#1a1200;font-weight:700;'
-                : 'background:#f0f0f0;color:#444;';
-            return `<span style="display:inline-block;${style}border-radius:50%;width:30px;height:30px;line-height:30px;text-align:center;font-size:12px;font-family:monospace;margin:2px;">${n}</span>`;
-        }).join('');
-    }
-
-    // Result banner
-    let resultBg, resultColor, resultIcon, resultText;
-    if (isJackpot) {
-        resultBg = '#1a1200'; resultColor = '#FFD700';
-        resultIcon = '🏆';
-        resultText = `JACKPOT! All 6 matched — <strong>$${prize.toLocaleString()}</strong> deposited to your account.`;
-    } else if (matches === 5) {
-        resultBg = '#0d2d0d'; resultColor = '#3dd68c';
-        resultIcon = '🎉';
-        resultText = `5 numbers matched — <strong>$${prize.toLocaleString()}</strong> deposited to your account.`;
-    } else if (matches === 4) {
-        resultBg = '#0d2018'; resultColor = '#3dd68c';
-        resultIcon = '✅';
-        resultText = `4 numbers matched — <strong>$${prize.toLocaleString()}</strong> deposited to your account.`;
-    } else if (matches === 3) {
-        resultBg = '#1a1400'; resultColor = '#c9a84c';
-        resultIcon = '✅';
-        resultText = `3 numbers matched — your bet of <strong>$${prize.toLocaleString()}</strong> returned.`;
-    } else {
-        resultBg = '#1a1a1a'; resultColor = '#888';
-        resultIcon = '😔';
-        resultText = `No significant matches this week — better luck next time!`;
-    }
-
-    const headerBg    = isJackpot ? '#1a1200' : '#0f1923';
-    const headerColor = isJackpot ? '#FFD700'  : '#c9a84c';
+    let resultLine = matches >= 3 
+        ? `✅ You matched ${matches} out of 6 numbers.\nPrize awarded: $${prize.toLocaleString()}`
+        : `No significant matches this week — better luck next time!`;
+    
+    if (matches === 6) resultLine = `✅ JACKPOT! You matched all 6 numbers!\nPrize awarded: $${prize.toLocaleString()}`;
 
     const message =
         `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -157,9 +107,8 @@ function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, wee
         `${resultLine}\n\n` +
         `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
         `Next week's jackpot pool:\n  $${nextJackpot.toLocaleString()}\n` +
-        `Next draw: Saturday at 20:00\n` +
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
- 
+
     mp.events.call('server:phone:sendMail', playerId, 'Lotto 6/49', title, message);
 }
 
@@ -201,16 +150,20 @@ async function executeDraw(forcedBy = null) {
     pool.sort((a, b) => a - b);
     const drawnStr = serializeNumbers(pool);
 
-    // Broadcast cinematic draw overlay to all connected players
-    const drawPayload = {
-        weekId: state.weekId,
-        balls:  pool,
-        jackpot: state.jackpot,
-    };
-    mp.players.forEach(p => {
-        if (p.logged) p.call('client:lotto:drawStart', [JSON.stringify(drawPayload)]);
-    });
-    await delay(CONFIG.BALL_DELAY_MS * pool.length + 4000); // wait for the overlay animation
+    // [IMPROVEMENT] Suspenseful Chat Reveal
+    broadcast(`!{FFD700}╔══════════════════════════════╗`);
+    broadcast(`!{FFD700}║   🎰  LOTTO 6/49 — DRAW #${state.weekId}  ║`);
+    broadcast(`!{FFD700}╚══════════════════════════════╝`);
+    broadcast(`!{AAAAAA}The draw machine is mixing the balls...`);
+
+    for (let i = 0; i < pool.length; i++) {
+        await delay(CONFIG.BALL_DELAY_MS);
+        broadcast(`!{FFFFFF}Ball #${i + 1} is... !{FFD700}[ ${pool[i]} ]`);
+    }
+    
+    await delay(2000);
+    broadcast(`!{FFFFFF}Winning numbers: !{FFD700}${pool.join('  -  ')}`);
+    broadcast(`!{AAAAAA}Jackpot pool: !{00FF88}$${state.jackpot.toLocaleString()}`);
 
     const [tickets] = await db.query(
         'SELECT t.*, u.username FROM lotto_tickets t JOIN users u ON u.id = t.player_id WHERE t.week_id = ?',
@@ -236,12 +189,15 @@ async function executeDraw(forcedBy = null) {
             } else if (matches === 5) {
                 prize = bet * CONFIG.PRIZE_5_MULTIPLIER;
                 await awardPrize(ticket.player_id, prize, `Lotto 5/6 win — week #${state.weekId}`);
+                broadcast(`!{00FF88}🎉 ${ticket.username} matched 5 numbers and won !{FFD700}$${prize.toLocaleString()}!`);
             } else if (matches === 4) {
                 prize = bet * CONFIG.PRIZE_4_MULTIPLIER;
                 await awardPrize(ticket.player_id, prize, `Lotto 4/6 win — week #${state.weekId}`);
+                broadcast(`!{88FF88}🎉 ${ticket.username} matched 4 numbers and won !{FFD700}$${prize.toLocaleString()}!`);
             } else if (matches === 3) {
                 prize = bet * CONFIG.PRIZE_3_MULTIPLIER;
                 await awardPrize(ticket.player_id, prize, `Lotto 3/6 win — week #${state.weekId}`);
+                broadcast(`!{AAAAAA}🎉 ${ticket.username} matched 3 numbers and won back their ticket (!{FFD700}$${prize.toLocaleString()}!{AAAAAA})!`);
             }
             ticketResults.push({ ticket, picked, matches, prize });
         }
@@ -257,9 +213,12 @@ async function executeDraw(forcedBy = null) {
         jackpotShare = Math.floor(state.jackpot / jackpotWinners.length);
         for (const w of jackpotWinners) {
             await awardPrize(w.player_id, jackpotShare, `Lotto JACKPOT — week #${state.weekId}`);
+            broadcast(`!{FFD700}🏆🏆 JACKPOT! ${w.username} matched ALL 6 numbers and won !{00FF88}$${jackpotShare.toLocaleString()}! 🏆🏆`);
         }
         for (const r of ticketResults) { if (r.matches === 6) r.prize = jackpotShare; }
         state.jackpot = 0;
+    } else {
+        broadcast(`!{FF8844}No jackpot winner this week. The pool of !{FFD700}$${state.jackpot.toLocaleString()} !{FF8844}rolls over to next week!`);
     }
 
     await db.query('INSERT INTO lotto_draws (week_id, drawn_numbers, jackpot, jackpot_won) VALUES (?, ?, ?, ?)',
@@ -271,6 +230,9 @@ async function executeDraw(forcedBy = null) {
     await db.query('UPDATE lotto_state SET week_id = ?, jackpot = ?, next_draw = ? WHERE id = 1',
         [state.weekId, state.jackpot, toMysqlDatetime(state.nextDraw)]
     );
+
+    broadcast(`!{AAAAAA}Next draw: !{FFFFFF}Saturday at 20:00. Good luck!`);
+    broadcast(`!{FFD700}══════════════════════════════════`);
 
     for (const r of ticketResults) {
         sendLottoMail(r.ticket.player_id, r.picked, pool, r.matches, r.ticket.bet, r.prize, state.weekId - 1, state.jackpot);
