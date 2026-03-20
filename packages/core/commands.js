@@ -118,12 +118,6 @@ mp.events.addCommand('w', (player, fullText) => {
 // PLAYER VEHICLE COMMANDS
 // ----------------------------------------------------------------------------
 
-mp.events.addCommand('buycar', (player, model) => {
-    if (!player.logged) return player.outputChatBox("Login first!");
-    if (!model) return player.outputChatBox("Usage: /buycar [modelname]");
-    vehicleManager.create(player, model); 
-});
-
 mp.events.addCommand('parkcar', (player) => {
     const veh = player.vehicle;
     if (!veh) return player.call('showNotification', ['Garage', 'You must be in a vehicle.']);
@@ -679,8 +673,15 @@ mp.events.addCommand('veh', (player, model) => {
     player.outputChatBox(`${COLORS.SUCCESS}Spawned temporary ${model}.`);
 });
 
+mp.events.addCommand('buycar', (player, model) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    if (!player.logged) return player.outputChatBox("Login first!");
+    if (!model) return player.outputChatBox("Usage: /buycar [modelname]");
+    vehicleManager.create(player, model); 
+});
+
 mp.events.addCommand('giveveh', async (player, fullText) => {
-    if (!checkRank(player, RANKS.OWNER)) return;
+    if (!checkRank(player, RANKS.ADMIN)) return;
     const args = fullText.split(' ');
     const target = getPlayer(args[0]);
     const model = args[1];
@@ -694,13 +695,22 @@ mp.events.addCommand('giveveh', async (player, fullText) => {
 mp.events.addCommand('dv', (player) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
     
+    // 1. If player is INSIDE a vehicle
     if (player.vehicle) {
         const veh = player.vehicle;
-        vehicleManager.despawnVehicle(veh); 
+        
+        // Check if it's a real database car or a temp admin car
+        if (veh.dbId) {
+            vehicleManager.despawnVehicle(veh); 
+        } else {
+            veh.destroy(); // Temporary car, just wipe it from memory
+        }
+        
         player.outputChatBox(`${COLORS.SUCCESS}Vehicle deleted.`);
         return;
     }
 
+    // 2. If player is OUTSIDE, find nearest vehicle
     let nearestVeh = null;
     let minDist = 5.0;
 
@@ -713,7 +723,12 @@ mp.events.addCommand('dv', (player) => {
     });
 
     if (nearestVeh) {
-        vehicleManager.despawnVehicle(nearestVeh);
+        // Again, check if it's a database car
+        if (nearestVeh.dbId) {
+            vehicleManager.despawnVehicle(nearestVeh);
+        } else {
+            nearestVeh.destroy();
+        }
         player.outputChatBox(`${COLORS.SUCCESS}Nearest vehicle deleted.`);
     } else {
         player.outputChatBox(`${COLORS.ERROR}No vehicle nearby.`);
