@@ -146,12 +146,37 @@ const vehicles = {
             }
         }, 150);
 
+        const receiptHtml = `
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background: #ffffff; color: #333; border-radius: 8px; border: 1px solid #e1e4e8; max-width: 340px; overflow: hidden;">
+            <div style="background: #0f1923; padding: 18px; text-align: center;">
+                <div style="color: #c9a84c; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;">Mosley Auto</div>
+                <div style="color: #ffffff; font-size: 20px; font-weight: 800; margin-top: 4px; letter-spacing: 1px;">VEHICLE REGISTRATION</div>
+            </div>
+            <div style="padding: 18px;">
+                <p style="font-size: 13px; color: #666; margin-top: 0; line-height: 1.5;">Congratulations, <strong>${player.name}</strong>. Your new vehicle has been officially registered to your name and is waiting for you.</p>
+                
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 14px; margin: 15px 0;">
+                    <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Vehicle Model</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #111; text-transform: capitalize;">${model}</div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px dashed #eee; padding-top: 14px;">
+                    <div>
+                        <div style="font-size: 11px; color: #888; text-transform: uppercase;">Digital Keys</div>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 800; color: #2d7a2d;">
+                        ✓ ADDED TO KEYCHAIN
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
         mp.events.call(
             'server:phone:sendMail', 
-            player.data.dbId,           // Target (Player)
-            'Mosley Auto',              // Sender
-            'Purchase Receipt',         // Title
-            `Congratulations! You have successfully purchased a ${model}. The keys have been added to your keychain.`
+            player.data.dbId,           
+            'Mosley Auto',              
+            `Registration: ${model.toUpperCase()}`,         
+            receiptHtml
         );
     },
 

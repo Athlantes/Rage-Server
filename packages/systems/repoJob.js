@@ -40,6 +40,24 @@ const NPC_LINES = [
 let npcTalkColshape = null;
 let repoNpc = null;
 
+// ── HELPER: GRITTY REPO EMAILS ──
+function sendRepoMail(userId, title, messageText, actionText) {
+    const html = `
+    <div style="font-family: Arial, sans-serif; background: #111; color: #eee; padding: 16px; border-radius: 6px; border-left: 4px solid #b30000; max-width: 320px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 20px;">💼</span>
+            <div style="color: #ff3333; font-size: 14px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">Luxury Motorsport</div>
+        </div>
+        <p style="font-size: 13px; color: #ccc; line-height: 1.6; margin-top: 0;">${messageText}</p>
+        <div style="background: #1a1a1a; padding: 12px; border-radius: 4px; margin-top: 14px; border: 1px solid #333;">
+            <span style="color: #777; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Objective</span><br>
+            <strong style="color: #fff; font-size: 13px;">${actionText}</strong>
+        </div>
+    </div>`;
+    
+    mp.events.call('server:phone:sendMail', userId, NPC_NAME, title, html);
+}
+
 // ── INIT ──
 const RepoJob = {
     async init() {
@@ -146,9 +164,13 @@ const RepoJob = {
                 [userId, today, targetModel]
             );
 
-            // Teaser mail — no car details
-            const mailMsg = `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`;
-            mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Got a job for you', mailMsg);
+            // Teaser mail — Custom Gritty HTML
+            sendRepoMail(
+                userId, 
+                'Got a job for you', 
+                `Hey, it's ${NPC_NAME}. I got some work for you. We have a client dodging payments.`, 
+                `Come see me behind Luxury Motorsport.`
+            );
 
             const onlinePlayer = mp.players.toArray().find(p => p.logged && p.data.dbId === userId);
             if (onlinePlayer) {
@@ -285,9 +307,13 @@ const RepoJob = {
             [userId, today, targetModel]
         );
 
-        // 5. Notify Player
-        const mailMsg = `Good work earlier. I got another one for you. Come see me when you're ready.`;
-        mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'More work available', mailMsg);
+        // 5. Notify Player — Custom Gritty HTML
+        sendRepoMail(
+            userId, 
+            'More work available', 
+            `Good work earlier. I got another file on my desk that needs handling.`, 
+            `Come see me when you're ready.`
+        );
 
         await this.syncPlayerRepoData(player);
         player.call('showNotification', ['Repo Work', 'New repo job available! Go speak with Salvatore.']);
@@ -432,8 +458,13 @@ const RepoJob = {
                         [userId, today, targetModel]
                     );
 
-                    const mailMsg = `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`;
-                    mp.events.call('server:phone:sendMail', userId, NPC_NAME, 'Got a job for you', mailMsg);
+                    // Teaser mail — Custom Gritty HTML
+                    sendRepoMail(
+                        userId, 
+                        'Got a job for you', 
+                        `Hey, it's ${NPC_NAME}. I got some work for you. We have a client dodging payments.`, 
+                        `Come see me behind Luxury Motorsport.`
+                    );
 
                     player.call('showNotification', ['Repo Work', `${NPC_NAME} wants to speak with you.`]);
                     console.log(`[RepoJob] Assigned available job on login for ${player.name}: ${targetModel}`);
