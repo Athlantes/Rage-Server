@@ -59,7 +59,7 @@ function startPhase1(player, s) {
     const loc = s.dummyLocation;
     s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
-    player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0]);
+    player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 10.0]);
 }
 
 function startPhase2(player, s) {

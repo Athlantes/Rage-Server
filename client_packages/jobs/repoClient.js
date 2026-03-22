@@ -21,6 +21,10 @@ let trackerInterval  = null;
 let localAmbushPeds  = [];
 let ambushTriggered  = false; 
 
+// Variables for dynamic hostility
+let npcsHostile = false;
+let initialPedHealths = new Map();
+
 let lockBreakActive  = false;
 let lockBreakBlip    = null;
 let lockBreakPos     = null;
@@ -127,9 +131,11 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
     repoPhase      = 'PHASE_4_AMBUSH';
     wantedCarNetId  = wantedNetId;
     localAmbushPeds = [];
+    npcsHostile     = false;
+    initialPedHealths.clear();
 
     mp.game.ui.setTextEntry('STRING');
-    mp.game.ui.addTextComponentSubstringPlayerName('~r~ARMED GUARDS~w~ are protecting the target. Eliminate them!');
+    mp.game.ui.addTextComponentSubstringPlayerName('~y~Guards are protecting the target. Sneak up or take them out!');
     mp.game.ui.drawSubtitleTimed(6000, true);
     closeTracker();
 
@@ -142,15 +148,28 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
         
         pedSpawnData.forEach((sp, i) => {
             try {
-                // RAGE requires a hash for client side mp.peds.new
                 const modelHash = mp.game.joaat(sp.model);
                 const ped = mp.peds.new(modelHash, new mp.Vector3(sp.x, sp.y, sp.z), sp.h, mp.players.local.dimension);
                 localAmbushPeds.push(ped);
             } catch (e) {}
         });
         
-        // Let handles initialize, then give weapons and tasks
-        setTimeout(() => makeNpcsHostile(), 2000);
+        // Let handles initialize, then give weapons and make them guard
+        setTimeout(() => {
+            localAmbushPeds.forEach(ped => {
+                if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
+                    // Unfreeze them so they can move if they need to
+                    ped.freezePosition(false);
+
+                    // Block normal AI fleeing logic
+                    ped.setBlockingOfNonTemporaryEvents(true);
+
+                    const weaponHash = mp.game.joaat('WEAPON_PISTOL');
+                    ped.giveWeapon(weaponHash, 200, true); 
+                    initialPedHealths.set(ped.handle, ped.getHealth());
+                }
+            });
+        }, 1000);
     }, 1500);
 
     setupLockBreakInteraction(cx, cy, cz);
@@ -158,24 +177,33 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
 
 function makeNpcsHostile() {
     const local = mp.players.local;
+
+    mp.game.ui.setTextEntry('STRING');
+    mp.game.ui.addTextComponentSubstringPlayerName('~r~The guards spotted you! Take them out!');
+    mp.game.ui.drawSubtitleTimed(4000, true);
+
     localAmbushPeds.forEach((ped) => {
-        // Verify ped spawned successfully and got an engine handle
         if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
-        
         try {
-            const weaponHash = mp.game.joaat('WEAPON_PISTOL');
+            if (ped.isDeadOrDying(true)) return;
             
-            // Natives must be used with ped.handle
-            mp.game.weapon.giveWeaponToPed(ped.handle, weaponHash, 200, false, true);
-            mp.game.ped.setBlockingOfNonTemporaryEvents(ped.handle, false);
-            mp.game.ped.setPedFleeAttributes(ped.handle, 0, false);
-            mp.game.ped.setPedCombatAttributes(ped.handle, 46, true);
+            // Ensure they ignore normal event interrupts (like hearing gunshots)
+            ped.setBlockingOfNonTemporaryEvents(true);
             
-            // Tell ped to fight the player
-            mp.game.task.taskCombatPed(ped.handle, local.handle, 0, 16);
-        } catch (e) {
-            // Failsafe catch
-        }
+            // 0: Default flee attributes
+            ped.setFleeAttributes(0, false);
+            
+            // 46: BF_AlwaysFight
+            ped.setCombatAttributes(46, true);
+
+            // SET_PED_COMBAT_MOVEMENT (0 = Stationary/Stand Ground, 1 = Defensive, 2 = Offensive)
+            // 0 ensures they just stand and shoot, instead of running in place
+            mp.game.invoke('0x4D9CA1009AFBD057', ped.handle, 3); 
+            
+            // Give them the task to shoot the local player
+            ped.taskCombat(local.handle, 16, 16);
+
+        } catch (e) {}
     });
 }
 
@@ -193,8 +221,7 @@ mp.events.add('interaction:keypress', () => {
     let anyAlive = false;
     localAmbushPeds.forEach(ped => { 
         if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
-            // Use native check for death
-            if (!mp.game.ped.isPedDeadOrDying(ped.handle, true)) {
+            if (!ped.isDeadOrDying(true)) {
                 anyAlive = true;
             }
         } 
@@ -216,19 +243,61 @@ mp.events.add('interaction:keypress', () => {
 
 mp.events.add('render', () => {
     if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || !lockBreakPos || mp.players.local.vehicle) return;
-    if (dist3D(mp.players.local.position, lockBreakPos) > 8.0) return;
+    
+    const local = mp.players.local;
+
+    // --- Dynamic Aggro Logic ---
+    if (!npcsHostile) {
+        let shouldAggro = false;
+
+        if (local.isShooting() && dist3D(local.position, lockBreakPos) < 60.0) {
+            shouldAggro = true;
+        }
+
+        localAmbushPeds.forEach(ped => {
+            if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
+            try {
+                if (ped.isDeadOrDying(true)) return;
+
+                if (dist3D(local.position, ped.position) < 12.0) {
+                    shouldAggro = true;
+                }
+
+                const startHealth = initialPedHealths.get(ped.handle);
+                if (startHealth && ped.getHealth() < startHealth) {
+                    shouldAggro = true;
+                }
+
+                if (mp.game.player.isFreeAiming()) {
+                    const playerId = mp.game.invoke('0x4F8644AF03D0E0D6'); 
+                    const isAimingAt = mp.game.invoke('0x3C06B5C839B38F7B', playerId, ped.handle); 
+                    if (isAimingAt) {
+                        shouldAggro = true;
+                    }
+                }
+            } catch (e) {}
+        });
+
+        if (shouldAggro) {
+            npcsHostile = true;
+            makeNpcsHostile();
+        }
+    }
+    // ---------------------------
+
+    if (dist3D(local.position, lockBreakPos) > 8.0) return;
 
     let anyAlive = false;
     localAmbushPeds.forEach(ped => { 
         if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
-            if (!mp.game.ped.isPedDeadOrDying(ped.handle, true)) {
+            if (!ped.isDeadOrDying(true)) {
                 anyAlive = true; 
             }
         } 
     });
+    
     if (anyAlive) return;
 
-    // Fixed RAGE wrapper displayHelpTextThisFrame argument
     mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
 });
 
@@ -262,7 +331,6 @@ mp.events.add('client:repo:enterWantedCar', (wantedNetId) => {
     try { wantedLocal = mp.vehicles.atRemoteId(wantedNetId); } catch (_) {}
     if (!wantedLocal || !mp.vehicles.exists(wantedLocal)) return;
 
-    // Use task namespace with handle for entry
     mp.game.task.taskEnterVehicle(mp.players.local.handle, wantedLocal.handle, 10000, -1, 1.0, 1, 0); 
 });
 
@@ -282,6 +350,8 @@ mp.events.add('client:repo:sync', (jsonStr) => { try { const jobs = JSON.parse(j
 
 mp.events.add('client:repo:cleanup', () => {
     repoPhase = 'idle'; wantedPos = null; dummyCarNetId = -1; wantedCarNetId = -1; lockBreakActive = false;
+    npcsHostile = false; initialPedHealths.clear();
+    
     localAmbushPeds.forEach(ped => { try { if (mp.peds.exists(ped)) ped.destroy(); } catch (_) {} });
     localAmbushPeds = [];
     trackerInterval = clearInterval2(trackerInterval);
