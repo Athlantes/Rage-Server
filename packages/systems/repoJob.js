@@ -57,7 +57,7 @@ function cleanupSession(playerId) {
 function startPhase1(player, s) {
     s.phase = 'PHASE_1_FIND_DUMMY';
     const loc = s.dummyLocation;
-    s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0, 0);
+    s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 10.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
     player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0]);
 }
