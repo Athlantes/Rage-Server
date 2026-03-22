@@ -25,7 +25,7 @@ let ambushTriggered  = false;
 let npcsHostile = false;
 let initialPedHealths = new Map();
 
-// Relationship Groups for AI handling (Using built-in GTA groups)
+// Relationship Groups for AI handling
 const GUARD_GROUP = mp.game.joaat('SECURITY_GUARD');
 
 let lockBreakActive  = false;
@@ -151,7 +151,6 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
         
         const playerGroup = mp.players.local.getRelationshipGroupHash();
 
-        // Ensure they start out Neutral (3) 
         mp.game.ped.setRelationshipBetweenGroups(3, GUARD_GROUP, playerGroup);
         mp.game.ped.setRelationshipBetweenGroups(3, playerGroup, GUARD_GROUP);
 
@@ -169,7 +168,6 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
                     ped.freezePosition(false);
                     ped.setBlockingOfNonTemporaryEvents(true);
                     
-                    // --- FIX: Force Remove ALL Invincibility Flags via Natives ---
                     ped.setInvincible(false);
                     mp.game.invoke('0x3882114BDE571AD4', ped.handle, false); // SET_ENTITY_INVINCIBLE
                     mp.game.invoke('0x1760FFA8AB074D66', ped.handle, true);  // SET_ENTITY_CAN_BE_DAMAGED
@@ -194,34 +192,29 @@ function makeNpcsHostile() {
     const playerGroup = local.getRelationshipGroupHash();
 
     mp.game.ui.setTextEntry('STRING');
-    mp.game.ui.addTextComponentSubstringPlayerName('~r~The guards spotted you! Take them out!');
+    mp.game.ui.addTextComponentSubstringPlayerName('~r~The guards spotted you!');
     mp.game.ui.drawSubtitleTimed(4000, true);
 
-    // Instantly switch engine relationship to HATE (5)
     mp.game.ped.setRelationshipBetweenGroups(5, GUARD_GROUP, playerGroup);
     mp.game.ped.setRelationshipBetweenGroups(5, playerGroup, GUARD_GROUP);
 
     localAmbushPeds.forEach((ped) => {
         if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
         try {
-            if (ped.isDeadOrDying(true)) return;
+            if (ped.isDeadOrDying(true) || ped.getHealth() <= 0) return;
             
-            // Wipe the queue in case they already started the "Civilian Flee" animation
             ped.clearTasksImmediately();
 
             ped.setBlockingOfNonTemporaryEvents(true);
             ped.setFleeAttributes(0, false);
             
-            // Combat attributes
-            ped.setCombatAttributes(46, true); // Always fight
-            ped.setCombatAttributes(0, false); // CANNOT USE COVER
-            ped.setCombatAttributes(1, false); // CAN_USE_VEHICLES
-            ped.setCombatAttributes(5, true);  // Can fight armed peds when not armed (Failsafe)
+            ped.setCombatAttributes(46, true); 
+            ped.setCombatAttributes(0, false); 
+            ped.setCombatAttributes(1, false); 
+            ped.setCombatAttributes(5, true);  
             
-            // SET_PED_COMBAT_MOVEMENT (0 = Stationary)
             mp.game.invoke('0x4D9CA1009AFBD057', ped.handle, 0); 
             
-            // Aggressive pursuit task using flags 16, 16
             ped.taskCombat(local.handle, 16, 16);
         } catch (e) {}
     });
@@ -237,26 +230,6 @@ mp.events.add('interaction:keypress', () => {
     if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || mp.players.local.vehicle || !lockBreakPos) return;
     const local = mp.players.local;
     if (dist3D(local.position, lockBreakPos) > 8.0) return;
-
-    let anyAlive = false;
-    localAmbushPeds.forEach(ped => { 
-        if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
-            if (!ped.isDeadOrDying(true)) {
-                anyAlive = true;
-            }
-        } 
-    });
-
-    if (anyAlive) {
-        mp.game.ui.setTextEntry('STRING');
-        mp.game.ui.addTextComponentSubstringPlayerName('~r~Eliminate all guards first!');
-        mp.game.ui.drawSubtitleTimed(3000, true);
-        return;
-    }
-
-    let wantedLocal = null;
-    try { wantedLocal = mp.vehicles.atRemoteId(wantedCarNetId); } catch (_) {}
-    if (wantedLocal && mp.vehicles.exists(wantedLocal) && dist3D(local.position, wantedLocal.position) > 6.0) return;
 
     startLockBreak();
 });
@@ -275,9 +248,9 @@ mp.events.add('render', () => {
         }
 
         localAmbushPeds.forEach(ped => {
-            if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
             try {
-                if (ped.isDeadOrDying(true)) return;
+                if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
+                if (ped.isDeadOrDying(true) || ped.getHealth() <= 0) return;
 
                 if (dist3D(local.position, ped.position) < 12.0) {
                     shouldAggro = true;
@@ -288,7 +261,6 @@ mp.events.add('render', () => {
                     shouldAggro = true;
                 }
 
-                // Native wrapper check for aiming
                 if (mp.game.player.isFreeAimingAtEntity(ped.handle)) {
                     shouldAggro = true;
                 }
@@ -303,17 +275,6 @@ mp.events.add('render', () => {
     // ---------------------------
 
     if (dist3D(local.position, lockBreakPos) > 8.0) return;
-
-    let anyAlive = false;
-    localAmbushPeds.forEach(ped => { 
-        if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
-            if (!ped.isDeadOrDying(true)) {
-                anyAlive = true; 
-            }
-        } 
-    });
-    
-    if (anyAlive) return;
 
     mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
 });
@@ -348,7 +309,8 @@ mp.events.add('client:repo:enterWantedCar', (wantedNetId) => {
     try { wantedLocal = mp.vehicles.atRemoteId(wantedNetId); } catch (_) {}
     if (!wantedLocal || !mp.vehicles.exists(wantedLocal)) return;
 
-    mp.game.task.taskEnterVehicle(mp.players.local.handle, wantedLocal.handle, 10000, -1, 1.0, 1, 0); 
+    // Uses 0 instead of "" to satisfy the strict RAGE wrapper type checking
+    mp.players.local.taskEnterVehicle(wantedLocal.handle, 10000, -1, 1.0, 1, 0); 
 });
 
 mp.events.add('client:repo:phaseDeliver', (dx, dy, dz) => {

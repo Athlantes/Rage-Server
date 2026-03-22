@@ -59,14 +59,23 @@ function startPhase1(player, s) {
     const loc = s.dummyLocation;
     s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
-    player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 10.0]);
+    player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0]);
 }
 
 function startPhase2(player, s) {
     s.phase = 'PHASE_2_GET_TOOLS';
     const loc = s.dummyLocation;
+    
+    // Spawn Dummy Car
     s.dummyCar = mp.vehicles.new(mp.joaat(s.dummyModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3,11]), rand([0,1,2])], locked: false, engine: false, dimension: 0 });
+    
+    // Set standard integration flags
     s.dummyCar.setVariable('repoOwner', player.id);
+    s.dummyCar.setVariable('fuel', 100);       // Full tank
+    s.dummyCar.setVariable('engine', false);   // Engine off initially
+    s.dummyCar.setVariable('locked', false);   // Unlocked for player
+    s.dummyCar.engine = false;
+    s.dummyCar.locked = false;
     
     const mp2 = loc.trunkMarkerPos;
     s.trunkMarker = mp.markers.new(1, new mp.Vector3(mp2.x, mp2.y, mp2.z - 1.0), 1.0, { color: { r: 255, g: 165, b: 0, a: 180 }, visible: true, dimension: 0 });
@@ -91,8 +100,16 @@ function startPhase4(player, s) {
     s.phase = 'PHASE_4_AMBUSH';
     const loc = s.wantedLocation;
     
+    // Spawn Wanted Target Car
     s.wantedCar = mp.vehicles.new(mp.joaat(s.wantedModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3]), rand([0,1])], locked: true, engine: false, dimension: 0 });
+    
+    // Set standard integration flags
     s.wantedCar.setVariable('repoOwner', player.id);
+    s.wantedCar.setVariable('fuel', 100);      // Full tank
+    s.wantedCar.setVariable('engine', false);  // Engine off
+    s.wantedCar.setVariable('locked', true);   // HARD LOCKED - Player must break it
+    s.wantedCar.engine = false;
+    s.wantedCar.locked = true;
     
     const count = Math.floor(Math.random() * (AMBUSH_PED_COUNT_MAX - AMBUSH_PED_COUNT_MIN + 1)) + AMBUSH_PED_COUNT_MIN;
     const pedSpawnData = loc.pedSpawns.slice(0, count).map(sp => ({ model: rand(AMBUSH_PED_MODELS), x: sp.x, y: sp.y, z: sp.z, h: sp.h }));
@@ -103,7 +120,12 @@ function startPhase4(player, s) {
 function startPhase5(player, s) {
     s.phase = 'PHASE_5_DELIVER';
     if (s.dummyCar && mp.vehicles.exists(s.dummyCar)) { s.dummyCar.destroy(); s.dummyCar = null; }
-    if (s.wantedCar && mp.vehicles.exists(s.wantedCar)) s.wantedCar.locked = false;
+    
+    // Unlock the car once the player breaks it successfully
+    if (s.wantedCar && mp.vehicles.exists(s.wantedCar)) {
+        s.wantedCar.locked = false;
+        s.wantedCar.setVariable('locked', false);
+    }
     
     player.call('client:repo:phaseDeliver', [DELIVER_POS.x, DELIVER_POS.y, DELIVER_POS.z]);
     
@@ -224,7 +246,6 @@ const RepoJob = {
     async acceptJob(player, dbJobId) {
         if (!player.logged || !player.data.dbId || activeSessions.has(player.id)) return;
 
-        // Overlap Prevention: Find a dummy location not currently used by active sessions
         const activeDummyLocs = Array.from(activeSessions.values()).map(s => s.dummyLocation);
         const availableDummys = DUMMY_LOCATIONS.filter(l => !activeDummyLocs.includes(l));
         
@@ -291,31 +312,30 @@ mp.events.add('server:repo:grabTools', player => {
 });
 mp.events.add('server:repo:boardedDummyCar', player => {});
 
-// Replaces server-side polling for ambush range
 mp.events.add('server:repo:triggerAmbush', (player) => {
     const s = activeSessions.get(player.id);
     if (!s || s.phase !== 'PHASE_3_RADAR') return;
     
-    // Server-side distance validation to prevent cheating
     if (dist2D(player.position, s.wantedLocation.carPos) <= 160.0) {
         startPhase4(player, s);
     }
 });
 
-// Lock broken event with anti-cheat distance validation
 mp.events.add('server:repo:lockBroken', player => {
     const s = activeSessions.get(player.id);
     if (!s || s.phase !== 'PHASE_4_AMBUSH') return;
     
-    // Anti-cheat Check
     if (!s.wantedCar || !mp.vehicles.exists(s.wantedCar) || dist2D(player.position, s.wantedCar.position) > 10.0) {
-        return; // Ignore cheat attempt
+        return; 
     }
 
     s.wantedCar.locked = false;
+    s.wantedCar.setVariable('locked', false);
+    
     player.call('client:repo:enterWantedCar', [s.wantedCar.id]);
     startPhase5(player, s);
 });
+
 mp.events.add('server:repo:quit', player => {
     const s = activeSessions.get(player.id);
     if (!s) return;
