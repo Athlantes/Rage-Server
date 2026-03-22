@@ -237,8 +237,8 @@ mp.events.add('interaction:keypress', () => {
     if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || mp.players.local.vehicle || !lockBreakPos) return;
     const local = mp.players.local;
     
-    // Check if player is within 5 meters of the interaction spot
-    if (dist3D(local.position, lockBreakPos) > 5.0) return;
+    // Check if player is within 8 meters of the interaction spot
+    if (dist3D(local.position, lockBreakPos) > 8.0) return;
 
     startLockBreak();
 });
@@ -284,7 +284,7 @@ mp.events.add('render', () => {
     // ---------------------------
 
     // If player is close to the car, disable 'F' and show the 'E' prompt
-    if (dist3D(local.position, lockBreakPos) <= 5.0) {
+    if (dist3D(local.position, lockBreakPos) <= 8.0) {
         mp.game.controls.disableControlAction(0, 23, true); // Disable Enter Vehicle (F)
         mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
     }
@@ -308,6 +308,7 @@ function startLockBreak() {
 
     lockBreakTimer = setTimeout(() => {
         lockBreakActive = false;
+        lockBreakTimer = null; // Clear the timer ID immediately so the cleanup function ignores it
         destroyBlip(lockBreakBlip); lockBreakBlip = null;
         destroyBlip(trunkBlip);    trunkBlip      = null;
         mp.events.callRemote('server:repo:lockBroken');
@@ -333,7 +334,8 @@ mp.events.add('client:repo:phaseDeliver', (dx, dy, dz) => {
     
     deliverBlip = createBlip(1, dx, dy, dz, 'Deliver to Salvatore', 1, 0.8, true);
     
-    deliverMarker = mp.markers.new(1, new mp.Vector3(dx, dy, dz - 1.0), 8.0, {
+    // Scale reduced to 4.0
+    deliverMarker = mp.markers.new(1, new mp.Vector3(dx, dy, dz - 1.0), 4.0, {
         color: [255, 0, 0, 150],
         visible: true
     });
