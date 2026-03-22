@@ -54,6 +54,7 @@ require('./jobs/farmer.js');
 require('./jobs/towtruck.js');
 require('./jobs/fishing.js');
 require('./jobs/preview.js');
+require('./jobs/repoClient.js');
 
 require('./creator/index.js');
 require('./core/dealership.js');

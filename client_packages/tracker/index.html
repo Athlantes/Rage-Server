@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repo Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="tracker-container">
+        <!-- Header -->
+        <div id="tracker-header">
+            <div id="header-icon">◈</div>
+            <div id="header-text">
+                <div id="header-title">VEHICLE TRACKER</div>
+                <div id="header-sub">SIGNAL ACTIVE</div>
+            </div>
+            <div id="signal-dot"></div>
+        </div>
+
+        <!-- Radar sweep canvas -->
+        <div id="radar-wrap">
+            <canvas id="radar-canvas" width="220" height="220"></canvas>
+            <div id="radar-center-dot"></div>
+            <!-- Distance rings labels -->
+            <div class="ring-label" id="ring-far">FAR</div>
+            <div class="ring-label" id="ring-mid">MID</div>
+            <div class="ring-label" id="ring-close">CLOSE</div>
+        </div>
+
+        <!-- Distance readout -->
+        <div id="distance-panel">
+            <div id="distance-label">DISTANCE</div>
+            <div id="distance-value">---</div>
+            <div id="distance-unit">METERS</div>
+        </div>
+
+        <!-- Signal strength bars -->
+        <div id="bars-panel">
+            <div class="bar" id="bar-1"></div>
+            <div class="bar" id="bar-2"></div>
+            <div class="bar" id="bar-3"></div>
+            <div class="bar" id="bar-4"></div>
+            <div class="bar" id="bar-5"></div>
+        </div>
+
+        <!-- Status line -->
+        <div id="status-line">
+            <span id="status-icon">▶</span>
+            <span id="status-text">TRACKING TARGET</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

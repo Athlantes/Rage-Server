@@ -1,0 +1,2 @@
+// Add this line to client_packages/jobs/index.js:
+require('./repoClient.js');
