@@ -9,6 +9,7 @@ let repoPhase        = 'idle';
 let zoneBlip         = null;
 let trunkBlip        = null;
 let deliverBlip      = null;
+let deliverMarker    = null; // Brings back the old red circle
 
 let trackerBrowser   = null;
 let trackerActive    = false;
@@ -25,7 +26,7 @@ let ambushTriggered  = false;
 let npcsHostile = false;
 let initialPedHealths = new Map();
 
-// Relationship Groups for AI handling
+// Relationship Groups for AI handling (Using built-in GTA groups)
 const GUARD_GROUP = mp.game.joaat('SECURITY_GUARD');
 
 let lockBreakActive  = false;
@@ -42,8 +43,11 @@ function createBlip(sprite, x, y, z, name, color, scale, route) {
     return blip;
 }
 function destroyBlip(blip) { if (blip && mp.blips.exists(blip)) blip.destroy(); }
-function clearInterval2(id) { if (id) clearInterval(id); return null; }
-function destroyBrowser() { if (trackerBrowser) { try { trackerBrowser.destroy(); } catch (_) {} trackerBrowser = null; } trackerActive = false; }
+
+function destroyBrowser() { 
+    if (trackerBrowser) { try { trackerBrowser.destroy(); } catch (_) {} trackerBrowser = null; } 
+    trackerActive = false; 
+}
 
 function openTracker() {
     if (trackerBrowser) return;
@@ -53,7 +57,10 @@ function openTracker() {
 }
 
 function closeTracker() {
-    trackerInterval = clearInterval2(trackerInterval);
+    if (trackerInterval) {
+        clearInterval(trackerInterval);
+        trackerInterval = null;
+    }
     destroyBrowser();
 }
 
@@ -151,6 +158,7 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
         
         const playerGroup = mp.players.local.getRelationshipGroupHash();
 
+        // Ensure they start out Neutral (3) 
         mp.game.ped.setRelationshipBetweenGroups(3, GUARD_GROUP, playerGroup);
         mp.game.ped.setRelationshipBetweenGroups(3, playerGroup, GUARD_GROUP);
 
@@ -168,6 +176,7 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
                     ped.freezePosition(false);
                     ped.setBlockingOfNonTemporaryEvents(true);
                     
+                    // Force Remove ALL Invincibility Flags via Natives
                     ped.setInvincible(false);
                     mp.game.invoke('0x3882114BDE571AD4', ped.handle, false); // SET_ENTITY_INVINCIBLE
                     mp.game.invoke('0x1760FFA8AB074D66', ped.handle, true);  // SET_ENTITY_CAN_BE_DAMAGED
@@ -195,6 +204,7 @@ function makeNpcsHostile() {
     mp.game.ui.addTextComponentSubstringPlayerName('~r~The guards spotted you!');
     mp.game.ui.drawSubtitleTimed(4000, true);
 
+    // Instantly switch engine relationship to HATE (5)
     mp.game.ped.setRelationshipBetweenGroups(5, GUARD_GROUP, playerGroup);
     mp.game.ped.setRelationshipBetweenGroups(5, playerGroup, GUARD_GROUP);
 
@@ -203,18 +213,22 @@ function makeNpcsHostile() {
         try {
             if (ped.isDeadOrDying(true) || ped.getHealth() <= 0) return;
             
+            // Wipe the queue in case they already started the "Civilian Flee" animation
             ped.clearTasksImmediately();
 
             ped.setBlockingOfNonTemporaryEvents(true);
             ped.setFleeAttributes(0, false);
             
-            ped.setCombatAttributes(46, true); 
-            ped.setCombatAttributes(0, false); 
-            ped.setCombatAttributes(1, false); 
-            ped.setCombatAttributes(5, true);  
+            // Combat attributes
+            ped.setCombatAttributes(46, true); // Always fight
+            ped.setCombatAttributes(0, false); // CANNOT USE COVER
+            ped.setCombatAttributes(1, false); // CAN_USE_VEHICLES
+            ped.setCombatAttributes(5, true);  // Can fight armed peds when not armed
             
+            // SET_PED_COMBAT_MOVEMENT (0 = Stationary)
             mp.game.invoke('0x4D9CA1009AFBD057', ped.handle, 0); 
             
+            // Aggressive pursuit task using flags 16, 16
             ped.taskCombat(local.handle, 16, 16);
         } catch (e) {}
     });
@@ -226,11 +240,13 @@ function setupLockBreakInteraction(cx, cy, cz) {
     lockBreakBlip = createBlip(1, cx, cy, cz + 1.0, 'Break Lock', 6, 0.7, false);
 }
 
+// Interaction Event Triggered by 'E'
 mp.events.add('interaction:keypress', () => {
     if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || mp.players.local.vehicle || !lockBreakPos) return;
     const local = mp.players.local;
     if (dist3D(local.position, lockBreakPos) > 8.0) return;
 
+    // No ped checks! You can break the lock while getting shot!
     startLockBreak();
 });
 
@@ -261,6 +277,7 @@ mp.events.add('render', () => {
                     shouldAggro = true;
                 }
 
+                // Native wrapper check for aiming
                 if (mp.game.player.isFreeAimingAtEntity(ped.handle)) {
                     shouldAggro = true;
                 }
@@ -275,6 +292,19 @@ mp.events.add('render', () => {
     // ---------------------------
 
     if (dist3D(local.position, lockBreakPos) > 8.0) return;
+
+    // STOP "Press F to enter": Disable Enter Vehicle (F) natively so they MUST press E
+    mp.game.controls.disableControlAction(0, 23, true);
+
+    // Make sure the door remains fully locked against native entry while the minigame is active
+    if (wantedCarNetId !== -1) {
+        try {
+            let wantedLocal = mp.vehicles.atRemoteId(wantedCarNetId);
+            if (wantedLocal && mp.vehicles.exists(wantedLocal)) {
+                mp.game.vehicle.setVehicleDoorsLocked(wantedLocal.handle, 4); // 4 = Cannot enter
+            }
+        } catch (e) {}
+    }
 
     mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
 });
@@ -309,6 +339,9 @@ mp.events.add('client:repo:enterWantedCar', (wantedNetId) => {
     try { wantedLocal = mp.vehicles.atRemoteId(wantedNetId); } catch (_) {}
     if (!wantedLocal || !mp.vehicles.exists(wantedLocal)) return;
 
+    // Unlock the car completely now that the lock is broken!
+    mp.game.vehicle.setVehicleDoorsLocked(wantedLocal.handle, 1); // 1 = Unlocked
+
     // Uses 0 instead of "" to satisfy the strict RAGE wrapper type checking
     mp.players.local.taskEnterVehicle(wantedLocal.handle, 10000, -1, 1.0, 1, 0); 
 });
@@ -317,7 +350,16 @@ mp.events.add('client:repo:phaseDeliver', (dx, dy, dz) => {
     repoPhase = 'PHASE_5_DELIVER';
     closeTracker();
     destroyBlip(deliverBlip); destroyBlip(trunkBlip);
-    deliverBlip = createBlip(479, dx, dy, dz, 'Deliver to Salvatore', 2, 0.9, true);
+    
+    // Create standard map destination blip
+    deliverBlip = createBlip(1, dx, dy, dz, 'Deliver to Salvatore', 1, 0.8, true);
+    
+    // Create the old RED CIRCLE marker
+    deliverMarker = mp.markers.new(1, new mp.Vector3(dx, dy, dz - 1.0), 8.0, {
+        color: [255, 0, 0, 150],
+        visible: true
+    });
+
     mp.game.ui.setNewWaypoint(dx, dy);
 
     mp.game.ui.setTextEntry('STRING');
@@ -333,14 +375,23 @@ mp.events.add('client:repo:cleanup', () => {
     
     localAmbushPeds.forEach(ped => { try { if (mp.peds.exists(ped)) ped.destroy(); } catch (_) {} });
     localAmbushPeds = [];
-    trackerInterval = clearInterval2(trackerInterval);
+    
+    // Safely clear intervals and timers without crashing RAGE
+    if (trackerInterval) { clearInterval(trackerInterval); trackerInterval = null; }
     if (lockBreakTimer) { clearTimeout(lockBreakTimer); lockBreakTimer = null; }
+    
     closeTracker();
     destroyBlip(zoneBlip); zoneBlip = null;
     destroyBlip(trunkBlip); trunkBlip = null;
     destroyBlip(deliverBlip); deliverBlip = null;
     destroyBlip(lockBreakBlip); lockBreakBlip = null;
     lockBreakPos = null;
+    
+    if (deliverMarker) {
+        deliverMarker.destroy();
+        deliverMarker = null;
+    }
+    
     mp.game.ui.clearGpsFlags();
 });
 
