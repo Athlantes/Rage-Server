@@ -456,7 +456,7 @@ const RepoJob = {
             const uid = row.id;
             const [ex] = await db.query('SELECT COUNT(*) as cnt FROM repo_jobs WHERE user_id = ? AND job_date = ?', [uid, today]);
             if (ex[0].cnt >= 1) continue;
-            await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, 'pending_minigame', 'available')", [uid, today]);
+            await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, 'none', 'available')", [uid, today]);
             mp.events.call('server:phone:sendMail', uid, NPC_NAME, 'Got a job for you', `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`);
             const online = mp.players.toArray().find(p => p.logged && p.data.dbId === uid);
             if (online) await syncPlayerRepoData(online);
@@ -495,7 +495,7 @@ const RepoJob = {
         if (!player.logged || !player.data.dbId) return;
         if (activeSessions.has(player.id)) return;
 
-        const [result] = await db.query("UPDATE repo_jobs SET status = 'in_progress' WHERE id = ? AND user_id = ? AND status = 'available'", [dbJobId, player.data.dbId]);
+        const [result] = await db.query("UPDATE repo_jobs SET status = 'pending' WHERE id = ? AND user_id = ? AND status = 'available'", [dbJobId, player.data.dbId]);
         if (result.affectedRows === 0) { player.call('showNotification', [NPC_NAME, 'Something went wrong. Try again.']); return; }
 
         const session = {
@@ -525,7 +525,7 @@ const RepoJob = {
         const playedToday = (player.data.dailyPlaytimeBase || 0) + (player.data.activeMinutes || 0);
         if (playedToday < SECOND_JOB_PLAYTIME) return;
 
-        await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 2, 'pending_minigame', 'available')", [player.data.dbId, today]);
+        await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 2, 'none', 'available')", [player.data.dbId, today]);
         mp.events.call('server:phone:sendMail', player.data.dbId, NPC_NAME, 'More work available', "Good work earlier. I got another one for you. Come see me when you're ready.");
         await syncPlayerRepoData(player);
         player.call('showNotification', ['Repo Work', 'New repo job available! Go speak with Salvatore.']);
@@ -536,7 +536,7 @@ const RepoJob = {
         const today = new Date().toISOString().split('T')[0];
         const [ex] = await db.query('SELECT COUNT(*) as cnt FROM repo_jobs WHERE user_id = ? AND job_date = ?', [player.data.dbId, today]);
         if (ex[0].cnt === 0) {
-            await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, 'pending_minigame', 'available')", [player.data.dbId, today]);
+            await db.query("INSERT INTO repo_jobs (user_id, job_date, job_number, target_model, status) VALUES (?, ?, 1, 'none', 'available')", [player.data.dbId, today]);
             mp.events.call('server:phone:sendMail', player.data.dbId, NPC_NAME, 'Got a job for you', `Hey, it's ${NPC_NAME}. I got some work for you. Come see me behind Luxury Motorsport when you get a chance.`);
             player.call('showNotification', ['Repo Work', `${NPC_NAME} wants to speak with you.`]);
         }

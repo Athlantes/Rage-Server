@@ -42,7 +42,7 @@ let localAmbushPeds  = [];      // client-side only ped handles (invisible to ot
 // Lock-break state
 let lockBreakActive  = false;
 let lockBreakBlip    = null;
-let lockBreakShape   = null;    // local colshape near wanted car
+let lockBreakPos     = null;   // world pos of wanted car for E-key distance check
 let lockBreakTimer   = null;
 
 // Quit key (BACKSPACE = 0x08)
@@ -244,8 +244,9 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
 
         pedSpawnData.forEach((sp, i) => {
             try {
+                // Client-side mp.peds.new takes the model NAME string, not a hash
                 const ped = mp.peds.new(
-                    mp.game.joaat(sp.model),
+                    sp.model,
                     new mp.Vector3(sp.x, sp.y, sp.z),
                     sp.h,
                     mp.players.local.dimension
@@ -286,36 +287,38 @@ function makeNpcsHostile() {
 
 // ──────────────────────────────────────────────────────────────
 // LOCK-BREAK INTERACTION
+// Client-side colshapes don't fire playerEnterColshape, so we
+// can't use interaction.js. Instead we poll distance on every
+// E keypress via the global interaction:keypress fallback event.
 // ──────────────────────────────────────────────────────────────
 
+// Stores the wanted car world position so E-key handler can
+// do a fast distance check without needing atRemoteId every frame.
+
 function setupLockBreakInteraction(cx, cy, cz) {
-    // Clean up any previous lock colshape
-    if (lockBreakShape) { try { lockBreakShape.destroy(); } catch(_){} lockBreakShape = null; }
+    lockBreakPos = { x: cx, y: cy, z: cz };
 
-    // Local colshape — client-side only, triggers via interaction:keypress
-    lockBreakShape = mp.colshapes.newSphere(cx, cy, cz, 5.0);
-    lockBreakShape.interaction = {
-        title: 'Target Vehicle',
-        text: 'Press ~b~E~w~ to break the lock',
-        event: null, // handled manually below
-        requireOnFoot: true,
-        _isLockBreak: true
-    };
-
-    // Blip near car door
+    // Blip near the car to guide the player
     destroyBlip(lockBreakBlip);
-    lockBreakBlip = createBlip(1, cx, cy, cz + 1.0, 'Break Lock', 6, 0.7, false); // small yellow marker blip
+    lockBreakBlip = createBlip(1, cx, cy, cz + 1.0, 'Break Lock', 6, 0.7, false);
+
+    console.log('[RepoClient] Lock-break interaction ready at', cx, cy, cz);
 }
 
-// Hook into the generic interaction keypress to catch lock-break E presses
+// E key — fires from interaction.js when no colshape interaction is active
 mp.events.add('interaction:keypress', () => {
     if (repoPhase !== 'PHASE_4_AMBUSH') return;
     if (lockBreakActive) return;
     if (mp.players.local.vehicle) return; // must be on foot
+    if (!lockBreakPos) return;
 
     const local = mp.players.local;
 
-    // Check if any ambush ped is still alive (all must be down to break lock)
+    // Fast pre-check: are we even close to the wanted car area?
+    const roughDist = dist3D(local.position, lockBreakPos);
+    if (roughDist > 8.0) return;
+
+    // Check guards
     let anyAlive = false;
     localAmbushPeds.forEach(ped => {
         if (ped && mp.peds.exists(ped) && !ped.isDead()) anyAlive = true;
@@ -328,16 +331,36 @@ mp.events.add('interaction:keypress', () => {
         return;
     }
 
-    // Check distance to wanted car
+    // Double-check distance to actual vehicle handle
     let wantedLocal = null;
     try { wantedLocal = mp.vehicles.atRemoteId(wantedCarNetId); } catch (_) {}
-    if (!wantedLocal || !mp.vehicles.exists(wantedLocal)) return;
+    if (wantedLocal && mp.vehicles.exists(wantedLocal)) {
+        if (dist3D(local.position, wantedLocal.position) > 6.0) return;
+    }
 
-    const d = dist3D(local.position, wantedLocal.position);
-    if (d > 6.0) return; // not close enough
-
-    // Start lock-break progress bar
     startLockBreak();
+});
+
+// Render tick — shows "Press E to break the lock" when player is close enough on foot
+mp.events.add('render', () => {
+    if (repoPhase !== 'PHASE_4_AMBUSH') return;
+    if (lockBreakActive) return;
+    if (!lockBreakPos) return;
+    if (mp.players.local.vehicle) return;
+
+    const d = dist3D(mp.players.local.position, lockBreakPos);
+    if (d > 8.0) return;
+
+    // Check all guards dead before showing prompt
+    let anyAlive = false;
+    localAmbushPeds.forEach(ped => {
+        if (ped && mp.peds.exists(ped) && !ped.isDead()) anyAlive = true;
+    });
+    if (anyAlive) return;
+
+    mp.game.ui.setTextEntry('STRING');
+    mp.game.ui.addTextComponentSubstringPlayerName('Press ~b~E~w~ to break the lock');
+    mp.game.ui.displayHelpTextThisFrame(false, false, false, -1);
 });
 
 function startLockBreak() {
@@ -450,7 +473,7 @@ mp.events.add('client:repo:cleanup', () => {
     destroyBlip(trunkBlip);   trunkBlip   = null;
     destroyBlip(deliverBlip); deliverBlip = null;
     destroyBlip(lockBreakBlip); lockBreakBlip = null;
-    if (lockBreakShape) { try { lockBreakShape.destroy(); } catch(_){} lockBreakShape = null; }
+    lockBreakPos = null;
 
     mp.game.ui.clearGpsFlags();
 });
