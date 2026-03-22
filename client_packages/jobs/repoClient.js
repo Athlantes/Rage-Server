@@ -25,6 +25,9 @@ let ambushTriggered  = false;
 let npcsHostile = false;
 let initialPedHealths = new Map();
 
+// Relationship Groups for AI handling (Using built-in GTA groups)
+const GUARD_GROUP = mp.game.joaat('SECURITY_GUARD');
+
 let lockBreakActive  = false;
 let lockBreakBlip    = null;
 let lockBreakPos     = null;
@@ -146,6 +149,12 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
         let pedSpawnData = [];
         try { pedSpawnData = JSON.parse(pedSpawnDataJson); } catch (e) {}
         
+        const playerGroup = mp.players.local.getRelationshipGroupHash();
+
+        // Ensure they start out Neutral (3) 
+        mp.game.ped.setRelationshipBetweenGroups(3, GUARD_GROUP, playerGroup);
+        mp.game.ped.setRelationshipBetweenGroups(3, playerGroup, GUARD_GROUP);
+
         pedSpawnData.forEach((sp, i) => {
             try {
                 const modelHash = mp.game.joaat(sp.model);
@@ -154,18 +163,23 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
             } catch (e) {}
         });
         
-        // Let handles initialize, then give weapons and make them guard
         setTimeout(() => {
             localAmbushPeds.forEach(ped => {
                 if (ped && mp.peds.exists(ped) && ped.handle !== 0) {
-                    // Unfreeze them so they can move if they need to
                     ped.freezePosition(false);
-
-                    // Block normal AI fleeing logic
                     ped.setBlockingOfNonTemporaryEvents(true);
+                    
+                    // --- FIX: Force Remove ALL Invincibility Flags via Natives ---
+                    ped.setInvincible(false);
+                    mp.game.invoke('0x3882114BDE571AD4', ped.handle, false); // SET_ENTITY_INVINCIBLE
+                    mp.game.invoke('0x1760FFA8AB074D66', ped.handle, true);  // SET_ENTITY_CAN_BE_DAMAGED
+                    mp.game.invoke('0xFAEE099C6F890BB8', ped.handle, false, false, false, false, false, false, false, false); // SET_ENTITY_PROOFS
+                    mp.game.invoke('0x63F58F7C80513AAD', ped.handle, true);  // SET_PED_CAN_BE_TARGETTED
+
+                    ped.setRelationshipGroupHash(GUARD_GROUP);
 
                     const weaponHash = mp.game.joaat('WEAPON_PISTOL');
-                    ped.giveWeapon(weaponHash, 200, true); 
+                    ped.giveWeapon(weaponHash, 9999, true); 
                     initialPedHealths.set(ped.handle, ped.getHealth());
                 }
             });
@@ -177,32 +191,38 @@ mp.events.add('client:repo:phaseAmbush', (wantedNetId, pedSpawnDataJson, cx, cy,
 
 function makeNpcsHostile() {
     const local = mp.players.local;
+    const playerGroup = local.getRelationshipGroupHash();
 
     mp.game.ui.setTextEntry('STRING');
     mp.game.ui.addTextComponentSubstringPlayerName('~r~The guards spotted you! Take them out!');
     mp.game.ui.drawSubtitleTimed(4000, true);
+
+    // Instantly switch engine relationship to HATE (5)
+    mp.game.ped.setRelationshipBetweenGroups(5, GUARD_GROUP, playerGroup);
+    mp.game.ped.setRelationshipBetweenGroups(5, playerGroup, GUARD_GROUP);
 
     localAmbushPeds.forEach((ped) => {
         if (!ped || !mp.peds.exists(ped) || ped.handle === 0) return;
         try {
             if (ped.isDeadOrDying(true)) return;
             
-            // Ensure they ignore normal event interrupts (like hearing gunshots)
+            // Wipe the queue in case they already started the "Civilian Flee" animation
+            ped.clearTasksImmediately();
+
             ped.setBlockingOfNonTemporaryEvents(true);
-            
-            // 0: Default flee attributes
             ped.setFleeAttributes(0, false);
             
-            // 46: BF_AlwaysFight
-            ped.setCombatAttributes(46, true);
-
-            // SET_PED_COMBAT_MOVEMENT (0 = Stationary/Stand Ground, 1 = Defensive, 2 = Offensive)
-            // 0 ensures they just stand and shoot, instead of running in place
-            mp.game.invoke('0x4D9CA1009AFBD057', ped.handle, 3); 
+            // Combat attributes
+            ped.setCombatAttributes(46, true); // Always fight
+            ped.setCombatAttributes(0, false); // CANNOT USE COVER
+            ped.setCombatAttributes(1, false); // CAN_USE_VEHICLES
+            ped.setCombatAttributes(5, true);  // Can fight armed peds when not armed (Failsafe)
             
-            // Give them the task to shoot the local player
+            // SET_PED_COMBAT_MOVEMENT (0 = Stationary)
+            mp.game.invoke('0x4D9CA1009AFBD057', ped.handle, 0); 
+            
+            // Aggressive pursuit task using flags 16, 16
             ped.taskCombat(local.handle, 16, 16);
-
         } catch (e) {}
     });
 }
@@ -268,12 +288,9 @@ mp.events.add('render', () => {
                     shouldAggro = true;
                 }
 
-                if (mp.game.player.isFreeAiming()) {
-                    const playerId = mp.game.invoke('0x4F8644AF03D0E0D6'); 
-                    const isAimingAt = mp.game.invoke('0x3C06B5C839B38F7B', playerId, ped.handle); 
-                    if (isAimingAt) {
-                        shouldAggro = true;
-                    }
+                // Native wrapper check for aiming
+                if (mp.game.player.isFreeAimingAtEntity(ped.handle)) {
+                    shouldAggro = true;
                 }
             } catch (e) {}
         });
