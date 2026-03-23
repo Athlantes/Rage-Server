@@ -421,7 +421,8 @@ mp.keys.bind(0x45, false, () => { // Tasta E
             let trunkPos = dummyVehicle.position;
             
             if (bootBone !== -1) {
-                trunkPos = dummyVehicle.getBoneCoords(bootBone, 0, 0, 0);
+                // Use the native to get the bone position for vehicles
+                trunkPos = mp.game.invokeVector3('0x44A8FCB8ED227738', dummyVehicle.handle, bootBone);
             } else {
                 // Fallback daca masina nu are boot bone
                 const fwd = dummyVehicle.getForwardVector();

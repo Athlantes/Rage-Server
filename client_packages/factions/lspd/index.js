@@ -80,12 +80,26 @@ function getActiveColshapeInteraction() {
 let _shadowColshapeInteraction = null;
 
 mp.events.add('playerEnterColshape', (shape) => {
+    if (!shape || !mp.colshapes.exists(shape)) return;
     const data = shape.getVariable('interaction') || shape.interaction;
     if (data) _shadowColshapeInteraction = data;
 });
+
 mp.events.add('playerExitColshape', (shape) => {
+    // If the colshape was destroyed while we were inside it, clear the prompt just in case
+    if (!shape || !mp.colshapes.exists(shape)) {
+        if (_shadowColshapeInteraction) {
+            _shadowColshapeInteraction = null;
+            refreshPrompt();
+        }
+        return;
+    }
+
     const data = shape.getVariable('interaction') || shape.interaction;
-    if (data) { _shadowColshapeInteraction = null; refreshPrompt(); }
+    if (data) { 
+        _shadowColshapeInteraction = null; 
+        refreshPrompt(); 
+    }
 });
 
 function refreshPrompt() {
