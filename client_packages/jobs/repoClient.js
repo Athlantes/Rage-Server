@@ -335,11 +335,10 @@ mp.events.add('client:repo:createSearchArea', (x, y, z, radius) => {
     }
 
     // Creăm un blip de tip zonă (ID 9)
-    repoSearchBlip = mp.blips.new(9, new mp.Vector3(x, y, z), {
-        name: '',          
+    repoSearchBlip = mp.blips.new(9, new mp.Vector3(x, y, z), {       
         color: 39,          // Gri deschis neutru
         alpha: 100,         // Transparență scăzută
-        scale: radius / 10, // Dimensiunea zonei
+        scale: 20, // Dimensiunea zonei
         shortRange: true,   // Îl ține ascuns pe harta globală dacă ești prea departe
         drawDistance: 0
     });

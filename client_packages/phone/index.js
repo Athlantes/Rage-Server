@@ -732,14 +732,28 @@ mp.events.add('client:proxyAction', (action, data) => {
             // 1. Clear previous
             clearLocationBlip();
 
-            // 2. Parse coordinates
-            const coords = data.split(',');
-            if (coords.length >= 2) {
-                const x = parseFloat(coords[0]);
-                const y = parseFloat(coords[1]);
-                
-                // 3. Create Blip
-                locationBlip = mp.blips.new(1, new mp.Vector3(x, y, 0), {
+            let targetX = null;
+            let targetY = null;
+
+            // 2. Parse coordinates (Suport pentru JSON și string "x,y")
+            try {
+                // Încercăm să parsăm JSON (cum trimit scripturile, ex: repoJob)
+                const parsed = JSON.parse(data);
+                targetX = parseFloat(parsed.x);
+                targetY = parseFloat(parsed.y);
+            } catch(e) {
+                // Dacă dă eroare, înseamnă că e formatul string "x,y" trimis între jucători
+                const coords = data.split(',');
+                if (coords.length >= 2) {
+                    targetX = parseFloat(coords[0]);
+                    targetY = parseFloat(coords[1]);
+                }
+            }
+
+            // 3. Verificăm dacă avem coordonate valide
+            if (targetX !== null && !isNaN(targetX) && targetY !== null && !isNaN(targetY)) {
+                // Create Blip
+                locationBlip = mp.blips.new(1, new mp.Vector3(targetX, targetY, 0), {
                     name: "Shared Location",
                     color: 5, 
                     shortRange: false, 
@@ -747,11 +761,13 @@ mp.events.add('client:proxyAction', (action, data) => {
                 });
                 locationBlip.setRoute(true);
 
-                // 4. Create Colshape (Trigger)
-                locationColshape = mp.colshapes.newCircle(x, y, 15.0);
+                // Create Colshape (Trigger)
+                locationColshape = mp.colshapes.newCircle(targetX, targetY, 15.0);
 
                 // CUSTOM NOTIFICATION: Route Set
                 mp.events.call('showNotification', 'GPS', 'Route set to location.');
+            } else {
+                mp.events.call('showNotification', 'GPS', 'Error parsing coordinates!');
             }
             break;
 
