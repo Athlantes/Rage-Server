@@ -14,6 +14,8 @@ let trunkAnimActive  = false;
 
 let trackerBrowser   = null;
 let trackerActive    = false;
+let isTrunkPromptShowing = false;
+let isLockPromptShowing = false;
 
 let wantedPos        = null;
 let dummyCarNetId    = -1;
@@ -87,7 +89,7 @@ mp.events.add('client:repo:phaseGetTools', (dummyNetId, cx, cy, cz) => {
     destroyBlip(trunkBlip);
 
     trunkBlip = createBlip(279, cx, cy, cz, 'Dummy Car', 5, 0.8, true);
-    mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Mergi exact în spatele mașinii (la portbagaj) și apasă ~b~E~w~ pentru unelte.');
+    mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Go to the car trunk and press E to search it.');
 });
 
 mp.events.add('client:repo:phaseRadar', (dummyNetId, wx, wy, wz) => {
@@ -257,13 +259,41 @@ mp.events.add('render', () => {
                     dummyVehicle.position.z
                 );
             }
+            
+            // -- CUSTOM PROMPT SYSTEM CHECK --
             if (dist3D(local.position, trunkPos) <= 2.5) {
-                mp.game.ui.displayHelpTextThisFrame('Press ~b~E~w~ to search the trunk', false);
+                if (!isTrunkPromptShowing) {
+                    mp.events.call('showInteraction', 'Repo Job', 'Press E to search the trunk');
+                    isTrunkPromptShowing = true;
+                }
+            } else {
+                if (isTrunkPromptShowing) {
+                    mp.events.call('hideInteraction');
+                    isTrunkPromptShowing = false;
+                }
             }
+        } else {
+            // Hide if the vehicle disappears
+            if (isTrunkPromptShowing) {
+                mp.events.call('hideInteraction');
+                isTrunkPromptShowing = false;
+            }
+        }
+    } else {
+        // Hide if phase ends or player enters a vehicle
+        if (isTrunkPromptShowing) {
+            mp.events.call('hideInteraction');
+            isTrunkPromptShowing = false;
         }
     }
 
-    if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || !lockBreakPos || local.vehicle) return;
+    if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || !lockBreakPos || local.vehicle) {
+        if (isLockPromptShowing) {
+            mp.events.call('hideInteraction');
+            isLockPromptShowing = false;
+        }
+        return;
+    }
 
     // --- Dynamic Aggro Logic ---
     if (!npcsHostile) {
@@ -300,7 +330,16 @@ mp.events.add('render', () => {
     }
     if (dist3D(local.position, lockBreakPos) <= 8.0) {
         mp.game.controls.disableControlAction(0, 23, true); // Disable Enter Vehicle (F)
-        mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
+        
+        if (!isLockPromptShowing) {
+            mp.events.call('showInteraction', 'Repo Job', 'Press E to break the lock');
+            isLockPromptShowing = true;
+        }
+    } else {
+        if (isLockPromptShowing) {
+            mp.events.call('hideInteraction');
+            isLockPromptShowing = false;
+        }
     }
 });
 
@@ -311,12 +350,12 @@ function startLockBreak() {
     mp.game.ui.addTextComponentSubstringPlayerName('~b~Breaking lock...~w~ Don\'t move!');
     mp.game.ui.drawSubtitleTimed(DURATION + 500, true);
 
-    mp.game.streaming.requestAnimDict('anim@amb@clubhouse@caricabarile@male@');
+    mp.game.streaming.requestAnimDict('anim@amb@clubhouse@tutorial@bkr_tut_ig3@');
     const local = mp.players.local;
     
     setTimeout(() => { 
-        if (mp.game.streaming.hasAnimDictLoaded('anim@amb@clubhouse@caricabarile@male@')) {
-            mp.game.task.taskPlayAnim(local.handle, 'anim@amb@clubhouse@caricabarile@male@', 'caricabarile_idle', 8.0, -8.0, DURATION, 1, 0, false, false, false);
+        if (mp.game.streaming.hasAnimDictLoaded('anim@amb@clubhouse@tutorial@bkr_tut_ig3@')) {
+            mp.game.task.taskPlayAnim(local.handle, 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', 'machinic_loop_mechandplayer', 8.0, -8.0, DURATION, 1, 0, false, false, false);
         }
     }, 200);
 
@@ -325,6 +364,7 @@ function startLockBreak() {
         lockBreakTimer = null; // Clear the timer ID immediately so the cleanup function ignores it
         destroyBlip(lockBreakBlip); lockBreakBlip = null;
         destroyBlip(trunkBlip);    trunkBlip      = null;
+        lockBreakPos = null;
         mp.events.callRemote('server:repo:lockBroken');
     }, DURATION);
 }
@@ -414,7 +454,7 @@ mp.keys.bind(0x45, false, () => { // Tasta E
             if (dist3D(mp.players.local.position, trunkPos) <= 2.5) {
                 startTrunkLootSequence(dummyVehicle);
             } else if (dist3D(mp.players.local.position, dummyVehicle.position) <= 5.0) {
-                mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Trebuie să te poziționezi exact în spatele mașinii!');
+                mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} You need to be closer to the vehicle trunk!');
             }
         }
     }
@@ -427,18 +467,14 @@ function startTrunkLootSequence(vehicle) {
 
     // 1. Deschide ușa portbagajului (index 5)
     vehicle.setDoorOpen(5, false, false);
-    
-    mp.game.ui.setTextEntry('STRING');
-    mp.game.ui.addTextComponentSubstringPlayerName('~y~Cauți uneltele în portbagaj...');
-    mp.game.ui.drawSubtitleTimed(DURATION, true);
 
     // 2. Play trunk-search animation
-    mp.game.streaming.requestAnimDict('anim@heists@narcotics@trash');
+    mp.game.streaming.requestAnimDict('mini@repair');
     let waitAnim = setInterval(() => {
-        if (mp.game.streaming.hasAnimDictLoaded('anim@heists@narcotics@trash')) {
+        if (mp.game.streaming.hasAnimDictLoaded('mini@repair')) {
             clearInterval(waitAnim);
             // 'thrash_car_lhs' is the valid rummage-in-car clip from this dict
-            mp.game.task.taskPlayAnim(local.handle, 'anim@heists@narcotics@trash', 'thrash_car_lhs', 8.0, -8.0, DURATION, 1, 0, false, false, false);
+            mp.game.task.taskPlayAnim(local.handle, 'mini@repair', 'fixing_a_player', 8.0, -8.0, DURATION, 1, 0, false, false, false);
             
             // 3. Finalizarea acțiunii
             setTimeout(() => {

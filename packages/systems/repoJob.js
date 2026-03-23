@@ -340,7 +340,7 @@ mp.events.add('server:repo:toolsGrabbed', player => {
         if (s.dummyCar && mp.vehicles.exists(s.dummyCar)) {
             s.dummyCar.locked = false;
             s.dummyCar.setVariable('locked', false);
-            player.call('showNotification', ['Repo Work', 'Unelte obținute. Urcă în mașină pentru a porni tracker-ul.']);
+            player.call('showNotification', ['Repo Work', 'Tools grabbed. Get in the car to start the tracker.']);
         }
         startPhase3(player, s);
     }
