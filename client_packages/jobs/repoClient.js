@@ -248,7 +248,7 @@ mp.events.add('render', () => {
             const bootBone = dummyVehicle.getBoneIndexByName('boot');
             let trunkPos = dummyVehicle.position;
             if (bootBone !== -1) {
-                trunkPos = dummyVehicle.getBoneCoords(bootBone, 0, 0, 0);
+                trunkPos = mp.game.invokeVector3('0x44A8FCB8ED227738', dummyVehicle.handle, bootBone);
             } else {
                 const fwd = dummyVehicle.getForwardVector();
                 trunkPos = new mp.Vector3(
