@@ -61,7 +61,7 @@ async function startPhase1(player, s) {
     const SEARCH_ZONE_RADIUS = 150.0;
 
     // Cylinder colshape (XY-only, 50m radius, tall height) so terrain elevation never prevents the trigger
-    s.zoneColshape = mp.colshapes.newCylinder(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z - 10.0, 50.0, 20.0, 0);
+    s.zoneColshape = mp.colshapes.newTube(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z - 10.0, 50.0, 20.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
     
     // Trimitem SMS-ul cu instrucțiuni și locația exactă, la fel ca la skimmer
