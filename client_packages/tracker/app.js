@@ -128,6 +128,38 @@ function createBeep(freq, duration, volume) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
+// Funcția apelată din RAGE:MP
+function updateTrackerState(angle, distance) {
+    const dot = document.querySelector('.tracker-dot'); // Pune clasa corectă de la punctul tău
+    const distanceText = document.querySelector('.distance-text'); 
+    
+    if (!dot) return;
+
+    // --- LOGICA DE ROTAȚIE ---
+    // Raza cercului din trackerul tău (ex: dacă lățimea UI-ului e 200px, raza e 100)
+    // Ajustează această valoare în funcție de CSS-ul tău!
+    const radius = 90; 
+    const centerX = 100; // Centrul cercului X
+    const centerY = 100; // Centrul cercului Y
+
+    // În matematica standard pe web, 0 grade înseamnă dreapta (ora 3). 
+    // Scădem 90 ca să setăm 0 grade fix sus (ora 12), adică în direcția de mers.
+    const rad = (angle - 90) * (Math.PI / 180);
+
+    // Calculăm noile coordonate X și Y folosind Sinus și Cosinus
+    const dotX = centerX + Math.cos(rad) * radius;
+    const dotY = centerY + Math.sin(rad) * radius;
+
+    // Mutăm punctul (presupune că CSS-ul punctului are `position: absolute; transform: translate(-50%, -50%)`)
+    dot.style.left = `${dotX}px`;
+    dot.style.top = `${dotY}px`;
+
+    // --- ACTUALIZARE DISTANȚĂ ---
+    if (distanceText) {
+        distanceText.innerText = `${Math.floor(distance)}m`;
+    }
+}
+
 function updateDistance(dist) {
     currentDist = dist;
 

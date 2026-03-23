@@ -70,7 +70,7 @@ function startTrackerInterval() {
     ambushTriggered = false; 
     
     trackerInterval = setInterval(() => {
-        if (!trackerBrowser || !wantedPos) return;
+        if (!wantedPos) return;
         const local = mp.players.local;
         const d = dist3D(local.position, wantedPos);
         
@@ -78,8 +78,6 @@ function startTrackerInterval() {
             ambushTriggered = true;
             mp.events.callRemote('server:repo:triggerAmbush');
         }
-
-        try { trackerBrowser.execute(`updateDistance(${Math.round(d)});`); } catch (e) {}
     }, 300);
 }
 
@@ -104,11 +102,6 @@ mp.events.add('client:repo:phaseRadar', (dummyNetId, wx, wy, wz) => {
             mp.game.task.taskPlayAnim(local.handle, 'pickup_object', 'pickup_low', 8.0, -8.0, 1200, 1, 0, false, false, false);
         }
     }, 500);
-    
-    mp.game.ui.setNewWaypoint(wx, wy);
-    mp.game.ui.setTextEntry('STRING');
-    mp.game.ui.addTextComponentSubstringPlayerName('Tools acquired. Board the ~b~vehicle~w~ to activate the tracker.');
-    mp.game.ui.drawSubtitleTimed(6000, true);
 });
 
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
@@ -235,9 +228,26 @@ mp.events.add('interaction:keypress', () => {
 });
 
 mp.events.add('render', () => {
-    if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || !lockBreakPos || mp.players.local.vehicle) return;
-    
     const local = mp.players.local;
+
+    if (trackerActive && trackerBrowser && wantedPos) {
+        const playerPos = local.position;
+        
+        const d = dist3D(playerPos, wantedPos);
+
+        const dx = wantedPos.x - playerPos.x;
+        const dy = wantedPos.y - playerPos.y;
+        
+        const targetHeading = Math.atan2(dx, dy) * (180 / Math.PI);
+        const camHeading = mp.game.cam.getGameplayCamRot(2).z;
+        const uiAngle = targetHeading + camHeading;
+
+        try { 
+            trackerBrowser.execute(`updateTrackerState(${uiAngle}, ${Math.round(d)})`); 
+        } catch (e) {}
+    }
+
+    if (repoPhase !== 'PHASE_4_AMBUSH' || lockBreakActive || !lockBreakPos || local.vehicle) return;
 
     // --- Dynamic Aggro Logic ---
     if (!npcsHostile) {
@@ -272,9 +282,6 @@ mp.events.add('render', () => {
             makeNpcsHostile();
         }
     }
-    // ---------------------------
-
-    // If player is close to the car, disable 'F' and show the 'E' prompt
     if (dist3D(local.position, lockBreakPos) <= 8.0) {
         mp.game.controls.disableControlAction(0, 23, true); // Disable Enter Vehicle (F)
         mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
@@ -322,9 +329,6 @@ mp.events.add('client:repo:createSearchArea', (x, y, z, radius) => {
         shortRange: true,   // Îl ține ascuns pe harta globală dacă ești prea departe
         drawDistance: 0
     });
-
-    // Păstrăm waypoint-ul GPS (opțional, poți șterge rândul dacă nu vrei nici ruta galbenă)
-    mp.game.ui.setNewWaypoint(x, y);
 });
 
 // Eveniment pentru a distruge zona când a fost găsită mașina
@@ -333,8 +337,6 @@ mp.events.add('client:repo:destroySearchArea', () => {
         repoSearchBlip.destroy();
         repoSearchBlip = null;
     }
-    // Ștergem și waypoint-ul GPS
-    mp.game.ui.clearGpsFlags();
 });
 
 mp.events.add('client:repo:enterWantedCar', (wantedNetId) => {
