@@ -105,10 +105,9 @@ function startPhase2(player, s) {
     
     player.call('client:repo:destroySearchArea');
 
-    // Spawn Dummy Car - Acum este creată cu locked: true
+    // Spawn Dummy Car
     s.dummyCar = mp.vehicles.new(mp.joaat(s.dummyModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3,11]), rand([0,1,2])], locked: true, engine: false, dimension: 0 });
     
-    // Set standard integration flags
     s.dummyCar.setVariable('jobOwner', player.id); 
     s.dummyCar.setVariable('repoOwner', player.id);
     s.dummyCar.setVariable('fuel', 100);       
@@ -117,19 +116,11 @@ function startPhase2(player, s) {
     s.dummyCar.engine = false;
     s.dummyCar.locked = true;
     
-    const mp2 = loc.trunkMarkerPos;
-    s.trunkMarker = mp.markers.new(1, new mp.Vector3(mp2.x, mp2.y, mp2.z - 1.0), 1.0, { color: { r: 255, g: 165, b: 0, a: 180 }, visible: true, dimension: 0 });
-    s.trunkColshape = mp.colshapes.newSphere(mp2.x, mp2.y, mp2.z, TRUNK_INTERACT_DIST, 0);
-    s.trunkColshape.setVariable('repoTrunk', player.id);
-    s.trunkColshape.setVariable('interaction', { title: 'Dummy Car Trunk', text: 'Press ~b~E~w~ to grab the tools', event: 'server:repo:grabTools', requireOnFoot: true });
-    
-    player.call('client:repo:phaseGetTools', [mp2.x, mp2.y, mp2.z]);
+    player.call('client:repo:phaseGetTools', [s.dummyCar.id, loc.carPos.x, loc.carPos.y, loc.carPos.z]);
 }
 
 function startPhase3(player, s) {
     s.phase = 'PHASE_3_RADAR';
-    if (s.trunkColshape && mp.colshapes.exists(s.trunkColshape)) { s.trunkColshape.destroy(); s.trunkColshape = null; }
-    if (s.trunkMarker && mp.markers.exists(s.trunkMarker)) { s.trunkMarker.destroy(); s.trunkMarker = null; }
     
     const wp = s.wantedLocation.carPos;
     player.call('client:repo:phaseRadar', [s.dummyCar.id, wp.x, wp.y, wp.z]);
@@ -346,13 +337,13 @@ mp.events.add('playerEnterColshape', (player, shape) => {
     const s = activeSessions.get(player.id);
     if (s && s.phase === 'PHASE_1_FIND_DUMMY') { shape.destroy(); s.zoneColshape = null; startPhase2(player, s); }
 });
-mp.events.add('server:repo:grabTools', player => {
+mp.events.add('server:repo:toolsGrabbed', player => {
     const s = activeSessions.get(player.id);
     if (s && s.phase === 'PHASE_2_GET_TOOLS') {
         if (s.dummyCar && mp.vehicles.exists(s.dummyCar)) {
             s.dummyCar.locked = false;
             s.dummyCar.setVariable('locked', false);
-            player.call('showNotification', ['Repo Work', 'Tools acquired. Get in the car to activate the tracker.']);
+            player.call('showNotification', ['Repo Work', 'Unelte obținute. Urcă în mașină pentru a porni tracker-ul.']);
         }
         startPhase3(player, s);
     }

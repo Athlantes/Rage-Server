@@ -11,6 +11,7 @@ let trunkBlip        = null;
 let deliverBlip      = null;
 let repoSearchBlip = null;
 let deliverMarker    = null;
+let trunkAnimActive  = false;
 
 let trackerBrowser   = null;
 let trackerActive    = false;
@@ -81,11 +82,13 @@ function startTrackerInterval() {
     }, 300);
 }
 
-mp.events.add('client:repo:phaseGetTools', (mx, my, mz) => {
+mp.events.add('client:repo:phaseGetTools', (dummyNetId, cx, cy, cz) => {
     repoPhase = 'PHASE_2_GET_TOOLS';
+    dummyCarNetId = dummyNetId;
     destroyBlip(trunkBlip);
-    trunkBlip = createBlip(279, mx, my, mz, 'Grab Tools', 5, 0.8, true);
-    mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Approach the car trunk and press ~b~E~w~ to grab the tools.');
+
+    trunkBlip = createBlip(279, cx, cy, cz, 'Dummy Car', 5, 0.8, true);
+    mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Mergi exact în spatele mașinii (la portbagaj) și apasă ~b~E~w~ pentru unelte.');
 });
 
 mp.events.add('client:repo:phaseRadar', (dummyNetId, wx, wy, wz) => {
@@ -93,15 +96,6 @@ mp.events.add('client:repo:phaseRadar', (dummyNetId, wx, wy, wz) => {
     dummyCarNetId = dummyNetId;
     wantedPos    = { x: wx, y: wy, z: wz };
     destroyBlip(trunkBlip); trunkBlip = null;
-
-    const local = mp.players.local;
-    mp.game.streaming.requestAnimDict('pickup_object');
-    
-    setTimeout(() => { 
-        if (mp.game.streaming.hasAnimDictLoaded('pickup_object')) {
-            mp.game.task.taskPlayAnim(local.handle, 'pickup_object', 'pickup_low', 8.0, -8.0, 1200, 1, 0, false, false, false);
-        }
-    }, 500);
 });
 
 mp.events.add('playerEnterVehicle', (vehicle, seat) => {
@@ -286,6 +280,26 @@ mp.events.add('render', () => {
         mp.game.controls.disableControlAction(0, 23, true); // Disable Enter Vehicle (F)
         mp.game.ui.displayHelpTextThisFrame("Press ~b~E~w~ to break the lock", false);
     }
+
+    // Adaugă acest bloc imediat deasupra verificărilor pentru lockBreakActive
+    if (repoPhase === 'PHASE_2_GET_TOOLS' && !trunkAnimActive && !local.vehicle) {
+        let dummyVehicle = mp.vehicles.atRemoteId(dummyCarNetId);
+        if (dummyVehicle && dummyVehicle.handle !== 0) {
+            const bootBone = dummyVehicle.getBoneIndexByName('boot');
+            let trunkPos = dummyVehicle.position;
+            
+            if (bootBone !== -1) {
+                trunkPos = dummyVehicle.getBoneCoords(bootBone, 0, 0, 0);
+            } else {
+                const fwd = dummyVehicle.getForwardVector();
+                trunkPos = new mp.Vector3(dummyVehicle.position.x - fwd.x * 2.5, dummyVehicle.position.y - fwd.y * 2.5, dummyVehicle.position.z);
+            }
+
+            if (dist3D(local.position, trunkPos) <= 1.5) {
+                mp.game.ui.displayHelpTextThisFrame("Apasă ~b~E~w~ pentru a căuta în portbagaj", false);
+            }
+        }
+    }
 });
 
 function startLockBreak() {
@@ -397,6 +411,71 @@ mp.events.add('client:repo:cleanup', () => {
     
     mp.game.ui.clearGpsFlags();
 });
+
+mp.keys.bind(0x45, false, () => { // Tasta E
+    if (repoPhase === 'PHASE_2_GET_TOOLS' && !trunkAnimActive && !mp.players.local.vehicle) {
+        let dummyVehicle = mp.vehicles.atRemoteId(dummyCarNetId);
+        if (dummyVehicle && dummyVehicle.handle !== 0) {
+            
+            // Calculăm unde este portbagajul
+            const bootBone = dummyVehicle.getBoneIndexByName('boot');
+            let trunkPos = dummyVehicle.position;
+            
+            if (bootBone !== -1) {
+                trunkPos = dummyVehicle.getBoneCoords(bootBone, 0, 0, 0);
+            } else {
+                // Fallback daca masina nu are boot bone
+                const fwd = dummyVehicle.getForwardVector();
+                trunkPos = new mp.Vector3(
+                    dummyVehicle.position.x - fwd.x * 2.5,
+                    dummyVehicle.position.y - fwd.y * 2.5,
+                    dummyVehicle.position.z
+                );
+            }
+
+            // Distanță foarte mică (1.5 metri max) față de PORTBAGAJ, nu centrul mașinii
+            if (dist3D(mp.players.local.position, trunkPos) <= 1.5) {
+                startTrunkLootSequence(dummyVehicle);
+            } else if (dist3D(mp.players.local.position, dummyVehicle.position) <= 5.0) {
+                mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Trebuie să te poziționezi exact în spatele mașinii!');
+            }
+        }
+    }
+});
+
+function startTrunkLootSequence(vehicle) {
+    trunkAnimActive = true;
+    const DURATION = 3500; // 3.5 secunde durează acțiunea
+    const local = mp.players.local;
+
+    // 1. Deschide ușa portbagajului (index 5)
+    vehicle.setDoorOpen(5, false, false);
+    
+    mp.game.ui.setTextEntry('STRING');
+    mp.game.ui.addTextComponentSubstringPlayerName('~y~Cauți uneltele în portbagaj...');
+    mp.game.ui.drawSubtitleTimed(DURATION, true);
+
+    // 2. Play la animația de căutare
+    mp.game.streaming.requestAnimDict('anim@heists@narcotics@trash');
+    let waitAnim = setInterval(() => {
+        if (mp.game.streaming.hasAnimDictLoaded('anim@heists@narcotics@trash')) {
+            clearInterval(waitAnim);
+            mp.game.task.taskPlayAnim(local.handle, 'anim@heists@narcotics@trash', 'rummage', 8.0, -8.0, DURATION, 1, 0, false, false, false);
+            
+            // 3. Finalizarea acțiunii
+            setTimeout(() => {
+                // Închidem portbagajul
+                if (vehicle && mp.vehicles.exists(vehicle)) {
+                    vehicle.setDoorShut(5, false);
+                }
+                trunkAnimActive = false;
+                
+                // Trimitem confirmarea către server pentru a trece la faza 3
+                mp.events.callRemote('server:repo:toolsGrabbed');
+            }, DURATION);
+        }
+    }, 50);
+}
 
 mp.keys.bind(KEY_QUIT, false, () => {
     if (repoPhase === 'idle' || mp.gui.cursor.visible) return;
