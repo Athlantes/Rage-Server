@@ -59,9 +59,9 @@ async function startPhase1(player, s) {
     const loc = s.dummyLocation;
 
     const SEARCH_ZONE_RADIUS = 150.0;
-    
-    // Păstrăm colshape-ul invizibil pentru a spawna mașina când jucătorul se apropie (am mărit raza puțin la 15.0)
-    s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 15.0, 0);
+
+    // Cylinder colshape (XY-only, 50m radius, tall height) so terrain elevation never prevents the trigger
+    s.zoneColshape = mp.colshapes.newCylinder(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z - 10.0, 50.0, 20.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
     
     // Trimitem SMS-ul cu instrucțiuni și locația exactă, la fel ca la skimmer
@@ -95,7 +95,6 @@ async function startPhase1(player, s) {
         console.error('[RepoJob] Failed to send SMS:', err);
     }
 
-    player.call('client:repo:createSearchArea', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, SEARCH_ZONE_RADIUS]);
     player.call('showNotification', ['Repo Work', 'Check your phone for instructions.']);
 }
 
@@ -103,8 +102,6 @@ function startPhase2(player, s) {
     s.phase = 'PHASE_2_GET_TOOLS';
     const loc = s.dummyLocation;
     
-    player.call('client:repo:destroySearchArea');
-
     // Spawn Dummy Car
     s.dummyCar = mp.vehicles.new(mp.joaat(s.dummyModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3,11]), rand([0,1,2])], locked: true, engine: false, dimension: 0 });
     
