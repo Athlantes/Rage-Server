@@ -54,28 +54,68 @@ function cleanupSession(playerId) {
 }
 
 // ── PHASES ──
-function startPhase1(player, s) {
+async function startPhase1(player, s) {
     s.phase = 'PHASE_1_FIND_DUMMY';
     const loc = s.dummyLocation;
-    s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 10.0, 0);
+
+    const SEARCH_ZONE_RADIUS = 150.0;
+    
+    // Păstrăm colshape-ul invizibil pentru a spawna mașina când jucătorul se apropie (am mărit raza puțin la 15.0)
+    s.zoneColshape = mp.colshapes.newSphere(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 15.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
-    player.call('client:repo:showZoneBlip', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, 40.0]);
+    
+    // Trimitem SMS-ul cu instrucțiuni și locația exactă, la fel ca la skimmer
+    try {
+        const [rows] = await db.query("SELECT phone_number FROM player_phone WHERE user_id = ?", [player.data.dbId]);
+        if (rows.length > 0) {
+            const targetNumber = rows[0].phone_number;
+            const msgBody = "I've left a vehicle for you. Go to this location and grab the tools from the trunk. The car has a tracker to find the target.";
+            const locationBody = JSON.stringify({ x: loc.zoneCenter.x, y: loc.zoneCenter.y, z: loc.zoneCenter.z });
+            
+            // Inserăm textul
+            await db.query(
+                "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
+                ["Unknown", targetNumber, msgBody, 'text']
+            );
+            // Inserăm locația interactivă
+            await db.query(
+                "INSERT INTO phone_messages (sender_number, receiver_number, message, type) VALUES (?, ?, ?, ?)",
+                ["Unknown", targetNumber, locationBody, 'location']
+            );
+            
+            // Dacă jucătorul e online, îi trimitem evenimentele live către telefon
+            player.call('client:phone:receiveSMS', ["Unknown", msgBody, 'text']);
+            player.call('client:phone:receiveSMS', ["Unknown", locationBody, 'location']);
+            player.call('client:phone:notification', [JSON.stringify({
+                app: 'messages', title: 'Unknown',
+                body: 'New location received.', icon: 'fa-envelope',
+            })]);
+        }
+    } catch(err) {
+        console.error('[RepoJob] Failed to send SMS:', err);
+    }
+
+    player.call('client:repo:createSearchArea', [loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z, SEARCH_ZONE_RADIUS]);
+    player.call('showNotification', ['Repo Work', 'Check your phone for instructions.']);
 }
 
 function startPhase2(player, s) {
     s.phase = 'PHASE_2_GET_TOOLS';
     const loc = s.dummyLocation;
     
-    // Spawn Dummy Car
-    s.dummyCar = mp.vehicles.new(mp.joaat(s.dummyModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3,11]), rand([0,1,2])], locked: false, engine: false, dimension: 0 });
+    player.call('client:repo:destroySearchArea');
+
+    // Spawn Dummy Car - Acum este creată cu locked: true
+    s.dummyCar = mp.vehicles.new(mp.joaat(s.dummyModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3,11]), rand([0,1,2])], locked: true, engine: false, dimension: 0 });
     
     // Set standard integration flags
+    s.dummyCar.setVariable('jobOwner', player.id); 
     s.dummyCar.setVariable('repoOwner', player.id);
-    s.dummyCar.setVariable('fuel', 100);       // Full tank
-    s.dummyCar.setVariable('engine', false);   // Engine off initially
-    s.dummyCar.setVariable('locked', false);   // Unlocked for player
+    s.dummyCar.setVariable('fuel', 100);       
+    s.dummyCar.setVariable('engine', false);   
+    s.dummyCar.setVariable('locked', true);    
     s.dummyCar.engine = false;
-    s.dummyCar.locked = false;
+    s.dummyCar.locked = true;
     
     const mp2 = loc.trunkMarkerPos;
     s.trunkMarker = mp.markers.new(1, new mp.Vector3(mp2.x, mp2.y, mp2.z - 1.0), 1.0, { color: { r: 255, g: 165, b: 0, a: 180 }, visible: true, dimension: 0 });
@@ -84,7 +124,6 @@ function startPhase2(player, s) {
     s.trunkColshape.setVariable('interaction', { title: 'Dummy Car Trunk', text: 'Press ~b~E~w~ to grab the tools', event: 'server:repo:grabTools', requireOnFoot: true });
     
     player.call('client:repo:phaseGetTools', [mp2.x, mp2.y, mp2.z]);
-    mp.events.call('server:phone:sendMail', player.data.dbId, 'Unknown', 'The package', 'Check the trunk of the car I left for you. Grab the lock-breaking tools. The car has a tracker installed to find the target.');
 }
 
 function startPhase3(player, s) {
@@ -104,6 +143,7 @@ function startPhase4(player, s) {
     s.wantedCar = mp.vehicles.new(mp.joaat(s.wantedModel), new mp.Vector3(loc.carPos.x, loc.carPos.y, loc.carPos.z), { heading: loc.carPos.h, color: [rand([0,1,2,3]), rand([0,1])], locked: true, engine: false, dimension: 0 });
     
     // Set standard integration flags
+    s.wantedCar.setVariable('jobOwner', player.id);
     s.wantedCar.setVariable('repoOwner', player.id);
     s.wantedCar.setVariable('fuel', 100);      // Full tank
     s.wantedCar.setVariable('engine', false);  // Engine off
@@ -266,9 +306,9 @@ const RepoJob = {
             dummyCar: null, wantedCar: null, zoneColshape: null, trunkColshape: null, trunkMarker: null, proximityInterval: null
         };
         activeSessions.set(player.id, session);
-        player.call('showNotification', [NPC_NAME, 'Drive to the marker. A car with the tools is waiting for you.']);
-        startPhase1(player, session);
+        await startPhase1(player, session);
     },
+
     async checkSecondJob(player) {
         if (!player.logged || !player.data.dbId) return;
         const today = new Date().toISOString().split('T')[0];
@@ -308,8 +348,16 @@ mp.events.add('playerEnterColshape', (player, shape) => {
 });
 mp.events.add('server:repo:grabTools', player => {
     const s = activeSessions.get(player.id);
-    if (s && s.phase === 'PHASE_2_GET_TOOLS') startPhase3(player, s);
+    if (s && s.phase === 'PHASE_2_GET_TOOLS') {
+        if (s.dummyCar && mp.vehicles.exists(s.dummyCar)) {
+            s.dummyCar.locked = false;
+            s.dummyCar.setVariable('locked', false);
+            player.call('showNotification', ['Repo Work', 'Tools acquired. Get in the car to activate the tracker.']);
+        }
+        startPhase3(player, s);
+    }
 });
+
 mp.events.add('server:repo:boardedDummyCar', player => {});
 
 mp.events.add('server:repo:triggerAmbush', (player) => {

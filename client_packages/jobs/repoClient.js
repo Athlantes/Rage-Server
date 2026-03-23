@@ -9,6 +9,7 @@ let repoPhase        = 'idle';
 let zoneBlip         = null;
 let trunkBlip        = null;
 let deliverBlip      = null;
+let repoSearchBlip = null;
 let deliverMarker    = null;
 
 let trackerBrowser   = null;
@@ -82,18 +83,8 @@ function startTrackerInterval() {
     }, 300);
 }
 
-mp.events.add('client:repo:showZoneBlip', (cx, cy, cz, radius) => {
-    repoPhase = 'PHASE_1_FIND_DUMMY';
-    destroyBlip(zoneBlip);
-    zoneBlip = mp.blips.new(9, new mp.Vector3(cx, cy, cz), { name: 'Investigate Area', color: 56, alpha: 128, scale: radius / 10 });
-    mp.game.ui.setNewWaypoint(cx, cy);
-    mp.gui.chat.push(`!{#FFA500}[REPO]!{#FFFFFF} Drive to the marked area.`);
-});
-
 mp.events.add('client:repo:phaseGetTools', (mx, my, mz) => {
     repoPhase = 'PHASE_2_GET_TOOLS';
-    destroyBlip(zoneBlip); zoneBlip = null;
-    mp.game.ui.clearGpsFlags();
     destroyBlip(trunkBlip);
     trunkBlip = createBlip(279, mx, my, mz, 'Grab Tools', 5, 0.8, true);
     mp.gui.chat.push('!{#FFA500}[REPO]!{#FFFFFF} Approach the car trunk and press ~b~E~w~ to grab the tools.');
@@ -314,6 +305,37 @@ function startLockBreak() {
         mp.events.callRemote('server:repo:lockBroken');
     }, DURATION);
 }
+
+// Eveniment pentru a crea zona gri de căutare
+mp.events.add('client:repo:createSearchArea', (x, y, z, radius) => {
+    // Curățăm un blip vechi dacă există (siguranță)
+    if (repoSearchBlip && mp.blips.exists(repoSearchBlip)) {
+        repoSearchBlip.destroy();
+    }
+
+    // Creăm un blip de tip zonă (ID 9)
+    repoSearchBlip = mp.blips.new(9, new mp.Vector3(x, y, z), {
+        name: '',          
+        color: 39,          // Gri deschis neutru
+        alpha: 100,         // Transparență scăzută
+        scale: radius / 10, // Dimensiunea zonei
+        shortRange: true,   // Îl ține ascuns pe harta globală dacă ești prea departe
+        drawDistance: 0
+    });
+
+    // Păstrăm waypoint-ul GPS (opțional, poți șterge rândul dacă nu vrei nici ruta galbenă)
+    mp.game.ui.setNewWaypoint(x, y);
+});
+
+// Eveniment pentru a distruge zona când a fost găsită mașina
+mp.events.add('client:repo:destroySearchArea', () => {
+    if (repoSearchBlip && mp.blips.exists(repoSearchBlip)) {
+        repoSearchBlip.destroy();
+        repoSearchBlip = null;
+    }
+    // Ștergem și waypoint-ul GPS
+    mp.game.ui.clearGpsFlags();
+});
 
 mp.events.add('client:repo:enterWantedCar', (wantedNetId) => {
     if (wantedNetId < 0) return;
