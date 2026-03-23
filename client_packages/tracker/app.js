@@ -1,6 +1,6 @@
 'use strict';
 
-// ── RADAR SWEEP ANIMATION ──
+// ── RADAR CANVAS SETUP ──
 const canvas  = document.getElementById('radar-canvas');
 const ctx     = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
@@ -8,10 +8,10 @@ const cx = W / 2, cy = H / 2;
 const R  = (W / 2) - 4; // outer radius
 
 let sweepAngle   = 0;
-let blipAngle    = Math.random() * Math.PI * 2; 
-let blipFade     = 0;    
-let lastSweepHit = 0;    
-let currentDist  = 9999; 
+let blipAngle    = -Math.PI / 2; // default pointing "up" (forward) until first update
+let blipFade     = 0;
+let lastSweepHit = 0;
+let currentDist  = 9999;
 
 const GREEN  = '#00ff88';
 const YELLOW = '#ffdd00';
@@ -25,15 +25,24 @@ function getSignalColor(dist) {
     return GREEN;
 }
 
+// Map distance to radial position on the radar circle
+function getBlipRadius(dist) {
+    const maxDist = 600;
+    const norm = Math.min(dist / maxDist, 1.0);
+    return norm * (R - 10) + 5;
+}
+
 function drawRadar(ts) {
     ctx.clearRect(0, 0, W, H);
     const color = getSignalColor(currentDist);
 
+    // ── Background circle ──
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fill();
 
+    // ── Range rings ──
     [0.33, 0.55, 0.78, 1.0].forEach(pct => {
         ctx.beginPath();
         ctx.arc(cx, cy, R * pct, 0, Math.PI * 2);
@@ -42,11 +51,13 @@ function drawRadar(ts) {
         ctx.stroke();
     });
 
+    // ── Cross lines ──
     ctx.strokeStyle = color + '22';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
 
+    // ── Sweep trail ──
     const TRAIL_ARC = Math.PI * 0.6;
     const steps = 30;
     for (let i = 0; i < steps; i++) {
@@ -61,6 +72,7 @@ function drawRadar(ts) {
         ctx.fill();
     }
 
+    // ── Sweep line ──
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(sweepAngle) * R, cy + Math.sin(sweepAngle) * R);
@@ -68,34 +80,42 @@ function drawRadar(ts) {
     ctx.lineWidth   = 2;
     ctx.stroke();
 
+    // ── Sweep-blip hit detection → controls glow intensity ──
     const angleDiff = ((sweepAngle - blipAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
     if (angleDiff < 0.15) {
-        blipFade    = 1.0;
+        blipFade     = 1.0;
         lastSweepHit = ts;
     } else {
         const age = (ts - lastSweepHit) / 2000;
         blipFade = Math.max(0, 1.0 - age);
     }
 
-    if (blipFade > 0) {
-        const maxDist = 600;
-        const normDist = Math.min(currentDist / maxDist, 1.0);
-        const blipR = normDist * (R - 10) + 5;
-        const bx = cx + Math.cos(blipAngle) * blipR;
-        const by = cy + Math.sin(blipAngle) * blipR;
+    // ── Blip position ──
+    const blipR = getBlipRadius(currentDist);
+    const bx = cx + Math.cos(blipAngle) * blipR;
+    const by = cy + Math.sin(blipAngle) * blipR;
 
+    // Always-visible solid dot (dim red) — so you always see where the car is
+    ctx.beginPath();
+    ctx.arc(bx, by, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 80, 80, 0.75)';
+    ctx.fill();
+
+    // Bright ping flash when sweep passes over
+    if (blipFade > 0) {
         ctx.beginPath();
         ctx.arc(bx, by, 5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${blipFade})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${blipFade})`;
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(bx, by, 9, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,255,255,${blipFade * 0.4})`;
+        ctx.arc(bx, by, 10, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${blipFade * 0.4})`;
         ctx.lineWidth = 2;
         ctx.stroke();
     }
 
+    // ── Advance sweep angle (faster when close) ──
     const speedMult = currentDist < 30 ? 3.5 : currentDist < 75 ? 2.5 : currentDist < 150 ? 1.8 : 1.0;
     sweepAngle += 0.025 * speedMult;
     if (sweepAngle >= Math.PI * 2) sweepAngle -= Math.PI * 2;
@@ -105,17 +125,25 @@ function drawRadar(ts) {
 
 requestAnimationFrame(drawRadar);
 
-// ── SIGNAL UPDATE LOGIC ──
-const bars = [ document.getElementById('bar-1'), document.getElementById('bar-2'), document.getElementById('bar-3'), document.getElementById('bar-4'), document.getElementById('bar-5') ];
-const distanceEl  = document.getElementById('distance-value');
-const statusEl    = document.getElementById('status-text');
-const container   = document.getElementById('tracker-container');
+// ── SIGNAL BARS + DISTANCE DISPLAY ──
+const bars = [
+    document.getElementById('bar-1'),
+    document.getElementById('bar-2'),
+    document.getElementById('bar-3'),
+    document.getElementById('bar-4'),
+    document.getElementById('bar-5')
+];
+const distanceEl = document.getElementById('distance-value');
+const statusEl   = document.getElementById('status-text');
+const container  = document.getElementById('tracker-container');
 
-let audioCtx = null;
+let audioCtx     = null;
 let lastBeepTime = 0;
 
 function createBeep(freq, duration, volume) {
-    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; } }
+    if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
+    }
     const osc  = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
@@ -128,45 +156,13 @@ function createBeep(freq, duration, volume) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
-// Funcția apelată din RAGE:MP
-function updateTrackerState(angle, distance) {
-    const dot = document.querySelector('.tracker-dot'); // Pune clasa corectă de la punctul tău
-    const distanceText = document.querySelector('.distance-text'); 
-    
-    if (!dot) return;
-
-    // --- LOGICA DE ROTAȚIE ---
-    // Raza cercului din trackerul tău (ex: dacă lățimea UI-ului e 200px, raza e 100)
-    // Ajustează această valoare în funcție de CSS-ul tău!
-    const radius = 90; 
-    const centerX = 100; // Centrul cercului X
-    const centerY = 100; // Centrul cercului Y
-
-    // În matematica standard pe web, 0 grade înseamnă dreapta (ora 3). 
-    // Scădem 90 ca să setăm 0 grade fix sus (ora 12), adică în direcția de mers.
-    const rad = (angle - 90) * (Math.PI / 180);
-
-    // Calculăm noile coordonate X și Y folosind Sinus și Cosinus
-    const dotX = centerX + Math.cos(rad) * radius;
-    const dotY = centerY + Math.sin(rad) * radius;
-
-    // Mutăm punctul (presupune că CSS-ul punctului are `position: absolute; transform: translate(-50%, -50%)`)
-    dot.style.left = `${dotX}px`;
-    dot.style.top = `${dotY}px`;
-
-    // --- ACTUALIZARE DISTANȚĂ ---
-    if (distanceText) {
-        distanceText.innerText = `${Math.floor(distance)}m`;
-    }
-}
-
 function updateDistance(dist) {
     currentDist = dist;
 
     distanceEl.textContent = dist > 9999 ? '---' : String(dist);
     distanceEl.style.color = dist < 30 ? '#ff3333' : dist < 75 ? '#ff8800' : dist < 150 ? '#ffdd00' : '#ffffff';
 
-    let activeBars = dist <= 40 ? 5 : dist <= 100 ? 4 : dist <= 200 ? 3 : dist <= 400 ? 2 : dist <= 600 ? 1 : 0;
+    const activeBars = dist <= 40 ? 5 : dist <= 100 ? 4 : dist <= 200 ? 3 : dist <= 400 ? 2 : dist <= 600 ? 1 : 0;
     bars.forEach((bar, i) => {
         bar.classList.remove('active', 'warn', 'danger');
         if (i < activeBars) {
@@ -178,20 +174,40 @@ function updateDistance(dist) {
 
     if (dist < 40) container.classList.add('pulsing'); else container.classList.remove('pulsing');
 
-    if (dist < 30) { statusEl.textContent = 'TARGET NEARBY'; statusEl.style.color = '#ff3333'; }
-    else if (dist < 100) { statusEl.textContent = 'SIGNAL STRONG'; statusEl.style.color = '#ffdd00'; }
+    if (dist < 30)       { statusEl.textContent = 'TARGET NEARBY';   statusEl.style.color = '#ff3333'; }
+    else if (dist < 100) { statusEl.textContent = 'SIGNAL STRONG';   statusEl.style.color = '#ffdd00'; }
     else if (dist < 300) { statusEl.textContent = 'SIGNAL DETECTED'; statusEl.style.color = '#00ff88'; }
-    else { statusEl.textContent = 'TRACKING TARGET'; statusEl.style.color = '#00ff8888'; }
+    else                 { statusEl.textContent = 'TRACKING TARGET'; statusEl.style.color = '#00ff8888'; }
 
-    const now = Date.now();
-    let beepInterval = dist < 30 ? 250 : dist < 75 ? 500 : dist < 150 ? 900 : dist < 300 ? 1500 : 2200;
-    let beepFreq     = dist < 30 ? 1400 : dist < 75 ? 1200 : dist < 150 ? 1000 : dist < 300 ? 900 : 860;
-    let beepVol      = dist < 30 ? 0.15 : dist < 75 ? 0.12 : dist < 150 ? 0.10 : dist < 300 ? 0.08 : 0.06;
+    const now          = Date.now();
+    const beepInterval = dist < 30 ? 250 : dist < 75 ? 500 : dist < 150 ? 900 : dist < 300 ? 1500 : 2200;
+    const beepFreq     = dist < 30 ? 1400 : dist < 75 ? 1200 : dist < 150 ? 1000 : dist < 300 ? 900 : 860;
+    const beepVol      = dist < 30 ? 0.15 : dist < 75 ? 0.12 : dist < 150 ? 0.10 : dist < 300 ? 0.08 : 0.06;
 
     if (now - lastBeepTime >= beepInterval) {
         createBeep(beepFreq, 0.08, beepVol);
         lastBeepTime = now;
     }
+}
+
+// ── CALLED FROM RAGE:MP (render event, every frame) ──
+//
+//   angleDeg : relative direction to target from player's camera perspective
+//              0   = directly ahead  (blip at top   of radar)
+//              90  = to the right    (blip at right  of radar)
+//             -90  = to the left     (blip at left   of radar)
+//             180  = directly behind (blip at bottom of radar)
+//
+//   distance : meters to target vehicle
+//
+function updateTrackerState(angleDeg, distance) {
+    // Convert angle so 0 = "up" on canvas.
+    // Canvas: 0 rad = right, -PI/2 = up, PI/2 = down.
+    // "Forward" (angleDeg 0) must map to canvas "up" (-PI/2).
+    blipAngle = (angleDeg - 90) * (Math.PI / 180);
+
+    // Update distance readout, bars, status text, and beep
+    updateDistance(distance);
 }
 
 if (window.mp) { try { window.mp.trigger('client:tracker:ready'); } catch (_) {} }
