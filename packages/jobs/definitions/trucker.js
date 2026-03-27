@@ -385,6 +385,13 @@ function registerEvents() {
         const session = activeSessions.get(player.id);
         if (session.stage !== 'pickup') return;
 
+        if (session.trailerVehicle && mp.vehicles.exists(session.trailerVehicle)) {
+            const dist = player.dist(session.trailerVehicle.position);
+            if (dist > 15.0) { // Adjust distance threshold as needed
+                return player.call('showNotification', ['Error', 'Trailer is too far away to be hooked!']);
+            }
+        }
+
         // Clear hookup check
         if (player.hookupCheckInterval) {
             clearInterval(player.hookupCheckInterval);
