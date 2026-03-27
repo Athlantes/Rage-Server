@@ -22,7 +22,11 @@ const DUMMY_CAR_MODELS = ['blista', 'sultan', 'prairie', 'ingot', 'emperor', 'st
 const WANTED_CAR_MODELS = ['zentorno', 't20', 'adder', 'osiris', 'fmj', 'turismor', 'entityxf', 'vacca', 'cheetah', 'infernus'];
 
 const DUMMY_LOCATIONS = [
-    { zoneCenter: { x: 266.43, y: -332.17, z: 44.20 }, carPos: { x: 266.43, y: -332.17, z: 44.20, h: -110.97 }, trunkMarkerPos: { x: 263.60, y: -331.12, z: 45.05 } }
+    { zoneCenter: { x: 266.43, y: -332.17, z: 44.20 }, carPos: { x: 266.43, y: -332.17, z: 44.20, h: -110.97 }, trunkMarkerPos: { x: 263.60, y: -331.12, z: 45.05 } },
+    { zoneCenter: { x: -4.97, y: -1504.70, z: 29.41 }, carPos: { x: -4.97, y: -1504.70, z: 29.41, h: -41.38 }, trunkMarkerPos: { x: -7.13, y: -1507.06, z: 29.96 } },
+    { zoneCenter: { x: -738.59, y: -1028.25, z: 12.36 }, carPos: { x: -738.59, y: -1028.25, z: 12.36, h: -59.65 }, trunkMarkerPos: { x: -741.43, y: -1029.82, z: 12.86 } },
+    { zoneCenter: { x: 1199.39, y: -1275.23, z: 34.72 }, carPos: { x: 1199.39, y: -1275.23, z: 34.72, h: -94.53 }, trunkMarkerPos: { x: 1196.16, y: -1275.05, z: 35.22 } },
+    { zoneCenter: { x: -1580.07, y: -244.48, z: 48.96 }, carPos: { x: -1580.07, y: -244.48, z: 48.96, h: 61.39 }, trunkMarkerPos: { x: -1580.07, y: -244.48, z: 48.96 } },
 ];
 
 const WANTED_LOCATIONS = [
@@ -61,7 +65,7 @@ async function startPhase1(player, s) {
     const SEARCH_ZONE_RADIUS = 150.0;
 
     // Cylinder colshape (XY-only, 50m radius, tall height) so terrain elevation never prevents the trigger
-    s.zoneColshape = mp.colshapes.newTube(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z - 10.0, 50.0, 20.0, 0);
+    s.zoneColshape = mp.colshapes.newTube(loc.zoneCenter.x, loc.zoneCenter.y, loc.zoneCenter.z - 10.0, 100.0, 20.0, 0);
     s.zoneColshape.setVariable('repoZone', player.id);
     
     // Trimitem SMS-ul cu instrucțiuni și locația exactă, la fel ca la skimmer
