@@ -194,7 +194,7 @@ module.exports = () => {
     // Only register the job if depot is configured
     if (!truckerData.depot) {
         console.log('[Trucker] No depot configured. Use /setdepot to set up the job.');
-        registerAdminCommands(); // Still register commands for setup
+        registerAdminEvents(); // Still register commands for setup
         return;
     }
 
@@ -236,7 +236,7 @@ module.exports = () => {
 
     // Register all events and commands
     registerEvents();
-    registerAdminCommands();
+    registerAdminEvents();;
 };
 
 // ============================================================================
@@ -628,16 +628,18 @@ function onReachDropoff(player) {
 // ADMIN COMMANDS
 // ============================================================================
 
-function registerAdminCommands() {
+function registerAdminEvents() {
+    // Local copy of colors to match commands.js styling
+    const COLORS = {
+        ERROR: '!{FF0000}',
+        SUCCESS: '!{00FF00}',
+        INFO: '!{FFFF00}'
+    };
+
     /**
      * Set the main depot location
-     * Usage: /setdepot
      */
-    mp.events.addCommand('setdepot', (player) => {
-        if (!player.admin) {
-            return player.outputChatBox('!{FF0000}You must be an admin to use this command.');
-        }
-
+    mp.events.add('server:trucker:admin:setdepot', (player) => {
         const pos = player.position;
         const heading = player.heading;
 
@@ -647,19 +649,14 @@ function registerAdminCommands() {
         };
 
         saveData();
-        player.outputChatBox(`!{00FF00}[Trucker] Depot set at your location.`);
-        player.outputChatBox(`!{FFA500}Restart the server or reload the job script to spawn the depot NPC.`);
+        player.outputChatBox(`${COLORS.SUCCESS}[Trucker] Depot set at your location.`);
+        player.outputChatBox(`${COLORS.INFO}Restart the server or reload the job script to spawn the depot NPC.`);
     });
 
     /**
      * Add a truck spawn point
-     * Usage: /addtruckspawn
      */
-    mp.events.addCommand('addtruckspawn', (player) => {
-        if (!player.admin) {
-            return player.outputChatBox('!{FF0000}You must be an admin to use this command.');
-        }
-
+    mp.events.add('server:trucker:admin:addtruckspawn', (player) => {
         const pos = player.position;
         const heading = player.heading;
 
@@ -673,32 +670,13 @@ function registerAdminCommands() {
         });
 
         saveData();
-        player.outputChatBox(`!{00FF00}[Trucker] Truck spawn #${truckerData.truckSpawns.length} added.`);
+        player.outputChatBox(`${COLORS.SUCCESS}[Trucker] Truck spawn #${truckerData.truckSpawns.length} added.`);
     });
 
     /**
      * Start adding a new route (step 1)
-     * Usage: /addroute [basePay] [minLevel] [Name...]
      */
-    mp.events.addCommand('addroute', (player, fullText) => {
-        if (!player.admin) {
-            return player.outputChatBox('!{FF0000}You must be an admin to use this command.');
-        }
-
-        const args = fullText.split(' ');
-        if (args.length < 3) {
-            return player.outputChatBox('!{FF0000}Usage: /addroute [basePay] [minLevel] [Name]');
-        }
-
-        const basePay = parseInt(args[0]);
-        const minLevel = parseInt(args[1]);
-        const name = args.slice(2).join(' ');
-
-        if (isNaN(basePay) || isNaN(minLevel)) {
-            return player.outputChatBox('!{FF0000}Invalid pay or level values.');
-        }
-
-        // Generate new route ID
+    mp.events.add('server:trucker:admin:addroute', (player, basePay, minLevel, name) => {
         const routeId = `route_${Date.now()}`;
 
         // Store in admin setup mode
@@ -710,21 +688,16 @@ function registerAdminCommands() {
             hasPickup: false
         });
 
-        player.outputChatBox(`!{00FF00}[Trucker] Starting route creation: "${name}"`);
-        player.outputChatBox(`!{FFA500}Step 1: Walk to the PICKUP location and type /setpickup`);
+        player.outputChatBox(`${COLORS.SUCCESS}[Trucker] Starting route creation: "${name}"`);
+        player.outputChatBox(`${COLORS.INFO}Step 1: Walk to the PICKUP location and type /setpickup`);
     });
 
     /**
      * Set pickup location for new route (step 2)
-     * Usage: /setpickup
      */
-    mp.events.addCommand('setpickup', (player) => {
-        if (!player.admin) {
-            return player.outputChatBox('!{FF0000}You must be an admin to use this command.');
-        }
-
+    mp.events.add('server:trucker:admin:setpickup', (player) => {
         if (!adminSetupMode.has(player.id)) {
-            return player.outputChatBox('!{FF0000}You must first start a route with /addroute');
+            return player.outputChatBox(`${COLORS.ERROR}You must first start a route with /addroute`);
         }
 
         const setup = adminSetupMode.get(player.id);
@@ -734,27 +707,22 @@ function registerAdminCommands() {
         setup.pickup = { x: pos.x, y: pos.y, z: pos.z, h: heading };
         setup.hasPickup = true;
 
-        player.outputChatBox(`!{00FF00}[Trucker] Pickup location set.`);
-        player.outputChatBox(`!{FFA500}Step 2: Walk to the DROP-OFF location and type /setdropoff`);
+        player.outputChatBox(`${COLORS.SUCCESS}[Trucker] Pickup location set.`);
+        player.outputChatBox(`${COLORS.INFO}Step 2: Walk to the DROP-OFF location and type /setdropoff`);
     });
 
     /**
      * Set dropoff location and finalize route (step 3)
-     * Usage: /setdropoff
      */
-    mp.events.addCommand('setdropoff', (player) => {
-        if (!player.admin) {
-            return player.outputChatBox('!{FF0000}You must be an admin to use this command.');
-        }
-
+    mp.events.add('server:trucker:admin:setdropoff', (player) => {
         if (!adminSetupMode.has(player.id)) {
-            return player.outputChatBox('!{FF0000}You must first start a route with /addroute');
+            return player.outputChatBox(`${COLORS.ERROR}You must first start a route with /addroute`);
         }
 
         const setup = adminSetupMode.get(player.id);
 
         if (!setup.hasPickup) {
-            return player.outputChatBox('!{FF0000}You must set the pickup location first with /setpickup');
+            return player.outputChatBox(`${COLORS.ERROR}You must set the pickup location first with /setpickup`);
         }
 
         const pos = player.position;
@@ -775,7 +743,7 @@ function registerAdminCommands() {
         truckerData.routes.push(route);
         saveData();
 
-        player.outputChatBox(`!{00FF00}[Trucker] Route "${route.name}" created successfully!`);
+        player.outputChatBox(`${COLORS.SUCCESS}[Trucker] Route "${route.name}" created successfully!`);
         player.outputChatBox(`!{FFFFFF}Min Level: ${route.minLevel} | Base Pay: $${route.basePay}`);
         
         // Clear setup mode

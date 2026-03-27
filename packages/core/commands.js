@@ -291,6 +291,48 @@ mp.events.addCommand('duty', (player) => {
 // ADMIN SYSTEM
 // ----------------------------------------------------------------------------
 
+// --- TRUCKER ADMIN COMMANDS ---
+
+mp.events.addCommand('setdepot', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    mp.events.call('server:trucker:admin:setdepot', player);
+});
+
+mp.events.addCommand('addtruckspawn', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    mp.events.call('server:trucker:admin:addtruckspawn', player);
+});
+
+mp.events.addCommand('addroute', (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /addroute [basePay] [minLevel] [Name]`);
+
+    const args = fullText.split(' ');
+    if (args.length < 3) {
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /addroute [basePay] [minLevel] [Name]`);
+    }
+
+    const basePay = parseInt(args[0]);
+    const minLevel = parseInt(args[1]);
+    const name = args.slice(2).join(' ');
+
+    if (isNaN(basePay) || isNaN(minLevel)) {
+        return player.outputChatBox(`${COLORS.ERROR}Invalid pay or level values.`);
+    }
+
+    mp.events.call('server:trucker:admin:addroute', player, basePay, minLevel, name);
+});
+
+mp.events.addCommand('setpickup', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    mp.events.call('server:trucker:admin:setpickup', player);
+});
+
+mp.events.addCommand('setdropoff', (player) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    mp.events.call('server:trucker:admin:setdropoff', player);
+});
+
 // --- HOUSING COMMANDS (ADMIN) ---
 
 mp.events.addCommand('createhouse', (player, fullText) => {
