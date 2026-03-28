@@ -77,22 +77,21 @@ const jobManager = {
     },
 
     setJobLevel: async (player, jobKey, level) => {
+        // 1. Reconstruct the skills exactly as addJobXp does
         let currentSkills = player.data.jobSkills ? { ...player.data.jobSkills } : {};
         
-        // Calculate exact base XP needed for this level using the reverse of your formula
+        // 2. Calculate exact base XP needed for this level
         const requiredXp = Math.pow(level - 1, 2) * 100;
 
-        // Apply to the reconstructed object
+        // 3. Apply to the reconstructed object
         currentSkills[jobKey] = { xp: requiredXp, level: level };
 
-        // Save back to memory
+        // 4. Save back to memory natively. 
+        // We removed the JSON.stringify() hacks here so the UI can read it properly as an Object!
         player.data.jobSkills = currentSkills;
 
-        // Sync to client UI immediately
-        player.setVariable('jobSkills', JSON.stringify(currentSkills));
-        player.call('client:syncJobSkills', [JSON.stringify(currentSkills)]);
-
         try {
+            // 5. Save permanently to the database
             await db.query(`
                 INSERT INTO character_job_skills (character_id, job_key, xp, level) VALUES (?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
