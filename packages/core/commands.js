@@ -298,33 +298,34 @@ mp.events.addCommand('setjoblvl', async (player, fullText) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
     if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /setjoblvl [id/name] [jobKey] [level]`);
 
-    const args = fullText.split(' ');
+    const args = fullText.trim().split(/\s+/);
     if (args.length < 3) return player.outputChatBox(`${COLORS.ERROR}Usage: /setjoblvl [id/name] [jobKey] [level]`);
 
     const target = getPlayer(args[0]);
-    const jobKey = args[1].toLowerCase(); // e.g. "trucker", "garbage", "farmer"
+    const jobKey = args[1].toLowerCase().trim();
     const level = parseInt(args[2]);
 
     if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
     if (isNaN(level) || level < 1) return player.outputChatBox(`${COLORS.ERROR}Level must be a valid number >= 1.`);
 
-    // Job level is calculated as: level = sqrt(xp/100) + 1
-    // So to set a specific level, we should set the XP to the base requirement of that level:
-    const requiredXp = Math.pow(level - 1, 2) * 100;
+    // Check if the job actually exists in the system before trying to set it
+    const jobs = jobManager.getDefinitions();
+    if (!jobs.has(jobKey)) {
+         return player.outputChatBox(`${COLORS.ERROR}Job '${jobKey}' does not exist.`);
+    }
 
-    if (!target.data.jobSkills) target.data.jobSkills = {};
-    target.data.jobSkills[jobKey] = { xp: requiredXp, level: level };
+    // Use the new centralized method
+    const success = await jobManager.setJobLevel(target, jobKey, level);
 
-    try {
-        await db.query(`
-            INSERT INTO character_job_skills (character_id, job_key, xp, level) VALUES (?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
-        `, [target.data.dbId, jobKey, requiredXp, level]);
-
+    if (success) {
         player.outputChatBox(`${COLORS.SUCCESS}Set ${target.name}'s ${jobKey} level to ${level}.`);
         target.outputChatBox(`${COLORS.INFO}An admin has set your ${jobKey} level to ${level}.`);
-    } catch (err) {
-        console.error("[Admin] DB Error in /setjoblvl:", err);
+
+        // Force them to clock out if they are currently working this job so the new tier applies
+        if (target.activeJobId === jobKey) {
+            jobManager.stopJob(target, `Your job level was updated. Please clock back in.`);
+        }
+    } else {
         player.outputChatBox(`${COLORS.ERROR}Database error occurred.`);
     }
 });
@@ -587,7 +588,15 @@ mp.events.add('server:tpCoordsWaypoint', (player, x, y, z) => {
     // Double-check rank for security
     if (!checkRank(player, RANKS.MODERATOR)) return;
 
-    player.position = new mp.Vector3(x, y, z);
+    const targetPos = new mp.Vector3(x, y, z);
+
+    // If the player is in a vehicle, teleport the vehicle. Otherwise, teleport the player.
+    if (player.vehicle) {
+        player.vehicle.position = targetPos;
+    } else {
+        player.position = targetPos;
+    }
+
     player.outputChatBox(`${COLORS.SUCCESS}Teleported to waypoint.`);
 });
 

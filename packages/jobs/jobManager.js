@@ -75,6 +75,34 @@ const jobManager = {
             console.error(`[JobManager] DB Save Error for ${player.name}:`, e);
         }
     },
+
+    setJobLevel: async (player, jobKey, level) => {
+        let currentSkills = player.data.jobSkills ? { ...player.data.jobSkills } : {};
+        
+        // Calculate exact base XP needed for this level using the reverse of your formula
+        const requiredXp = Math.pow(level - 1, 2) * 100;
+
+        // Apply to the reconstructed object
+        currentSkills[jobKey] = { xp: requiredXp, level: level };
+
+        // Save back to memory
+        player.data.jobSkills = currentSkills;
+
+        // Sync to client UI immediately
+        player.setVariable('jobSkills', JSON.stringify(currentSkills));
+        player.call('client:syncJobSkills', [JSON.stringify(currentSkills)]);
+
+        try {
+            await db.query(`
+                INSERT INTO character_job_skills (character_id, job_key, xp, level) VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
+            `, [player.data.dbId, jobKey, requiredXp, level]);
+            return true;
+        } catch (e) {
+            console.error(`[JobManager] DB Save Error for setJobLevel:`, e);
+            return false;
+        }
+    },
     
     // --- JOB REGISTRATION & MANAGEMENT ---
     register: (id, config, logic) => {

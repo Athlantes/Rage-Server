@@ -27,23 +27,19 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
 // --- WAYPOINT TELEPORTATION ---
 mp.events.add('client:teleportToWaypoint', () => {
     // 8 is the native GTA V blip ID for the purple custom waypoint
-    const waypointBlip = mp.game.invoke('0x1DD1F58F493F1DA5', 8); 
+    const waypointBlip = mp.game.ui.getFirstBlipInfoId(8); 
 
-    if (waypointBlip && waypointBlip !== 0) {
+    // Make sure the blip actually exists on the map
+    if (mp.game.ui.doesBlipExist(waypointBlip)) {
         const coords = mp.game.ui.getBlipInfoIdCoord(waypointBlip);
         
-        // We start by assuming Z is 0
-        let z = coords.z;
+        // Start by throwing them high in the sky in case the map isn't loaded
+        let z = 200.0; 
         
         // Try to find the actual ground height at those coordinates
-        // We use 1000.0 as a starting height to raycast downwards
-        let groundZ = mp.game.gameplay.getGroundZFor3dCoord(coords.x, coords.y, 1000.0, 0, false);
-        
+        const groundZ = mp.game.gameplay.getGroundZFor3dCoord(coords.x, coords.y, 1000.0, 0, false);
         if (groundZ) {
-            z = groundZ + 1.0; // Add 1 to avoid spawning under the map
-        } else {
-            // If the map collision isn't loaded yet, default to dropping them from the sky
-            z = 200.0; 
+            z = groundZ + 1.0; // Add 1 to avoid clipping into the asphalt
         }
 
         // Send the found coordinates back to the server
