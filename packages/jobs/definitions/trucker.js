@@ -328,12 +328,14 @@ function registerEvents() {
         const cab = mp.vehicles.new(mp.joaat(tier.cabModel), 
             new mp.Vector3(spawnPoint.pos.x, spawnPoint.pos.y, spawnPoint.pos.z), 
             {
-                heading: spawnPoint.heading,
                 numberPlate: `TRUCK${player.id}`,
                 color: [[255, 255, 255], [255, 255, 255]],
                 dimension: player.dimension
             }
         );
+        
+        cab.heading = spawnPoint.heading;
+        cab.rotation = new mp.Vector3(0, 0, spawnPoint.heading);
 
         cab.setVariable('engine', false);
         cab.setVariable('fuel', 100.0);
@@ -360,10 +362,13 @@ function registerEvents() {
                 mp.joaat(tier.trailerModel),
                 new mp.Vector3(route.pickup.x, route.pickup.y, route.pickup.z),
                 {
-                    heading: route.pickup.h || 0,
                     dimension: player.dimension
                 }
             );
+            
+            trailer.heading = route.pickup.h || 0;
+            trailer.rotation = new mp.Vector3(0, 0, route.pickup.h || 0);
+
             trailer.setVariable('ownerType', 'job');
             trailer.setVariable('jobOwner', player.id);
             session.trailerVehicle = trailer;
