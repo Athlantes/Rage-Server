@@ -222,7 +222,13 @@ module.exports = () => {
             const rankName = jobManager.getRankName(level);
 
             player.call('showNotification', ['Trucking Depot', `Signed in as ${rankName} (Lvl ${level}) - ${tier.name}`]);
-            player.outputChatBox(`!{FFA500}[Trucker] !{FFFFFF}Visit the depot to select a contract from the board.`);
+            player.outputChatBox(`!{FFA500}[Trucker] !{FFFFFF}Loading contract board...`);
+
+            setTimeout(() => {
+                if (mp.players.exists(player) && player.activeJobId === JOB_KEY) {
+                    mp.events.call('server:trucker:openBoard', player);
+                }
+            }, 1000);
         },
 
         onStop: (player) => {
