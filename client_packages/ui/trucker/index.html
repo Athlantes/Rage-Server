@@ -2,112 +2,109 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trucker Contract Board</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="../lib/leaflet/leaflet.css">
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="style.css">
+    <title>Dynamic Trucking Dispatch</title>
+    <style>
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: rgba(0, 0, 0, 0.7); display: flex;
+            justify-content: center; align-items: center; height: 100vh; color: white;
+        }
+        .container {
+            background-color: #1e1e24; width: 800px; height: 600px;
+            border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .header {
+            background-color: #282830; padding: 20px; display: flex;
+            justify-content: space-between; align-items: center; border-bottom: 2px solid #ff8800;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: #ff8800; }
+        .close-btn { background: #ff4444; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        
+        .route-list { padding: 20px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
+        
+        .route-card {
+            background-color: #2a2a35; padding: 15px 20px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 5px solid #555; transition: transform 0.1s, border-color 0.2s;
+        }
+        .route-card:hover { transform: translateX(5px); border-color: #ff8800; }
+        .route-card.trailer { border-left-color: #00ff88; } /* Color code trailer jobs */
+
+        .route-info h2 { margin: 0 0 5px 0; font-size: 18px; }
+        .route-info p { margin: 0; color: #aaa; font-size: 14px; }
+        
+        .route-stats { text-align: right; }
+        .route-stats h3 { margin: 0; color: #00ff88; font-size: 20px; }
+        .route-stats p { margin: 0; font-size: 13px; color: #888; }
+        
+        .accept-btn {
+            background-color: #ff8800; color: white; border: none; padding: 10px 20px;
+            border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 20px;
+        }
+        .accept-btn:hover { background-color: #ff9900; }
+    </style>
 </head>
 <body>
-    <!-- Main Container -->
-    <div id="trucker-container" class="trucker-hidden">
-        
-        <!-- Header Section -->
-        <div class="header-section">
-            <div class="header-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                </svg>
-            </div>
-            <div class="header-text">
-                <h4 class="header-subtitle">Continuous Logistics</h4>
-                <h1 class="header-title">Contract Board</h1>
-            </div>
-            <div class="close-btn" onclick="closeBoard()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </div>
-        </div>
 
-        <!-- Player Info Bar -->
-        <div class="info-bar">
-            <div class="info-item">
-                <span class="info-label">Level</span>
-                <span class="info-value" id="player-level">--</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Tier</span>
-                <span class="info-value" id="player-tier">--</span>
-            </div>
-        </div>
-
-        <!-- Main Content Area (Split Layout) -->
-        <div class="content-area">
-            
-            <!-- Left Side: Route List -->
-            <div class="route-list">
-                <div class="list-header">
-                    <h3>Available Routes</h3>
-                    <p class="list-subtitle">Select a route to view details</p>
-                </div>
-                
-                <div class="route-scroll" id="route-container">
-                    <!-- Routes will be populated here by app.js -->
-                    <div class="route-item-placeholder">
-                        <div class="spinner"></div>
-                        <p>Loading contracts...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Map Preview -->
-            <div class="map-preview">
-                <div class="map-header">
-                    <h3>Route Preview</h3>
-                    <p class="map-subtitle" id="map-subtitle">Select a contract to view the route</p>
-                </div>
-                
-                <!-- Leaflet Map Container -->
-                <div id="route-map" class="route-map-container"></div>
-
-                <!-- Route Details Panel (shows when route selected) -->
-                <div class="route-details" id="route-details" style="display: none;">
-                    <div class="detail-row">
-                        <span class="detail-label">Distance</span>
-                        <span class="detail-value" id="detail-distance">--</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Base Pay</span>
-                        <span class="detail-value" id="detail-pay">$--</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Min Level</span>
-                        <span class="detail-value" id="detail-level">--</span>
-                    </div>
-                    
-                    <button class="accept-btn" id="accept-btn" onclick="acceptContract()">
-                        Accept Contract
-                    </button>
-                </div>
-            </div>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>Los Santos Dispatch Board</h1>
+        <button class="close-btn" onclick="closeUI()">X Close</button>
     </div>
+    
+    <div class="route-list" id="route-container">
+        </div>
+</div>
 
-    <!-- Leaflet JS -->
-    <script src="../lib/leaflet/leaflet.js"></script>
-    
-    <!-- Custom Map Helper -->
-    <script src="../lib/customMap.js"></script>
-    
-    <!-- App Logic -->
-    <script src="app.js"></script>
+<script>
+    // This is called by the client-side script when the data arrives
+    function loadRoutes(jsonString) {
+        const routes = JSON.parse(jsonString);
+        const container = document.getElementById('route-container');
+        container.innerHTML = ''; // Clear previous
+
+        if(routes.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#aaa;">No freight available at this facility.</p>';
+            return;
+        }
+
+        routes.forEach(route => {
+            const isTrailer = route.type === 'trailer';
+            
+            const card = document.createElement('div');
+            card.className = `route-card ${isTrailer ? 'trailer' : ''}`;
+            
+            card.innerHTML = `
+                <div class="route-info">
+                    <h2>${route.title}</h2>
+                    <p>Req. Lvl: ${route.levelReq} | Vehicle: ${isTrailer ? 'Phantom + Trailer' : 'Box Truck'}</p>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <div class="route-stats">
+                        <h3>$${route.pay}</h3>
+                        <p>${route.distance} km</p>
+                    </div>
+                    <button class="accept-btn" onclick='selectJob(${JSON.stringify(route)})'>ACCEPT</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function selectJob(routeObj) {
+        // Send data back to the client index.js
+        if(window.mp) {
+            mp.trigger('client:trucker:selectJob', JSON.stringify(routeObj));
+        }
+    }
+
+    function closeUI() {
+        if(window.mp) {
+            mp.trigger('client:trucker:closeMenu');
+        }
+    }
+</script>
+
 </body>
 </html>

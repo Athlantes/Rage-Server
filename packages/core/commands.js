@@ -351,46 +351,44 @@ mp.events.addCommand('givejobxp', async (player, fullText) => {
     target.outputChatBox(`${COLORS.INFO}An admin gave you ${amount} XP for the ${jobKey} job.`);
 });
 
-// --- TRUCKER ADMIN COMMANDS ---
+// --- DYNAMIC TRUCKER ADMIN COMMANDS ---
 
-mp.events.addCommand('setdepot', (player) => {
+mp.events.addCommand('addfacility', (player, fullText) => {
     if (!checkRank(player, RANKS.ADMIN)) return;
-    mp.events.call('server:trucker:admin:setdepot', player);
-});
 
-mp.events.addCommand('addtruckspawn', (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    mp.events.call('server:trucker:admin:addtruckspawn', player);
-});
-
-mp.events.addCommand('addroute', (player, fullText) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /addroute [basePay] [minLevel] [Name]`);
+    if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /addfacility [id_without_spaces] [Facility Name With Spaces]`);
 
     const args = fullText.split(' ');
-    if (args.length < 3) {
-        return player.outputChatBox(`${COLORS.ERROR}Usage: /addroute [basePay] [minLevel] [Name]`);
+    if (args.length < 2) {
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /addfacility [id_without_spaces] [Facility Name With Spaces]`);
     }
 
-    const basePay = parseInt(args[0]);
-    const minLevel = parseInt(args[1]);
-    const name = args.slice(2).join(' ');
+    const id = args[0].toLowerCase();
+    const name = args.slice(1).join(' ');
 
-    if (isNaN(basePay) || isNaN(minLevel)) {
-        return player.outputChatBox(`${COLORS.ERROR}Invalid pay or level values.`);
+    // Send the data to the trucker script to handle the database save
+    mp.events.call('server:trucker:admin:addfacility', player, id, name);
+});
+
+mp.events.addCommand('addnode', (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+
+    if (!fullText) {
+        player.outputChatBox(`${COLORS.ERROR}Usage: /addnode [facilityId] spawn`);
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /addnode [facilityId] [pickup/dropoff] [box/trailer]`);
     }
 
-    mp.events.call('server:trucker:admin:addroute', player, basePay, minLevel, name);
-});
+    const args = fullText.split(' ');
+    if (args.length < 2) {
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /addnode [facilityId] [spawn/pickup/dropoff] [box/trailer]`);
+    }
 
-mp.events.addCommand('setpickup', (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    mp.events.call('server:trucker:admin:setpickup', player);
-});
+    const facilityId = args[0].toLowerCase();
+    const nodeType = args[1].toLowerCase(); 
+    const vehType = args[2] ? args[2].toLowerCase() : null;
 
-mp.events.addCommand('setdropoff', (player) => {
-    if (!checkRank(player, RANKS.ADMIN)) return;
-    mp.events.call('server:trucker:admin:setdropoff', player);
+    // Send to the trucker script
+    mp.events.call('server:trucker:admin:addnode', player, facilityId, nodeType, vehType);
 });
 
 // --- HOUSING COMMANDS (ADMIN) ---
