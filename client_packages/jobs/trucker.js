@@ -84,8 +84,8 @@ mp.events.add('client:trucker:checkTrailerHookup', () => {
     if (!vehicle) return;
 
     // Check if vehicle has a trailer attached
-    // RAGE:MP/GTA V native: vehicle.getTrailer()
-    const trailer = vehicle.getTrailer();
+    // Passing 0 satisfies the required argument count. It will return the trailer's handle.
+    const trailer = vehicle.getTrailer(0); 
     
     if (trailer && trailer !== 0) {
         // Trailer is attached! Tell server
