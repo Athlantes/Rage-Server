@@ -24,6 +24,35 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
     }, 100);
 });
 
+// --- WAYPOINT TELEPORTATION ---
+mp.events.add('client:teleportToWaypoint', () => {
+    // 8 is the native GTA V blip ID for the purple custom waypoint
+    const waypointBlip = mp.game.invoke('0x1DD1F58F493F1DA5', 8); 
+
+    if (waypointBlip && waypointBlip !== 0) {
+        const coords = mp.game.ui.getBlipInfoIdCoord(waypointBlip);
+        
+        // We start by assuming Z is 0
+        let z = coords.z;
+        
+        // Try to find the actual ground height at those coordinates
+        // We use 1000.0 as a starting height to raycast downwards
+        let groundZ = mp.game.gameplay.getGroundZFor3dCoord(coords.x, coords.y, 1000.0, 0, false);
+        
+        if (groundZ) {
+            z = groundZ + 1.0; // Add 1 to avoid spawning under the map
+        } else {
+            // If the map collision isn't loaded yet, default to dropping them from the sky
+            z = 200.0; 
+        }
+
+        // Send the found coordinates back to the server
+        mp.events.callRemote('server:tpCoordsWaypoint', coords.x, coords.y, z);
+    } else {
+        mp.gui.chat.push("!{FF0000}[Admin] You don't have a waypoint set on the map!");
+    }
+});
+
 // --- 2. ROBUST ATTACHMENT (FIXED SHAKING) ---
 mp.events.add('client:attachProp', (objId, ownerId, boneId, x, y, z, rx, ry, rz) => {
     const object = mp.objects.atRemoteId(objId);

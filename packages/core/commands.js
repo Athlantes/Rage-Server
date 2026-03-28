@@ -3,6 +3,7 @@ const playerManager = require('./playerManager');
 const Inventory = require('../systems/inventory');
 const ZoneManager = require('../zones/index.js');
 const HouseManager = require('../systems/houseManager');
+const jobManager = require('../jobs/jobManager');
 const factionsManager = require('../factions/factionsManager');
 const wardrobeManager = require('../factions/wardrobe/wardrobeManager');
 const dispatchManager = require('../factions/dispatch/dispatchManager');
@@ -291,6 +292,64 @@ mp.events.addCommand('duty', (player) => {
 // ADMIN SYSTEM
 // ----------------------------------------------------------------------------
 
+// --- JOB ADMIN COMMANDS ---
+
+mp.events.addCommand('setjoblvl', async (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /setjoblvl [id/name] [jobKey] [level]`);
+
+    const args = fullText.split(' ');
+    if (args.length < 3) return player.outputChatBox(`${COLORS.ERROR}Usage: /setjoblvl [id/name] [jobKey] [level]`);
+
+    const target = getPlayer(args[0]);
+    const jobKey = args[1].toLowerCase(); // e.g. "trucker", "garbage", "farmer"
+    const level = parseInt(args[2]);
+
+    if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
+    if (isNaN(level) || level < 1) return player.outputChatBox(`${COLORS.ERROR}Level must be a valid number >= 1.`);
+
+    // Job level is calculated as: level = sqrt(xp/100) + 1
+    // So to set a specific level, we should set the XP to the base requirement of that level:
+    const requiredXp = Math.pow(level - 1, 2) * 100;
+
+    if (!target.data.jobSkills) target.data.jobSkills = {};
+    target.data.jobSkills[jobKey] = { xp: requiredXp, level: level };
+
+    try {
+        await db.query(`
+            INSERT INTO character_job_skills (character_id, job_key, xp, level) VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
+        `, [target.data.dbId, jobKey, requiredXp, level]);
+
+        player.outputChatBox(`${COLORS.SUCCESS}Set ${target.name}'s ${jobKey} level to ${level}.`);
+        target.outputChatBox(`${COLORS.INFO}An admin has set your ${jobKey} level to ${level}.`);
+    } catch (err) {
+        console.error("[Admin] DB Error in /setjoblvl:", err);
+        player.outputChatBox(`${COLORS.ERROR}Database error occurred.`);
+    }
+});
+
+mp.events.addCommand('givejobxp', async (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+    if (!fullText) return player.outputChatBox(`${COLORS.ERROR}Usage: /givejobxp [id/name] [jobKey] [xp]`);
+
+    const args = fullText.split(' ');
+    if (args.length < 3) return player.outputChatBox(`${COLORS.ERROR}Usage: /givejobxp [id/name] [jobKey] [xp]`);
+
+    const target = getPlayer(args[0]);
+    const jobKey = args[1].toLowerCase();
+    const amount = parseInt(args[2]);
+
+    if (!target) return player.outputChatBox(`${COLORS.ERROR}Player not found.`);
+    if (isNaN(amount)) return player.outputChatBox(`${COLORS.ERROR}XP amount must be a number.`);
+
+    // We can reuse your existing addJobXp logic which already saves to the DB and handles level-ups
+    await jobManager.addJobXp(target, jobKey, amount);
+    
+    player.outputChatBox(`${COLORS.SUCCESS}Gave ${amount} XP to ${target.name} for the ${jobKey} job.`);
+    target.outputChatBox(`${COLORS.INFO}An admin gave you ${amount} XP for the ${jobKey} job.`);
+});
+
 // --- TRUCKER ADMIN COMMANDS ---
 
 mp.events.addCommand('setdepot', (player) => {
@@ -513,6 +572,23 @@ mp.events.addCommand('tpcoords', (player, fullText) => {
     if (args.length < 3) return player.outputChatBox("Usage: /tpcoords [x] [y] [z]");
 
     player.position = new mp.Vector3(parseFloat(args[0]), parseFloat(args[1]), parseFloat(args[2]));
+});
+
+mp.events.addCommand('tptowayp', (player) => {
+    // Check if player is at least a Moderator (Level 2). Change RANKS.MODERATOR if you want a different rank!
+    if (!checkRank(player, RANKS.MODERATOR)) return; 
+    
+    // Ask the client to find the waypoint
+    player.call('client:teleportToWaypoint');
+});
+
+// Event to receive the coordinates from the client and actually move the player
+mp.events.add('server:tpCoordsWaypoint', (player, x, y, z) => {
+    // Double-check rank for security
+    if (!checkRank(player, RANKS.MODERATOR)) return;
+
+    player.position = new mp.Vector3(x, y, z);
+    player.outputChatBox(`${COLORS.SUCCESS}Teleported to waypoint.`);
 });
 
 // --- PLAYER MANAGEMENT ---

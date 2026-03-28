@@ -101,16 +101,12 @@ mp.events.add('client:trucker:checkTrailerHookup', () => {
  * Update loading countdown (Lvl 1-19 only)
  */
 mp.events.add('client:trucker:updateLoadingTimer', (secondsLeft) => {
-    // Show on-screen timer
-    mp.game.graphics.showSubtitle(`Loading cargo: ${secondsLeft}s`, 1050);
 });
 
 /**
  * Update unloading countdown
  */
 mp.events.add('client:trucker:updateUnloadingTimer', (secondsLeft) => {
-    // Show on-screen timer
-    mp.game.graphics.showSubtitle(`Unloading cargo: ${secondsLeft}s`, 1050);
 });
 
 // ============================================================================
