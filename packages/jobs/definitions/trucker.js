@@ -103,8 +103,15 @@ mp.events.add('server:trucker:selectContract', (player, contractJson) => {
         heading: spawnNode.h || 0,
         dimension: player.dimension
     });
-    
-    player.putIntoVehicle(cab, -1);
+
+    cab.setVariable('fuel', 100);
+    cab.jobOwner = player.id;
+
+    setTimeout(() => {
+        if (mp.players.exists(player) && mp.vehicles.exists(cab)) {
+            player.putIntoVehicle(cab, 0); 
+        }
+    }, 200);
 
     const session = { contract, cab, trailer: null, stage: 'pickup' };
 
@@ -124,29 +131,69 @@ mp.events.add('server:trucker:selectContract', (player, contractJson) => {
     player.call('client:trucker:startJob', [JSON.stringify(contract)]);
 });
 
-// Finish Job Event
-mp.events.add('server:trucker:finishJob', (player) => {
+mp.events.add('server:trucker:finishJob', async (player) => {
     if (!activeSessions.has(player.id)) return;
     
     const session = activeSessions.get(player.id);
-    const pay = session.contract.pay;
+    const contract = session.contract;
+    
+    // --- 1. REWARD CALCULATION ---
+    const pay = contract.pay;
+    // Calculate XP: 10 XP base + 5 XP per KM (matching your garbage style logic)
+    const xpGained = Math.floor(10 + (parseFloat(contract.distance) * 5));
 
-    // Destroy trailer, keep cab for next job
+    // --- 2. APPLY REWARDS (Using your Managers) ---
+    // Using the same methods from your garbage system
+    await playerManager.addMoneyAndSave(player, pay, `Trucking: ${contract.title}`);
+    await jobManager.addJobXp(player, 'trucker', xpGained);
+
+    // --- 3. NOTIFICATIONS ---
+    player.outputChatBox(`!{00FF00}[Dispatch] !{FFFFFF}Delivery complete!`);
+    player.call('client:showJobSubtitle', [`+$${pay} | +${xpGained} XP`]);
+    player.call('showNotification', ["Logistics", `Earned $${pay} for the delivery.`]);
+
+    // --- 4. VEHICLE & SESSION CLEANUP ---
+    // Destroy trailer, but KEEP the cab (session.cab) so they don't have to re-spawn
     if (session.trailer && mp.vehicles.exists(session.trailer)) {
         session.trailer.destroy();
-    }
-    
-    // Give money/XP (Replace with your actual economy framework calls)
-    player.outputChatBox(`!{00FF00}[Dispatch] !{FFFFFF}Delivery complete. Earned $${pay}.`);
-    // Example: player.setVariable('money', player.getVariable('money') + pay);
-    
-    // Save their new location so next menu generates from here
-    const destFacility = facilities.find(f => f.name === session.contract.title.split(' to ')[1]);
-    if (destFacility) {
-        player.setVariable('currentTruckFacility', destFacility.id);
+        session.trailer = null;
     }
 
+    // --- 5. CONTINUOUS ROUTE GENERATION ---
+    const destFacility = facilities.find(f => f.name === contract.title.split(' to ')[1]);
+    if (destFacility) {
+        // Save new facility ID so the next menu generates from this location
+        player.setVariable('currentTruckFacility', destFacility.id);
+        
+        // Open the menu automatically at the destination
+        const pLevel = jobManager.getJobLevel(player, 'trucker');
+        const generatedRoutes = generateContracts(pLevel, destFacility.id);
+        
+        // Small delay to let the finish notification show first
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.call('client:trucker:showMenu', [JSON.stringify(generatedRoutes)]);
+            }
+        }, 1500);
+    }
+
+    // Reset session state to idle so they can pick a new contract
+    session.contract = null;
+    session.stage = 'idle';
+});
+
+// New Event: Handle closing the menu/quitting the job
+mp.events.add('server:trucker:quitJob', (player) => {
+    if (!activeSessions.has(player.id)) return;
+
+    const session = activeSessions.get(player.id);
+    
+    // Clean up all vehicles
+    if (session.cab && mp.vehicles.exists(session.cab)) session.cab.destroy();
+    if (session.trailer && mp.vehicles.exists(session.trailer)) session.trailer.destroy();
+
     activeSessions.delete(player.id);
+    player.outputChatBox(`!{FF0000}[Dispatch] !{FFFFFF}Job session ended.`);
 });
 
 // --- ADMIN EVENTS ROUTED FROM COMMANDS.JS ---

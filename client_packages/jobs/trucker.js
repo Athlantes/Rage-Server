@@ -42,6 +42,8 @@ mp.events.add('client:trucker:closeMenu', () => {
         truckerBrowser = null;
         mp.gui.cursor.show(false, false);
     }
+    
+    mp.events.callRemote('server:trucker:quitJob');
 });
 
 // Server tells client to start driving to the pickup bay
