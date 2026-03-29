@@ -9,6 +9,7 @@ let truckerBrowser  = null;
 let currentContract = null;
 let currentObjective = null; // { blip, marker, pos, phase: 'pickup'|'dropoff' }
 let lastWarningTime = 0;     // Prevents chat spam in the checking loop
+let wasTrailerAttached = false; // Tracks if the trailer falls off during transit
 
 // ─── NPC ───────────────────────────────────────────────────────────────────
 mp.events.add('playerReady', () => {
@@ -47,6 +48,7 @@ mp.events.add('client:trucker:closeMenu', () => {
 // ─── Job started by server ─────────────────────────────────────────────────
 mp.events.add('client:trucker:startJob', (contractJson) => {
     currentContract = JSON.parse(contractJson);
+    wasTrailerAttached = false; // Reset disconnect tracker for new job
 
     if (currentContract.type === 'trailer') {
         setObjective(currentContract.pickup, 'Hook Up Trailer', 'pickup', 1);
@@ -102,12 +104,33 @@ setInterval(() => {
         const trailerHandle = localVeh.getTrailer(0);
         if (trailerHandle !== 0) {
             trailerAttached = true;
+            
+            // Fetch the actual RageMP entity object using the handle
             const trailer = mp.vehicles.atHandle(trailerHandle);
             if (trailer) {
+                // 1. TRAILER INVINCIBILITY & ANTI-EXPLOSION
+                // Use the entity methods directly on the trailer object
+                trailer.setInvincible(true);
+                // Syntax: bulletProof, fireProof, explosionProof, collisionProof, meleeProof, p6, p7, drownProof
+                trailer.setProofs(false, false, true, true, false, false, false, false);
+
                 distToTrailer = getDistance(trailer.position, objPos);
             }
         }
 
+        // 2. DISCONNECT DETECTION (Only check while en route to dropoff)
+        if (currentObjective.phase === 'dropoff') {
+            if (trailerAttached && !wasTrailerAttached) {
+                wasTrailerAttached = true; // Secured it
+                mp.game.graphics.notify('~g~Trailer secured.');
+            } else if (!trailerAttached && wasTrailerAttached) {
+                wasTrailerAttached = false; // Lost it
+                mp.gui.chat.push('!{FF0000}[Dispatch] !{FFFFFF}Warning: Trailer disconnected! Go back and hook it up to complete the delivery.');
+                mp.game.graphics.notify('~r~Trailer Disconnected!');
+            }
+        }
+
+        // Checkpoint logic
         if (distToCab <= radius || distToTrailer <= radius) {
             if (currentObjective.phase === 'pickup') {
                 if (!trailerAttached) {
@@ -120,27 +143,33 @@ setInterval(() => {
                 
                 mp.game.graphics.notify('~g~Cargo loaded!~w~ Drive to the drop-off point.');
                 clearObjective();
+                wasTrailerAttached = true; // Prime the disconnect tracker
                 mp.events.callRemote('server:trucker:trailerHooked');
 
             } else if (currentObjective.phase === 'dropoff') {
+                // 3. FORCE TRAILER RECONNECTION AT DROPOFF
+                if (!trailerAttached) {
+                    if (Date.now() - lastWarningTime > 5000) {
+                        mp.game.graphics.notify('~r~Where is the trailer? You must reconnect it to finish the job!');
+                        lastWarningTime = Date.now();
+                    }
+                    return; // Blocks the dropoff if the trailer isn't attached
+                }
+
                 clearObjective();
                 mp.events.callRemote('server:trucker:finishJob');
                 currentContract = null;
+                wasTrailerAttached = false;
             }
         }
     } else {
         // ─── BOX TRUCK LOGIC (REAR CHECK) ───
-        // 1. Get the bounding box dimensions of the vehicle model
         const dimensions = mp.game.gameplay.getModelDimensions(localVeh.model);
-        
-        // 2. dimensions.minimum.y gives us the furthest point backward relative to the vehicle center.
-        // We use getOffsetFromInWorldCoords to find exactly where that is on the map right now.
         const rearPos = localVeh.getOffsetFromInWorldCoords(0, dimensions.minimum.y, 0);
         
         const distToRear = getDistance(rearPos, objPos);
         const distToCenter = getDistance(localVeh.position, objPos);
 
-        // 3. Check if the REAR of the truck is inside the marker
         if (distToRear <= radius) {
             if (currentObjective.phase === 'pickup') {
                 mp.game.graphics.notify('~g~Cargo loaded!~w~ Drive to the drop-off point.');
@@ -151,9 +180,7 @@ setInterval(() => {
                 mp.events.callRemote('server:trucker:finishJob');
                 currentContract = null;
             }
-        } 
-        // 4. Warning if they drive in nose-first!
-        else if (distToCenter <= radius && distToRear > radius) {
+        } else if (distToCenter <= radius && distToRear > radius) {
             if (Date.now() - lastWarningTime > 5000) {
                 mp.game.graphics.notify('~y~Reverse into the loading bay! The back doors must touch the marker.');
                 lastWarningTime = Date.now();
