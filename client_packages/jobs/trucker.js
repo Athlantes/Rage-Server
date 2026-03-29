@@ -1,108 +1,146 @@
-let truckerBrowser = null;
-let currentObjective = null; // { marker, blip, colshape, type }
-let currentContract = null;
+/**
+ * ============================================================================
+ * TRUCKER JOB — CLIENT
+ * Handles NPC spawn, board UI, job lifecycle, trailer hookup detection
+ * ============================================================================
+ */
 
-mp.events.add('client:trucker:spawnNPC', () => {
+let truckerBrowser  = null;
+let currentContract = null;
+let currentObjective = null; // { blip, marker, colshape, phase: 'pickup'|'dropoff' }
+
+// ─── NPC ───────────────────────────────────────────────────────────────────
+// Use playerReady so the game world is fully loaded before placing the ped.
+// Calling mp.peds.new() at script load time results in the ped not appearing.
+mp.events.add('playerReady', () => {
     mp.peds.new(
-        mp.game.joaat('s_m_m_trucker_01'), 
+        mp.game.joaat('s_m_m_trucker_01'),
         new mp.Vector3(814.36, -2982.50, 6.02),
-        -87.83, // Your new heading
-        0 // Dimension
+        -87.83,
+        0
     );
 });
 
-mp.events.call('client:trucker:spawnNPC');
-
-// Opens the UI
+// ─── Open dispatch board ───────────────────────────────────────────────────
 mp.events.add('client:trucker:showMenu', (routesJson) => {
     if (!truckerBrowser) {
         truckerBrowser = mp.browsers.new('package://ui/trucker/index.html');
         mp.gui.cursor.show(true, true);
     }
-    // Small delay to ensure browser loaded
+    // Small delay so the browser has time to initialise
     setTimeout(() => {
-        truckerBrowser.execute(`loadRoutes('${routesJson}')`);
-    }, 150);
+        if (truckerBrowser) {
+            truckerBrowser.execute(`loadRoutes('${routesJson}')`);
+        }
+    }, 200);
 });
 
-// UI Callback when player clicks a job
+// ─── CEF callbacks ─────────────────────────────────────────────────────────
+
+// Player clicked Accept
 mp.events.add('client:trucker:selectJob', (contractJson) => {
-    if (truckerBrowser) {
-        truckerBrowser.destroy();
-        truckerBrowser = null;
-        mp.gui.cursor.show(false, false);
-    }
+    closeBrowser();
     mp.events.callRemote('server:trucker:selectContract', contractJson);
 });
 
-// UI Callback when player closes menu
+// Player closed the board without accepting
 mp.events.add('client:trucker:closeMenu', () => {
-    if (truckerBrowser) {
-        truckerBrowser.destroy();
-        truckerBrowser = null;
-        mp.gui.cursor.show(false, false);
-    }
-    
+    closeBrowser();
     mp.events.callRemote('server:trucker:quitJob');
 });
 
-// Server tells client to start driving to the pickup bay
+// ─── Job started by server ─────────────────────────────────────────────────
 mp.events.add('client:trucker:startJob', (contractJson) => {
     currentContract = JSON.parse(contractJson);
-    setObjective(currentContract.pickup, 'Pickup Cargo', 1); // 1 = Yellow blip
+
+    if (currentContract.type === 'trailer') {
+        // First objective: reach pickup bay to hook the trailer
+        setObjective(currentContract.pickup, 'Hook Up Trailer', 'pickup', 1);
+    } else {
+        // Box truck: just reach the loading bay
+        setObjective(currentContract.pickup, 'Load Cargo', 'pickup', 1);
+    }
 });
 
-// Set GPS Marker & Blip
-function setObjective(pos, name, blipColor) {
+// Server confirmed hookup / box-truck load — advance to dropoff
+mp.events.add('client:trucker:advanceToDropoff', (contractJson) => {
+    clearObjective();
+    currentContract = JSON.parse(contractJson);
+    setObjective(currentContract.dropoff, 'Deliver Cargo', 'dropoff', 5);
+});
+
+// ─── Objective helpers ─────────────────────────────────────────────────────
+function setObjective(pos, label, phase, blipColor) {
     clearObjective();
 
     const blip = mp.blips.new(1, new mp.Vector3(pos.x, pos.y, pos.z), {
-        name: name, color: blipColor, scale: 1, route: true
+        name: label, color: blipColor, scale: 1, route: true,
     });
-
     const marker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 4.0, {
-        color: [255, 165, 0, 150], visible: true
+        color: [255, 165, 0, 150], visible: true,
     });
-
     const colshape = mp.colshapes.newSphere(pos.x, pos.y, pos.z, 4.0);
 
-    currentObjective = { blip, marker, colshape, pos };
+    currentObjective = { blip, marker, colshape, phase };
 }
 
 function clearObjective() {
     if (!currentObjective) return;
-    if (currentObjective.blip) currentObjective.blip.destroy();
-    if (currentObjective.marker) currentObjective.marker.destroy();
+    if (currentObjective.blip)     currentObjective.blip.destroy();
+    if (currentObjective.marker)   currentObjective.marker.destroy();
     if (currentObjective.colshape) currentObjective.colshape.destroy();
     currentObjective = null;
 }
 
-// Detect when player arrives at a marker
+// ─── Colshape entry — game loop ────────────────────────────────────────────
 mp.events.add('playerEnterColshape', (shape) => {
-    if (currentObjective && shape === currentObjective.colshape) {
-        
-        // Are we at the PICKUP phase?
-        if (currentObjective.pos.x === currentContract.pickup.x) {
-            mp.game.graphics.notify("~g~Cargo Loaded!~w~ Drive to the drop-off point.");
-            // Change objective to the Dropoff
-            setObjective(currentContract.dropoff, 'Dropoff Location', 5); // 5 = Yellow/Orange
-        } 
-        // Are we at the DROPOFF phase?
-        else if (currentObjective.pos.x === currentContract.dropoff.x) {
-            clearObjective();
-            mp.events.callRemote('server:trucker:finishJob');
-            currentContract = null;
+    if (!currentObjective || shape !== currentObjective.colshape) return;
+    if (!currentContract) return;
+
+    if (currentObjective.phase === 'pickup') {
+        // ── Trailer job: verify trailer is attached before advancing ──────────
+        if (currentContract.type === 'trailer') {
+            const localVeh = mp.players.local.vehicle;
+            if (!localVeh) {
+                mp.game.graphics.notify('~r~You must be in your cab to hook the trailer!');
+                return;
+            }
+
+            // Check native trailer attachment
+            const trailerHandle = mp.game.vehicle.getVehicleTrailerVehicle(localVeh.handle);
+            if (!trailerHandle || trailerHandle === 0) {
+                mp.game.graphics.notify('~y~Hook up the trailer first — back up to it!');
+                return; // Don't advance yet — let them try again
+            }
         }
+
+        // Box truck or trailer confirmed attached
+        mp.game.graphics.notify('~g~Cargo loaded!~w~ Drive to the drop-off point.');
+        clearObjective();
+        mp.events.callRemote('server:trucker:trailerHooked');
+
+    } else if (currentObjective.phase === 'dropoff') {
+        clearObjective();
+        mp.events.callRemote('server:trucker:finishJob');
+        currentContract = null;
     }
 });
 
-// Interaction key (E) to open menu at Main Depot (Add a colshape at your depot coords for this to trigger)
-mp.keys.bind(0x45, true, function() { // 'E' Key
+// ─── E key — open menu near NPC ────────────────────────────────────────────
+mp.keys.bind(0x45, true, () => {
     if (mp.gui.cursor.visible) return;
-    
-    // Check if near the new NPC location
-    const dist = mp.players.local.position.subtract(new mp.Vector3(814.36, -2982.50, 6.02)).length();
+    const dist = mp.players.local.position
+        .subtract(new mp.Vector3(814.36, -2982.50, 6.02)).length();
     if (dist < 5.0) {
         mp.events.callRemote('server:trucker:requestMenu');
     }
 });
+
+// ─── Utility ───────────────────────────────────────────────────────────────
+function closeBrowser() {
+    if (truckerBrowser) {
+        truckerBrowser.destroy();
+        truckerBrowser = null;
+        mp.gui.cursor.show(false, false);
+    }
+}

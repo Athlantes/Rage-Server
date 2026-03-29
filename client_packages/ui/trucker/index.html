@@ -1,109 +1,655 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Dynamic Trucking Dispatch</title>
-    <style>
-        body {
-            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: rgba(0, 0, 0, 0.7); display: flex;
-            justify-content: center; align-items: center; height: 100vh; color: white;
-        }
-        .container {
-            background-color: #1e1e24; width: 800px; height: 600px;
-            border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .header {
-            background-color: #282830; padding: 20px; display: flex;
-            justify-content: space-between; align-items: center; border-bottom: 2px solid #ff8800;
-        }
-        .header h1 { margin: 0; font-size: 24px; color: #ff8800; }
-        .close-btn { background: #ff4444; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        
-        .route-list { padding: 20px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
-        
-        .route-card {
-            background-color: #2a2a35; padding: 15px 20px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 5px solid #555; transition: transform 0.1s, border-color 0.2s;
-        }
-        .route-card:hover { transform: translateX(5px); border-color: #ff8800; }
-        .route-card.trailer { border-left-color: #00ff88; } /* Color code trailer jobs */
+<meta charset="UTF-8">
+<title>Los Santos Dispatch</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/leaflet/leaflet.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
-        .route-info h2 { margin: 0 0 5px 0; font-size: 18px; }
-        .route-info p { margin: 0; color: #aaa; font-size: 14px; }
-        
-        .route-stats { text-align: right; }
-        .route-stats h3 { margin: 0; color: #00ff88; font-size: 20px; }
-        .route-stats p { margin: 0; font-size: 13px; color: #888; }
-        
-        .accept-btn {
-            background-color: #ff8800; color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 20px;
-        }
-        .accept-btn:hover { background-color: #ff9900; }
-    </style>
+:root{
+  --surface:#13141a;
+  --surface2:#1a1b23;
+  --surface3:#20212c;
+  --surface4:#272834;
+  --border:rgba(255,255,255,.06);
+  --border2:rgba(255,255,255,.1);
+  --text:#e8eaf6;
+  --muted:#5c6080;
+  --muted2:#8a8eb0;
+  --accent:#3d72ff;
+  --accent2:#5d8fff;
+  --green:#2ecc71;
+  --red:#e74c3c;
+  --blue-box:rgba(61,114,255,.1);
+  --blue-border:rgba(61,114,255,.22);
+}
+
+html,body{
+  width:100vw;height:100vh;
+  overflow:hidden;
+  background:rgba(8,9,14,.94);
+  font-family:'Barlow',sans-serif;
+  color:var(--text);
+  user-select:none;
+}
+
+/* ─── Root layout: full screen, 3 columns ─── */
+.root{
+  display:grid;
+  grid-template-columns:320px 1fr;
+  grid-template-rows:56px 1fr 46px;
+  width:100vw;height:100vh;
+}
+
+/* ─── Header (spans full width) ─── */
+.header{
+  grid-column:1/-1;
+  display:flex;align-items:center;gap:14px;
+  padding:0 22px;
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+}
+.header-icon{
+  width:32px;height:32px;border-radius:8px;flex-shrink:0;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+}
+.header-icon svg{width:18px;height:18px;fill:#fff}
+.header-eyebrow{
+  font-family:'Rajdhani',sans-serif;
+  font-size:9px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent2);
+}
+.header-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#fff;
+  line-height:1;margin-top:1px;
+}
+.header-sep{width:1px;height:28px;background:var(--border2);margin:0 4px;flex-shrink:0}
+.header-loc{
+  font-family:'Rajdhani',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted2);
+}
+.header-loc span{color:var(--text)}
+.header-spacer{flex:1}
+.header-count{
+  font-family:'Rajdhani',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--muted);
+}
+.close-btn{
+  width:30px;height:30px;border-radius:7px;margin-left:8px;flex-shrink:0;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s, border-color .15s;
+}
+.close-btn:hover{background:rgba(231,76,60,.15);border-color:rgba(231,76,60,.35)}
+.close-btn svg{width:14px;height:14px;stroke:var(--muted2);stroke-width:2.5;stroke-linecap:round;fill:none}
+.close-btn:hover svg{stroke:var(--red)}
+
+/* ─── Left panel: right side of grid row 2 ─── */
+.left-panel{
+  grid-column:1;grid-row:2;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  overflow:hidden;
+}
+
+.list-head{
+  padding:12px 16px 10px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.list-head-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--muted);
+}
+
+.route-scroll{
+  flex:1;overflow-y:auto;
+  padding:8px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.route-scroll::-webkit-scrollbar{width:3px}
+.route-scroll::-webkit-scrollbar-track{background:transparent}
+.route-scroll::-webkit-scrollbar-thumb{background:#2a2c3a;border-radius:2px}
+.route-scroll::-webkit-scrollbar-thumb:hover{background:#3a3c4e}
+
+/* ─── Section divider ─── */
+.type-divider{
+  display:flex;align-items:center;gap:8px;padding:8px 4px 4px;
+  font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+  flex-shrink:0;
+}
+.type-divider::before,.type-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+/* ─── Route card ─── */
+.route-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;
+  transition:background .12s, border-color .12s, transform .12s;
+  flex-shrink:0;
+}
+.route-card:hover{
+  background:var(--surface3);
+  border-color:rgba(61,114,255,.35);
+  transform:translateX(2px);
+}
+.route-card.selected{
+  background:var(--surface3);
+  border-color:var(--accent);
+  border-left:3px solid var(--accent);
+}
+
+.veh-icon{
+  width:36px;height:36px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.veh-icon.box{background:var(--blue-box);border:1px solid var(--blue-border)}
+.veh-icon.box svg{fill:var(--accent2)}
+.veh-icon.semi{background:rgba(61,114,255,.07);border:1px solid rgba(61,114,255,.18)}
+.veh-icon.semi svg{fill:var(--accent)}
+.veh-icon svg{width:20px;height:20px}
+
+.card-body{flex:1;min-width:0}
+.card-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;
+}
+.card-meta{display:flex;align-items:center;gap:6px}
+.chip{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  color:var(--muted2);white-space:nowrap;
+}
+.chip-dot{color:var(--border2)}
+
+.card-pay{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:900;
+  color:var(--green);
+  line-height:1;white-space:nowrap;flex-shrink:0;
+}
+
+/* ─── Right panel: info + map stacked ─── */
+.right-panel{
+  grid-column:2;grid-row:2;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  overflow:hidden;
+}
+
+/* Info box */
+.info-box{
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  padding:18px 22px;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+.info-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 0;gap:8px;color:var(--muted);
+}
+.info-placeholder svg{width:36px;height:36px;fill:var(--border2)}
+.info-placeholder p{
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.3px;text-align:center;
+}
+
+.info-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.info-dest{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;
+  color:#fff;line-height:1;
+}
+.info-type-badge{
+  font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:800;
+  letter-spacing:1.5px;text-transform:uppercase;
+  padding:3px 9px;border-radius:4px;margin-top:3px;flex-shrink:0;
+}
+.info-type-badge.box{
+  background:var(--blue-box);border:1px solid var(--blue-border);color:var(--accent2);
+}
+.info-type-badge.semi{
+  background:rgba(61,114,255,.07);border:1px solid rgba(61,114,255,.18);color:var(--accent);
+}
+
+.info-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.stat-cell{
+  background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;
+}
+.stat-label{
+  font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;
+}
+.stat-value{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:20px;font-weight:900;color:#fff;line-height:1;
+}
+.stat-value.green{color:var(--green)}
+.stat-value.blue{color:var(--accent2)}
+.stat-sub{
+  font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);margin-top:2px;
+}
+
+.accept-btn{
+  align-self:flex-start;
+  padding:10px 28px;
+  background:var(--accent);
+  border:none;border-radius:8px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;
+  color:#fff;cursor:pointer;transition:background .15s, transform .1s;
+}
+.accept-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.accept-btn:active{transform:translateY(0)}
+
+/* Map box */
+.map-box{
+  flex:1;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+.map-head{
+  padding:10px 22px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+}
+.map-head-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--muted);
+}
+.map-placeholder{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;color:var(--muted);
+}
+.map-placeholder svg{width:32px;height:32px;fill:var(--border2)}
+.map-placeholder p{
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:.3px;
+}
+#route-map{
+  flex:1;width:100%;display:none;
+}
+
+/* ─── Footer (spans full width) ─── */
+.footer{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;
+  background:var(--surface2);
+  border-top:1px solid var(--border);
+}
+.footer-hint{
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:.3px;color:var(--muted);
+}
+.footer-hint kbd{
+  background:var(--surface4);border:1px solid var(--border2);
+  border-radius:4px;padding:1px 7px;
+  font-size:10px;font-weight:700;color:var(--muted2);
+  font-family:'Rajdhani',sans-serif;
+}
+.legend{display:flex;align-items:center;gap:14px}
+.legend-item{
+  display:flex;align-items:center;gap:5px;
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.3px;color:var(--muted);
+}
+.legend-swatch{
+  width:16px;height:16px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.legend-swatch svg{width:10px;height:10px}
+.legend-swatch.box{background:var(--blue-box);border:1px solid var(--blue-border)}
+.legend-swatch.box svg{fill:var(--accent2)}
+.legend-swatch.semi{background:rgba(61,114,255,.07);border:1px solid rgba(61,114,255,.18)}
+.legend-swatch.semi svg{fill:var(--accent)}
+
+/* ─── Leaflet dark theme overrides (no extra CSS file needed) ─── */
+.leaflet-container{background:#0d0e14}
+.leaflet-tile{filter:brightness(.85) saturate(.7)}
+.leaflet-control-zoom{display:none}
+.leaflet-attribution-flag{display:none!important}
+.leaflet-control-attribution{display:none!important}
+
+/* Custom markers via canvas / divIcon */
+.lf-marker-pickup{
+  width:12px;height:12px;border-radius:50%;
+  background:#3d72ff;border:2px solid #fff;
+}
+.lf-marker-dropoff{
+  width:12px;height:12px;border-radius:50%;
+  background:#2ecc71;border:2px solid #fff;
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Los Santos Dispatch Board</h1>
-        <button class="close-btn" onclick="closeUI()">X Close</button>
+<div class="root">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9 1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
     </div>
-    
-    <div class="route-list" id="route-container">
+    <div>
+      <div class="header-eyebrow">Los Santos Logistics</div>
+      <div class="header-title">Dispatch Board</div>
+    </div>
+    <div class="header-sep"></div>
+    <div class="header-loc">Location: <span id="board-location">—</span></div>
+    <div class="header-spacer"></div>
+    <div class="header-count" id="contract-count">—</div>
+    <div class="close-btn" onclick="closeUI()">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+  </div>
+
+  <!-- ── Left: route list ── -->
+  <div class="left-panel">
+    <div class="list-head">
+      <div class="list-head-title">Available Contracts</div>
+    </div>
+    <div class="route-scroll" id="route-container">
+      <div class="info-placeholder" style="padding:40px 20px">
+        <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+        <p>Loading contracts...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: info + map ── -->
+  <div class="right-panel">
+
+    <div class="info-box" id="info-box">
+      <div class="info-placeholder" id="info-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <p>Select a contract to view details</p>
+      </div>
+      <div id="info-content" style="display:none;flex-direction:column;gap:14px">
+        <div class="info-header">
+          <div>
+            <div class="info-dest" id="info-dest">—</div>
+          </div>
+          <div class="info-type-badge" id="info-badge">—</div>
         </div>
+        <div class="info-stats">
+          <div class="stat-cell">
+            <div class="stat-label">Payout</div>
+            <div class="stat-value green" id="stat-pay">—</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Distance</div>
+            <div class="stat-value blue" id="stat-dist">—</div>
+            <div class="stat-sub">kilometres</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Min. Level</div>
+            <div class="stat-value" id="stat-lvl">—</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Vehicle</div>
+            <div class="stat-value" id="stat-veh" style="font-size:13px;padding-top:3px">—</div>
+          </div>
+        </div>
+        <button class="accept-btn" id="accept-btn" onclick="acceptSelected()">Accept Contract</button>
+      </div>
+    </div>
+
+    <div class="map-box">
+      <div class="map-head">
+        <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:var(--muted);flex-shrink:0"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+        <div class="map-head-title">Route Preview</div>
+      </div>
+      <div class="map-placeholder" id="map-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+        <p>Select a contract to preview the route</p>
+      </div>
+      <div id="route-map"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="footer">
+    <div class="footer-hint">Press <kbd>E</kbd> near the dispatcher to open &nbsp;·&nbsp; Click a contract to preview</div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch box">
+          <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+        </div>
+        Box Truck
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch semi">
+          <svg viewBox="0 0 24 24"><path d="M17 5H3c-1.1 0-2 .9-2 2v9h2c0 1.66 1.34 3 3 3s3-1.34 3-3h5.5c.28 1.72 1.77 3 3.5 3s3.22-1.28 3.5-3H23v-5l-6-6zM3 11V7h9v4H3zm3 6.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm10.5-1c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm.5-3V7h.5l4.47 4H17z"/></svg>
+        </div>
+        Semi + Trailer
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<script src="../lib/leaflet/leaflet.js"></script>
+<script src="../lib/customMap.js"></script>
 <script>
-    // This is called by the client-side script when the data arrives
-    function loadRoutes(jsonString) {
-        const routes = JSON.parse(jsonString);
-        const container = document.getElementById('route-container');
-        container.innerHTML = ''; // Clear previous
+// ─── State ──────────────────────────────────────────────────────────
+const _routeMap = {};
+let _selectedId  = null;
+let _gameMap     = null;
+let _routeLayer  = null;
 
-        if(routes.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#aaa;">No freight available at this facility.</p>';
-            return;
-        }
+// ─── SVG Icons ──────────────────────────────────────────────────────
+const ICON_BOX = `<svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9 1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>`;
+const ICON_SEMI = `<svg viewBox="0 0 24 24"><path d="M17 5H3c-1.1 0-2 .9-2 2v9h2c0 1.66 1.34 3 3 3s3-1.34 3-3h5.5c.28 1.72 1.77 3 3.5 3s3.22-1.28 3.5-3H23v-5l-6-6zM3 11V7h9v4H3zm3 6.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm10.5-1c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm.5-3V7h.5l4.47 4H17z"/></svg>`;
 
-        routes.forEach(route => {
-            const isTrailer = route.type === 'trailer';
-            
-            const card = document.createElement('div');
-            card.className = `route-card ${isTrailer ? 'trailer' : ''}`;
-            
-            card.innerHTML = `
-                <div class="route-info">
-                    <h2>${route.title}</h2>
-                    <p>Req. Lvl: ${route.levelReq} | Vehicle: ${isTrailer ? 'Phantom + Trailer' : 'Box Truck'}</p>
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <div class="route-stats">
-                        <h3>$${route.pay}</h3>
-                        <p>${route.distance} km</p>
-                    </div>
-                    <button class="accept-btn" onclick='selectJob(${JSON.stringify(route)})'>ACCEPT</button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
+// ─── loadRoutes: called by client.js ────────────────────────────────
+function loadRoutes(jsonString) {
+  const routes = JSON.parse(jsonString);
 
-    function selectJob(routeObj) {
-        // Send data back to the client index.js
-        if(window.mp) {
-            mp.trigger('client:trucker:selectJob', JSON.stringify(routeObj));
-        }
-    }
+  // Reset state
+  Object.keys(_routeMap).forEach(k => delete _routeMap[k]);
+  _selectedId = null;
+  resetInfoPanel();
+  resetMap();
 
-    function closeUI() {
-        if(window.mp) {
-            mp.trigger('client:trucker:closeMenu');
-        }
-    }
+  const countEl = document.getElementById('contract-count');
+  const container = document.getElementById('route-container');
+
+  if (!routes || routes.length === 0) {
+    countEl.textContent = '0 contracts';
+    container.innerHTML = `
+      <div class="info-placeholder" style="padding:40px 20px">
+        <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+        <p>No freight available.<br>Check back later.</p>
+      </div>`;
+    return;
+  }
+
+  countEl.textContent = `${routes.length} contract${routes.length !== 1 ? 's' : ''}`;
+  routes.forEach(r => { _routeMap[r.id] = r; });
+
+  // Location badge
+  const origin = (routes[0].title || '').split(' to ')[0] || 'Depot';
+  document.getElementById('board-location').textContent = origin;
+
+  const boxJobs     = routes.filter(r => r.type !== 'trailer');
+  const trailerJobs = routes.filter(r => r.type === 'trailer');
+
+  container.innerHTML = '';
+  if (boxJobs.length > 0) {
+    container.appendChild(makeDivider('Box Truck'));
+    boxJobs.forEach(r => container.appendChild(makeCard(r)));
+  }
+  if (trailerJobs.length > 0) {
+    container.appendChild(makeDivider('Semi + Trailer'));
+    trailerJobs.forEach(r => container.appendChild(makeCard(r)));
+  }
+}
+
+function makeDivider(label) {
+  const el = document.createElement('div');
+  el.className = 'type-divider';
+  el.textContent = label;
+  return el;
+}
+
+function makeCard(route) {
+  const isTrailer = route.type === 'trailer';
+  const titleParts = (route.title || '').split(' to ');
+  const dest = titleParts.length > 1 ? titleParts.slice(1).join(' to ') : route.title;
+
+  const card = document.createElement('div');
+  card.className = 'route-card';
+  card.dataset.routeId = route.id;
+
+  card.innerHTML = `
+    <div class="veh-icon ${isTrailer ? 'semi' : 'box'}">${isTrailer ? ICON_SEMI : ICON_BOX}</div>
+    <div class="card-body">
+      <div class="card-title">${dest}</div>
+      <div class="card-meta">
+        <span class="chip">${route.distance} km</span>
+        <span class="chip-dot">·</span>
+        <span class="chip">Lvl ${route.levelReq}+</span>
+      </div>
+    </div>
+    <div class="card-pay">$${Number(route.pay).toLocaleString()}</div>
+  `;
+
+  card.addEventListener('click', () => selectRoute(route.id));
+  return card;
+}
+
+// ─── Route selection ─────────────────────────────────────────────────
+function selectRoute(id) {
+  _selectedId = id;
+  const route = _routeMap[id];
+  if (!route) return;
+
+  // Highlight card
+  document.querySelectorAll('.route-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.routeId === id);
+  });
+
+  // Populate info panel
+  const isTrailer = route.type === 'trailer';
+  const titleParts = (route.title || '').split(' to ');
+  const dest = titleParts.length > 1 ? titleParts.slice(1).join(' to ') : route.title;
+
+  document.getElementById('info-dest').textContent  = dest;
+
+  const badge = document.getElementById('info-badge');
+  badge.textContent = isTrailer ? 'Semi + Trailer' : 'Box Truck';
+  badge.className   = 'info-type-badge ' + (isTrailer ? 'semi' : 'box');
+
+  document.getElementById('stat-pay').textContent  = '$' + Number(route.pay).toLocaleString();
+  document.getElementById('stat-dist').textContent = route.distance;
+  document.getElementById('stat-lvl').textContent  = route.levelReq;
+  document.getElementById('stat-veh').textContent  = isTrailer ? 'Phantom' : 'Benson';
+
+  document.getElementById('info-placeholder').style.display = 'none';
+  const content = document.getElementById('info-content');
+  content.style.display = 'flex';
+
+  // Draw route on map
+  drawRoute(route);
+}
+
+function acceptSelected() {
+  if (!_selectedId) return;
+  const r = _routeMap[_selectedId];
+  if (r && window.mp) mp.trigger('client:trucker:selectJob', JSON.stringify(r));
+}
+
+function resetInfoPanel() {
+  document.getElementById('info-placeholder').style.display = 'flex';
+  document.getElementById('info-content').style.display     = 'none';
+}
+
+// ─── Leaflet map ─────────────────────────────────────────────────────
+function initMap() {
+  if (_gameMap) return;
+  const mapEl = document.getElementById('route-map');
+  mapEl.style.display = 'block';
+  document.getElementById('map-placeholder').style.display = 'none';
+
+  _gameMap = new GameMap('route-map', { minZoom: 2, maxZoom: 6, initialZoom: 3 });
+  _gameMap.disableInteraction();
+  // Re-enable scroll wheel for zoom only
+  if (_gameMap.map) _gameMap.map.scrollWheelZoom.enable();
+}
+
+function drawRoute(route) {
+  initMap();
+  const map = _gameMap.map;
+
+  // Clear previous route layer
+  if (_routeLayer) {
+    map.removeLayer(_routeLayer);
+    _routeLayer = null;
+  }
+
+  // GTA coords → Leaflet: lat = y, lng = x
+  const pickup  = [route.pickup.y,  route.pickup.x];
+  const dropoff = [route.dropoff.y, route.dropoff.x];
+
+  const pickupMarker = L.circleMarker(pickup, {
+    radius: 7, color: '#fff', weight: 2,
+    fillColor: '#3d72ff', fillOpacity: 1,
+  }).bindTooltip('Pickup', { permanent: false, direction: 'top' });
+
+  const dropoffMarker = L.circleMarker(dropoff, {
+    radius: 7, color: '#fff', weight: 2,
+    fillColor: '#2ecc71', fillOpacity: 1,
+  }).bindTooltip('Dropoff', { permanent: false, direction: 'top' });
+
+  // Dashed line between points
+  const routeLine = L.polyline([pickup, dropoff], {
+    color: '#3d72ff',
+    weight: 2,
+    opacity: .7,
+    dashArray: '8 6',
+  });
+
+  _routeLayer = L.layerGroup([routeLine, pickupMarker, dropoffMarker]);
+  _routeLayer.addTo(map);
+
+  // Fit view
+  const bounds = L.latLngBounds([pickup, dropoff]);
+  map.fitBounds(bounds, { padding: [60, 60], maxZoom: 5 });
+}
+
+function resetMap() {
+  if (_routeLayer && _gameMap) {
+    _gameMap.map.removeLayer(_routeLayer);
+    _routeLayer = null;
+  }
+}
+
+// ─── Close ───────────────────────────────────────────────────────────
+function closeUI() {
+  if (window.mp) mp.trigger('client:trucker:closeMenu');
+}
 </script>
 
 </body>
