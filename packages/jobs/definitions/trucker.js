@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const playerManager = require('../../core/playerManager');
 const jobManager = require('../jobManager');
+const { pickBoxTruckCargo, pickTrailerCargo } = require('./truckerCargo');
 
 const FACILITIES_FILE = path.join(__dirname, '../../data/truckerFacilities.json');
 let facilities = [];
@@ -36,10 +37,10 @@ function getMainDepot() {
 const MAX_TRUCKER_LEVEL = 50;
 
 function getVehicleTier(level) {
-    if (level >= 35) return { vehicleModel: 'phantom', trailerModel: 'trailers2', type: 'trailer' };
-    if (level >= 20) return { vehicleModel: 'packer',  trailerModel: 'trailers2', type: 'trailer' };
-    if (level >= 10) return { vehicleModel: 'hauler',  trailerModel: 'trailers2', type: 'trailer' };
-                     return { vehicleModel: 'pounder', trailerModel: null,        type: 'boxTruck' };
+    if (level >= 35) return { vehicleModel: 'phantom', type: 'trailer' };
+    if (level >= 20) return { vehicleModel: 'packer',  type: 'trailer' };
+    if (level >= 10) return { vehicleModel: 'hauler',  type: 'trailer' };
+                     return { vehicleModel: 'pounder', type: 'boxTruck' };
 }
 
 // ─── Contract Generator ────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function generateContracts(playerLevel, startFacilityId) {
 
     for (let i = 0; i < numContracts; i++) {
         const jobLevel = Math.floor(Math.random() * effectiveLevel) + 1;
-        const { vehicleModel, trailerModel, type } = getVehicleTier(jobLevel);
+        const { vehicleModel, type } = getVehicleTier(jobLevel);
 
         const destFacility = possibleDests[Math.floor(Math.random() * possibleDests.length)];
         const pickupNodes  = startFacility.pickups[type];
@@ -68,12 +69,29 @@ function generateContracts(playerLevel, startFacilityId) {
         const dropoffNode = dropoffNodes[Math.floor(Math.random() * dropoffNodes.length)];
 
         const distKm = (calcDistance(pickupNode, dropoffNode) / 1000).toFixed(2);
-        const payout = Math.floor((parseFloat(distKm) * 150) + (jobLevel * 10));
+
+        // ── Pick cargo ────────────────────────────────────────────────────
+        let cargo, trailerModel;
+        // Illegal chance scales slightly with player level (more underworld access)
+        const illegalChance = Math.min(0.05 + playerLevel * 0.005, 0.30);
+
+        if (type === 'boxTruck') {
+            cargo = pickBoxTruckCargo(illegalChance);
+            trailerModel = null;
+        } else {
+            const result = pickTrailerCargo(null, illegalChance);
+            cargo        = result.cargo;
+            trailerModel = result.trailerModel;
+        }
+
+        // ── Payout: base distance rate + level bonus + cargo bonus ────────
+        const basePay     = Math.floor((parseFloat(distKm) * 150) + (jobLevel * 10));
+        const cargoBonus  = Math.floor(basePay * cargo.bonusPct);
+        const payout      = basePay + cargoBonus;
 
         contracts.push({
             id:           `contract_${Date.now()}_${i}`,
             title:        `${startFacility.name} to ${destFacility.name}`,
-            // Store IDs separately — never parse the title string
             originId:     startFacility.id,
             destId:       destFacility.id,
             levelReq:     jobLevel,
@@ -84,6 +102,15 @@ function generateContracts(playerLevel, startFacilityId) {
             dropoff:      dropoffNode,
             vehicleModel,
             trailerModel,
+            // Cargo metadata (sent to client for display)
+            cargo: {
+                id:        cargo.id,
+                label:     cargo.label,
+                icon:      cargo.icon,
+                color:     cargo.color,
+                illegal:   cargo.illegal || false,
+                riskLabel: cargo.riskLabel || null,
+            },
         });
     }
     return contracts.sort((a, b) => a.levelReq - b.levelReq);
@@ -138,9 +165,11 @@ mp.events.add('server:trucker:selectContract', (player, contractJson) => {
             { heading: contract.pickup.h || 0, dimension: player.dimension }
         );
         session.trailer = trailer;
-        player.outputChatBox('!{00FF00}[Dispatch] !{FFFFFF}Cab ready. Drive to the loading bay and hook up your trailer.');
+        const cargoLabel = contract.cargo ? contract.cargo.label : 'your cargo';
+        player.outputChatBox(`!{00FF00}[Dispatch] !{FFFFFF}Cab ready. Drive to the loading bay and hook up your trailer — ${cargoLabel}.`);
     } else {
-        player.outputChatBox('!{00FF00}[Dispatch] !{FFFFFF}Box truck ready. Head to the loading bay to pick up your cargo.');
+        const cargoLabel = contract.cargo ? contract.cargo.label : 'your cargo';
+        player.outputChatBox(`!{00FF00}[Dispatch] !{FFFFFF}Box truck ready. Head to the loading bay to pick up: ${cargoLabel}.`);
     }
 
     activeSessions.set(player.id, session);
@@ -149,19 +178,59 @@ mp.events.add('server:trucker:selectContract', (player, contractJson) => {
 
 // Client confirms trailer is attached (or box truck reached pickup)
 mp.events.add('server:trucker:trailerHooked', (player) => {
+    // 1. Basic session validation
     if (!activeSessions.has(player.id)) return;
     const session = activeSessions.get(player.id);
     if (session.stage !== 'pickup') return;
 
     if (session.contract.type === 'trailer') {
+        // 2. Trailer existence check
         if (!session.trailer || !mp.vehicles.exists(session.trailer)) {
             player.outputChatBox('!{FF0000}[Dispatch] !{FFFFFF}Trailer not found — contact an admin.');
             return;
         }
+
+        // 3. SECURITY: Are they actually in a vehicle?
+        if (!player.vehicle) {
+            console.log(`[Anti-Cheat] ${player.name} attempted to hook trailer on foot.`);
+            return; 
+        }
+
+        // 4. SECURITY: Distance check (Prevent remote-trigger exploits)
+        // Ensures the player's cab is actually physically near the trailer
+        const distance = player.dist(session.trailer.position);
+        if (distance > 15.0) {
+            console.log(`[Anti-Cheat] ${player.name} tried to hook trailer from too far away (${distance.toFixed(2)}m).`);
+            return; // Ignore the event completely
+        }
+
+        /* * OPTIONAL: Strict Server-Side Attachment Check
+         * RageMP does track 'player.vehicle.trailer' on the server. However, network sync
+         * can sometimes be delayed by a few milliseconds. A strict distance check (above) 
+         * is usually the safest/smoothest approach, but you can uncomment this if you want 
+         * absolute physical confirmation.
+         */
+        // if (player.vehicle.trailer !== session.trailer) return; 
+
         session.trailerHooked = true;
         console.log(`[Trucker] ${player.name} hooked trailer successfully.`);
+        
+    } else {
+        // SECURITY: Box Truck Distance Check
+        // If it's a box truck, verify they are actually at the loading dock
+        const pickupPos = new mp.Vector3(
+            session.contract.pickup.x, 
+            session.contract.pickup.y, 
+            session.contract.pickup.z
+        );
+        
+        if (player.dist(pickupPos) > 15.0) {
+            console.log(`[Anti-Cheat] ${player.name} tried to load cargo from too far away.`);
+            return;
+        }
     }
 
+    // 5. Advance the state only if all checks passed
     session.stage = 'dropoff';
     player.call('client:trucker:advanceToDropoff', [JSON.stringify(session.contract)]);
     player.outputChatBox('!{00FF00}[Dispatch] !{FFFFFF}Cargo loaded. Deliver to the dropoff point.');
