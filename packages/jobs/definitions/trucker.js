@@ -32,10 +32,21 @@ function getMainDepot() {
     return facilities.find(f => f.isMainDepot) || facilities[0] || null;
 }
 
+// ─── Vehicle Tiers ─────────────────────────────────────────────────────────
+const MAX_TRUCKER_LEVEL = 50;
+
+function getVehicleTier(level) {
+    if (level >= 35) return { vehicleModel: 'phantom', trailerModel: 'trailers2', type: 'trailer' };
+    if (level >= 20) return { vehicleModel: 'packer',  trailerModel: 'trailers2', type: 'trailer' };
+    if (level >= 10) return { vehicleModel: 'hauler',  trailerModel: 'trailers2', type: 'trailer' };
+                     return { vehicleModel: 'pounder', trailerModel: null,        type: 'boxTruck' };
+}
+
 // ─── Contract Generator ────────────────────────────────────────────────────
 function generateContracts(playerLevel, startFacilityId) {
     const contracts = [];
     const numContracts = Math.floor(Math.random() * 6) + 10;
+    const effectiveLevel = Math.min(playerLevel, MAX_TRUCKER_LEVEL);
 
     const startFacility = getFacilityById(startFacilityId) || getMainDepot();
     if (!startFacility) return [];
@@ -44,9 +55,8 @@ function generateContracts(playerLevel, startFacilityId) {
     if (possibleDests.length === 0) return [];
 
     for (let i = 0; i < numContracts; i++) {
-        const jobLevel = Math.floor(Math.random() * playerLevel) + 1;
-        const isTrailerJob = jobLevel >= 20;
-        const type = isTrailerJob ? 'trailer' : 'boxTruck';
+        const jobLevel = Math.floor(Math.random() * effectiveLevel) + 1;
+        const { vehicleModel, trailerModel, type } = getVehicleTier(jobLevel);
 
         const destFacility = possibleDests[Math.floor(Math.random() * possibleDests.length)];
         const pickupNodes  = startFacility.pickups[type];
@@ -72,8 +82,8 @@ function generateContracts(playerLevel, startFacilityId) {
             pay:          payout,
             pickup:       pickupNode,
             dropoff:      dropoffNode,
-            vehicleModel: isTrailerJob ? 'phantom'   : 'pounder',
-            trailerModel: isTrailerJob ? 'trailers2' : null,
+            vehicleModel,
+            trailerModel,
         });
     }
     return contracts.sort((a, b) => a.levelReq - b.levelReq);

@@ -40,10 +40,10 @@ const jobManager = {
     },
 
     getRankName: (level) => {
-        if (level >= 100) return "Grandmaster";
-        if (level >= 80) return "Master";
-        if (level >= 60) return "Expert";
-        if (level >= 40) return "Professional";
+        if (level >= 50) return "Grandmaster";
+        if (level >= 45) return "Master";
+        if (level >= 40) return "Expert";
+        if (level >= 30) return "Professional";
         if (level >= 20) return "Skilled";
         if (level >= 10) return "Apprentice";
         return "Trainee";

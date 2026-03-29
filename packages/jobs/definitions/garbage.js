@@ -90,8 +90,6 @@ function startRoute(player, routeIndex) {
     const rankName = jobManager.getRankName(level);
     
     let vehicleModel = 'trash';
-    if (level >= 60) vehicleModel = 'phantom3'; 
-    else if (level >= 20) vehicleModel = 'benson';
 
     const spawnPoint = TRUCK_SPAWNS[Math.floor(Math.random() * TRUCK_SPAWNS.length)];
     const truck = mp.vehicles.new(mp.joaat(vehicleModel), new mp.Vector3(spawnPoint.x, spawnPoint.y, spawnPoint.z), {
