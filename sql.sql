@@ -16,7 +16,7 @@
 
 
 -- Dumping database structure for central_db
-CREATE DATABASE IF NOT EXISTS `central_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */;
+CREATE DATABASE IF NOT EXISTS `central_db`;
 USE `central_db`;
 
 -- Dumping structure for table central_db.arrest_records

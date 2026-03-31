@@ -11,14 +11,25 @@ let currentObjective = null; // { blip, marker, pos, phase: 'pickup'|'dropoff' }
 let lastWarningTime = 0;     // Prevents chat spam in the checking loop
 let wasTrailerAttached = false; // Tracks if the trailer falls off during transit
 
-// ─── NPC ───────────────────────────────────────────────────────────────────
+// ─── NPC & Blip ────────────────────────────────────────────────────────────
 mp.events.add('playerReady', () => {
+    const depotPos = new mp.Vector3(814.36, -2982.50, 6.02);
+    
+    // Spawn Dispatcher NPC
     mp.peds.new(
         mp.game.joaat('s_m_m_trucker_01'),
-        new mp.Vector3(814.36, -2982.50, 6.02),
+        depotPos,
         -87.83,
         0
     );
+
+    // Create Map Blip
+    mp.blips.new(477, depotPos, {
+        name: 'Trucking Depot',
+        color: 5, // 5 = Yellow. Change to 66 for Orange, 2 for Green, etc.
+        shortRange: true,
+        scale: 0.8
+    });
 });
 
 // ─── Open dispatch board ───────────────────────────────────────────────────
@@ -69,8 +80,13 @@ function setObjective(pos, label, phase, blipColor) {
     clearObjective();
 
     const blip = mp.blips.new(1, new mp.Vector3(pos.x, pos.y, pos.z), {
-        name: label, color: blipColor, scale: 1, route: true,
+        name: label, color: blipColor, scale: 1
     });
+
+    // Explicitly set the GPS route to this blip
+    blip.setRoute(true);
+    blip.setRouteColor(blipColor);
+
     const marker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 5.0, {
         color: [255, 165, 0, 150], visible: true,
     });
