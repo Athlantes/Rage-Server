@@ -70,7 +70,7 @@ const app = createApp({
             <div class="recent-list">
               <div v-for="acc in recentAccounts" :key="acc.username" class="recent-card" @click="tryAutoLogin(acc.username)">
                 <div class="avatar-circle">
-                  <img v-if="acc.mugshot" :src="\`http://26.170.61.66:3008/photos/mugshots/\${acc.mugshot}\`" class="mugshot-img" @error="acc.mugshot = null" />
+                  <img v-if="acc.mugshot" :src="\`http://26.118.189.124:3008/photos/mugshots/\${acc.mugshot}\`" class="mugshot-img" @error="acc.mugshot = null" />
                   <i v-else class="fas fa-user-circle"></i>
                 </div>
                 <div class="user-info">

@@ -481,7 +481,7 @@ async function handleProfile(interaction) {
         .setTimestamp();
 
     if (u.mugshot) {
-        embed.setThumbnail(`http://26.170.61.66:3008/photos/mugshots/${u.mugshot}`);
+        embed.setThumbnail(`http://26.118.189.124:3008/photos/mugshots/${u.mugshot}`);
     }
 
     await interaction.editReply({ embeds: [embed] });

@@ -9,7 +9,7 @@ const fs      = require('fs');
 
 const app  = express();
 const PORT = 3008;
-const IP   = '26.170.61.66';
+const IP   = '26.118.189.124';
 
 // ── Secret token so only your UCP can call these endpoints ───────────────────
 // Set this same value in your UCP .env.local as RAGEMP_API_SECRET
