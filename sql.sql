@@ -51,9 +51,6 @@ CREATE TABLE IF NOT EXISTS `businesses` (
   `passive_pct` decimal(5,2) NOT NULL DEFAULT '5.00' COMMENT '% commission on player transactions',
   `delivery_payout` int unsigned NOT NULL DEFAULT '5000' COMMENT 'Total delivery mission reward (split 50/50)',
   `max_tickets` tinyint NOT NULL DEFAULT '5' COMMENT 'Max raffle entries per family',
-  `world_x` float NOT NULL DEFAULT '0',
-  `world_y` float NOT NULL DEFAULT '0',
-  `world_z` float NOT NULL DEFAULT '0',
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -542,6 +539,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `mugshot` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `discord_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `wanted_level` int NOT NULL DEFAULT '0',
+  `exposure` int NOT NULL DEFAULT '0',
   `hunger` int DEFAULT '100',
   `thirst` int DEFAULT '100',
   `faction_id` int DEFAULT NULL,
@@ -593,3 +591,21 @@ CREATE TABLE IF NOT EXISTS `wanted_history` (
   KEY `idx_outcome` (`outcome`),
   KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Seed default businesses ────────────────────────────────────────────────
+INSERT IGNORE INTO businesses (id, name, tier, type, description, passive_pct, delivery_payout, max_tickets) VALUES
+-- Tier 1 — High profit
+(1, 'Paleto Bay Gas Station',  1, 'gas_station',  'The busiest fuel stop in Blaine County.',  5.00, 8000,  5),
+(2, 'Sandy Shores Gas Station',1, 'gas_station',  'Desert highway hub with heavy traffic.',   5.00, 8000,  5),
+(3, 'Alta Street Mechanic',    1, 'mechanic',     'High-end auto repair in downtown LS.',     5.00, 7500,  5),
+
+-- Tier 2 — Medium profit
+(4, 'Rockford Hills Bistro',   2, 'restaurant',   'Upscale dining in the hills.',            5.00, 5500,  4),
+(5, 'Vespucci Tow Service',    2, 'mechanic',     'Beach-side recovery & repairs.',           5.00, 5000,  4),
+(6, 'Mirror Park Corner Store',2, 'convenience',  'Grab-and-go for Mirror Park locals.',      5.00, 4500,  4),
+
+-- Tier 3 — Entry-level / small families
+(7, 'Davis Gas Station',       3, 'gas_station',  'Quiet station in South LS.',              5.00, 3000,  3),
+(8, 'Strawberry Diner',        3, 'restaurant',   'Comfort food for the locals.',            5.00, 2500,  3),
+(9, 'Cypress Flats Scrapyard', 3, 'mechanic',     'Budget repairs and part sales.',           5.00, 2500,  3);
+
