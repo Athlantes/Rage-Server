@@ -21,7 +21,7 @@ const config = require('./config');
 const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: 'Athlantes2004',
     database: 'central_db',
     waitForConnections: true,
     connectionLimit: 5,
