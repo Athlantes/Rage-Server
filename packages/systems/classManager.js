@@ -140,7 +140,7 @@ mp.events.add('playerJoin', async (player) => {
 mp.events.add('server:class:save', async (player, classId, subclassId) => {
     try {
         const success = await savePlayerClass(player, classId, subclassId);
-        player.call('client:class:saved', success);
+        player.call('client:class:saved', [success]);
 
         if (success) {
             player.outputChatBox("!{32FF32}Class selected: " + classId + "/" + subclassId);
@@ -157,7 +157,7 @@ mp.events.add('server:class:save', async (player, classId, subclassId) => {
             player.outputChatBox("!{FF0000}Failed to save class. Please try again.");
         }
     } catch (err) {
-        player.call('client:class:saved', false);
+        player.call('client:class:saved', [false]);
         player.outputChatBox("!{FF0000}Error saving class. Please try again.");
     }
 });

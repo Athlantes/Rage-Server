@@ -215,6 +215,7 @@ function renderStep2() {
     });
 
     const firstSubclass = Object.keys(classData.subclasses)[0];
+    selectSubclass(firstSubclass);
     renderBonuses(firstSubclass);
 }
 
@@ -290,5 +291,17 @@ function setupEventListeners() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function showError(message) {
-    alert(message);
+    // Better to use console.error or inject an error text into your HTML
+    console.error("Class Selector Error: " + message);
+    
+    // Optional: If you want visual feedback on error without freezing:
+    const btnNext = document.getElementById('btnNext');
+    if(btnNext) {
+        btnNext.innerHTML = 'Error - Try Again';
+        btnNext.style.backgroundColor = 'red';
+        setTimeout(() => {
+            btnNext.innerHTML = 'Confirm →';
+            btnNext.style.backgroundColor = '';
+        }, 3000);
+    }
 }
