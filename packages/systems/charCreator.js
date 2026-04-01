@@ -118,32 +118,6 @@ mp.events.add('server:creator:save', async (player, dataJson) => {
         player.outputChatBox("!{00FF00}Character created successfully!");
         player.logged = true;
 
-        // 6. Always show class selector for new characters
-        // (They won't have classData yet)
-        setTimeout(() => {
-            if (mp.players.exists(player)) {
-                console.log('[Creator] ========== SENDING CLASS SELECTOR START ==========');
-                console.log('[Creator] About to call client:classSelector:start for ' + player.name);
-                player.call('client:classSelector:start');
-                console.log('[Creator] Called client:classSelector:start for ' + player.name);
-                console.log('[Creator] ========== CLASS SELECTOR START SENT ==========');
-            } else {
-                console.log('[Creator] ERROR: Player no longer exists when trying to show class selector');
-            }
-        }, 1000);
-
-        // Signal client to capture mugshot once the player spawns.
-        // Delay to let the character model fully render after creator finishes.
-        const webServer = require('../webserver');
-        setTimeout(() => {
-            if (mp.players.exists(player)) {
-                player.call('prepareScreenshot', [webServer.mugshotUploadUrl, player.data.dbId]);
-            }
-        }, 5000);
-
-        // DO NOT call auth:finalized here - it will be called after class selection
-        // mp.events.call('server:auth:finalized', player);
-
     } catch (err) {
         console.error("[Creator] Save Error:", err);
         player.outputChatBox("!{FF0000}Error saving character data. Please try again.");

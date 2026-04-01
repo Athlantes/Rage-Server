@@ -322,13 +322,15 @@ function confirmSelection() {
         return;
     }
 
-    if (typeof mp === 'undefined' || !mp.events || !mp.events.callRemote) {
-        console.error('[ClassSelector] mp.events.callRemote not available');
+    // FIX: Use mp.trigger instead of mp.events.callRemote
+    if (typeof mp === 'undefined' || !mp.trigger) {
+        console.error('[ClassSelector] mp.trigger not available');
         return;
     }
 
     try {
-        mp.events.callRemote('server:class:save', state.selectedClass, state.selectedSubclass);
+        // Send the event to your client script (classSelector.js)
+        mp.trigger('client:classSelector:confirm', state.selectedClass, state.selectedSubclass);
     } catch (err) {
         console.error('[ClassSelector] Error sending class selection:', err.message);
     }

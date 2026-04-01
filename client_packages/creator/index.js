@@ -123,21 +123,25 @@ mp.events.add('client:creator:updateOverlay', (overlayId, style, opacity, color1
 mp.events.add('client:creator:finish', (json) => {
     mp.events.callRemote('server:creator:save', json);
 
-    // Cleanup
+    // Cleanup Creator UI
     if (creatorBrowser) {
         creatorBrowser.destroy();
         creatorBrowser = null;
     }
+    
+    // Move camera back to player smoothly
     mp.game.cam.renderScriptCams(false, true, 2000, true, false);
     if (creatorCam) {
         creatorCam.destroy();
         creatorCam = null;
     }
+    
+    // Hide cursor during transition, but DO NOT show the HUD/Overlay yet!
     mp.gui.cursor.show(false, false);
-    mp.game.ui.displayRadar(true);
-    mp.game.ui.displayHud(true);
     mp.players.local.freezePosition(false);
 
-    // Show overlay again (food, water, payday)
-    mp.events.callLocal('toggleOverlay', true);
+    // Wait exactly for the camera fade to finish, then start Class Selector locally
+    setTimeout(() => {
+        mp.events.callLocal('client:classSelector:start');
+    }, 2100); 
 });

@@ -147,8 +147,13 @@ mp.events.add('client:class:saved', (success) => {
 
         classSelectionActive = false;
         mp.gui.cursor.show(false, false);
-        mp.game.ui.displayRadar(false);
+        
+        // FIX: Ensure both radar and hud are turned back ON
+        mp.game.ui.displayRadar(true); 
         mp.game.ui.displayHud(true);
+
+        // Turn the survival overlay (food/water/money) back on
+        mp.events.callLocal('toggleOverlay', true);
 
         // Optional: Show confirmation message
         mp.events.callLocal('client:classSelector:closed');

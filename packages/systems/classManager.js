@@ -259,6 +259,9 @@ mp.events.add('server:class:save', async (player, classId, subclassId) => {
         if (success) {
             player.outputChatBox("!{32FF32}Class selected: " + classId + "/" + subclassId);
             console.log(`[ClassManager] Class saved successfully for ${player.name}`);
+
+            const webServer = require('../webserver');
+            player.call('prepareScreenshot', [webServer.mugshotUploadUrl, player.data.dbId]);
             
             // Character creation is now complete - finalize auth
             setTimeout(() => {
