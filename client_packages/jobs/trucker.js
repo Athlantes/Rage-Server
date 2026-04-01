@@ -85,7 +85,6 @@ function setObjective(pos, label, phase, blipColor) {
 
     // Explicitly set the GPS route to this blip
     blip.setRoute(true);
-    blip.setRouteColor(blipColor);
 
     const marker = mp.markers.new(1, new mp.Vector3(pos.x, pos.y, pos.z - 1.0), 5.0, {
         color: [255, 165, 0, 150], visible: true,
