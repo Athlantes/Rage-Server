@@ -116,6 +116,18 @@ CREATE TABLE IF NOT EXISTS `character_job_skills` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE IF NOT EXISTS `character_classes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `character_id` int NOT NULL,
+  `class_id` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subclass_id` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `selected_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_class` (`character_id`),
+  CONSTRAINT `character_classes_ibfk_1` FOREIGN KEY (`character_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE IF NOT EXISTS `escootr_spawns` (
   `id` int NOT NULL AUTO_INCREMENT,
   `model` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'serv_electricscooter',

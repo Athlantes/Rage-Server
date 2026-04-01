@@ -5,6 +5,13 @@
 let creatorBrowser = null;
 let creatorCam = null;
 
+// --- CAMERA POSITIONS ---
+const cameraPoses = {
+    top: { pos: new mp.Vector3(402.8664, -997.5, -98.3), target: new mp.Vector3(402.8664, -996.4108, -98.5) },
+    legs: { pos: new mp.Vector3(402.8664, -997.5, -99.2), target: new mp.Vector3(402.8664, -996.4108, -99.0) },
+    shoes: { pos: new mp.Vector3(402.8664, -997.5, -99.7), target: new mp.Vector3(402.8664, -996.4108, -99.5) }
+};
+
 // --- START CREATOR ---
 mp.events.add('client:creator:start', () => {
     // 1. Position Player in interior
@@ -16,8 +23,8 @@ mp.events.add('client:creator:start', () => {
     mp.players.local.setAlpha(255);
 
     // 2. Camera setup (face-level view)
-    creatorCam = mp.cameras.new('default', new mp.Vector3(402.8664, -997.5, -98.3), new mp.Vector3(0, 0, 0), 40);
-    creatorCam.pointAtCoord(402.8664, -996.4108, -98.5);
+    creatorCam = mp.cameras.new('default', cameraPoses.top.pos, new mp.Vector3(0, 0, 0), 40);
+    creatorCam.pointAtCoord(cameraPoses.top.target.x, cameraPoses.top.target.y, cameraPoses.top.target.z);
     creatorCam.setActive(true);
     mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
@@ -26,9 +33,25 @@ mp.events.add('client:creator:start', () => {
     mp.game.ui.displayRadar(false);
     mp.game.ui.displayHud(false);
 
+    // Hide overlay (food, water, payday)
+    mp.events.callLocal('toggleOverlay', false);
+
     if (!creatorBrowser) {
         creatorBrowser = mp.browsers.new("package://ui/creator/index.html");
     }
+});
+
+// --- UPDATE CAMERA VIEW ---
+mp.events.add('client:creator:updateCameraView', (clothingPart) => {
+    if (!creatorCam) return;
+    
+    let camPose = cameraPoses.top; // default to top
+    if (clothingPart === 'legs') camPose = cameraPoses.legs;
+    if (clothingPart === 'shoes') camPose = cameraPoses.shoes;
+    
+    // Smoothly move camera to new position
+    creatorCam.setCoord(camPose.pos.x, camPose.pos.y, camPose.pos.z);
+    creatorCam.pointAtCoord(camPose.target.x, camPose.target.y, camPose.target.z);
 });
 
 // --- GENDER CHANGE ---
@@ -114,4 +137,7 @@ mp.events.add('client:creator:finish', (json) => {
     mp.game.ui.displayRadar(true);
     mp.game.ui.displayHud(true);
     mp.players.local.freezePosition(false);
+
+    // Show overlay again (food, water, payday)
+    mp.events.callLocal('toggleOverlay', true);
 });

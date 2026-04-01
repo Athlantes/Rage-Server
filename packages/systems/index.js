@@ -10,6 +10,8 @@ require('./fuel');
 require('./atm');
 require('./atmSkimmer');
 require('./charCreator');
+require('./classDefinitions');
+require('./classManager');
 require('./scooter');
 require('./photoHunt/photoHuntManager');
 require('./cablecar');

@@ -150,6 +150,10 @@ mp.events.add('client:setHUDVisible', (visible) => {
     if (overlayBrowser) overlayBrowser.execute(`setGameHUD(${visible});`);
 });
 
+mp.events.add('toggleOverlay', (visible) => {
+    if (overlayBrowser) overlayBrowser.active = visible;
+});
+
 mp.events.add('updateOverlayHotbar', (itemsJson) => {
     if(overlayBrowser) overlayBrowser.execute(`updateHotbar('${itemsJson}')`);
 });

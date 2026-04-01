@@ -20,6 +20,7 @@ require('./core/events.js');
 require('./core/discord.js');
 require('./core/flymode.js');
 require('./systems/questTracker.js');
+require('./systems/classSelector.js');
 
 // 2. Complex Subsystems (Phone)
 require('./phone/index.js');

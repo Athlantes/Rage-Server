@@ -380,6 +380,38 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        /* ========== Clothing Categories ========== */
+        .clothing-category {
+            background: linear-gradient(135deg, #f8f8f8 0%, #f0f5f0 100%);
+            border-radius: 12px;
+            padding: 14px;
+            border-left: 4px solid #00aa00;
+            box-shadow: inset 0 1px 2px rgba(0, 170, 0, 0.05);
+        }
+        
+        .clothing-category label {
+            color: #00aa00;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .clothing-category label i {
+            font-size: 14px;
+        }
+        
+        .clothing-category small {
+            display: block !important;
+            margin-top: 6px !important;
+            font-size: 10px;
+            color: #aaa;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -504,36 +536,39 @@
         <div id="panel-clothes" class="panel">
             <div class="panel-title">Wardrobe</div>
 
-            <div class="control-group">
-                <label>Top</label>
+            <div class="control-group clothing-category">
+                <label><i class="fas fa-shirt"></i> Top / Shirt</label>
                 <div class="selector">
                     <button onclick="updateClothing('tops', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-tops">Loading...</span>
                     <button onclick="updateClothing('tops', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
+                <small style="color: #999; font-size: 10px; margin-top: 4px; display: block;">T-shirts • Jackets • Hoodies • Polos</small>
             </div>
 
-            <div class="control-group">
-                <label>Pants</label>
+            <div class="control-group clothing-category">
+                <label><i class="fas fa-jeans"></i> Pants / Bottoms</label>
                 <div class="selector">
                     <button onclick="updateClothing('legs', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-legs">Loading...</span>
                     <button onclick="updateClothing('legs', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
+                <small style="color: #999; font-size: 10px; margin-top: 4px; display: block;">Jeans • Shorts • Pants • Leggings</small>
             </div>
 
-            <div class="control-group">
-                <label>Shoes</label>
+            <div class="control-group clothing-category">
+                <label><i class="fas fa-shoe-prints"></i> Shoes / Footwear</label>
                 <div class="selector">
                     <button onclick="updateClothing('shoes', -1)"><i class="fas fa-chevron-left"></i></button>
                     <span id="label-shoes">Loading...</span>
                     <button onclick="updateClothing('shoes', 1)"><i class="fas fa-chevron-right"></i></button>
                 </div>
+                <small style="color: #999; font-size: 10px; margin-top: 4px; display: block;">Sneakers • Boots • Athletic • Heels</small>
             </div>
 
-            <div class="info-box" style="margin-top: 10px;">
+            <div class="info-box" style="margin-top: 15px;">
                 <i class="fas fa-info-circle"></i>
-                These clothes will be added to your inventory. You can change your outfit later from the inventory screen.
+                <strong>💡 Tip:</strong> The camera automatically adjusts when viewing different clothing parts for a better preview!
             </div>
         </div>
 

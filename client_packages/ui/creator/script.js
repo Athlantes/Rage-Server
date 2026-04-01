@@ -206,6 +206,8 @@ function selectGender(g) {
         characterData.appearance.features.forEach((val, idx) => {
             mp.trigger('client:creator:updateFaceFeature', idx, val);
         });
+        // Reset camera to top view
+        mp.trigger('client:creator:updateCameraView', 'tops');
     }, 400);
 }
 
@@ -437,10 +439,23 @@ function updateClothing(part, direction) {
 
     mp.trigger('client:creator:updateClothes', componentId, selected.drawable, selected.texture);
 
-    // Always set torso when changing tops (default to 15 if not specified)
+    // Always set torso when changing tops (use value from config)
     if (part === 'tops') {
         const torso = (selected.torso !== undefined) ? selected.torso : 15;
         mp.trigger('client:creator:updateClothes', 3, torso, 0);
+        
+        // Move camera back to top view
+        mp.trigger('client:creator:updateCameraView', 'tops');
+    }
+
+    // Move camera down when viewing pants
+    if (part === 'legs') {
+        mp.trigger('client:creator:updateCameraView', 'legs');
+    }
+    
+    // Move camera down more when viewing shoes
+    if (part === 'shoes') {
+        mp.trigger('client:creator:updateCameraView', 'shoes');
     }
 
     // Save clothing choice by itemId
@@ -532,6 +547,11 @@ function randomize() {
             }
         });
     }
+    
+    // Return camera to top view after randomization
+    setTimeout(() => {
+        mp.trigger('client:creator:updateCameraView', 'tops');
+    }, 200);
 }
 
 // ============================================================

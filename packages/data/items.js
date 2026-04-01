@@ -205,123 +205,116 @@ module.exports = {
     },
     
     // --- MALE TOPS (Sex: 0) ---
-    'm_top_white_tee': { 
-        name: "White T-Shirt", type: "clothing", weight: 0.2, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 15, texture: 0, torso: 15 } 
-    },
-    'm_top_black_tee': { 
-        name: "Black T-Shirt", type: "clothing", weight: 0.2, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 15, texture: 1, torso: 15 } 
-    },
-    'm_top_jacket': { 
-        name: "Denim Jacket", type: "clothing", weight: 0.8, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 14, texture: 0, torso: 12 } 
-    },
-    'm_top_hoodie': {
-        name: "Gray Hoodie", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 59, texture: 0, torso: 14 }
-    },
-    'm_top_polo': {
-        name: "White Polo", type: "clothing", weight: 0.3, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 29, texture: 0, torso: 15 }
-    },
+    'm_top_white_tee': { name: "White T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 0, torso: 15 } },
+    'm_top_black_tee': { name: "Black T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 1, torso: 15 } },
+    'm_top_gray_tee': { name: "Gray T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 2, torso: 15 } },
+    'm_top_blue_tee': { name: "Blue T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 3, torso: 15 } },
+    'm_top_red_tee': { name: "Red T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 4, torso: 15 } },
+    'm_top_green_tee': { name: "Green T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 15, texture: 5, torso: 15 } },
+    'm_top_white_polo': { name: "White Polo", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 29, texture: 0, torso: 15 } },
+    'm_top_blue_polo': { name: "Blue Polo", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 29, texture: 1, torso: 15 } },
+    'm_top_black_shirt': { name: "Black Button-Up", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 8, texture: 0, torso: 11 } },
+    'm_top_white_shirt': { name: "White Button-Up", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 8, texture: 1, torso: 11 } },
+    'm_top_gray_hoodie': { name: "Gray Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 0, torso: 14 } },
+    'm_top_black_hoodie': { name: "Black Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 1, torso: 14 } },
+    'm_top_blue_hoodie': { name: "Blue Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 2, torso: 14 } },
+    'm_top_red_hoodie': { name: "Red Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 3, torso: 14 } },
+    'm_top_denim_jacket': { name: "Denim Jacket", type: "clothing", weight: 0.8, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 14, texture: 0, torso: 12 } },
+    'm_top_leather_jacket': { name: "Black Leather", type: "clothing", weight: 0.9, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 63, texture: 0, torso: 16 } },
+    'm_top_brown_jacket': { name: "Brown Jacket", type: "clothing", weight: 0.8, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 14, texture: 1, torso: 12 } },
+    'm_top_military_jacket': { name: "Military Jacket", type: "clothing", weight: 0.9, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 56, texture: 0, torso: 3 } },
+    'm_top_bomber_jacket': { name: "Bomber Jacket", type: "clothing", weight: 0.8, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 61, texture: 0, torso: 17 } },
+    'm_top_black_vest': { name: "Black Vest", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 71, texture: 0, torso: 11 } },
+    'm_top_sleeveless': { name: "Sleeveless Tank", type: "clothing", weight: 0.2, maxStack: 1, sex: 0, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 131, texture: 0, torso: 15 } },
 
     // --- MALE LEGS (Sex: 0) ---
-    'm_legs_blue_jeans': { 
-        name: "Blue Jeans", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 1, texture: 0 } 
-    },
-    'm_legs_black_jeans': { 
-        name: "Black Jeans", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 1, texture: 1 } 
-    },
-    'm_legs_khakis': {
-        name: "Khaki Chinos", type: "clothing", weight: 0.4, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 4, texture: 0 }
-    },
-    'm_legs_shorts': {
-        name: "Cargo Shorts", type: "clothing", weight: 0.3, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 10, texture: 0 }
-    },
+    'm_legs_blue_jeans': { name: "Blue Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 0 } },
+    'm_legs_black_jeans': { name: "Black Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 1 } },
+    'm_legs_dark_jeans': { name: "Dark Blue Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 2 } },
+    'm_legs_light_jeans': { name: "Light Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 3 } },
+    'm_legs_ripped_jeans': { name: "Ripped Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 4 } },
+    'm_legs_khakis': { name: "Khaki Chinos", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 0 } },
+    'm_legs_black_pants': { name: "Black Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 1 } },
+    'm_legs_gray_pants': { name: "Gray Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 2 } },
+    'm_legs_navy_pants': { name: "Navy Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 3 } },
+    'm_legs_camo_pants': { name: "Camo Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 88, texture: 0 } },
+    'm_legs_cargo_shorts': { name: "Cargo Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 0 } },
+    'm_legs_beach_shorts': { name: "Beach Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 1 } },
+    'm_legs_blue_shorts': { name: "Blue Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 2 } },
+    'm_legs_black_shorts': { name: "Black Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 3 } },
+    'm_legs_track_grey': { name: "Gray Track Pants", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 114, texture: 0 } },
+    'm_legs_track_black': { name: "Black Track Pants", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 114, texture: 1 } },
 
     // --- MALE SHOES (Sex: 0) ---
-    'm_shoes_sneakers': { 
-        name: "White Sneakers", type: "clothing", weight: 0.4, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 6, drawable: 1, texture: 0 } 
-    },
-    'm_shoes_boots': { 
-        name: "Work Boots", type: "clothing", weight: 0.6, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 6, drawable: 12, texture: 0 } 
-    },
-    'm_shoes_hightops': {
-        name: "High Tops", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 0, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 6, drawable: 7, texture: 0 }
-    },
+    'm_shoes_white_sneakers': { name: "White Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 1, texture: 0 } },
+    'm_shoes_black_sneakers': { name: "Black Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 1, texture: 1 } },
+    'm_shoes_gray_sneakers': { name: "Gray Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 1, texture: 2 } },
+    'm_shoes_red_sneakers': { name: "Red Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 1, texture: 3 } },
+    'm_shoes_blue_athletic': { name: "Blue Athletic", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 53, texture: 0 } },
+    'm_shoes_red_athletic': { name: "Red Athletic", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 53, texture: 1 } },
+    'm_shoes_black_athletic': { name: "Black Athletic", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 53, texture: 2 } },
+    'm_shoes_work_boots': { name: "Work Boots", type: "clothing", weight: 0.6, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 12, texture: 0 } },
+    'm_shoes_combat_boots': { name: "Combat Boots", type: "clothing", weight: 0.6, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 12, texture: 1 } },
+    'm_shoes_brown_boots': { name: "Brown Boots", type: "clothing", weight: 0.6, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 12, texture: 2 } },
+    'm_shoes_high_tops': { name: "High Tops", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 7, texture: 0 } },
+    'm_shoes_casual': { name: "Casual Shoes", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 48, texture: 0 } },
+    'm_shoes_loafers': { name: "Loafers", type: "clothing", weight: 0.4, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 35, texture: 0 } },
+    'm_shoes_dress_shoes': { name: "Dress Shoes", type: "clothing", weight: 0.5, maxStack: 1, sex: 0, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 34, texture: 0 } },
 
     // --- FEMALE TOPS (Sex: 1) ---
-    'f_top_white_tank': { 
-        name: "White Tank Top", type: "clothing", weight: 0.1, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 2, texture: 0, torso: 2 } 
-    },
-    'f_top_jacket': { 
-        name: "Leather Jacket", type: "clothing", weight: 0.7, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 7, texture: 0, torso: 7 } 
-    },
-    'f_top_blouse': {
-        name: "Blouse", type: "clothing", weight: 0.2, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 39, texture: 0, torso: 5 }
-    },
-    'f_top_hoodie': {
-        name: "Hoodie", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 11, drawable: 59, texture: 0, torso: 14 }
-    },
+    'f_top_white_tank': { name: "White Tank Top", type: "clothing", weight: 0.1, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 2, texture: 0, torso: 2 } },
+    'f_top_black_tank': { name: "Black Tank Top", type: "clothing", weight: 0.1, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 2, texture: 1, torso: 2 } },
+    'f_top_blue_tank': { name: "Blue Tank Top", type: "clothing", weight: 0.1, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 2, texture: 2, torso: 2 } },
+    'f_top_pink_tank': { name: "Pink Tank Top", type: "clothing", weight: 0.1, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 2, texture: 3, torso: 2 } },
+    'f_top_white_tee': { name: "White T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 41, texture: 0, torso: 15 } },
+    'f_top_black_tee': { name: "Black T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 41, texture: 1, torso: 15 } },
+    'f_top_gray_tee': { name: "Gray T-Shirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 41, texture: 2, torso: 15 } },
+    'f_top_crop_top': { name: "Crop Top", type: "clothing", weight: 0.1, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 122, texture: 0, torso: 6 } },
+    'f_top_blouse_white': { name: "White Blouse", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 39, texture: 0, torso: 5 } },
+    'f_top_blouse_pink': { name: "Pink Blouse", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 39, texture: 1, torso: 5 } },
+    'f_top_business_shirt': { name: "Business Shirt", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 101, texture: 0, torso: 11 } },
+    'f_top_gray_hoodie': { name: "Gray Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 0, torso: 14 } },
+    'f_top_black_hoodie': { name: "Black Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 1, torso: 14 } },
+    'f_top_pink_hoodie': { name: "Pink Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 2, torso: 14 } },
+    'f_top_purple_hoodie': { name: "Purple Hoodie", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 59, texture: 3, torso: 14 } },
+    'f_top_leather_jacket': { name: "Leather Jacket", type: "clothing", weight: 0.7, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 7, texture: 0, torso: 7 } },
+    'f_top_brown_jacket': { name: "Brown Jacket", type: "clothing", weight: 0.7, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 7, texture: 1, torso: 7 } },
+    'f_top_bomber_jacket': { name: "Bomber Jacket", type: "clothing", weight: 0.8, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 86, texture: 0, torso: 17 } },
+    'f_top_jean_jacket': { name: "Denim Jacket", type: "clothing", weight: 0.8, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 85, texture: 0, torso: 12 } },
+    'f_top_dress_shirt': { name: "Dress Shirt", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "shirt.png", data: { componentId: 11, drawable: 111, texture: 0, torso: 5 } },
 
     // --- FEMALE LEGS (Sex: 1) ---
-    // --- FEMALE LEGS (Sex: 1) ---
-    'f_legs_leggings': { 
-        name: "Black Leggings", type: "clothing", weight: 0.3, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 4, texture: 0 } 
-    },
-    'f_legs_jeans': { 
-        name: "Skinny Jeans", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 1, texture: 0 } 
-    },
-    'f_legs_skirt': {
-        name: "Denim Skirt", type: "clothing", weight: 0.3, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 4, drawable: 10, texture: 0 }
-    },
+    'f_legs_black_jeans': { name: "Black Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 0 } },
+    'f_legs_blue_jeans': { name: "Blue Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 1 } },
+    'f_legs_light_jeans': { name: "Light Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 2 } },
+    'f_legs_ripped_jeans': { name: "Ripped Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 3 } },
+    'f_legs_skinny_jeans': { name: "Skinny Jeans", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 1, texture: 4 } },
+    'f_legs_black_leggings': { name: "Black Leggings", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 0 } },
+    'f_legs_gray_leggings': { name: "Gray Leggings", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 4, texture: 1 } },
+    'f_legs_sports_leggings': { name: "Sports Leggings", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 108, texture: 0 } },
+    'f_legs_black_pants': { name: "Black Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 81, texture: 0 } },
+    'f_legs_yoga_pants': { name: "Yoga Pants", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 106, texture: 0 } },
+    'f_legs_denim_skirt': { name: "Denim Skirt", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 0 } },
+    'f_legs_short_skirt': { name: "Short Skirt", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 10, texture: 1 } },
+    'f_legs_black_shorts': { name: "Black Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 87, texture: 0 } },
+    'f_legs_athletic_shorts': { name: "Athletic Shorts", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 93, texture: 0 } },
+    'f_legs_dress_pants': { name: "Dress Pants", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "pants.png", data: { componentId: 4, drawable: 102, texture: 0 } },
 
     // --- FEMALE SHOES (Sex: 1) ---
-    // --- FEMALE SHOES (Sex: 1) ---
-    'f_shoes_sneakers': { 
-        name: "Pink Sneakers", type: "clothing", weight: 0.4, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 6, drawable: 2, texture: 0 } 
-    },
-    'f_shoes_boots': {
-        name: "Ankle Boots", type: "clothing", weight: 0.5, maxStack: 1,
-        sex: 1, isEquippable: false, icon: "shirt_white.png",
-        data: { componentId: 6, drawable: 3, texture: 0 }
-    },
+    'f_shoes_pink_sneakers': { name: "Pink Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 2, texture: 0 } },
+    'f_shoes_white_sneakers': { name: "White Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 2, texture: 1 } },
+    'f_shoes_black_sneakers': { name: "Black Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 2, texture: 2 } },
+    'f_shoes_gray_sneakers': { name: "Gray Sneakers", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 2, texture: 3 } },
+    'f_shoes_athletic_pink': { name: "Pink Athletic", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 68, texture: 0 } },
+    'f_shoes_athletic_white': { name: "White Athletic", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 68, texture: 1 } },
+    'f_shoes_gym_shoes': { name: "Gym Shoes", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 119, texture: 0 } },
+    'f_shoes_ankle_boots': { name: "Ankle Boots", type: "clothing", weight: 0.5, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 3, texture: 0 } },
+    'f_shoes_tall_boots': { name: "Tall Boots", type: "clothing", weight: 0.6, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 3, texture: 1 } },
+    'f_shoes_combat_boots': { name: "Combat Boots", type: "clothing", weight: 0.6, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 103, texture: 0 } },
+    'f_shoes_casual': { name: "Casual Shoes", type: "clothing", weight: 0.4, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 54, texture: 0 } },
+    'f_shoes_heels': { name: "Black Heels", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 47, texture: 0 } },
+    'f_shoes_flats': { name: "Flats", type: "clothing", weight: 0.3, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 69, texture: 0 } },
+    'f_shoes_sandals': { name: "Sandals", type: "clothing", weight: 0.2, maxStack: 1, sex: 1, isEquippable: false, icon: "shoes.png", data: { componentId: 6, drawable: 11, texture: 0 } },
 
     // --- CAR PARTS (for tuning system) ---
     "car_part_common": {
