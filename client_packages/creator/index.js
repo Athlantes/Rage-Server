@@ -136,12 +136,7 @@ mp.events.add('client:creator:finish', (json) => {
         creatorCam = null;
     }
     
-    // Hide cursor during transition, but DO NOT show the HUD/Overlay yet!
+    // Hide cursor during transition — class selector will be triggered by server
     mp.gui.cursor.show(false, false);
     mp.players.local.freezePosition(false);
-
-    // Wait exactly for the camera fade to finish, then start Class Selector locally
-    setTimeout(() => {
-        mp.events.callLocal('client:classSelector:start');
-    }, 2100); 
 });

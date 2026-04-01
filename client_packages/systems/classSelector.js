@@ -1,130 +1,48 @@
-/**
- * Class Selector - Client-Side
- * Handles the character class selection UI after character creation
- */
-
 let classSelectorBrowser = null;
 let classSelectionActive = false;
 
-// Import class definitions (client version - minimal definition for UI)
-const CLIENT_CLASSES = {
-    enforcer: {
-        name: 'ENFORCER',
-        icon: '🛡️',
-        color: '#FF3333',
-        description: 'Masters of combat and control. Enforcers are tough, intimidating, and built for conflict.',
-        subclasses: ['Soldier', 'Enforcer', 'Warlord']
-    },
-    hustler: {
-        name: 'HUSTLER',
-        icon: '💰',
-        color: '#FFB700',
-        description: 'Money moves and business instincts. Hustlers always find a way to profit.',
-        subclasses: ['Grinder', 'Entrepreneur', 'Tycoon']
-    },
-    craftsman: {
-        name: 'CRAFTSMAN',
-        icon: '🔧',
-        color: '#8B4513',
-        description: 'Masters of creation and engineering. Craftsmen build better, faster, cheaper.',
-        subclasses: ['Apprentice', 'Master', 'Legendary']
-    },
-    racer: {
-        name: 'RACER',
-        icon: '🏎️',
-        color: '#FF00FF',
-        description: 'Speed demons and adrenaline junkies. Racers are the fastest on the road.',
-        subclasses: ['Rookie', 'Pro', 'Legend']
-    },
-    medic: {
-        name: 'MEDIC',
-        icon: '🏥',
-        color: '#00CC66',
-        description: 'Healers and lifesavers. Medics keep their allies in the fight.',
-        subclasses: ['Paramedic', 'Doctor', 'Surgeon']
-    },
-    infiltrator: {
-        name: 'INFILTRATOR',
-        icon: '👻',
-        color: '#0099FF',
-        description: 'Shadows and secrets. Infiltrators operate outside the law unseen.',
-        subclasses: ['Scout', 'Operative', 'Ghost']
-    }
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. START CLASS SELECTOR
+// START CLASS SELECTOR (triggered by server after character creation)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Trigger the class selector after character creation
- */
 mp.events.add('client:classSelector:start', () => {
-    try {
-        mp.events.callRemote('server:classSelector:eventReceived');
-    } catch (e) {}
-    
-    if (classSelectionActive) {
-        try {
-            mp.events.callRemote('server:classSelector:alreadyActive');
-        } catch (e) {}
-        return;
-    }
+    if (classSelectionActive) return;
 
     classSelectionActive = true;
 
-    try {
-        mp.gui.cursor.show(true, true);
-        mp.game.ui.displayRadar(false);
-        mp.game.ui.displayHud(false);
+    mp.gui.cursor.show(true, true);
+    mp.game.ui.displayRadar(false);
+    mp.game.ui.displayHud(false);
 
-        if (!classSelectorBrowser) {
-            try {
-                classSelectorBrowser = mp.browsers.new('package://ui/classSelector/index.html');
-                
-                if (!classSelectorBrowser) {
-                    classSelectionActive = false;
-                    mp.events.callRemote('server:classSelector:error', 'Browser creation returned null');
-                    return;
-                }
-                
-                mp.events.callRemote('server:classSelector:created');
-            } catch (browserError) {
-                console.error('[ClassSelector] Browser error:', browserError.message);
-                classSelectionActive = false;
-                mp.events.callRemote('server:classSelector:error', 'Browser creation failed: ' + browserError.message);
-                return;
-            }
-        } else {
-            mp.events.callRemote('server:classSelector:reused');
-        }
-    } catch (e) {
-        console.error('[ClassSelector] Error:', e.message);
-        classSelectionActive = false;
-        mp.events.callRemote('server:classSelector:error', 'Fatal error: ' + e.message);
+    if (!classSelectorBrowser) {
+        classSelectorBrowser = mp.browsers.new('package://ui/classSelector/index.html');
     }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. RECEIVE CLASS DATA FROM UI
+// PAGE READY HANDSHAKE
+// CEF fires this once window 'load' fires and mp is available
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * User selected class and subclass - send to server
- */
+mp.events.add('client:classSelector:pageReady', () => {
+    // Browser is fully loaded and ready — nothing extra needed here.
+    // app.js initialises itself on load.
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIRM SELECTION (fired from CEF via mp.trigger)
+// ─────────────────────────────────────────────────────────────────────────────
+
 mp.events.add('client:classSelector:confirm', (classId, subclassId) => {
-    console.log(`[ClassSelector] Confirmed: ${classId} / ${subclassId}`);
-    
-    // Send to server
     mp.events.callRemote('server:class:save', classId, subclassId);
 });
 
-// Receive confirmation from server
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVER CONFIRMATION — class saved successfully
+// ─────────────────────────────────────────────────────────────────────────────
+
 mp.events.add('client:class:saved', (success) => {
     if (success) {
-        console.log('[ClassSelector] Class saved successfully');
-        
-        // Close UI
         if (classSelectorBrowser) {
             classSelectorBrowser.destroy();
             classSelectorBrowser = null;
@@ -132,19 +50,12 @@ mp.events.add('client:class:saved', (success) => {
 
         classSelectionActive = false;
         mp.gui.cursor.show(false, false);
-        
-        // FIX: Ensure both radar and hud are turned back ON
-        mp.game.ui.displayRadar(true); 
+        mp.game.ui.displayRadar(true);
         mp.game.ui.displayHud(true);
 
-        // Turn the survival overlay (food/water/money) back on
         mp.events.callLocal('toggleOverlay', true);
-
-        // Optional: Show confirmation message
         mp.events.callLocal('client:classSelector:closed');
     } else {
-        console.error('[ClassSelector] Failed to save class');
-        // Show error and let player retry
         if (classSelectorBrowser) {
             classSelectorBrowser.execute('showError("Failed to save class. Please try again.");');
         }
@@ -152,12 +63,9 @@ mp.events.add('client:class:saved', (success) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. CLOSE CLASS SELECTOR
+// CLOSE (internal use only — ESC is intentionally blocked during class selection)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Close the class selector (e.g., ESC key)
- */
 mp.events.add('client:classSelector:close', () => {
     if (!classSelectionActive) return;
 
@@ -168,25 +76,11 @@ mp.events.add('client:classSelector:close', () => {
 
     classSelectionActive = false;
     mp.gui.cursor.show(false, false);
-    mp.game.ui.displayRadar(false);
+    mp.game.ui.displayRadar(true);
     mp.game.ui.displayHud(true);
-
-    console.log('[ClassSelector] UI Closed');
 });
 
-// Handle ESC key during class selection
+// Block ESC during class selection — player must make a choice
 mp.keys.bind(0x1B, false, () => {
-    if (classSelectionActive) {
-        // Don't allow closing without selecting
-        // mp.events.callLocal('client:classSelector:close');
-    }
+    // intentionally empty while classSelectionActive
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. EXPORTS (for UI access)
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Make classes available globally for the UI
-if (typeof window !== 'undefined') {
-    window.CLASS_DATA = CLIENT_CLASSES;
-}
