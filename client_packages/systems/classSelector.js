@@ -105,21 +105,6 @@ mp.events.add('client:classSelector:start', () => {
     }
 });
 
-// Debug test function for manual browser creation testing
-mp.events.add('debugCreateClassBrowser', () => {
-    try {
-        const testBrowser = mp.browsers.new('package://ui/classSelector/index.html');
-        if (testBrowser) {
-            console.log('[ClassSelector] Browser creation test PASSED');
-            testBrowser.destroy();
-        } else {
-            console.error('[ClassSelector] Browser creation test FAILED - null result');
-        }
-    } catch (e) {
-        console.error('[ClassSelector] Browser creation test error:', e.message);
-    }
-});
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. RECEIVE CLASS DATA FROM UI
 // ─────────────────────────────────────────────────────────────────────────────

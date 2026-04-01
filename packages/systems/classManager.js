@@ -281,31 +281,6 @@ mp.events.add('server:class:save', async (player, classId, subclassId) => {
     }
 });
 
-/**
- * For debugging - check player's class
- */
-mp.events.add('checkPlayerClass', (player) => {
-    if (!player.data?.classData) {
-        return console.log(`${player.name} has no class selected`);
-    }
-    
-    console.log(`${player.name} - Class: ${player.data.classData.classId}, Subclass: ${player.data.classData.subclassId}`);
-    console.log('Bonuses:', player.data.classData.subclassInfo.bonuses);
-});
-
-/**
- * For debugging - manually trigger class selector
- */
-mp.events.add('testClassSelector', (player) => {
-    if (!player) {
-        console.error('[ClassManager] testClassSelector: player not found');
-        return;
-    }
-    
-    console.log(`[ClassManager] Manually triggering class selector for ${player.name}`);
-    player.call('client:classSelector:start');
-});
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
