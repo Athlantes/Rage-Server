@@ -5,8 +5,122 @@ const HouseManager = require('../systems/houseManager');
 const JobManager = require('../jobs/jobManager');
 const playerManager = require('./playerManager');
 const FamilyManager = require('../systems/familyManager');
+const classManager = require('../systems/classManager');
 
 const MAX_VEHICLE_SLOTS = 5; 
+
+const BONUS_LABELS = {
+    combatDamage: 'Combat Damage',
+    movementSpeed: 'Movement Speed',
+    atmSkimmerCooldown: 'ATM Skimmer Cooldown',
+    jobPayMultiplier: 'Job Payout',
+    craftingSpeed: 'Crafting Speed',
+    atmSkimmerPayMultiplier: 'ATM Skimmer Payout',
+    materialCost: 'Material Efficiency',
+    carCraftingSpeed: 'Car Crafting Speed',
+    vehicleAcceleration: 'Vehicle Acceleration',
+    vehicleHandling: 'Vehicle Handling',
+    healingPower: 'Healing Power',
+    reviveSpeed: 'Revive Speed',
+    reviveCooldown: 'Revive Cooldown',
+    stealthDetectionAvoidance: 'Stealth Evasion',
+    hackingCooldown: 'Hacking Cooldown'
+};
+
+const LOWER_IS_BETTER_KEYS = new Set(['materialCost']);
+const BONUS_EPSILON = 0.00001;
+
+function formatPercent(value) {
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
+}
+
+function formatBonusDelta(bonusKey, bonusData = {}) {
+    const value = Number(bonusData.value) || 1;
+    const type = bonusData.type || 'percentModifier';
+    const lowerIsBetter = type === 'cooldownReduction' || LOWER_IS_BETTER_KEYS.has(bonusKey);
+
+    let signedDelta = 0;
+    if (lowerIsBetter) {
+        signedDelta = (1 - value) * 100;
+    } else if (type === 'flatBonus') {
+        signedDelta = value;
+    } else {
+        signedDelta = (value - 1) * 100;
+    }
+
+    let displayValue = '0';
+    if (type === 'flatBonus') {
+        if (Math.abs(signedDelta) > BONUS_EPSILON) {
+            const prefix = signedDelta > 0 ? '+' : '';
+            displayValue = `${prefix}${formatPercent(signedDelta)}`;
+        }
+    } else if (Math.abs(signedDelta) > BONUS_EPSILON) {
+        const prefix = signedDelta > 0 ? '+' : '';
+        displayValue = `${prefix}${formatPercent(signedDelta)}%`;
+    } else {
+        displayValue = '0%';
+    }
+
+    return {
+        signedDelta,
+        displayValue,
+        isPositive: signedDelta > BONUS_EPSILON,
+    };
+}
+
+function buildPlayerClassPayload(classData) {
+    const skilltree = {
+        enabled: false,
+        points: 0,
+        nodes: [],
+        note: 'Skilltree coming soon'
+    };
+
+    if (!classData || !classData.classInfo || !classData.subclassInfo) {
+        return {
+            hasClass: false,
+            classId: null,
+            className: 'Unassigned',
+            classIcon: '',
+            classDescription: 'No class selected yet.',
+            classStory: '',
+            subclassId: null,
+            subclassName: 'None',
+            subclassDescription: '',
+            bonuses: [],
+            skilltree
+        };
+    }
+
+    const rawBonuses = classData.subclassInfo.bonuses || {};
+    const bonuses = Object.entries(rawBonuses).map(([bonusKey, bonusData]) => {
+        const { signedDelta, displayValue, isPositive } = formatBonusDelta(bonusKey, bonusData);
+        return {
+            key: bonusKey,
+            label: BONUS_LABELS[bonusKey] || bonusKey,
+            type: bonusData.type || 'percentModifier',
+            rawValue: Number(bonusData.value) || 1,
+            signedDelta,
+            displayValue,
+            isPositive,
+        };
+    });
+
+    return {
+        hasClass: true,
+        classId: classData.classId || null,
+        className: classData.classInfo.name || classData.classId || 'Unknown',
+        classIcon: classData.classInfo.icon || '',
+        classDescription: classData.classInfo.description || '',
+        classStory: classData.classInfo.story || '',
+        subclassId: classData.subclassId || null,
+        subclassName: classData.subclassInfo.name || classData.subclassId || 'Unknown',
+        subclassDescription: classData.subclassInfo.description || '',
+        bonuses,
+        skilltree
+    };
+}
 
 mp.events.add('server:playerMenu:getData', async (player) => {
     if (!player.data.dbId) return;
@@ -206,10 +320,19 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             }));
         } catch (e) { console.error('[PlayerMenu] Race stats error:', e); }
 
+        // 11. Class Data
+        let playerClassData = buildPlayerClassPayload(player.data.classData);
+        try {
+            if (!player.data.classData) {
+                await classManager.loadPlayerClass(player);
+            }
+            playerClassData = buildPlayerClassPayload(player.data.classData);
+        } catch (e) { console.error('[PlayerMenu] Class data error:', e); }
+
         const webServer = require('../webserver');
         const wantedManager = require('../factions/lspd/wantedManager');
 
-        // 11. Nearby wanted players (visible to everyone in range)
+        // 12. Nearby wanted players (visible to everyone in range)
         const nearbyWanted = [];
         mp.players.forEach(p => {
             if (!p.logged || p.id === player.id) return;
@@ -239,6 +362,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
             house: houseInfo,
             family: familyData,
             raceStats: raceStats,
+            playerClass: playerClassData,
             nearbyWanted: nearbyWanted
         };
 

@@ -36,6 +36,7 @@
   /* ── Tile fills — vivid & saturated ── */
   --fill-profile:#0a1e4a;
   --fill-jobs:   #052e14;
+  --fill-class:  #211242;
   --fill-careers:#2a1200;
   --fill-props:  #041830;
   --fill-obj:    #260535;
@@ -143,7 +144,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .grid{
   display:grid;
   grid-template-columns: 1.65fr 1.3fr 1.1fr 1fr;
-  grid-template-rows: 1.1fr 1fr;
+  grid-template-rows: 1.1fr 1fr 1fr;
   gap:10px;
   width:min(1200px, 92vw);
   height:min(610px, 71vh);
@@ -167,12 +168,13 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .tile:active{transform:scale(.98)}
 
 /* ── Tile fills + grid positions ── */
-.t-profile{ grid-column:1; grid-row:1/3; background:var(--fill-profile); }
+.t-profile{ grid-column:1; grid-row:1/4; background:var(--fill-profile); }
 .t-jobs{    grid-column:2/4; grid-row:1; background:var(--fill-jobs); }
 .t-props{   grid-column:4;   grid-row:1; background:var(--fill-props); }
 .t-careers{ grid-column:2;   grid-row:2; background:var(--fill-careers); }
 .t-obj{     grid-column:3;   grid-row:2; background:var(--fill-obj); }
 .t-fam{     grid-column:4;   grid-row:2; background:var(--fill-fam); }
+.t-class{   grid-column:2/5; grid-row:3; background:var(--fill-class); }
 
 /* ── Hover color glows per tile ── */
 .t-profile:hover{ border-color:rgba(26,111,255,.5);  box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 28px rgba(26,111,255,.25) }
@@ -181,6 +183,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .t-careers:hover{ border-color:rgba(255,106,0,.45);  box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 28px rgba(255,106,0,.2) }
 .t-obj:hover{     border-color:rgba(240,53,154,.45); box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 28px rgba(240,53,154,.2) }
 .t-fam:hover{     border-color:rgba(0,212,255,.4);   box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 28px rgba(0,212,255,.2) }
+.t-class:hover{   border-color:rgba(124,58,237,.45); box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 28px rgba(124,58,237,.25) }
 
 /* ── Tile inner shimmer ── */
 .tile::before{
@@ -499,6 +502,26 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .jd-desc{font-size:11px;color:rgba(255,255,255,.5);line-height:1.75;margin-bottom:10px}
 .jd-actions{padding:10px 12px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:7px}
 
+/* class */
+.class-hero{display:flex;gap:11px;align-items:flex-start;padding:12px 14px 6px}
+.class-hero-icon{width:54px;height:54px;border-radius:12px;background:rgba(124,58,237,.12);border:1.5px solid rgba(124,58,237,.3);display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;flex-shrink:0}
+.class-hero-meta{flex:1;min-width:0}
+.class-hero-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:-.5px;line-height:1}
+.class-hero-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.class-hero-desc{font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;padding:0 14px 8px}
+.class-story{font-size:10px;color:var(--muted);line-height:1.6;padding:0 14px 13px}
+.class-bonus-list{padding:8px 12px}
+.class-bonus-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.05)}
+.class-bonus-row:last-child{border-bottom:none}
+.class-bonus-label{display:flex;align-items:center;gap:7px;min-width:0;font-size:11px}
+.class-bonus-label i{font-size:9px;color:var(--violet-light);width:10px;text-align:center;flex-shrink:0}
+.class-bonus-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.class-bonus-val{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;flex-shrink:0}
+.class-bonus-val.pos{color:var(--lime)}
+.class-bonus-val.neg{color:var(--orange-light)}
+.class-bonus-val.neu{color:var(--muted)}
+.class-skilltree-note{font-size:11px;color:var(--muted);line-height:1.6;padding:11px 14px}
+
 /* battle pass */
 .bp-scroll{overflow-x:auto;padding:5px 0 2px}
 .bp-scroll::-webkit-scrollbar{height:2px}
@@ -730,6 +753,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 .tile:nth-child(4){animation-delay:.2s}
 .tile:nth-child(5){animation-delay:.25s}
 .tile:nth-child(6){animation-delay:.3s}
+.tile:nth-child(7){animation-delay:.35s}
 @keyframes tileIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
 </style>
 </head>
@@ -781,6 +805,53 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
             <button class="btn success" style="flex:1;justify-content:center;padding:9px" onclick="locateSelectedJob()"><i class="fas fa-location-dot"></i> LOCATE JOB</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ov-class">
+  <div class="panel" style="width:760px">
+    <div class="pan-head">
+      <div class="pan-icon" style="background:rgba(124,58,237,.14);color:#c4b5fd"><i class="fas fa-shield-halved"></i></div>
+      <div class="pan-title">Class</div>
+      <div class="pan-close" onclick="closeOv('ov-class')"><i class="fas fa-xmark"></i></div>
+    </div>
+    <div class="pan-body">
+      <div class="two">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-icon" style="background:rgba(124,58,237,.14);color:#c4b5fd"><i class="fas fa-route"></i></div>
+            <div class="card-head-title">Current Path</div>
+          </div>
+          <div class="class-hero">
+            <div class="class-hero-icon" id="class-hero-icon">◇</div>
+            <div class="class-hero-meta">
+              <div class="class-hero-name" id="class-hero-name">Unassigned</div>
+              <div class="class-hero-sub" id="class-hero-sub">No subclass selected</div>
+            </div>
+          </div>
+          <div class="class-hero-desc" id="class-hero-desc">No class selected yet.</div>
+          <div class="class-story" id="class-hero-story">Class path selected in classSelector.</div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-icon" style="background:rgba(0,217,122,.1);color:var(--lime)"><i class="fas fa-bolt"></i></div>
+            <div class="card-head-title">Bonuses</div>
+            <div class="card-badge" id="class-bonus-count">0 active</div>
+          </div>
+          <div class="class-bonus-list" id="class-bonuses-list">
+            <div class="empty" style="padding:16px"><i class="fas fa-circle-info"></i><span>No bonuses yet.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-head">
+          <div class="card-head-icon" style="background:rgba(255,168,32,.1);color:var(--orange-light)"><i class="fas fa-diagram-project"></i></div>
+          <div class="card-head-title">Skilltree</div>
+          <div class="card-badge" id="class-skilltree-badge">COMING SOON</div>
+        </div>
+        <div class="class-skilltree-note" id="class-skilltree-note">Skilltree will be added here in a future update.</div>
       </div>
     </div>
   </div>
@@ -972,7 +1043,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
 
   <div class="grid">
 
-    <!-- PROFILE — col 1, rows 1-2 (tall) -->
+    <!-- PROFILE — col 1, rows 1-3 (tall) -->
     <div class="tile t-profile">
       <div class="tile-blob" style="background:radial-gradient(circle,#1a6fff,transparent 70%);width:380px;height:380px;top:-100px;left:-80px"></div>
       <div class="tile-blob" style="background:radial-gradient(circle,#00d4ff,transparent 70%);width:220px;height:220px;bottom:-60px;right:-30px"></div>
@@ -1126,6 +1197,31 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);font-fam
         <div class="t-status" id="tile-fam-badge">
           <div class="dot" style="background:var(--muted)"></div>
           No Family
+        </div>
+        <div class="t-foot" style="margin-top:auto">
+          <div class="t-arr"><i class="fas fa-arrow-right"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLASS — cols 2-4, row 3 -->
+    <div class="tile t-class" onclick="openOv('ov-class')">
+      <div class="tile-blob" style="background:radial-gradient(circle,#7c3aed,transparent 70%);width:340px;height:340px;top:-130px;right:-70px"></div>
+      <div class="tile-blob" style="background:radial-gradient(circle,#00d4ff,transparent 70%);width:210px;height:210px;bottom:-80px;left:16%"></div>
+      <svg class="t-bg-svg" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm0 2.2 6 2.2v4.6c0 4.1-2.6 8.1-6 9.3-3.4-1.2-6-5.2-6-9.3V6.4l6-2.2z"/></svg>
+      <div class="tile-edge" style="background:linear-gradient(90deg,#7c3aed,#00d4ff)"></div>
+      <div class="tile-shadow"></div>
+      <div class="tc">
+        <div>
+          <div class="t-cat">Class Selector</div>
+          <div class="t-name" style="font-size:36px">CLASS</div>
+        </div>
+        <div class="t-status" id="tile-class-status">
+          <div class="dot" style="background:var(--muted)"></div>
+          Unassigned
+        </div>
+        <div class="prev-rows" id="tile-class-bonuses">
+          <div class="prev-row"><i class="fas fa-circle-info"></i>No bonuses yet</div>
         </div>
         <div class="t-foot" style="margin-top:auto">
           <div class="t-arr"><i class="fas fa-arrow-right"></i></div>
@@ -1357,6 +1453,71 @@ function locateJob(n){
 }
 function locateSelectedJob(){if(_selJob)locateJob(_selJob)}
 
+/* class */
+let _playerClass=null;
+function escapeHtml(v){return String(v===undefined||v===null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;')}
+function renderClassData(classData){
+  _playerClass=classData||null;
+  const tileStatus=document.getElementById('tile-class-status'),tileBonuses=document.getElementById('tile-class-bonuses');
+  const heroIcon=document.getElementById('class-hero-icon'),heroName=document.getElementById('class-hero-name'),heroSub=document.getElementById('class-hero-sub');
+  const heroDesc=document.getElementById('class-hero-desc'),heroStory=document.getElementById('class-hero-story');
+  const bonusList=document.getElementById('class-bonuses-list'),bonusCount=document.getElementById('class-bonus-count');
+  const skillBadge=document.getElementById('class-skilltree-badge'),skillNote=document.getElementById('class-skilltree-note');
+  if(!tileStatus||!tileBonuses||!heroIcon||!heroName||!heroSub||!heroDesc||!heroStory||!bonusList||!bonusCount||!skillBadge||!skillNote)return;
+
+  const hasClass=!!(classData&&classData.hasClass);
+  const bonuses=(classData&&Array.isArray(classData.bonuses))?classData.bonuses:[];
+
+  if(!hasClass){
+    tileStatus.innerHTML='<div class="dot" style="background:var(--muted)"></div>Unassigned';
+    tileBonuses.innerHTML='<div class="prev-row"><i class="fas fa-circle-info"></i>Select a class during creation</div>';
+    heroIcon.textContent='◇';
+    heroName.textContent='Unassigned';
+    heroSub.textContent='No subclass selected';
+    heroDesc.textContent='No class selected yet.';
+    heroStory.textContent='Class path selected in classSelector.';
+    bonusCount.textContent='0 active';
+    bonusList.innerHTML='<div class="empty" style="padding:16px"><i class="fas fa-circle-info"></i><span>No bonuses yet.</span></div>';
+    skillBadge.textContent='COMING SOON';
+    skillNote.textContent='Skilltree will be added here in a future update.';
+    return;
+  }
+
+  const className=classData.className||'Unknown';
+  const subclassName=classData.subclassName||'Unknown';
+  tileStatus.innerHTML=`<div class="dot" style="background:var(--violet-light)"></div>${escapeHtml(className)} / ${escapeHtml(subclassName)}`;
+
+  const preview=bonuses.slice(0,2);
+  if(preview.length){
+    tileBonuses.innerHTML=preview.map(b=>{
+      const valClass=b.isPositive?'var(--lime)':(b.signedDelta<0?'var(--orange-light)':'var(--muted)');
+      return `<div class="prev-row"><i class="fas fa-bolt" style="color:var(--violet-light)"></i>${escapeHtml(b.label)}<b style="color:${valClass}">${escapeHtml(b.displayValue)}</b></div>`;
+    }).join('');
+  }else{
+    tileBonuses.innerHTML='<div class="prev-row"><i class="fas fa-circle-info"></i>No subclass bonuses</div>';
+  }
+
+  heroIcon.textContent=classData.classIcon||'◇';
+  heroName.textContent=className;
+  heroSub.textContent=`${subclassName} ${classData.subclassDescription?'- '+classData.subclassDescription:''}`;
+  heroDesc.textContent=classData.classDescription||'No class description available.';
+  heroStory.textContent=classData.classStory||'No class story available.';
+
+  bonusCount.textContent=`${bonuses.length} active`;
+  if(bonuses.length){
+    bonusList.innerHTML=bonuses.map(b=>{
+      const vc=b.isPositive?'pos':(b.signedDelta<0?'neg':'neu');
+      return `<div class="class-bonus-row"><div class="class-bonus-label"><i class="fas fa-bolt"></i><span>${escapeHtml(b.label)}</span></div><div class="class-bonus-val ${vc}">${escapeHtml(b.displayValue)}</div></div>`;
+    }).join('');
+  }else{
+    bonusList.innerHTML='<div class="empty" style="padding:16px"><i class="fas fa-circle-info"></i><span>No bonuses available.</span></div>';
+  }
+
+  const skilltree=classData.skilltree||{};
+  skillBadge.textContent=skilltree.enabled?'ACTIVE':'COMING SOON';
+  skillNote.textContent=skilltree.note||'Skilltree will be added here in a future update.';
+}
+
 /* ══ receiveData ══════════════════════════════════════════ */
 function receiveData(jsonString){
   try{
@@ -1428,6 +1589,9 @@ function receiveData(jsonString){
     }else{
       renderJobs(Object.entries(JS).map(([name])=>({name,level:1})));
     }
+
+    // class
+    renderClassData(data.playerClass||null);
 
     // race
     if(data.raceStats){
