@@ -1,12 +1,15 @@
 // /packages/factions/Faction.js
 
 class Faction {
-    constructor(id, name, type, ranks, color) {
+    constructor(id, name, type, ranks, color, key = null) {
         this.id = id;               // e.g., 1
         this.name = name;           // e.g., "Los Santos Police Department"
         this.type = type;           // e.g., "LEO", "MAFIA", "PEACEFUL"
         this.ranks = ranks;         // Array of rank names: ["Cadet", "Officer", ..., "Chief"]
         this.color = color || '#FFFFFF'; // Hex color used for faction accent (nametag, UI)
+        
+        // Auto-generate a safe key string for the database if one isn't provided
+        this.key = key || name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30);
     }
 
     // --- Core Methods ---
@@ -28,7 +31,7 @@ class Faction {
     // Send a message to all online members of this faction
     broadcast(message, color = "!{#00a8ff}") {
         mp.players.forEach(player => {
-            if (player.logged && player.factionId === this.id) { // <--- CHANGE HERE
+            if (player.logged && player.factionId === this.id) {
                 player.outputChatBox(`${color}[${this.name}] ${player.name}: ${message}`);
             }
         });
@@ -38,7 +41,7 @@ class Faction {
     getOnlineMembers() {
         let members = [];
         mp.players.forEach(player => {
-            if (player.logged && player.factionId === this.id) { // <--- CHANGE HERE
+            if (player.logged && player.factionId === this.id) {
                 members.push(player);
             }
         });

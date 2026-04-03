@@ -24,3 +24,4 @@ require('./downState');
 require('./cardPacksManager');
 require('./weather');
 require('./lotto');
+require('./store');

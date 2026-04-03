@@ -1,10 +1,10 @@
 // /packages/factions/factionsManager.js
 // ─────────────────────────────────────────────────────────────────────────────
 // CHANGES:
+//   - registerFaction automatically syncs the faction and its ranks to the DB.
 //   - /f (faction chat) now shows: [FactionName] [RankName] Firstname Lastname: message
 //     using the faction's ranks array so the rank name is human-readable.
-//   - Only members of the SAME faction see the message (was already working,
-//     now uses faction.broadcast which scopes to factionId).
+//   - Only members of the SAME faction see the message.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const fs   = require('fs');
@@ -16,13 +16,49 @@ class FactionsManager {
         this.factions = new Map();
     }
 
-    registerFaction(factionInstance) {
+    async registerFaction(factionInstance) {
         if (this.factions.has(factionInstance.id)) {
             console.error(`[Factions] Faction ID ${factionInstance.id} is already registered!`);
             return;
         }
-        this.factions.set(factionInstance.id, factionInstance);
-        console.log(`[Factions] Loaded: ${factionInstance.name} (ID: ${factionInstance.id})`);
+
+        try {
+            // 1. Sync Faction data into the `factions` table
+            await DB.query(`
+                INSERT INTO factions (id, \`key\`, name, type, color) 
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                name = VALUES(name), 
+                type = VALUES(type), 
+                color = VALUES(color)
+            `, [
+                factionInstance.id, 
+                factionInstance.key, 
+                factionInstance.name, 
+                factionInstance.type, 
+                factionInstance.color
+            ]);
+
+            // 2. Sync Faction Ranks into the `faction_ranks` table
+            if (factionInstance.ranks && Array.isArray(factionInstance.ranks)) {
+                for (let i = 0; i < factionInstance.ranks.length; i++) {
+                    const rankName = factionInstance.ranks[i];
+                    await DB.query(`
+                        INSERT INTO faction_ranks (faction_id, rank_index, name)
+                        VALUES (?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                        name = VALUES(name)
+                    `, [factionInstance.id, i, rankName]);
+                }
+            }
+
+            // 3. Save to memory
+            this.factions.set(factionInstance.id, factionInstance);
+            console.log(`[Factions] Loaded & DB Synced: ${factionInstance.name} (ID: ${factionInstance.id})`);
+
+        } catch (error) {
+            console.error(`[Factions] Failed to sync ${factionInstance.name} to DB:`, error);
+        }
     }
 
     getFaction(id) {
@@ -67,8 +103,6 @@ const manager = new FactionsManager();
 module.exports = manager;
 
 // ── /f Faction Chat ───────────────────────────────────────────────────────────
-// Format: [FactionName] [RankName] Firstname Lastname: message
-// Only members of the same faction see the message.
 
 mp.events.addCommand('f', (player, fullText) => {
     if (!fullText || fullText.trim() === '') {
@@ -84,17 +118,13 @@ mp.events.addCommand('f', (player, fullText) => {
         return player.outputChatBox('!{#ff4757}Your faction could not be found.');
     }
 
-    // Resolve rank name from the faction's ranks array
     const rankIndex = player.factionRank || 0;
     const rankName  = (faction.ranks && faction.ranks[rankIndex])
         ? faction.ranks[rankIndex]
         : `Rank ${rankIndex}`;
 
-    // Display name — replace underscores with spaces (RAGEMP convention)
     const displayName = player.name.replace(/_/g, ' ');
 
-    // Build the message: only faction members will receive it
-    // Color: golden yellow for taxi, but we keep it generic using faction accent or a neutral faction color
     const message = `!{#ffc300}[${faction.name}] !{#ffffff}[${rankName}] ${displayName}!{#cccccc}: ${fullText.trim()}`;
 
     mp.players.forEach(p => {

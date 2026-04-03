@@ -292,6 +292,116 @@ mp.events.addCommand('duty', (player) => {
 // ADMIN SYSTEM
 // ----------------------------------------------------------------------------
 
+mp.events.addCommand('addstore', (player, fullText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+
+    const storeName = (fullText || '').trim();
+    if (!storeName) {
+        return player.outputChatBox(`${COLORS.ERROR}Usage: /addstore [Store Name]`);
+    }
+
+    const storesFilePath = path.join(__dirname, '../data/stores.js');
+
+    // ── 1. Read current stores.js ────────────────────────────────────────────
+    let fileContent;
+    try {
+        fileContent = fs.readFileSync(storesFilePath, 'utf8');
+    } catch (err) {
+        console.error('[AddStore] Failed to read stores.js:', err);
+        return player.outputChatBox(`${COLORS.ERROR}[AddStore] Could not read stores.js — check console.`);
+    }
+
+    // ── 2. Determine next ID ─────────────────────────────────────────────────
+    // Find all existing `id: N` entries and take the max
+    const idMatches = [...fileContent.matchAll(/\bid:\s*(\d+)/g)];
+    const nextId    = idMatches.length > 0
+        ? Math.max(...idMatches.map(m => parseInt(m[1], 10))) + 1
+        : 1;
+
+    // ── 3. Capture player position + heading ─────────────────────────────────
+    const pos     = player.position;
+    const heading = player.heading;
+
+    const x = pos.x.toFixed(2);
+    const y = pos.y.toFixed(2);
+    const z = pos.z.toFixed(2);
+    const h = heading.toFixed(1);
+
+    // Escape any single-quotes in the store name to keep the JS valid
+    const safeName = storeName.replace(/'/g, "\\'");
+
+    // ── 4. Build the new entry string ────────────────────────────────────────
+    const newEntry =
+`    {
+        id: ${nextId},
+        name: '24/7 – ${safeName}',
+        npc:  { x: ${x}, y: ${y}, z: ${z}, heading: ${h} },
+        blip: { x: ${x}, y: ${y}, z: ${z} },
+    },`;
+
+    // ── 5. Inject before the closing `];` of the STORES array ───────────────
+    // We match the last `},` followed by optional whitespace + `];`
+    // so we always insert at the very end of the array.
+    const STORES_END_RE = /([\s\S]*?)((\s*\];)\s*\n\nmodule\.exports)/;
+
+    if (!STORES_END_RE.test(fileContent)) {
+        // Fallback: simpler splice — find the last `},` before `];`
+        const insertIdx = fileContent.lastIndexOf('\n];');
+        if (insertIdx === -1) {
+            return player.outputChatBox(`${COLORS.ERROR}[AddStore] Could not locate STORES array end in stores.js.`);
+        }
+        fileContent = fileContent.slice(0, insertIdx) + '\n' + newEntry + fileContent.slice(insertIdx);
+    } else {
+        // Reliable: inject the new entry just before `];\n\nmodule.exports`
+        fileContent = fileContent.replace(
+            /(\n];[\s\n]*module\.exports)/,
+            '\n' + newEntry + '$1'
+        );
+    }
+
+    // ── 6. Write back to disk ────────────────────────────────────────────────
+    try {
+        fs.writeFileSync(storesFilePath, fileContent, 'utf8');
+    } catch (err) {
+        console.error('[AddStore] Failed to write stores.js:', err);
+        return player.outputChatBox(`${COLORS.ERROR}[AddStore] Could not write stores.js — check console.`);
+    }
+
+    // ── 7. Hot-spawn NPC + Blip without restarting ───────────────────────────
+    // The live store module exposes a `spawnSingleStore` helper we call directly.
+    try {
+        const storeSystem = require('../systems/store');
+
+        const newStore = {
+            id:   nextId,
+            name: `24/7 – ${storeName}`,
+            npc:  { x: pos.x, y: pos.y, z: pos.z, heading },
+            blip: { x: pos.x, y: pos.y, z: pos.z },
+        };
+
+        storeSystem.spawnSingleStore(newStore);
+
+        // Also push the new location to connected clients so their blip appears
+        // immediately without reconnecting.
+        mp.players.forEach(p => {
+            p.call('client:store:addBlip', [pos.x, pos.y, pos.z]);
+        });
+
+    } catch (err) {
+        // Non-fatal — the entry is already written to disk, it'll load on restart
+        console.warn('[AddStore] Hot-spawn failed (will load on next restart):', err.message);
+        player.outputChatBox(`${COLORS.INFO}[AddStore] Saved to disk. Hot-spawn unavailable — NPC will appear on next restart.`);
+    }
+
+    // ── 8. Feedback ──────────────────────────────────────────────────────────
+    player.outputChatBox(
+        `${COLORS.SUCCESS}[AddStore] "24/7 – ${storeName}" (ID: ${nextId}) added at ` +
+        `X:${x} Y:${y} Z:${z} H:${h}° and saved to stores.js.`
+    );
+
+    console.log(`[AddStore] Admin ${player.name} added store #${nextId} "${storeName}" at ${x},${y},${z}`);
+});
+
 // --- JOB ADMIN COMMANDS ---
 
 mp.events.addCommand('setjoblvl', async (player, fullText) => {
