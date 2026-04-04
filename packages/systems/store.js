@@ -1,70 +1,57 @@
 // packages/systems/store.js
-// Server-side 24/7 Store System
-
 'use strict';
 
-const { STORES, STORE_CATALOG }   = require('../data/stores');
-const ItemRegistry                 = require('../data/items');
-const InventorySystem              = require('./inventory');
+const { STORES, STORE_CATALOG } = require('../data/stores');
+const ItemRegistry              = require('../data/items');
+const InventorySystem           = require('./inventory');
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-const NPC_MODEL   = 'mp_m_shopkeep_01';
-const NPC_RANGE   = 2.5;           // metres – interaction radius
-
-// Pre-build a lookup map of valid items for O(1) purchase validation
 const CATALOG_MAP = new Map(STORE_CATALOG.map(entry => [entry.itemId, entry]));
 
-// Enrich catalog with item registry data once at startup
+// Pre-build catalog data to send to the UI
 const CATALOG_DATA = STORE_CATALOG.map(entry => {
     const def = ItemRegistry[entry.itemId];
-    if (!def) {
-        console.warn(`[Store] Item '${entry.itemId}' in STORE_CATALOG not found in ItemRegistry!`);
-        return null;
-    }
+    if (!def) return null;
     return {
-        itemId:  entry.itemId,
-        name:    def.name,
-        icon:    def.icon,
-        weight:  def.weight,
+        itemId:   entry.itemId,
+        name:     def.name,
+        icon:     def.icon,
+        weight:   def.weight,
         maxStack: def.maxStack,
         category: entry.category,
-        price:   entry.price,
+        price:    entry.price,
     };
 }).filter(Boolean);
 
 // ---------------------------------------------------------------------------
-// NPC Spawning
+// Spawning System
 // ---------------------------------------------------------------------------
-
-/**
- * Spawns a single store NPC. Called both at startup and by /addstore at runtime.
- * @param {Object} store  – a store entry object from STORES
- */
 function spawnSingleStore(store) {
-    const ped = mp.peds.new(
-        mp.joaat(NPC_MODEL),
-        new mp.Vector3(store.npc.x, store.npc.y, store.npc.z),
-        store.npc.heading,
-        -1  // World dimension
-    );
+    // 1. Handle missing model or heading gracefully
+    const pedModel = store.npc.model || 'mp_m_shopkeep_01';
+    const pedHeading = store.npc.heading || store.npc.h || 0; 
+    
+    const pos = new mp.Vector3(store.npc.x, store.npc.y, store.npc.z);
 
+    // 2. Spawn EXACTLY like your Job System (no explicit dimension string)
+    const ped = mp.peds.new(mp.joaat(pedModel), pos, {
+        heading: pedHeading,
+        dynamic: false, 
+        invincible: true, 
+        frozen: true
+    });
+
+    // 3. Sync with your existing client_packages/jobs/manager.js
+    ped.setVariable('static', true);
     ped.setVariable('storeId', store.id);
-    ped.freezePosition(true);
-    ped.setInvincible(true);
-    ped.taskSetBlockingOfNonTemporaryEvents(true);
+    ped.setVariable('staticAnim', { dict: 'anim@heists@heist_corona@single_team', name: 'single_team_loop_boss', flag: 1 });
 
-    console.log(`[Store] Spawned NPC for "${store.name}" (storeId=${store.id})`);
-}
-
-function spawnStoreNpcs() {
-    STORES.forEach(store => {
-        try {
-            spawnSingleStore(store);
-        } catch (err) {
-            console.error(`[Store] Failed to spawn NPC for store ${store.id}:`, err);
-        }
+    // 4. Create the Job-style interaction Colshape 
+    const shape = mp.colshapes.newTube(pos.x, pos.y, pos.z - 1.0, 2.0, 2.5);
+    shape.setVariable('interaction', {
+        title: store.name || '24/7 Store',
+        text: "Press E to Browse",
+        event: "server:store:open",
+        data: store.id
     });
 }
 
@@ -72,18 +59,15 @@ function spawnStoreNpcs() {
 // Event Handlers
 // ---------------------------------------------------------------------------
 
-// Client requests to open the store UI
-mp.events.add('server:store:open', (player) => {
-    // Anti-spam: if already shopping, ignore
+// Triggered globally by your Colshape interaction script when they press E
+mp.events.add('server:store:open', (player, storeId) => {
     if (player.getVariable('storeBusy')) return;
-
-    // Send the catalog to the client so the UI can render it
+    
+    player.setVariable('storeBusy', true);
     player.call('client:store:openUI', [JSON.stringify(CATALOG_DATA)]);
 });
 
-// Client submits a purchase
 mp.events.add('server:store:purchase', async (player, itemId, qty) => {
-    // ── Validation ──────────────────────────────────────────────────────────
     qty = parseInt(qty, 10);
 
     if (!itemId || isNaN(qty) || qty < 1 || qty > 99) {
@@ -91,80 +75,51 @@ mp.events.add('server:store:purchase', async (player, itemId, qty) => {
     }
 
     const catalogEntry = CATALOG_MAP.get(itemId);
-    if (!catalogEntry) {
-        return player.call('showNotification', ['Store', 'This item is not for sale.']);
-    }
-
     const itemDef = ItemRegistry[itemId];
-    if (!itemDef) {
-        return player.call('showNotification', ['Store', 'Item data error. Contact an admin.']);
+
+    if (!catalogEntry || !itemDef) {
+        return player.call('showNotification', ['Store', 'Item unavailable.']);
     }
 
-    // Respect maxStack
-    if (itemDef.maxStack && qty > itemDef.maxStack) {
-        qty = itemDef.maxStack;
-    }
+    if (itemDef.maxStack && qty > itemDef.maxStack) qty = itemDef.maxStack;
 
     const totalCost = catalogEntry.price * qty;
+    const balance = player.data.money || 0; // Read directly from your custom player.data memory
 
-    // ── Bank balance check ───────────────────────────────────────────────────
-    const balance = player.getVariable('money') ?? 0;
     if (balance < totalCost) {
-        return player.call('showNotification', [
-            'Store',
-            `Not enough cash. Need $${totalCost}, you have $${balance}.`
-        ]);
+        return player.call('showNotification', ['Store', `Not enough cash. Need $${totalCost}.`]);
     }
 
-    // ── Deduct money ─────────────────────────────────────────────────────────
-    player.setVariable('money', balance - totalCost);
+    // Process payment
+    player.data.money -= totalCost;
+    player.setVariable('money', player.data.money);
 
-    // Sync to DB if you have a persist helper (adapt to your save pattern)
-    if (typeof player.data === 'object' && player.data !== null) {
-        player.data.money = balance - totalCost;
-        // If your server has a savePlayer / markDirty pattern, call it here:
-        // playerManager.markDirty(player);
-    }
-
-    // ── Give items ───────────────────────────────────────────────────────────
+    // Give Item via your native Inventory
     const success = await InventorySystem.addItem(player, itemId, qty);
 
     if (success) {
-        player.call('showNotification', [
-            'Store',
-            `Purchased ${qty}x ${itemDef.name} for $${totalCost}.`
-        ]);
-        // Tell the UI the purchase went through
+        player.call('showNotification', ['Store', `Bought ${qty}x ${itemDef.name} for $${totalCost}.`]);
         player.call('client:store:purchaseOK');
     } else {
-        // addItem returned false – weight / other hard limit
-        // CityBox overflow is handled inside addItem itself, so this path
-        // means something unexpected. Refund the player.
-        player.setVariable('money', balance);
-        if (typeof player.data === 'object' && player.data !== null) {
-            player.data.money = balance;
-        }
-        player.call('showNotification', [
-            'Store',
-            'Could not add items to inventory.'
-        ]);
+        // Refund if inventory is full/heavy
+        player.data.money += totalCost;
+        player.setVariable('money', player.data.money);
+        player.call('showNotification', ['Store', 'Inventory full or too heavy.']);
     }
 });
 
-// Client closed the store UI
 mp.events.add('server:store:close', (player) => {
     player.setVariable('storeBusy', false);
 });
 
 // ---------------------------------------------------------------------------
-// Startup
+// Init
 // ---------------------------------------------------------------------------
-mp.events.add('packageLoaded', () => {
-    spawnStoreNpcs();
-    console.log(`[Store] System loaded – ${STORES.length} stores, ${CATALOG_DATA.length} items.`);
-});
+try {
+    STORES.forEach(store => spawnSingleStore(store));
+    console.log(`[Store] System loaded – ${CATALOG_DATA.length} items.`);
+} catch (err) {
+    console.error(`[Store] Error during startup:`, err);
+}
 
-// ---------------------------------------------------------------------------
-// Exports — used by /addstore in commands.js for hot-spawning
-// ---------------------------------------------------------------------------
 module.exports = { spawnSingleStore };

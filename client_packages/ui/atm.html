@@ -1,64 +1,606 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <style>
-        body { font-family: 'Arial', sans-serif; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .atm-container { background: #2c3e50; padding: 30px; border-radius: 10px; width: 400px; text-align: center; border: 4px solid #3498db; }
-        h2 { margin-top: 0; color: #3498db; }
-        .balance-box { background: #34495e; padding: 15px; margin: 10px 0; border-radius: 5px; font-size: 18px; display: flex; justify-content: space-between; }
-        .input-group { margin: 20px 0; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; font-size: 16px; border-radius: 5px; border: none; text-align: center; }
-        .btn-group { display: flex; gap: 10px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
-        .btn-deposit { background: #27ae60; color: white; }
-        .btn-withdraw { background: #e74c3c; color: white; }
-        .btn-close { background: #95a5a6; color: white; margin-top: 10px; width: 100%; }
-        button:hover { opacity: 0.9; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Fleeca ATM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+    --c-bg:         #080810;
+    --c-surface:    #0f0f18;
+    --c-surface-2:  #16161f;
+    --c-surface-3:  #1e1e2a;
+    --c-border:     #252532;
+    --c-border-2:   #303040;
+
+    --c-text:       #e8e8f0;
+    --c-text-2:     #8888a8;
+    --c-text-3:     #44445a;
+
+    /* Fleeca green — matches the in-game bank branding */
+    --c-brand:      #00c878;
+    --c-brand-dim:  #006838;
+    --c-brand-bg:   #020f08;
+
+    --c-deposit:    #40d080;
+    --c-deposit-bg: #041208;
+    --c-withdraw:   #e04848;
+    --c-withdraw-bg:#120404;
+
+    --c-gold:       #f0c040;
+
+    --font-d: 'Barlow Condensed', sans-serif;
+    --font-b: 'Barlow', sans-serif;
+    --font-m: 'Share Tech Mono', monospace;
+}
+
+/* ═══════════════════════════════════════
+   BASE
+═══════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+
+html, body {
+    width:100vw; height:100vh;
+    background: transparent;
+    overflow:hidden;
+    font-family: var(--font-b);
+    color: var(--c-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   BACKDROP
+═══════════════════════════════════════ */
+#backdrop {
+    position:fixed; inset:0;
+    background: rgba(0,0,0,0.78);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    transition: opacity 0.2s ease;
+}
+#backdrop.visible { opacity:1; }
+
+/* ═══════════════════════════════════════
+   PANEL
+═══════════════════════════════════════ */
+#panel {
+    width: 460px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    position:relative;
+    transform: translateY(18px) scale(0.98);
+    transition: transform 0.22s cubic-bezier(0.16,1,0.3,1);
+}
+#backdrop.visible #panel {
+    transform: translateY(0) scale(1);
+}
+
+/* corner marks */
+#panel::before, #panel::after,
+.corner-bl, .corner-br {
+    content:'';
+    position:absolute;
+    width:14px; height:14px;
+    border-color: var(--c-brand);
+    border-style:solid;
+    pointer-events:none;
+    z-index:10;
+}
+#panel::before { top:0; left:0;  border-width:2px 0 0 2px; }
+#panel::after  { top:0; right:0; border-width:2px 2px 0 0; }
+.corner-bl { bottom:0; left:0;  border-width:0 0 2px 2px; }
+.corner-br { bottom:0; right:0; border-width:0 2px 2px 0; }
+
+/* ── HEADER ── */
+#header {
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+    padding: 0 22px;
+    height: 68px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+}
+
+#header-left {
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+#brand-mark {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:42px; height:42px;
+    background: var(--c-brand-bg);
+    border: 1px solid var(--c-brand-dim);
+    flex-shrink:0;
+}
+#brand-f {
+    font-family: var(--font-d);
+    font-size:26px;
+    font-weight:900;
+    color: var(--c-brand);
+    line-height:1;
+    letter-spacing:-1px;
+}
+
+#brand-text { display:flex; flex-direction:column; gap:2px; }
+#bank-name {
+    font-family: var(--font-d);
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color: var(--c-text);
+    line-height:1;
+}
+#bank-sub {
+    font-family: var(--font-m);
+    font-size:10px;
+    color: var(--c-text-3);
+    letter-spacing:0.1em;
+}
+
+#close-btn {
+    background:transparent;
+    border:1px solid var(--c-border);
+    color: var(--c-text-3);
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:18px;
+    font-family: var(--font-d);
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    flex-shrink:0;
+}
+#close-btn:hover {
+    background: rgba(224,72,72,0.12);
+    border-color: var(--c-withdraw);
+    color: var(--c-withdraw);
+}
+
+/* ── STATUS BAR ── */
+#status-bar {
+    background: var(--c-brand-bg);
+    border-bottom: 1px solid var(--c-brand-dim);
+    padding: 0 22px;
+    height:32px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+#status-dot {
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--c-brand);
+    flex-shrink:0;
+    /* slow pulse — CSS only, no box-shadow */
+    animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%,100% { opacity:1; }
+    50%      { opacity:0.3; }
+}
+#status-text {
+    font-family: var(--font-m);
+    font-size:10px;
+    color: var(--c-brand);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+}
+
+/* ── BALANCE SECTION ── */
+#balances {
+    padding: 22px 22px 0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.balance-card {
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    padding: 14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+}
+.balance-card::before {
+    content:'';
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:3px;
+}
+.balance-card.bank::before { background: var(--c-brand); }
+.balance-card.cash::before { background: var(--c-gold); }
+
+.balance-label-wrap { display:flex; flex-direction:column; gap:3px; }
+.balance-label {
+    font-family: var(--font-m);
+    font-size:9px;
+    color: var(--c-text-3);
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+}
+.balance-sublabel {
+    font-family: var(--font-b);
+    font-size:12px;
+    color: var(--c-text-2);
+}
+
+.balance-amount {
+    font-family: var(--font-d);
+    font-size:32px;
+    font-weight:900;
+    letter-spacing:-0.5px;
+    line-height:1;
+}
+.balance-card.bank .balance-amount { color: var(--c-brand); }
+.balance-card.cash .balance-amount { color: var(--c-gold); }
+
+.balance-amount::before {
+    content:'$';
+    font-size:16px;
+    font-weight:700;
+    vertical-align:super;
+    margin-right:1px;
+    opacity:0.6;
+}
+
+/* ── DIVIDER ── */
+.divider {
+    margin: 20px 22px 0;
+    height:1px;
+    background: var(--c-border);
+    position:relative;
+}
+.divider-label {
+    position:absolute;
+    left:0; top:50%;
+    transform:translateY(-50%);
+    background: var(--c-surface);
+    padding-right:10px;
+    font-family: var(--font-m);
+    font-size:9px;
+    color: var(--c-text-3);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+}
+
+/* ── AMOUNT INPUT ── */
+#input-section {
+    padding: 16px 22px 0;
+}
+#input-label {
+    font-family: var(--font-m);
+    font-size:9px;
+    color: var(--c-text-3);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+}
+#amount-wrap {
+    position:relative;
+    display:flex;
+    align-items:center;
+}
+#currency-sym {
+    position:absolute;
+    left:14px;
+    font-family: var(--font-d);
+    font-size:24px;
+    font-weight:700;
+    color: var(--c-text-3);
+    pointer-events:none;
+    line-height:1;
+    top:50%; transform:translateY(-50%);
+}
+#amount {
+    width:100%;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border-2);
+    color: var(--c-text);
+    font-family: var(--font-d);
+    font-size:32px;
+    font-weight:800;
+    padding: 12px 16px 12px 36px;
+    outline:none;
+    letter-spacing:0.02em;
+    -moz-appearance:textfield;
+    appearance:textfield;
+    transition: border-color 0.12s;
+}
+#amount::-webkit-outer-spin-button,
+#amount::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+#amount:focus { border-color: var(--c-brand-dim); }
+#amount::placeholder { color: var(--c-text-3); font-weight:600; }
+
+/* quick amounts */
+#quick-amounts {
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+}
+.quick-btn {
+    flex:1;
+    background: var(--c-surface-3);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-2);
+    font-family: var(--font-d);
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:0.04em;
+    padding:7px 0;
+    cursor:pointer;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    text-align:center;
+}
+.quick-btn:hover {
+    background: var(--c-surface-2);
+    color: var(--c-text);
+    border-color: var(--c-border-2);
+}
+
+/* ── ACTION BUTTONS ── */
+#actions {
+    padding: 18px 22px;
+    display:flex;
+    gap:10px;
+}
+
+.action-btn {
+    flex:1;
+    border:none;
+    font-family: var(--font-d);
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding: 18px 10px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    transition: opacity 0.12s, transform 0.07s;
+    position:relative;
+    overflow:hidden;
+}
+.action-btn:active { transform:scale(0.97); }
+.action-btn:disabled {
+    opacity:0.35;
+    cursor:not-allowed;
+    transform:none;
+}
+
+.action-btn-icon {
+    font-size:22px;
+    line-height:1;
+}
+
+.btn-deposit {
+    background: var(--c-deposit-bg);
+    color: var(--c-deposit);
+    border: 1px solid var(--c-brand-dim);
+}
+.btn-deposit:hover:not(:disabled) {
+    background: rgba(64,208,128,0.1);
+    border-color: var(--c-deposit);
+}
+
+.btn-withdraw {
+    background: var(--c-withdraw-bg);
+    color: var(--c-withdraw);
+    border: 1px solid #3a1010;
+}
+.btn-withdraw:hover:not(:disabled) {
+    background: rgba(224,72,72,0.1);
+    border-color: var(--c-withdraw);
+}
+
+/* ── EJECT ── */
+#eject-btn {
+    margin: 0 22px 22px;
+    background:transparent;
+    border: 1px solid var(--c-border);
+    color: var(--c-text-3);
+    font-family: var(--font-d);
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:11px;
+    width:calc(100% - 0px);
+    cursor:pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+}
+#eject-btn:hover {
+    background: var(--c-surface-2);
+    color: var(--c-text-2);
+    border-color: var(--c-border-2);
+}
+
+/* ── TOAST ── */
+#toast {
+    position:fixed;
+    bottom:28px; left:50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border-2);
+    border-left: 3px solid var(--c-brand);
+    color: var(--c-text);
+    font-family: var(--font-d);
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding: 12px 22px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.15s, transform 0.15s;
+    white-space:nowrap;
+    z-index:100;
+}
+#toast.show  { opacity:1; transform:translateX(-50%) translateY(0); }
+#toast.error { border-left-color: var(--c-withdraw); }
+</style>
 </head>
 <body>
-    <div class="atm-container">
-        <h2>FLEECA BANK</h2>
-        <div class="balance-box">
-            <span>Bank:</span> <span id="bank-val">$0</span>
-        </div>
-        <div class="balance-box">
-            <span>Cash:</span> <span id="cash-val">$0</span>
-        </div>
-        
-        <div class="input-group">
-            <input type="number" id="amount" placeholder="Enter Amount">
-        </div>
 
-        <div class="btn-group">
-            <button class="btn-deposit" onclick="doAction('deposit')">DEPOSIT</button>
-            <button class="btn-withdraw" onclick="doAction('withdraw')">WITHDRAW</button>
+<div id="backdrop">
+  <div id="panel">
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+
+    <!-- HEADER -->
+    <div id="header">
+      <div id="header-left">
+        <div id="brand-mark">
+          <div id="brand-f">F</div>
         </div>
-        <button class="btn-close" onclick="closeATM()">EJECT CARD</button>
+        <div id="brand-text">
+          <div id="bank-name">Fleeca Bank</div>
+          <div id="bank-sub">AUTOMATED TELLER MACHINE</div>
+        </div>
+      </div>
+      <button id="close-btn" onclick="closeATM()">✕</button>
     </div>
 
-    <script>
-        function updateDisplay(data) {
-            document.getElementById('bank-val').innerText = '$' + data.bank.toLocaleString();
-            document.getElementById('cash-val').innerText = '$' + data.cash.toLocaleString();
-        }
+    <!-- STATUS -->
+    <div id="status-bar">
+      <div id="status-dot"></div>
+      <div id="status-text">Card active &nbsp;·&nbsp; Session secure</div>
+    </div>
 
-        function doAction(type) {
-            const amt = document.getElementById('amount').value;
-            if(!amt || amt <= 0) return;
-            if('mp' in window) mp.trigger('client:proxyATM', type, amt);
-            document.getElementById('amount').value = '';
-        }
+    <!-- BALANCES -->
+    <div id="balances">
+      <div class="balance-card bank">
+        <div class="balance-label-wrap">
+          <div class="balance-label">Account Balance</div>
+          <div class="balance-sublabel">Fleeca Checking</div>
+        </div>
+        <div class="balance-amount" id="bank-val">0</div>
+      </div>
+      <div class="balance-card cash">
+        <div class="balance-label-wrap">
+          <div class="balance-label">Cash on Hand</div>
+          <div class="balance-sublabel">Physical currency</div>
+        </div>
+        <div class="balance-amount" id="cash-val">0</div>
+      </div>
+    </div>
 
-        function closeATM() {
-            if('mp' in window) mp.trigger('client:closeATM');
-        }
+    <!-- DIVIDER -->
+    <div class="divider" style="margin-top:20px;">
+      <span class="divider-label">Transaction</span>
+    </div>
 
-        // Handle incoming data
-        // RAGE calls: browser.execute(`loadData('${json}')`);
-        window.loadData = (json) => {
-            updateDisplay(JSON.parse(json));
-        }
-    </script>
+    <!-- INPUT -->
+    <div id="input-section">
+      <div id="input-label">Enter Amount</div>
+      <div id="amount-wrap">
+        <span id="currency-sym">$</span>
+        <input type="number" id="amount" placeholder="0" min="1"/>
+      </div>
+      <div id="quick-amounts">
+        <div class="quick-btn" onclick="setAmount(500)">$500</div>
+        <div class="quick-btn" onclick="setAmount(1000)">$1K</div>
+        <div class="quick-btn" onclick="setAmount(5000)">$5K</div>
+        <div class="quick-btn" onclick="setAmount(10000)">$10K</div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div id="actions">
+      <button class="action-btn btn-deposit" onclick="doAction('deposit')">
+        <span class="action-btn-icon">↓</span>
+        Deposit
+      </button>
+      <button class="action-btn btn-withdraw" onclick="doAction('withdraw')">
+        <span class="action-btn-icon">↑</span>
+        Withdraw
+      </button>
+    </div>
+
+    <!-- EJECT -->
+    <button id="eject-btn" onclick="closeATM()">
+      ⏏ &nbsp;Eject Card
+    </button>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let toastTimer = null;
+
+// ── called by RAGE: browser.execute(`loadData('${json}')`)
+window.loadData = function(json) {
+    const data = JSON.parse(json);
+    document.getElementById('bank-val').textContent = data.bank.toLocaleString();
+    document.getElementById('cash-val').textContent = data.cash.toLocaleString();
+    document.getElementById('backdrop').classList.add('visible');
+};
+
+function setAmount(val) {
+    document.getElementById('amount').value = val;
+}
+
+function doAction(type) {
+    const amt = parseInt(document.getElementById('amount').value, 10);
+    if (!amt || amt <= 0) {
+        showToast('Enter a valid amount', true);
+        return;
+    }
+    if ('mp' in window) mp.trigger('client:proxyATM', type, amt);
+    document.getElementById('amount').value = '';
+    showToast(type === 'deposit' ? 'Deposit submitted' : 'Withdrawal submitted', false);
+}
+
+function closeATM() {
+    document.getElementById('backdrop').classList.remove('visible');
+    setTimeout(() => {
+        if ('mp' in window) mp.trigger('client:closeATM');
+    }, 200);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeATM();
+    if (e.key === 'Enter') {
+        // Enter with no focus bias — default to withdraw (most common action)
+        doAction('withdraw');
+    }
+});
+
+function showToast(msg, isError) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.toggle('error', !!isError);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+</script>
 </body>
 </html>

@@ -1,36 +1,40 @@
 // packages/data/stores.js
-// 24/7 Store Locations & Catalog Configuration
-
 'use strict';
 
-// ---------------------------------------------------------------------------
-// STORE CATALOG
-// Items sold at every 24/7 store. Add/remove/edit prices here freely.
-// ---------------------------------------------------------------------------
 const STORE_CATALOG = [
-    // ── FOOD ────────────────────────────────────────────────────────────────
-    { itemId: 'burger',       price: 8,   category: 'food'  },
-    { itemId: 'apple',        price: 3,   category: 'food'  },
-
-    // ── DRINKS ──────────────────────────────────────────────────────────────
-    { itemId: 'water',        price: 4,   category: 'drink' },
-
-    // ── MISC / UTILITY ──────────────────────────────────────────────────────
-    { itemId: 'plastic_bottle', price: 1, category: 'misc' },
+    { itemId: 'burger',         price: 8,   category: 'food'  },
+    { itemId: 'apple',          price: 3,   category: 'food'  },
+    { itemId: 'water',          price: 4,   category: 'drink' },
+    { itemId: 'plastic_bottle', price: 1,   category: 'misc'  },
 ];
 
-// ---------------------------------------------------------------------------
-// STORE LOCATIONS
-// npc   – where the NPC clerk is spawned (x, y, z, heading)
-// blip  – map marker position (usually same x/y, same z)
-// name  – display name shown in the UI header
-// ---------------------------------------------------------------------------
 const STORES = [
     {
         id: 1,
         name: '24/7 – Strawberry',
-        npc:  { x: 24.46, y: -1347.42, z: 29.50, heading: -93.9 },
-        blip: { x: 24.46, y: -1347.42, z: 29.50 },
+        npc:  { x: 24.46, y: -1347.42, z: 29.50, h: -93.9, model: 'mp_m_shopkeep_01' },
+        blip: { x: 24.46, y: -1347.42, z: 29.50, sprite: 52, color: 4, scale: 0.75 }
+    },
+
+    {
+        id: 2,
+        name: '24/7 – Mirror Park',
+        npc:  { x: 1164.71, y: -322.60, z: 69.21, h: 102.32, model: 'mp_m_shopkeep_01' },
+        blip: { x: 1164.71, y: -322.60, z: 69.21, sprite: 52, color: 4, scale: 0.75 }
+    },
+
+    {
+        id: 3,
+        name: '24/7 – Little Seoul',
+        npc:  { x: -706.07, y: -913.61, z: 19.22, h: 96.74, model: 'mp_m_shopkeep_01' },
+        blip: { x: -706.07, y: -913.61, z: 19.22, sprite: 52, color: 4, scale: 0.75 }
+    },
+    
+    {
+        id: 4,
+        name: '24/7 – Sandy Shores',
+        npc:  { x: 1959.00, y: 3741.76, z: 32.34, h: -55.14, model: 'mp_m_shopkeep_01' },
+        blip: { x: 1959.00, y: 3741.76, z: 32.34, sprite: 52, color: 4, scale: 0.75 }
     },
 ];
 
