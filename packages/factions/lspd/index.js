@@ -2,9 +2,10 @@
 const Faction = require('../Faction');
 const factionsManager = require('../factionsManager');
 const wardrobeManager = require('../wardrobe/wardrobeManager');
+const wantedManager = require('./wantedManager');
+const jailManager = require('./jailManager');
 
 // Load subsystems
-require('./wantedManager');
 require('./arrestManager');
 
 class LSPDFaction extends Faction {
@@ -184,12 +185,79 @@ factionsManager.registerFaction(instance);
 
 require('./events/vehicleManager')(instance);
 
-mp.events.add('faction:lspd:enter', (player) => {
-    if (!player.factionId || player.factionId !== instance.id) {
-        return player.outputChatBox('!{#ff4757}You are not a member of the LSPD.');
+function countDutyOfficers() {
+    let count = 0;
+    mp.players.forEach(p => {
+        if (p.logged && p.factionId === instance.id && p.getVariable('factionDuty')) count++;
+    });
+    return count;
+}
+
+function syncDutyCountToClients(targetPlayer) {
+    const dutyCount = countDutyOfficers();
+
+    if (targetPlayer) {
+        if (mp.players.exists(targetPlayer) && targetPlayer.logged) {
+            targetPlayer.setVariable('lspdDutyCount', dutyCount);
+        }
+        return;
     }
-    player.position = instance.hq.interior;
-    player.dimension = instance.hq.dimension;
+
+    mp.players.forEach(p => {
+        if (!p.logged) return;
+        p.setVariable('lspdDutyCount', dutyCount);
+    });
+}
+
+function canUseAutoSurrender(player) {
+    return !!wantedManager.getWantedType(player) && countDutyOfficers() === 0;
+}
+
+function getSurrenderSentenceMinutes(player) {
+    const now = Date.now();
+    const entries = wantedManager.getWanted(player);
+
+    let maxMinutes = 0;
+    entries.forEach(function(entry) {
+        if (!entry || entry.expiresAt <= now) return;
+        const remMinutes = Math.ceil((entry.expiresAt - now) / 60000);
+        if (remMinutes > maxMinutes) maxMinutes = remMinutes;
+    });
+
+    if (maxMinutes > 0) return maxMinutes;
+    return jailManager.getRecommendedSentenceMinutes(player, 10);
+}
+
+mp.events.add('faction:lspd:enter', (player) => {
+    const wantedType = wantedManager.getWantedType(player);
+
+    if (wantedType) {
+        if (canUseAutoSurrender(player)) {
+            const sentenceMinutes = getSurrenderSentenceMinutes(player);
+            wantedManager.clearAllWanted(player, 'surrendered (no officers on duty)');
+            jailManager.sendToPrison(player, {
+                forceRespawn: false,
+                durationMinutes: sentenceMinutes,
+                keepLonger: true,
+            });
+            player.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}No officers were on duty. You surrendered and were booked into Bolingbroke for ' + sentenceMinutes + ' minute(s).');
+            return;
+        }
+
+        if (player.factionId && player.factionId === instance.id) {
+            return player.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}You cannot enter HQ while wanted. Surrender first.');
+        }
+
+        return player.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}Officers are on duty. Surrender directly to an officer.');
+    }
+
+    if (player.factionId && player.factionId === instance.id) {
+        player.position = instance.hq.interior;
+        player.dimension = instance.hq.dimension;
+        return;
+    }
+
+    return player.outputChatBox('!{#ff4757}You are not a member of the LSPD.');
 });
 
 mp.events.add('faction:lspd:exit', (player) => {
@@ -200,5 +268,19 @@ mp.events.add('faction:lspd:exit', (player) => {
 mp.events.add('faction:lspd:garage', (player) => {
     mp.events.call('faction:spawnLSPD', player);
 });
+
+mp.events.add('factionDutyChanged', () => {
+    syncDutyCountToClients();
+});
+
+mp.events.add('server:spawn:player', (player) => {
+    syncDutyCountToClients(player);
+});
+
+mp.events.add('playerQuit', () => {
+    setTimeout(() => syncDutyCountToClients(), 0);
+});
+
+setTimeout(() => syncDutyCountToClients(), 1500);
 
 module.exports = instance;

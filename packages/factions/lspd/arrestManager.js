@@ -17,6 +17,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const wantedManager = require('./wantedManager');
+const jailManager = require('./jailManager');
 const db = require('../../core/database');
 const PlayerManager = require('../../core/playerManager');
 
@@ -32,7 +33,6 @@ const JAIL_DROP_POINTS = [
     { x: -448.15, y: 6012.55, z: 31.72,  label: 'Paleto Bay PD — Booking'  },
 ];
 const JAIL_DROP_RANGE  = 10.0;
-const JAIL_POSITION    = { x: 1849.0, y: 2600.0, z: 46.0 }; // Bolingbroke
 
 // ── In-memory cuff state ──────────────────────────────────────────────────────
 const cuffedPlayers = new Map(); // Map<suspectServerId, { officerId }>
@@ -64,6 +64,28 @@ async function logArrest(officerDbId, suspectDbId, suspectName, offenses, outcom
         );
     } catch (e) {
         console.error('[Arrest] Failed to log arrest record:', e);
+    }
+}
+
+async function createActiveFeeRecord(officer, suspect, offense, fineAmount) {
+    try {
+        await db.query(
+            `INSERT INTO lspd_active_fees
+             (user_id, officer_id, offense_key, offense_label, amount, reason, issued_at, settled)
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), 0)`,
+            [
+                suspect.data && suspect.data.dbId ? suspect.data.dbId : null,
+                officer.data && officer.data.dbId ? officer.data.dbId : null,
+                offense && offense.key ? offense.key : null,
+                offense ? offense.label : 'Unknown offense',
+                Number(fineAmount) || 0,
+                offense ? ('Ticket: ' + offense.label) : 'Ticket'
+            ]
+        );
+    } catch (e) {
+        if (String(e && e.code || '').toUpperCase() !== 'ER_NO_SUCH_TABLE') {
+            console.error('[Arrest] Failed to create active fee record:', e);
+        }
     }
 }
 
@@ -145,9 +167,14 @@ mp.events.add('server:lspd:tryJailDrop', (officer) => {
 
 async function _processArrest(officer, suspect, sendToJail) {
     const entries = wantedManager.getWanted(suspect);
-    const activeOffenses = Array.from(entries.values())
-        .filter(e => e.expiresAt > Date.now())
-        .map(e => e.offenseKey);
+    const now = Date.now();
+    const activeEntries = Array.from(entries.values())
+        .filter(e => e.expiresAt > now);
+    const activeOffenses = activeEntries.map(e => e.offenseKey);
+    const sentenceMinutes = activeEntries.reduce((maxMinutes, e) => {
+        const remMinutes = Math.ceil((e.expiresAt - now) / 60000);
+        return Math.max(maxMinutes, remMinutes);
+    }, 1);
 
     cuffedPlayers.delete(suspect.id);
     suspect.setVariable('cuffed', false);
@@ -164,9 +191,12 @@ async function _processArrest(officer, suspect, sendToJail) {
     );
 
     if (sendToJail && mp.players.exists(suspect)) {
-        // Eject from vehicle first, then teleport
-        suspect.call('client:lspd:ejectAndTeleport', [JAIL_POSITION.x, JAIL_POSITION.y, JAIL_POSITION.z]);
-        suspect.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}You have been booked into Bolingbroke Penitentiary.');
+        jailManager.sendToPrison(suspect, {
+            forceRespawn: false,
+            durationMinutes: sentenceMinutes,
+            keepLonger: true,
+        });
+        suspect.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}You have been booked into Bolingbroke Penitentiary. Sentence: ' + sentenceMinutes + ' minute(s).');
     } else {
         suspect.outputChatBox(`!{#ff4757}[LSPD] !{#ffffff}You have been arrested by ${officer.name.replace(/_/g, ' ')}.`);
     }
@@ -206,9 +236,22 @@ mp.events.addCommand('ticket', async (officer, args) => {
     const hasOffense = Array.from(entries.values()).some(e => e.offenseKey === offenseKey && e.expiresAt > Date.now());
     if (!hasOffense) return officer.outputChatBox(`!{#ff4757}${suspect.name.replace(/_/g, ' ')} is not wanted for ${offense.label}.`);
 
-    const fine = offense.fine;
+    const fine = Number(offense.fine) || 0;
+    if (fine <= 0) {
+        return officer.outputChatBox(`!{#ff4757}No fine value configured for ${offense.label}.`);
+    }
+
     const paid = await PlayerManager.removeMoneyAndSave(suspect, fine, `Police Fine: ${offense.label}`);
-    if (!paid) return officer.outputChatBox(`!{#ff4757}Suspect doesn't have enough money ($${fine}) for this ticket.`);
+    if (!paid) {
+        await createActiveFeeRecord(officer, suspect, { key: offenseKey, label: offense.label }, fine);
+        wantedManager.clearOffense(suspect, offenseKey);
+
+        suspect.outputChatBox(`!{#ffc300}[LSPD] !{#ffffff}Ticket issued for ${offense.label}. You now have an active fee of !{#ff4757}$${fine}!{#ffffff}.`);
+        officer.outputChatBox(`!{#ffc300}Suspect couldn't pay. Active fee created: $${fine} for ${suspect.name.replace(/_/g, ' ')}.`);
+
+        await logArrest(officer.data && officer.data.dbId, suspect.data && suspect.data.dbId, suspect.name, [offenseKey], 'ticketed');
+        return;
+    }
 
     wantedManager.clearOffense(suspect, offenseKey);
     suspect.outputChatBox(`!{#ffc300}[LSPD] !{#ffffff}You received a fine of !{#ff4757}$${fine} !{#ffffff}for: ${offense.label}.`);

@@ -8,6 +8,7 @@ const PhotoHuntManager = require('../systems/photoHunt/photoHuntManager');
 const RepoJob = require('../systems/repoJob');
 const HouseManager = require('../systems/houseManager');
 const FactionsManager = require('../factions/factionsManager');
+const jailManager = require('../factions/lspd/jailManager');
 
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
@@ -267,19 +268,43 @@ async function startSession(player, userData) {
     await FactionsManager.loadPlayerFactionData(player);
 
     try {
-        const cd = userData.cooldowns ? (typeof userData.cooldowns === 'string' ? JSON.parse(userData.cooldowns) : userData.cooldowns) : {};
-        player.data.cooldowns = cd;
+        let rawCooldowns = userData.cooldowns;
+
+        // Always pull cooldowns fresh from DB to avoid stale in-memory row data during fast reconnects.
+        if (player.data.dbId) {
+            const [rows] = await db.query('SELECT cooldowns FROM users WHERE id = ? LIMIT 1', [player.data.dbId]);
+            if (rows && rows[0] && rows[0].cooldowns !== undefined) {
+                rawCooldowns = rows[0].cooldowns;
+            }
+        }
+
+        const cd = rawCooldowns
+            ? (typeof rawCooldowns === 'string' ? JSON.parse(rawCooldowns) : rawCooldowns)
+            : {};
+
+        player.data.cooldowns = (cd && typeof cd === 'object') ? cd : {};
 
         playerManager.syncCooldowns(player); 
 
         const now = Date.now();
-        for (const [key, val] of Object.entries(cd)) {
+        for (const [key, val] of Object.entries(player.data.cooldowns)) {
             if (val > now) player.setVariable('cooldown_' + key, val);
         }
     } catch(e) { 
         player.data.cooldowns = {}; 
         playerManager.syncCooldowns(player); // Sync empty if error
     }
+
+    mp.events.call('wanted:restoreState', player);
+
+    // Retry a few times to catch delayed DB writes from disconnect handlers on fast reconnects.
+    [1200, 3000, 6000].forEach((delay) => {
+        setTimeout(() => {
+            if (mp.players.exists(player) && player.logged) {
+                mp.events.call('wanted:restoreState', player);
+            }
+        }, delay);
+    });
 
     player.setCooldown = function(name, minutes) {
         const exp = Date.now() + (minutes * 60000);
@@ -343,6 +368,7 @@ async function startSession(player, userData) {
 
     let showSpawnSelector = true; 
     let lastPos = null;
+    const jailRemainingSeconds = jailManager.getRemainingJailSeconds(player);
 
     if (userData.position) {
         try { lastPos = typeof userData.position === 'string' ? JSON.parse(userData.position) : userData.position; } catch (e) {}
@@ -350,7 +376,28 @@ async function startSession(player, userData) {
 
     if (lastPos) player.data.lastLocation = lastPos;
 
-    if (diffMinutes < 5 && lastPos) {
+    if (jailRemainingSeconds > 0) {
+        const jailInfo = jailManager.sendToPrison(player, {
+            forceRespawn: true,
+            setCooldown: false,
+            keepLonger: true,
+            clearClientRestraints: false,
+        });
+
+        showSpawnSelector = false;
+        if (jailInfo && jailInfo.spawn) {
+            lastPos = {
+                x: jailInfo.spawn.x,
+                y: jailInfo.spawn.y,
+                z: jailInfo.spawn.z,
+                heading: jailInfo.spawn.h || 0,
+            };
+            player.data.lastLocation = lastPos;
+        }
+
+        const jailMinutes = Math.ceil(jailRemainingSeconds / 60);
+        player.outputChatBox(`!{#ff4757}[JAIL] !{#ffffff}You are still serving a sentence (${jailMinutes} minute(s) remaining).`);
+    } else if (diffMinutes < 5 && lastPos) {
         player.spawn(new mp.Vector3(lastPos.x, lastPos.y, lastPos.z));
         player.dim = 0; 
         player.heading = lastPos.heading || 0;

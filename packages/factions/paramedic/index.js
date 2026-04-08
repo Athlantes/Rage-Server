@@ -172,9 +172,9 @@ class ParamedicFaction extends Faction {
                 new mp.Vector3(hospital.coords.x, hospital.coords.y, hospital.coords.z),
                 {
                     name:       hospital.blipName,
-                    color:      1,     // Red
+                    color:      6,     // Red
                     shortRange: true,
-                    scale:      0.9,
+                    scale:      0.7,
                 }
             );
         }

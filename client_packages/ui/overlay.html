@@ -744,17 +744,36 @@
             'dumpster':        { label: 'Dumpster',         icon: 'fas fa-trash' },
             'skimmer_collect': { label: 'Collect Skimmer',  icon: 'fas fa-microchip' },
             'skimmer_data':    { label: 'Data Collected',   icon: 'fas fa-hdd',       color: '#ffc300' }, // New Status
+            'jail':            { label: 'Jail',             icon: 'fas fa-gavel', color: '#ff9f43' },
             'wanted_ros':      { label: 'Wanted',           icon: 'fas fa-handcuffs', color: '#ffc300' },
             'wanted_nos':      { label: 'Wanted',           icon: 'fas fa-skull',     color: '#ff4757' },
         };
 
         function updateCooldowns(json) {
             try {
-                activeCooldowns = JSON.parse(json);
+                if (typeof json === 'string') {
+                    activeCooldowns = JSON.parse(json);
+                } else if (json && typeof json === 'object') {
+                    activeCooldowns = json;
+                } else {
+                    activeCooldowns = {};
+                }
                 renderCooldowns();
             } catch (e) {
                 console.error("CD Error", e);
+                activeCooldowns = {};
+                renderCooldowns();
             }
+        }
+
+        function setJailCooldown(expiryRaw) {
+            const expiry = Number(expiryRaw);
+            if (Number.isFinite(expiry) && expiry > Date.now()) {
+                activeCooldowns.jail = expiry;
+            } else {
+                delete activeCooldowns.jail;
+            }
+            renderCooldowns();
         }
 
         function setLocalStatus(key, active) {

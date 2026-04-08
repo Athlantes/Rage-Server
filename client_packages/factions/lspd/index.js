@@ -78,6 +78,21 @@ function getActiveColshapeInteraction() {
 }
 
 let _shadowColshapeInteraction = null;
+let _lastEntrySurrenderPrompt = null;
+
+function shouldUseEntrySurrenderPrompt() {
+    const cs = _shadowColshapeInteraction;
+    if (!cs || cs.event !== 'faction:lspd:enter') return false;
+
+    const local = mp.players.local;
+    if (!local || local.vehicle) return false;
+
+    const wantedType = local.getVariable ? local.getVariable('wantedType') : null;
+    const dutyCountRaw = local.getVariable ? local.getVariable('lspdDutyCount') : 0;
+    const dutyCount = Number(dutyCountRaw || 0);
+
+    return !!wantedType && dutyCount === 0;
+}
 
 mp.events.add('playerEnterColshape', (shape) => {
     if (!shape || !mp.colshapes.exists(shape)) return;
@@ -108,7 +123,11 @@ function refreshPrompt() {
     // E-key row from colshape (if any)
     const cs = _shadowColshapeInteraction;
     if (cs) {
-        rows.push({ key: 'E', label: (cs.title ? cs.title + ': ' : '') + (cs.text || '') });
+        if (shouldUseEntrySurrenderPrompt()) {
+            rows.push({ key: 'E', label: 'No one is on duty. You can Surrender. Press E to Surrender.' });
+        } else {
+            rows.push({ key: 'E', label: (cs.title ? cs.title + ': ' : '') + (cs.text || '') });
+        }
     }
 
     // G-key row (cuff or jail drop)
@@ -279,6 +298,14 @@ mp.events.add('client:lspd:showJailDropPrompt', (pointsJson) => {
 // Only touches gKeyAction — never activeInteraction (E-key / ColShape).
 
 setInterval(() => {
+    const entryPromptActive = shouldUseEntrySurrenderPrompt();
+    if (_lastEntrySurrenderPrompt === null) {
+        _lastEntrySurrenderPrompt = entryPromptActive;
+    } else if (entryPromptActive !== _lastEntrySurrenderPrompt) {
+        _lastEntrySurrenderPrompt = entryPromptActive;
+        refreshPrompt();
+    }
+
     if (mp.gui.cursor.visible) {
         if (gKeyAction) setGKeyAction(null);
         return;

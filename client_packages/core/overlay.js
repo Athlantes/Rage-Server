@@ -114,12 +114,14 @@ setInterval(() => {
         
         const hunger = player.getVariable('hunger') || 100;
         const thirst = player.getVariable('thirst') || 100;
+        const jailExpiry = Number(player.getVariable('cooldown_jail') || 0);
 
         const now = new Date();
         const fullDate = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} | ${now.getDate()}/${now.getMonth() + 1}`;
         const safeName = player.name.replace(/'/g, "\\'");
         
         overlayBrowser.execute(`updateInfoHud('${displayId}', '${safeName}', ${money}, ${bank}, '${fullDate}', ${hunger}, ${thirst});`);
+        overlayBrowser.execute(`setJailCooldown(${Number.isFinite(jailExpiry) ? jailExpiry : 0});`);
 
         if (currentJobLocation) {
             const dist = getDistance(player.position, currentJobLocation);
@@ -196,7 +198,7 @@ mp.events.add('showCenterPopup', (title, subtitle, rewardsJson, duration) => {
 
 mp.events.add('updateCooldowns', (cooldownsJson) => {
     if (overlayBrowser) {
-        overlayBrowser.execute(`updateCooldowns('${cooldownsJson}');`);
+        overlayBrowser.execute(`updateCooldowns(${JSON.stringify(cooldownsJson)});`);
     }
 });
 

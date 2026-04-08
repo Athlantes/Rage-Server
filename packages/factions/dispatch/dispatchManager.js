@@ -250,25 +250,21 @@ class DispatchManager {
         const factionId = player.factionId;
 
         if (!factionId) {
-            player.outputChatBox('!{#ff4757}You are not in a faction.');
             return false;
         }
 
         if (!DISPATCH_CONFIGS[factionId]) return false;
 
         if (!player.getVariable('factionDuty')) {
-            player.outputChatBox('!{#ff4757}You must be on duty to use dispatch.');
             return false;
         }
 
         const vehicle = player.vehicle;
         if (!vehicle) {
-            player.outputChatBox('!{#ff4757}You must be in a faction vehicle to use dispatch.');
             return false;
         }
 
         if (vehicle.getVariable('factionId') !== factionId) {
-            player.outputChatBox('!{#ff4757}You must be in a faction vehicle to use dispatch.');
             return false;
         }
 
@@ -328,6 +324,7 @@ class DispatchManager {
 
         const payload = {
             config: {
+                factionId:    config.factionId,
                 title:        config.title,
                 subtitle:     config.subtitle,
                 accentColor:  config.accentColor,

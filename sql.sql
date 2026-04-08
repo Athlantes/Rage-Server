@@ -19,6 +19,50 @@ CREATE TABLE IF NOT EXISTS `arrest_records` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE IF NOT EXISTS `lspd_active_fees` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `officer_id` int DEFAULT NULL,
+  `offense_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `offense_label` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` int NOT NULL DEFAULT '0',
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `issued_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `settled` tinyint(1) NOT NULL DEFAULT '0',
+  `settled_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_fee_user_settled` (`user_id`,`settled`),
+  KEY `idx_fee_issued` (`issued_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `lspd_stop_orders` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `officer_id` int DEFAULT NULL,
+  `officer_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_user_id` int DEFAULT NULL,
+  `target_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `issued_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_so_target_time` (`target_user_id`,`issued_at`),
+  KEY `idx_so_officer_time` (`officer_id`,`issued_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `lspd_frisk_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `officer_id` int DEFAULT NULL,
+  `officer_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_user_id` int DEFAULT NULL,
+  `target_name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_frisk_target_time` (`target_user_id`,`created_at`),
+  KEY `idx_frisk_officer_time` (`officer_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE IF NOT EXISTS `atm_skimmer_state` (
   `atm_index` int NOT NULL,
   `state` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,

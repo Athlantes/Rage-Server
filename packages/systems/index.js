@@ -25,3 +25,4 @@ require('./cardPacksManager');
 require('./weather');
 require('./lotto');
 require('./store');
+require('./doorLocks');

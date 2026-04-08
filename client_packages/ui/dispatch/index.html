@@ -198,12 +198,408 @@
             color: var(--text-muted);
         }
 
-        /* ── MDT Panel Styling ─────────────────────────────────────────────── */
-        #mdt-panel {
-            background: rgba(0, 0, 0, 0.4);
-            border-bottom: 1px solid var(--border);
-            padding: 15px 20px;
+        /* ── View containers ───────────────────────────────────────────────── */
+        .view {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #dispatch-view {
+            display: flex;
+        }
+
+        #mdt-view {
             display: none;
+            padding: 12px 14px 14px;
+            gap: 10px;
+        }
+
+        /* ── MDT panel layout ──────────────────────────────────────────────── */
+        .mdt-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mdt-grid {
+            display: grid;
+            grid-template-columns: 42% 58%;
+            gap: 10px;
+            min-height: 0;
+            flex: 1;
+        }
+
+        .mdt-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mdt-card-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .mdt-results {
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .mdt-results::-webkit-scrollbar { width: 4px; }
+        .mdt-results::-webkit-scrollbar-track { background: transparent; }
+        .mdt-results::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .player-result {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.15s;
+        }
+
+        .player-result:hover,
+        .player-result.active {
+            border-color: rgba(0, 168, 255, 0.4);
+            background: rgba(0, 168, 255, 0.1);
+        }
+
+        .player-result-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .player-result-meta {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .player-result-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+
+        .player-result-badge.ros {
+            color: #ffc300;
+            border-color: rgba(255, 195, 0, 0.35);
+        }
+
+        .player-result-badge.nos {
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.35);
+        }
+
+        .mdt-profile-wrap {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .mdt-profile-wrap::-webkit-scrollbar { width: 4px; }
+        .mdt-profile-wrap::-webkit-scrollbar-track { background: transparent; }
+        .mdt-profile-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .profile-empty {
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 16px;
+        }
+
+        .profile-top {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .profile-mugshot {
+            width: 120px;
+            height: 120px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-mugshot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-mugshot-fallback {
+            font-size: 34px;
+            color: var(--text-muted);
+        }
+
+        .profile-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .profile-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .status-chip.ros {
+            color: #ffc300;
+            border-color: rgba(255, 195, 0, 0.35);
+            background: rgba(255, 195, 0, 0.08);
+        }
+
+        .status-chip.nos {
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.35);
+            background: rgba(255, 71, 87, 0.08);
+        }
+
+        .profile-facts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+
+        .fact {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .fact-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 3px;
+        }
+
+        .fact-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .fact-value.bad {
+            color: var(--danger);
+        }
+
+        .fact-value.warn {
+            color: var(--warning);
+        }
+
+        .offense-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+
+        .offense-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .offense-warrant-btn {
+            padding: 6px 10px;
+            flex-shrink: 0;
+        }
+
+        .offense-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .offense-tag.ros {
+            color: #ffc300;
+            border-color: rgba(255, 195, 0, 0.35);
+        }
+
+        .offense-tag.nos {
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.35);
+        }
+
+        .warrant-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 16px;
+        }
+
+        .warrant-modal {
+            width: min(560px, 94vw);
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-panel);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+        }
+
+        .warrant-modal-head {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
+        }
+
+        .warrant-modal-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.4px;
+        }
+
+        .warrant-modal-subtitle {
+            margin-top: 3px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .warrant-options {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 160px;
+        }
+
+        .warrant-options::-webkit-scrollbar { width: 4px; }
+        .warrant-options::-webkit-scrollbar-track { background: transparent; }
+        .warrant-options::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .warrant-option {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 9px 10px;
+            text-align: left;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .warrant-option:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .warrant-option.active {
+            border-color: rgba(0, 168, 255, 0.5);
+            background: rgba(0, 168, 255, 0.15);
+            box-shadow: inset 0 0 0 1px rgba(0, 168, 255, 0.2);
+        }
+
+        .warrant-option-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .warrant-option-meta {
+            font-size: 10px;
+            margin-top: 2px;
+            color: var(--text-dim);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .warrant-option-type {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 1px 7px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .warrant-option-type.nos {
+            color: #ff4757;
+            border-color: rgba(255, 71, 87, 0.35);
+        }
+
+        .warrant-option-type.ros {
+            color: #ffc300;
+            border-color: rgba(255, 195, 0, 0.35);
+        }
+
+        .warrant-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px 12px;
+            border-top: 1px solid var(--border);
         }
         
         .mdt-input {
@@ -414,6 +810,26 @@
             border-color: rgba(46, 204, 113, 0.4);
             color: var(--success);
         }
+
+        @media (max-width: 980px) {
+            .panel {
+                width: 96vw;
+                max-height: 92vh;
+            }
+
+            .mdt-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-top {
+                grid-template-columns: 96px 1fr;
+            }
+
+            .profile-mugshot {
+                width: 96px;
+                height: 96px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -443,65 +859,119 @@
         </div>
     </div>
 
-    <div id="mdt-panel">
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input type="text" id="searchInput" class="mdt-input" placeholder="Enter player name (e.g. John_Doe)..." style="flex: 1;">
-            <button onclick="searchPlayer()" class="accept-btn blue" style="padding: 0 20px; height: 35px;">
+    <div id="dispatch-view" class="view">
+        <div class="keybind-hint">
+            <span class="key-chip">P</span>
+            <span>Close dispatch &nbsp;&nbsp;</span>
+            <span class="key-chip">Click</span>
+            <span>Accept a call</span>
+        </div>
+
+        <div class="table-header" id="table-header"></div>
+
+        <div class="call-list" id="call-list">
+            <div class="empty-state" id="empty-state">
+                <i class="fas fa-road"></i>
+                <p>No ride requests right now.</p>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <div class="footer-note">
+                <i class="fas fa-circle-info"></i>
+                Calls are assigned first-come, first-served
+            </div>
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                Live
+            </div>
+        </div>
+    </div>
+
+    <div id="mdt-view" class="view">
+        <div class="mdt-toolbar">
+            <button class="accept-btn" style="padding: 8px 10px;" onclick="toggleMdt(false)">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <input type="text" id="searchInput" class="mdt-input" placeholder="Search online player name..." style="flex: 1;">
+            <button onclick="searchPlayer()" class="accept-btn blue" style="height: 35px; padding: 0 18px;">
                 <i class="fas fa-magnifying-glass"></i> Search
             </button>
         </div>
-        
-        <div id="mdt-profile" style="display: none; background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <div>
-                    <h4 id="profileName" style="margin: 0; color: var(--text); font-size: 14px;">Name: ---</h4>
-                    <div id="profileId" style="color: var(--text-dim); font-size: 11px;">ID: ---</div>
+
+        <div class="mdt-grid">
+            <div class="mdt-card">
+                <div class="mdt-card-header">Search Results</div>
+                <div class="mdt-results" id="mdt-results">
+                    <div class="profile-empty" id="mdt-results-empty">Search by name to load player list.</div>
                 </div>
-                <div id="profileWanted" style="font-weight: 700; color: var(--danger); font-size: 13px; background: rgba(255, 71, 87, 0.1); padding: 4px 10px; border-radius: 4px;">Wanted Level: ---</div>
-            </div>
-            
-            <!-- Active offenses list (populated by showProfile) -->
-            <div id="profileOffenses" style="display: none; margin-bottom: 10px;">
-                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">Active Offenses</div>
-                <div id="offenseList" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
             </div>
 
-            <div style="display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px;">
-                <select id="wantedOffenseSelect" class="mdt-input" style="flex: 1;">
-                    <option value="">— Select Offense —</option>
-                </select>
-                <button onclick="applyWanted()" class="accept-btn red">
-                    <i class="fas fa-gavel"></i> Issue Warrant
-                </button>
+            <div class="mdt-card">
+                <div class="mdt-card-header">Player Profile</div>
+                <div class="mdt-profile-wrap" id="mdt-profile-wrap">
+                    <div class="profile-empty" id="mdt-profile-empty">Select a player from search results.</div>
+
+                    <div id="mdt-profile" style="display: none;">
+                        <div class="profile-top">
+                            <div class="profile-mugshot" id="profileMugshot">
+                                <div class="profile-mugshot-fallback"><i class="fas fa-user"></i></div>
+                            </div>
+                            <div>
+                                <div class="profile-title" id="profileName">Unknown</div>
+                                <div class="profile-subtitle" id="profileId">Server ID: -</div>
+                                <div class="status-chip" id="profileWanted">Not wanted</div>
+                                <div class="profile-subtitle" id="profileWantedTime">Wanted time: -</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-facts">
+                            <div class="fact">
+                                <div class="fact-label">Active Fees</div>
+                                <div class="fact-value" id="profileHasFees">No</div>
+                            </div>
+                            <div class="fact">
+                                <div class="fact-label">Fee Total</div>
+                                <div class="fact-value" id="profileFeeTotal">$0</div>
+                            </div>
+                            <div class="fact">
+                                <div class="fact-label">Recent /so</div>
+                                <div class="fact-value" id="profileRecentSo">No</div>
+                            </div>
+                            <div class="fact">
+                                <div class="fact-label">Recent Frisk</div>
+                                <div class="fact-value" id="profileRecentFrisk">No</div>
+                            </div>
+                        </div>
+
+                        <div class="offense-header">
+                            <div class="fact-label" style="margin-bottom: 0;">Active Offenses</div>
+                            <button onclick="openWarrantOverlay()" class="accept-btn red offense-warrant-btn">
+                                <i class="fas fa-gavel"></i> Issue Warrant
+                            </button>
+                        </div>
+                        <div id="offenseList" class="offense-tags"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="keybind-hint">
-        <span class="key-chip">P</span>
-        <span>Close dispatch &nbsp;&nbsp;</span>
-        <span class="key-chip">Click</span>
-        <span>Accept a call</span>
-    </div>
-
-    <div class="table-header" id="table-header">
+<div id="warrant-overlay" class="warrant-overlay" onclick="onWarrantOverlayBackdrop(event)">
+    <div class="warrant-modal">
+        <div class="warrant-modal-head">
+            <div class="warrant-modal-title">Issue Warrant</div>
+            <div class="warrant-modal-subtitle" id="warrantModalTarget">Select a warrant to apply.</div>
         </div>
-
-    <div class="call-list" id="call-list">
-        <div class="empty-state" id="empty-state">
-            <i class="fas fa-road"></i>
-            <p>No ride requests right now.</p>
-        </div>
-    </div>
-
-    <div class="panel-footer">
-        <div class="footer-note">
-            <i class="fas fa-circle-info"></i>
-            Calls are assigned first-come, first-served
-        </div>
-        <div class="live-badge">
-            <div class="live-dot"></div>
-            Live
+        <div class="warrant-options" id="warrantOptions"></div>
+        <div class="warrant-actions">
+            <button onclick="confirmWarrantApply()" class="accept-btn red">
+                <i class="fas fa-gavel"></i> Apply
+            </button>
+            <button onclick="closeWarrantOverlay()" class="accept-btn blue">
+                <i class="fas fa-xmark"></i> Cancel
+            </button>
         </div>
     </div>
 </div>
@@ -509,168 +979,330 @@
 <div class="toast-msg" id="toast-msg"></div>
 
 <script>
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
     let currentConfig = null;
-    let currentCalls  = [];
+    let currentCalls = [];
     let currentTargetId = null;
+    let currentSearchResults = [];
+    let currentMdtOffenses = [];
+    let selectedWantedOffense = null;
+    let isMdtOpen = false;
 
-    // ── Entry point — called by client JS ────────────────────────────────────
+    // Entry point called by client JS
     function receiveDispatchData(payloadJson) {
         try {
-            const payload = typeof payloadJson === 'string'
-                ? JSON.parse(payloadJson)
-                : payloadJson;
-
-            currentConfig = payload.config;
-            currentCalls  = payload.calls || [];
+            const payload = typeof payloadJson === 'string' ? JSON.parse(payloadJson) : payloadJson;
+            currentConfig = payload.config || {};
+            currentCalls = payload.calls || [];
 
             applyAccentColor(currentConfig.accentColor || '#ffc300');
             renderHeader(currentConfig);
-            renderTableHeader(currentConfig.columns);
+            renderTableHeader(currentConfig.columns || []);
             renderCalls(currentCalls, currentConfig);
 
-            // Hide MDT button if faction is not LEO/LSPD (Optional logic)
-            // if (currentConfig.factionId !== 2) document.getElementById('mdt-toggle-btn').style.display = 'none';
+            const mdtBtn = document.getElementById('mdt-toggle-btn');
+            const mdtAllowed = Number(currentConfig.factionId) === 2;
+            mdtBtn.style.display = mdtAllowed ? 'inline-flex' : 'none';
 
+            if (!mdtAllowed && isMdtOpen) {
+                setMdtView(false);
+            }
         } catch (e) {
             console.error('[Dispatch UI] receiveDispatchData error:', e, payloadJson);
         }
     }
 
-    // ── Toast Notification ────────────────────────────────────────────────────
+    function showDispatchError(message) {
+        showToast(message || 'Dispatch error.');
+    }
+
     function showToast(message, isSuccess = false) {
         const toast = document.getElementById('toast-msg');
         toast.textContent = message;
-        
-        if(isSuccess) toast.classList.add('success');
+        if (isSuccess) toast.classList.add('success');
         else toast.classList.remove('success');
-
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
 
-    // ── MDT Search Logic ──────────────────────────────────────────────────────
-    function toggleMdt() {
-        const mdt = document.getElementById('mdt-panel');
-        mdt.style.display = mdt.style.display === 'none' ? 'block' : 'none';
+    function setMdtView(open) {
+        const dispatchView = document.getElementById('dispatch-view');
+        const mdtView = document.getElementById('mdt-view');
+        isMdtOpen = !!open;
+        dispatchView.style.display = isMdtOpen ? 'none' : 'flex';
+        mdtView.style.display = isMdtOpen ? 'flex' : 'none';
+        if (!isMdtOpen) {
+            closeWarrantOverlay();
+        }
+    }
+
+    function toggleMdt(forceState) {
+        if (Number(currentConfig && currentConfig.factionId) !== 2) {
+            return;
+        }
+        const nextState = typeof forceState === 'boolean' ? forceState : !isMdtOpen;
+        setMdtView(nextState);
     }
 
     function searchPlayer() {
-        const nameQuery = document.getElementById('searchInput').value;
-        if (nameQuery.length < 3) return showToast("Enter at least 3 characters.");
-        
+        const nameQuery = document.getElementById('searchInput').value.trim();
+        if (nameQuery.length < 2) {
+            return showToast('Enter at least 2 characters.');
+        }
+        currentTargetId = null;
+        clearProfile();
         if (typeof mp !== 'undefined') {
             mp.trigger('client:dispatch:triggerSearch', nameQuery);
         }
     }
 
+    function showSearchResults(resultsJson) {
+        const resultsRoot = document.getElementById('mdt-results');
+        let payload = resultsJson;
+        if (typeof payload === 'string') {
+            try { payload = JSON.parse(payload); } catch (_) { payload = null; }
+        }
+
+        const players = Array.isArray(payload)
+            ? payload
+            : ((payload && Array.isArray(payload.players)) ? payload.players : []);
+
+        currentSearchResults = players;
+
+        if (!players.length) {
+            resultsRoot.innerHTML = '<div class="profile-empty">No players matched your search.</div>';
+            return;
+        }
+
+        resultsRoot.innerHTML = players.map(p => {
+            const wt = (p.wantedType || '').toLowerCase();
+            const badgeClass = wt === 'nos' ? 'nos' : (wt === 'ros' ? 'ros' : '');
+            const badgeText = wt === 'nos' ? 'NoS' : (wt === 'ros' ? 'RoS' : 'Clear');
+            return `
+                <div class="player-result" id="player-row-${p.id}" onclick="selectSearchPlayer(${p.id})">
+                    <div>
+                        <div class="player-result-name">${escHtml(p.name || 'Unknown')}</div>
+                        <div class="player-result-meta">Server ID: ${escHtml(String(p.id))}</div>
+                    </div>
+                    <div class="player-result-badge ${badgeClass}">${badgeText}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function selectSearchPlayer(targetId) {
+        currentTargetId = Number(targetId);
+
+        currentSearchResults.forEach(p => {
+            const row = document.getElementById(`player-row-${p.id}`);
+            if (!row) return;
+            row.classList.toggle('active', Number(p.id) === currentTargetId);
+        });
+
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:requestProfile', String(targetId));
+        }
+    }
+
+    function clearProfile() {
+        document.getElementById('mdt-profile').style.display = 'none';
+        document.getElementById('mdt-profile-empty').style.display = 'flex';
+        currentMdtOffenses = [];
+        selectedWantedOffense = null;
+        closeWarrantOverlay();
+    }
+
     function showProfile(dataJson) {
         if (!dataJson || dataJson === 'null') {
-            showToast("Player not found online.");
-            document.getElementById('mdt-profile').style.display = 'none';
+            showToast('Player profile not available.');
+            clearProfile();
             return;
         }
 
         const data = typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
         currentTargetId = data.id;
 
-        document.getElementById('profileName').innerText = "Name: " + data.name;
-        document.getElementById('profileId').innerText = "Server ID: " + data.id;
+        document.getElementById('profileName').textContent = data.name || 'Unknown';
+        document.getElementById('profileId').textContent = 'Server ID: ' + (data.id != null ? data.id : '-');
 
-        // Wanted status badge
-        const wantedEl = document.getElementById('profileWanted');
-        if (data.wantedType === 'NoS') {
-            wantedEl.innerText = '⚠ NO SURRENDER';
-            wantedEl.style.color = '#ff4757';
-            wantedEl.style.background = 'rgba(255,71,87,0.12)';
-        } else if (data.wantedType === 'RoS') {
-            wantedEl.innerText = '🚔 SURRENDER';
-            wantedEl.style.color = '#ffc300';
-            wantedEl.style.background = 'rgba(255,195,0,0.12)';
+        const mugshotRoot = document.getElementById('profileMugshot');
+        if (data.mugshotUrl) {
+            mugshotRoot.innerHTML = `<img src="${escHtml(data.mugshotUrl)}" alt="Mugshot">`;
         } else {
-            wantedEl.innerText = 'No Wanted';
-            wantedEl.style.color = '#555a66';
-            wantedEl.style.background = 'rgba(255,255,255,0.05)';
+            mugshotRoot.innerHTML = '<div class="profile-mugshot-fallback"><i class="fas fa-user"></i></div>';
         }
 
-        // Active offenses
-        const offensesBox = document.getElementById('profileOffenses');
+        const wantedEl = document.getElementById('profileWanted');
+        wantedEl.classList.remove('ros', 'nos');
+        if (data.isWanted) {
+            if (data.wantedType === 'NoS') {
+                wantedEl.classList.add('nos');
+                wantedEl.textContent = 'Wanted: NoS';
+            } else {
+                wantedEl.classList.add('ros');
+                wantedEl.textContent = 'Wanted: RoS';
+            }
+        } else {
+            wantedEl.textContent = 'Not wanted';
+        }
+
+        document.getElementById('profileWantedTime').textContent = 'Wanted time: ' + (data.wantedTimeText || '-');
+
+        const hasFees = Number(data.activeFeesCount || 0) > 0;
+        const feesEl = document.getElementById('profileHasFees');
+        feesEl.classList.remove('bad', 'warn');
+        feesEl.textContent = hasFees ? `Yes (${data.activeFeesCount})` : 'No';
+        if (hasFees) feesEl.classList.add('bad');
+
+        document.getElementById('profileFeeTotal').textContent = '$' + Number(data.activeFeesTotal || 0).toLocaleString();
+
+        const soEl = document.getElementById('profileRecentSo');
+        soEl.classList.remove('warn');
+        soEl.textContent = data.recentStopOrderText || 'No';
+        if (data.recentStopOrder) soEl.classList.add('warn');
+
+        const friskEl = document.getElementById('profileRecentFrisk');
+        friskEl.classList.remove('warn');
+        friskEl.textContent = data.recentFriskText || 'No';
+        if (data.recentFrisk) friskEl.classList.add('warn');
+
         const offenseList = document.getElementById('offenseList');
-        if (data.offenses && data.offenses.length > 0) {
-            offensesBox.style.display = 'block';
+        if (Array.isArray(data.offenses) && data.offenses.length) {
             offenseList.innerHTML = data.offenses.map(o => {
-                const color = o.type === 'NoS' ? '#ff4757' : '#ffc300';
-                return `<span style="background:rgba(255,255,255,0.05);border:1px solid ${color}33;color:${color};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${escHtml(o.label)}</span>`;
+                const cls = (o.type || '').toLowerCase() === 'nos' ? 'nos' : 'ros';
+                const suffix = o.timeText ? ` (${escHtml(o.timeText)})` : '';
+                return `<span class="offense-tag ${cls}">${escHtml(o.label || o.key || 'Offense')}${suffix}</span>`;
             }).join('');
         } else {
-            offensesBox.style.display = 'none';
+            offenseList.innerHTML = '<span class="offense-tag">No active offenses</span>';
         }
 
-        // Populate offense dropdown
-        const sel = document.getElementById('wantedOffenseSelect');
-        sel.innerHTML = '<option value="">— Select Offense —</option>';
-        if (data.mdtOffenses) {
-            data.mdtOffenses.forEach(o => {
-                const opt = document.createElement('option');
-                opt.value = o.key;
-                opt.textContent = o.label + ' (' + o.duration + 'm)';
-                sel.appendChild(opt);
-            });
-        }
+        currentMdtOffenses = Array.isArray(data.mdtOffenses) ? data.mdtOffenses.slice() : [];
+        selectedWantedOffense = null;
+        closeWarrantOverlay();
 
+        document.getElementById('mdt-profile-empty').style.display = 'none';
         document.getElementById('mdt-profile').style.display = 'block';
     }
 
-    function applyWanted() {
-        if (currentTargetId === null) return showToast("No player selected.");
-        const offenseKey = document.getElementById('wantedOffenseSelect').value;
-        if (!offenseKey) return showToast("Select an offense first!");
+    function openWarrantOverlay() {
+        if (currentTargetId === null) return showToast('No player selected.');
 
-        if (typeof mp !== 'undefined') {
-            mp.trigger('client:dispatch:triggerWanted', currentTargetId, offenseKey);
+        if (!currentMdtOffenses.length) {
+            return showToast('No warrant options available.');
         }
 
-        document.getElementById('wantedOffenseSelect').value = '';
-        document.getElementById('mdt-profile').style.display = 'none';
-        document.getElementById('searchInput').value = '';
-        toggleMdt();
-        showToast("Warrant issued successfully.", true);
+        const targetName = document.getElementById('profileName').textContent || 'Selected player';
+        document.getElementById('warrantModalTarget').textContent = `Select warrant for ${targetName} (ID ${currentTargetId})`;
+
+        const optionsRoot = document.getElementById('warrantOptions');
+        optionsRoot.innerHTML = '';
+
+        currentMdtOffenses.forEach((offense, idx) => {
+            const key = String(offense.key || '');
+            const label = String(offense.label || 'Offense');
+            const duration = Number(offense.duration || 0);
+            const fine = Number(offense.fine || 0);
+            const type = String((offense.type || 'RoS')).toUpperCase();
+            const typeClass = type === 'NOS' ? 'nos' : 'ros';
+
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'warrant-option';
+            option.dataset.key = key;
+
+            const title = document.createElement('div');
+            title.className = 'warrant-option-title';
+            title.textContent = label;
+
+            const meta = document.createElement('div');
+            meta.className = 'warrant-option-meta';
+
+            const typeTag = document.createElement('span');
+            typeTag.className = `warrant-option-type ${typeClass}`;
+            typeTag.textContent = type === 'NOS' ? 'NoS' : 'RoS';
+
+            const durationEl = document.createElement('span');
+            durationEl.textContent = `${duration} min`;
+
+            const fineEl = document.createElement('span');
+            fineEl.textContent = `$${fine.toLocaleString()}`;
+
+            meta.appendChild(typeTag);
+            meta.appendChild(durationEl);
+            meta.appendChild(fineEl);
+            option.appendChild(title);
+            option.appendChild(meta);
+
+            option.addEventListener('click', () => selectWarrantOption(key));
+            optionsRoot.appendChild(option);
+
+            if (idx === 0) {
+                selectedWantedOffense = key;
+                option.classList.add('active');
+            }
+        });
+
+        document.getElementById('warrant-overlay').style.display = 'flex';
     }
 
-    // ── Accent colour ─────────────────────────────────────────────────────────
+    function selectWarrantOption(offenseKey) {
+        selectedWantedOffense = String(offenseKey || '');
+
+        const options = document.querySelectorAll('.warrant-option');
+        options.forEach(option => {
+            option.classList.toggle('active', option.dataset.key === selectedWantedOffense);
+        });
+    }
+
+    function closeWarrantOverlay() {
+        document.getElementById('warrant-overlay').style.display = 'none';
+    }
+
+    function onWarrantOverlayBackdrop(event) {
+        if (event.target && event.target.id === 'warrant-overlay') {
+            closeWarrantOverlay();
+        }
+    }
+
+    function confirmWarrantApply() {
+        if (currentTargetId === null) return showToast('No player selected.');
+        if (!selectedWantedOffense) return showToast('Select a warrant first.');
+
+        if (typeof mp !== 'undefined') {
+            mp.trigger('client:dispatch:triggerWanted', currentTargetId, selectedWantedOffense);
+        }
+
+        closeWarrantOverlay();
+        showToast('Warrant issued successfully.', true);
+    }
+
     function applyAccentColor(hex) {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         document.documentElement.style.setProperty('--accent', hex);
-        document.documentElement.style.setProperty('--accent-dim',  `rgba(${r},${g},${b},0.15)`);
+        document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.15)`);
         document.documentElement.style.setProperty('--accent-glow', `rgba(${r},${g},${b},0.3)`);
     }
 
-    // ── Header ────────────────────────────────────────────────────────────────
     function renderHeader(config) {
         document.getElementById('header-icon-i').className = config.icon || 'fas fa-radio';
-        document.getElementById('header-title').textContent  = config.title    || 'Dispatch';
+        document.getElementById('header-title').textContent = config.title || 'Dispatch';
         document.getElementById('header-subtitle').textContent = config.subtitle || '';
-
         const count = currentCalls.length;
-        document.getElementById('call-count-text').textContent =
-            count === 1 ? '1 Call' : count + ' Calls';
+        document.getElementById('call-count-text').textContent = count === 1 ? '1 Call' : `${count} Calls`;
     }
 
-    // ── Table header ──────────────────────────────────────────────────────────
     function renderTableHeader(columns) {
         const container = document.getElementById('table-header');
         container.innerHTML = columns.map(col => `
-            <div class="th" style="width:${col.width}; padding: 0 6px;">
-                ${col.label}
-            </div>
+            <div class="th" style="width:${col.width}; padding: 0 6px;">${col.label}</div>
         `).join('');
     }
 
-    // ── Call rows ─────────────────────────────────────────────────────────────
     function renderCalls(calls, config) {
-        const list       = document.getElementById('call-list');
+        const list = document.getElementById('call-list');
         const emptyState = document.getElementById('empty-state');
 
         if (!calls || calls.length === 0) {
@@ -688,53 +1320,44 @@
 
     function buildCallRow(call, config) {
         const cells = config.columns.map(col => {
-            if (col.key === 'action') {
-                return buildActionCell(call, config);
-            }
+            if (col.key === 'action') return buildActionCell(call, config);
             return buildDataCell(col.key, call, config);
         }).join('');
-
         return `<div class="call-row">${cells}</div>`;
     }
 
     function buildDataCell(key, call, config) {
-        const col  = config.columns.find(c => c.key === key);
+        const col = config.columns.find(c => c.key === key);
         const width = col ? col.width : 'auto';
 
         switch (key) {
             case 'callerName':
                 return `<div class="cell cell-name" style="width:${width}">${escHtml(call.callerName)}</div>`;
-
             case 'location':
                 return `
                     <div class="cell cell-location" style="width:${width}">
                         <i class="fas fa-location-dot" style="margin-right:4px;opacity:0.5;font-size:10px;"></i>
                         ${escHtml(call.location)}
                     </div>`;
-
             case 'distance': {
                 const raw = call.distanceRaw || 9999;
                 let cls = 'far';
-                if (raw < 500)       cls = 'near';
+                if (raw < 500) cls = 'near';
                 else if (raw < 1500) cls = 'medium';
                 return `<div class="cell cell-distance ${cls}" style="width:${width}">${escHtml(call.distance)}</div>`;
             }
-
             case 'waitTime': {
                 const waitSecs = extractWaitSeconds(call.waitTime);
-                const urgent   = waitSecs > 120 ? ' urgent' : '';
+                const urgent = waitSecs > 120 ? ' urgent' : '';
                 return `<div class="cell cell-wait${urgent}" style="width:${width}">${escHtml(call.waitTime)}</div>`;
             }
-
             case 'callType':
-                return `<div class="cell" style="width:${width}">${escHtml(call.callType || '—')}</div>`;
-
+                return `<div class="cell" style="width:${width}">${escHtml(call.callType || '-')}</div>`;
             case 'fare': {
                 const fareVal = call.fare || 0;
                 const fareColor = fareVal >= 200 ? 'var(--success)' : 'var(--accent)';
                 return `<div class="cell" style="width:${width};color:${fareColor};font-weight:600;">$${fareVal}</div>`;
             }
-
             default:
                 return `<div class="cell" style="width:${width}">${escHtml(String(call[key] || ''))}</div>`;
         }
@@ -744,20 +1367,15 @@
         const col = config.columns.find(c => c.key === 'action');
         const width = col ? col.width : '16%';
         const btn = config.actionButton;
-
         return `
             <div class="cell" style="width:${width}">
-                <button
-                    class="accept-btn ${btn.color || 'green'}"
-                    onclick="acceptCall(${call.id})"
-                >
+                <button class="accept-btn ${btn.color || 'green'}" onclick="acceptCall(${call.id})">
                     <i class="${btn.icon || 'fas fa-check'}"></i>
                     ${escHtml(btn.label || 'Accept')}
                 </button>
             </div>`;
     }
 
-    // ── Accept call ───────────────────────────────────────────────────────────
     function acceptCall(callId) {
         if (typeof mp !== 'undefined') {
             mp.trigger('client:dispatch:requestAccept', String(callId));
@@ -766,14 +1384,12 @@
         renderCalls(currentCalls, currentConfig);
     }
 
-    // ── Close ─────────────────────────────────────────────────────────────────
     function closeMenu() {
         if (typeof mp !== 'undefined') {
             mp.trigger('client:dispatch:requestClose');
         }
     }
 
-    // ── Utilities ─────────────────────────────────────────────────────────────
     function escHtml(str) {
         return String(str)
             .replace(/&/g, '&amp;')
@@ -787,14 +1403,27 @@
         let total = 0;
         const mMatch = waitStr.match(/(\d+)m/);
         const sMatch = waitStr.match(/(\d+)s/);
-        if (mMatch) total += parseInt(mMatch[1]) * 60;
-        if (sMatch) total += parseInt(sMatch[1]);
+        if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+        if (sMatch) total += parseInt(sMatch[1], 10);
         return total;
     }
 
-    // ── Escape key closes menu ────────────────────────────────────────────────
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchPlayer();
+        }
+    });
+
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeMenu();
+        if (e.key === 'Escape') {
+            const overlayVisible = document.getElementById('warrant-overlay').style.display === 'flex';
+            if (overlayVisible) {
+                closeWarrantOverlay();
+                return;
+            }
+            closeMenu();
+        }
     });
 </script>
 </body>

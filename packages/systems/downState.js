@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { getNearestHospital } = require('../data/hospitals');
+const jailManager = require('../factions/lspd/jailManager');
 
 // Lazy-load dispatch to avoid circular-require at boot
 function getDispatchManager() {
@@ -34,6 +35,33 @@ function countDutyParamedics() {
         if (p.logged && p.factionId === 3 && p.getVariable('factionDuty')) count++;
     });
     return count;
+}
+
+function isOfficerOnDuty(player) {
+    return !!player && mp.players.exists(player) && player.logged && player.factionId === 2 && player.getVariable('factionDuty');
+}
+
+function resolvePlayerKiller(killer) {
+    if (!killer) return null;
+
+    if (
+        typeof killer.id === 'number' &&
+        typeof killer.getVariable === 'function' &&
+        typeof killer.factionId !== 'undefined'
+    ) {
+        return mp.players.exists(killer) ? killer : null;
+    }
+
+    if (killer.type === 'player' && mp.players.exists(killer)) {
+        return killer;
+    }
+
+    if (typeof killer.getOccupant === 'function') {
+        const driver = killer.getOccupant(-1);
+        if (driver && mp.players.exists(driver)) return driver;
+    }
+
+    return null;
 }
 
 function getDownedPlayersData() {
@@ -115,9 +143,19 @@ function revivePlayer(player, revivedBy) {
 // ── Server Events ────────────────────────────────────────────────────────────
 
 // Intercept death → enter down state instead of normal respawn
-mp.events.add('playerDeath', (player) => {
+mp.events.add('playerDeath', (player, reason, killer) => {
     if (!player.logged) return;
     if (isPlayerDown(player)) return; // already down, ignore
+
+    const wantedType = player.getVariable('wantedType');
+    const killerPlayer = resolvePlayerKiller(killer);
+
+    if (wantedType === 'NoS' && isOfficerOnDuty(killerPlayer)) {
+        jailManager.sendToPrison(player, { forceRespawn: true });
+        player.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}No-surrender warrant enforced. You have been booked into Bolingbroke.');
+        return;
+    }
+
     enterDownState(player);
 });
 
@@ -156,11 +194,29 @@ mp.events.add('server:downState:callMedic', (player, locationName) => {
 mp.events.add('server:downState:respawn', (player) => {
     if (!isPlayerDown(player)) return;
 
-    const pos     = player.position;
-    const nearest = getNearestHospital({ x: pos.x, y: pos.y, z: pos.z });
-
     downedPlayers.delete(player.id);
     player.setVariable('isDown', false);
+
+    if (jailManager.isInPrison(player)) {
+        jailManager.sendToPrison(player, {
+            forceRespawn: true,
+            clearClientRestraints: false,
+            setCooldown: false,
+        });
+
+        player.call('client:downState:hide',          []);
+        player.call('client:downState:stopAnimation', []);
+        player.call('client:downState:respawnEffect',  []);
+
+        player.outputChatBox('!{#ff4757}[LSPD] !{#ffffff}You were returned to your prison cell.');
+
+        broadcastDownedPlayersToMedics();
+        console.log(`[DownState] ${player.name} respawned back in prison.`);
+        return;
+    }
+
+    const pos     = player.position;
+    const nearest = getNearestHospital({ x: pos.x, y: pos.y, z: pos.z });
 
     const sp = nearest.spawnPoint;
     player.spawn(new mp.Vector3(sp.x, sp.y, sp.z));

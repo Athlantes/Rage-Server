@@ -43,6 +43,7 @@ require('./systems/weather.js');
 require('./systems/entercar.js');
 require('./systems/lotto.js');
 require('./systems/store.js');
+require('./systems/doorLocks.js');
 
 // 5. Head-to-Head Race
 require('./systems/h2hRace.js');

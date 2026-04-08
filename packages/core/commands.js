@@ -465,13 +465,24 @@ mp.events.addCommand('gotohouse', (player, id) => {
     }
 });
 
+mp.events.addCommand('lockdoor', (player, radiusText) => {
+    if (!checkRank(player, RANKS.ADMIN)) return;
+
+    let radius = parseFloat(radiusText);
+    if (isNaN(radius)) radius = 8.0;
+    radius = Math.max(2.0, Math.min(25.0, radius));
+
+    player.outputChatBox(`${COLORS.INFO}[DoorLock] Scanning ${radius.toFixed(1)}m for nearest supported door/gate...`);
+    player.call('client:doorlock:toggleNearest', [radius]);
+});
+
 // --- ADMIN DUTY (Godmode + Label) ---
 mp.events.addCommand('ahelp', (player) => {
     if (!checkRank(player, RANKS.HELPER)) return;
     player.outputChatBox(`${COLORS.ADMIN}--- Admin Commands ---`);
     player.outputChatBox(`!{FFFFFF}Helper: /a, /aduty, /goto, /gethere, /kick, /spectate`);
     if (player.data.adminLevel >= RANKS.MODERATOR) player.outputChatBox(`!{FFFFFF}Mod: /ban, /unban, /freeze, /unfreeze, /tpcoords,`);
-    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth, /savelandmark`);
+    if (player.data.adminLevel >= RANKS.ADMIN) player.outputChatBox(`!{FFFFFF}Admin: /veh, /dv, /fix, /giveitem, /setmoney, /sethealth, /savelandmark, /lockdoor`);
     if (player.data.adminLevel >= RANKS.OWNER) player.outputChatBox(`!{FFFFFF}Owner: /makeadmin, /giveveh, /savecoords`);
 });
 

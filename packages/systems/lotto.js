@@ -37,6 +37,8 @@ let state = {
     nextDraw: null,
 };
 
+let stateLoadPromise = null;
+
 // ────────────────────────────────────────────────────────────
 //  Helpers
 // ────────────────────────────────────────────────────────────
@@ -67,6 +69,10 @@ function nextDrawDate() {
 
 function toMysqlDatetime(date) {
     return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function isValidDate(date) {
+    return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 function broadcast(msg) {
@@ -115,13 +121,51 @@ function sendLottoMail(playerId, pickedNums, drawnNums, matches, bet, prize, wee
 async function loadState() {
     try {
         const [rows] = await db.query('SELECT * FROM lotto_state WHERE id = 1');
-        if (rows.length === 0) return;
-        state.weekId    = rows[0].week_id;
-        state.jackpot   = rows[0].jackpot;
-        state.nextDraw  = new Date(rows[0].next_draw);
+        if (rows.length === 0) {
+            state.weekId = 1;
+            state.jackpot = 0;
+            state.nextDraw = nextDrawDate();
+
+            await db.query(
+                'INSERT INTO lotto_state (id, week_id, jackpot, next_draw) VALUES (1, ?, ?, ?)',
+                [state.weekId, state.jackpot, toMysqlDatetime(state.nextDraw)]
+            );
+
+            console.log(`[LOTTO] State initialized — week #${state.weekId}, jackpot $${state.jackpot}, next draw UTC: ${state.nextDraw}`);
+            scheduleDrawTimer();
+            return;
+        }
+
+        state.weekId = Number(rows[0].week_id) || 1;
+        state.jackpot = Number(rows[0].jackpot) || 0;
+
+        const parsedNextDraw = rows[0].next_draw ? new Date(rows[0].next_draw) : null;
+        if (isValidDate(parsedNextDraw)) {
+            state.nextDraw = parsedNextDraw;
+        } else {
+            state.nextDraw = nextDrawDate();
+            await db.query('UPDATE lotto_state SET next_draw = ? WHERE id = 1', [toMysqlDatetime(state.nextDraw)]);
+        }
+
         console.log(`[LOTTO] Loaded — week #${state.weekId}, jackpot $${state.jackpot}, next draw UTC: ${state.nextDraw}`);
         scheduleDrawTimer();
     } catch (err) { console.error('[LOTTO] Failed to load state:', err); }
+}
+
+async function ensureStateLoaded() {
+    if (isValidDate(state.nextDraw)) return;
+
+    if (!stateLoadPromise) {
+        stateLoadPromise = loadState().finally(() => {
+            stateLoadPromise = null;
+        });
+    }
+
+    await stateLoadPromise;
+
+    if (!isValidDate(state.nextDraw)) {
+        state.nextDraw = nextDrawDate();
+    }
 }
 
 let drawTimer = null;
@@ -250,6 +294,8 @@ mp.events.add('server:lotto:requestOpen', async (player) => {
     if (isRateLimited(player, 'lotto:open', 3, 3000)) return;
 
     try {
+        await ensureStateLoaded();
+
         const [rows] = await db.query(
             'SELECT numbers, bet FROM lotto_tickets WHERE player_id = ? AND week_id = ?',
             [player.data.dbId, state.weekId]
@@ -271,6 +317,7 @@ mp.events.add('server:lotto:requestOpen', async (player) => {
 
         player.call('client:lotto:openUI', [JSON.stringify(payload)]);
     } catch (err) {
+        console.error(`[LOTTO] requestOpen error for ${player.name} (${player.data?.dbId || 'n/a'}):`, err);
         player.outputChatBox('!{FF0000}[LOTTO] Server error. Try again later.');
     }
 });
@@ -278,6 +325,13 @@ mp.events.add('server:lotto:requestOpen', async (player) => {
 mp.events.add('server:lotto:buyTicket', async (player, numbersJson, betRaw) => {
     if (!player.logged) return;
     if (isRateLimited(player, 'lotto:buy', 2, 5000)) return;
+
+    try {
+        await ensureStateLoaded();
+    } catch (err) {
+        console.error(`[LOTTO] buyTicket state load error for ${player.name} (${player.data?.dbId || 'n/a'}):`, err);
+        return player.call('client:lotto:error', ['Server sync error. Please try again.']);
+    }
 
     const bet = parseInt(betRaw);
     if (isNaN(bet) || bet < CONFIG.MIN_BET || bet > CONFIG.MAX_BET) {
@@ -349,6 +403,7 @@ mp.events.addCommand('lottodraw', (player) => {
 mp.events.addCommand('lottostatus', async (player) => {
     if (!player.logged || (player.data.adminLevel || 0) < CONFIG.ADMIN_DRAW_LEVEL) return;
     try {
+        await ensureStateLoaded();
         const [countRow] = await db.query('SELECT COUNT(*) AS cnt FROM lotto_tickets WHERE week_id = ?', [state.weekId]);
         player.outputChatBox(`!{FFD700}[LOTTO] Week #${state.weekId} | Jackpot: $${state.jackpot.toLocaleString()} | Tickets: ${countRow[0].cnt} | Next UTC: ${state.nextDraw.toISOString().slice(0, 16)}`);
     } catch (err) {
@@ -356,5 +411,7 @@ mp.events.addCommand('lottostatus', async (player) => {
     }
 });
 
-loadState();
+ensureStateLoaded().catch((err) => {
+    console.error('[LOTTO] Initial state bootstrap failed:', err);
+});
 console.log('[LOTTO] System loaded.');

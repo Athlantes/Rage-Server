@@ -392,10 +392,21 @@ mp.events.add('client:dispatch:triggerSearch', (nameQuery) => {
     mp.events.callRemote('server:dispatch:searchPlayer', nameQuery);
 });
 
-// Receive the search result from the server and send it to the UI
-mp.events.add('client:dispatch:searchResult', (profileDataJson) => {
+// Receive the search result list from the server and send it to the UI
+mp.events.add('client:dispatch:searchResult', (resultsJson) => {
     if (dispatchBrowser) {
-        // We use JSON.stringify to safely format quotes and characters coming from the backend
+        dispatchBrowser.execute(`showSearchResults(${JSON.stringify(resultsJson)})`);
+    }
+});
+
+// UI requests a full profile for a selected search result
+mp.events.add('client:dispatch:requestProfile', (targetId) => {
+    mp.events.callRemote('server:dispatch:getPlayerProfile', targetId);
+});
+
+// Receive the full profile payload and forward to UI
+mp.events.add('client:dispatch:profileResult', (profileDataJson) => {
+    if (dispatchBrowser) {
         dispatchBrowser.execute(`showProfile(${JSON.stringify(profileDataJson)})`);
     }
 });
