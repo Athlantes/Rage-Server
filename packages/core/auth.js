@@ -13,7 +13,7 @@ const jailManager = require('../factions/lspd/jailManager');
 // --- 1. INITIALIZATION ---
 mp.events.add('playerJoin', async (player) => {
     player.logged = false;
-    player.dim = 2000 + player.id; 
+    player.dimension = 2000 + player.id; 
     console.log(`[Connect] ${player.name} | SCID: ${player.rgscId} | HWID: ${player.serial} | IP: ${player.ip}`);
 
     try {
@@ -399,7 +399,7 @@ async function startSession(player, userData) {
         player.outputChatBox(`!{#ff4757}[JAIL] !{#ffffff}You are still serving a sentence (${jailMinutes} minute(s) remaining).`);
     } else if (diffMinutes < 5 && lastPos) {
         player.spawn(new mp.Vector3(lastPos.x, lastPos.y, lastPos.z));
-        player.dim = 0; 
+        player.dimension = 0; 
         player.heading = lastPos.heading || 0;
         showSpawnSelector = false; 
 

@@ -176,9 +176,7 @@ function clearJailSentence(player) {
 }
 
 function getPrisonDimension(player) {
-    const dbId = player && player.data ? Number(player.data.dbId) : 0;
-    const seed = Number.isFinite(dbId) && dbId > 0 ? dbId : Number(player.id) || 1;
-    return PRISON_DIMENSION_BASE + seed;
+    return PRISON_DIMENSION_BASE;
 }
 
 function getRandomCellSpawn() {
@@ -219,11 +217,17 @@ function sendToPrison(player, options = {}) {
     if (shouldRespawn) {
         player.spawn(pos);
         if (player.health < 100) player.health = 100;
+        
+        // Delay dimension to prevent RageMP's implicit spawn dimension reset
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.dimension = dimension;
+            }
+        }, 150);
     } else {
         try {
             if (player.vehicle) player.removeFromVehicle();
-        } catch (e) {
-        }
+        } catch (e) {}
         player.position = pos;
     }
 
@@ -250,11 +254,16 @@ function releaseFromPrison(player, options = {}) {
     if (shouldRespawn) {
         player.spawn(outPos);
         if (player.health < 100) player.health = 100;
+        
+        setTimeout(() => {
+            if (mp.players.exists(player)) {
+                player.dimension = 0;
+            }
+        }, 150);
     } else {
         try {
             if (player.vehicle) player.removeFromVehicle();
-        } catch (e) {
-        }
+        } catch (e) {}
         player.position = outPos;
     }
 
@@ -274,7 +283,12 @@ function ensurePrisonState(player) {
 
     const remainingSeconds = getRemainingJailSeconds(player);
     if (remainingSeconds > 0) {
+        // Re-apply dimension and variables forcefully so fast reconnects don't desync
+        if (player.data.cooldowns && player.data.cooldowns[JAIL_COOLDOWN_KEY]) {
+            player.setVariable('cooldown_' + JAIL_COOLDOWN_KEY, player.data.cooldowns[JAIL_COOLDOWN_KEY]);
+        }
         syncCooldownHud(player);
+        
         if (!isInPrison(player)) {
             sendToPrison(player, {
                 setCooldown: false,
@@ -282,6 +296,9 @@ function ensurePrisonState(player) {
                 clearClientRestraints: false,
                 forceRespawn: false,
             });
+        } else {
+            // Force dimension anyway, RageMP sometimes breaks it on late client loads
+            player.dimension = getPrisonDimension(player);
         }
         return;
     }
