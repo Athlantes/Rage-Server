@@ -95,6 +95,18 @@ CREATE TABLE IF NOT EXISTS `character_inventory` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE IF NOT EXISTS `citybox_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `item_id` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `count` int NOT NULL DEFAULT '1',
+  `metadata` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_citybox_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE IF NOT EXISTS `character_job_data` (
   `character_id` int NOT NULL,
   `job_key` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -216,6 +228,7 @@ CREATE TABLE IF NOT EXISTS `families` (
   `bank` bigint NOT NULL DEFAULT '0',
   `premium_points` int unsigned NOT NULL DEFAULT '0',
   `member_cap` int NOT NULL DEFAULT '25',
+  `vehicle_cap` int NOT NULL DEFAULT '3',
   `hq_house_id` int DEFAULT NULL,
   `applications_open` tinyint(1) NOT NULL DEFAULT '0',
   `invites_open` tinyint(1) NOT NULL DEFAULT '1',
@@ -477,6 +490,7 @@ CREATE TABLE IF NOT EXISTS `repo_jobs` (
 CREATE TABLE IF NOT EXISTS `server_vehicles` (
   `id` int NOT NULL AUTO_INCREMENT,
   `owner_id` int NOT NULL,
+  `family_id` int DEFAULT NULL,
   `model` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `position` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `color` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '{"prim":0,"sec":0}',
@@ -488,6 +502,7 @@ CREATE TABLE IF NOT EXISTS `server_vehicles` (
   `parked` tinyint(1) DEFAULT '0',
   `build_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
   PRIMARY KEY (`id`),
+  KEY `idx_family_vehicle` (`family_id`),
   CONSTRAINT `server_vehicles_chk_1` CHECK (json_valid(`build_data`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

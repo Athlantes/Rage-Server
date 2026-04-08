@@ -1,6 +1,8 @@
 const db = require('../database');
 
 const vehicles = {
+    _locatorLoopStarted: false,
+
     // 1. Load all cars on server start
     loadAll: async () => {
         console.log("[Vehicles] Loading...");
@@ -15,6 +17,7 @@ const vehicles = {
         
         // Start the inactivity check loop
         vehicles.startAutoDespawnLoop(); 
+        vehicles.startLocatorLoop();
     },
 
     // 2. Spawn Logic 
@@ -33,6 +36,7 @@ const vehicles = {
 
         veh.dbId = data.id; 
         veh.ownerId = data.owner_id;
+        veh.familyId = data.family_id || null;
         
         veh.lastActive = Date.now(); 
 
@@ -110,6 +114,14 @@ const vehicles = {
                 [fuel, veh.engineHealth, veh.dirtLevel, veh.dbId]);
                 
             console.log(`[Vehicles] Vehicle ID ${veh.dbId} despawned (Saved & Towed).`);
+
+            // Stop active trackers that are targeting this vehicle.
+            mp.players.forEach((player) => {
+                if (!player || !mp.players.exists(player)) return;
+                if (parseInt(player.vehicleLocatorDbId) === veh.dbId) {
+                    vehicles.stopVehicleLocator(player, 'Tracked vehicle was despawned.');
+                }
+            });
         } else {
             console.log(`[Vehicles] Temporary/Admin vehicle deleted.`);
         }
@@ -118,9 +130,94 @@ const vehicles = {
         if (mp.vehicles.exists(veh)) veh.destroy();
     },
 
+    startVehicleLocator: (player, vehOrDbId, label = 'Tracked Vehicle') => {
+        if (!player || !mp.players.exists(player)) return false;
+
+        const veh = typeof vehOrDbId === 'number'
+            ? vehicles.findActiveVehicle(vehOrDbId)
+            : vehOrDbId;
+
+        if (!veh || !mp.vehicles.exists(veh) || !veh.dbId) return false;
+
+        vehicles.startLocatorLoop();
+
+        player.vehicleLocatorDbId = veh.dbId;
+        player.vehicleLocatorLabel = String(label || 'Tracked Vehicle');
+
+        player.call('client:vehicleLocator:start', [
+            veh.dbId,
+            veh.position.x,
+            veh.position.y,
+            veh.position.z,
+            player.vehicleLocatorLabel
+        ]);
+
+        return true;
+    },
+
+    stopVehicleLocator: (player, reason = null) => {
+        if (!player || !mp.players.exists(player)) return;
+
+        if (player.vehicleLocatorDbId) {
+            player.call('client:vehicleLocator:stop', [reason || '']);
+        }
+
+        player.vehicleLocatorDbId = null;
+        player.vehicleLocatorLabel = null;
+    },
+
+    startLocatorLoop: () => {
+        if (vehicles._locatorLoopStarted) return;
+        vehicles._locatorLoopStarted = true;
+        const REACHED_DISTANCE = 12.0;
+
+        setInterval(() => {
+            mp.players.forEach((player) => {
+                if (!player || !mp.players.exists(player) || !player.logged) return;
+
+                const trackedDbId = parseInt(player.vehicleLocatorDbId);
+                if (isNaN(trackedDbId) || trackedDbId <= 0) return;
+
+                const veh = vehicles.findActiveVehicle(trackedDbId);
+                if (!veh || !mp.vehicles.exists(veh)) {
+                    vehicles.stopVehicleLocator(player, 'Tracked vehicle was despawned.');
+                    return;
+                }
+
+                const playerVeh = player.vehicle;
+                if (playerVeh && mp.vehicles.exists(playerVeh) && parseInt(playerVeh.dbId) === trackedDbId) {
+                    vehicles.stopVehicleLocator(player);
+                    return;
+                }
+
+                if (player.dist(veh.position) <= REACHED_DISTANCE) {
+                    vehicles.stopVehicleLocator(player);
+                    return;
+                }
+
+                player.call('client:vehicleLocator:update', [
+                    trackedDbId,
+                    veh.position.x,
+                    veh.position.y,
+                    veh.position.z,
+                    player.vehicleLocatorLabel || 'Tracked Vehicle'
+                ]);
+            });
+        }, 1000);
+    },
+
     // 5. Create (Buy)
     // spawnPosition: optional { x, y, z, heading } to place the car at a specific spot
-    create: async (player, model, spawnPosition) => {
+    // options: { ownerId, familyId, plate, putIntoVehicle, sendMail }
+    create: async (player, model, spawnPosition, options = {}) => {
+        const ownerId = options.ownerId || player.data.dbId;
+        const familyId = Number.isInteger(options.familyId) ? options.familyId : null;
+        const plate = typeof options.plate === 'string' && options.plate.trim().length
+            ? options.plate.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10)
+            : 'NEWCAR';
+        const shouldWarpIntoVehicle = options.putIntoVehicle !== false;
+        const shouldSendMail = options.sendMail !== false;
+
         const spawnPos = spawnPosition || {
             x: player.position.x,
             y: player.position.y,
@@ -132,32 +229,47 @@ const vehicles = {
         let defaultColor = JSON.stringify({prim: 0, sec: 0});
         
         // 1. Insert into Database
-        const [result] = await db.query("INSERT INTO server_vehicles (owner_id, model, position, color) VALUES (?, ?, ?, ?)", 
-            [player.data.dbId, model, pos, defaultColor]);
+        const [result] = await db.query("INSERT INTO server_vehicles (owner_id, family_id, model, position, color, plate) VALUES (?, ?, ?, ?, ?, ?)", 
+            [ownerId, familyId, model, pos, defaultColor, plate]);
 
         const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ?", [result.insertId]);
         
         // 2. Spawn the car
         let newVeh = vehicles.spawn(rows[0]);
         
-        setTimeout(() => {
-            if (mp.players.exists(player) && mp.vehicles.exists(newVeh)) {
-                player.putIntoVehicle(newVeh, -1);
-            }
-        }, 150);
+        if (shouldWarpIntoVehicle) {
+            setTimeout(() => {
+                if (mp.players.exists(player) && mp.vehicles.exists(newVeh)) {
+                    player.putIntoVehicle(newVeh, -1);
+                }
+            }, 150);
+        }
 
-        mp.events.call(
-            'server:phone:sendMail', 
-            player.data.dbId,           // Target (Player)
-            'Mosley Auto',              // Sender
-            'Purchase Receipt',         // Title
-            `Congratulations! You have successfully purchased a ${model}. The keys have been added to your keychain.`
-        );
+        if (shouldSendMail) {
+            const mailTitle = familyId ? 'Family Purchase Receipt' : 'Purchase Receipt';
+            const mailBody = familyId
+                ? `Your family purchased a ${model}. Family members can now manage it from Family Garage.`
+                : `Congratulations! You have successfully purchased a ${model}. The keys have been added to your keychain.`;
+            mp.events.call(
+                'server:phone:sendMail', 
+                player.data.dbId,
+                'Mosley Auto',
+                mailTitle,
+                mailBody
+            );
+        }
+
+        return newVeh;
     },
 
     // 6. Get List
     getPlayerVehicles: async (playerId) => {
-        const [rows] = await db.query("SELECT id, model, plate, parked, fuel FROM server_vehicles WHERE owner_id = ?", [playerId]);
+        const [rows] = await db.query("SELECT id, model, plate, parked, fuel FROM server_vehicles WHERE owner_id = ? AND family_id IS NULL", [playerId]);
+        return rows;
+    },
+
+    getFamilyVehicles: async (familyId) => {
+        const [rows] = await db.query("SELECT id, owner_id, model, plate, parked, fuel FROM server_vehicles WHERE family_id = ? ORDER BY id DESC", [familyId]);
         return rows;
     },
 
@@ -166,13 +278,11 @@ const vehicles = {
         let existingCar = vehicles.findActiveVehicle(dbId);
         if (existingCar) {
             player.call('showNotification', ['Vehicle System', 'That vehicle is already out!']);
-            player.call('client:setWaypoint', [existingCar.position.x, existingCar.position.y]);
-            player.call('showNotification', ['Vehicle System', 'GPS set to your vehicle.']);
             existingCar.lastActive = Date.now();
             return null; 
         }
 
-        const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ? AND owner_id = ?", [dbId, player.data.dbId]);
+        const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ? AND owner_id = ? AND family_id IS NULL", [dbId, player.data.dbId]);
         if (rows.length === 0) return false; 
         
         const carData = rows[0];
@@ -180,6 +290,22 @@ const vehicles = {
         
         await db.query("UPDATE server_vehicles SET parked = 0 WHERE id = ?", [dbId]);
         
+        return veh;
+    },
+
+    unparkFamilyVehicle: async (player, familyId, dbId) => {
+        let existingCar = vehicles.findActiveVehicle(dbId);
+        if (existingCar) {
+            player.call('showNotification', ['Family Garage', 'That vehicle is already out!']);
+            existingCar.lastActive = Date.now();
+            return null;
+        }
+
+        const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ? AND family_id = ?", [dbId, familyId]);
+        if (rows.length === 0) return false;
+
+        const veh = vehicles.spawn(rows[0]);
+        await db.query("UPDATE server_vehicles SET parked = 0 WHERE id = ?", [dbId]);
         return veh;
     },
 

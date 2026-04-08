@@ -142,7 +142,7 @@ mp.events.add('server:playerMenu:getData', async (player) => {
         };
 
         // 2. Vehicle Count
-        const [vehRows] = await db.query("SELECT COUNT(*) as count FROM server_vehicles WHERE owner_id = ?", [player.data.dbId]);
+        const [vehRows] = await db.query("SELECT COUNT(*) as count FROM server_vehicles WHERE owner_id = ? AND family_id IS NULL", [player.data.dbId]);
         const vehicleCount = vehRows[0].count;
 
         // 3. Job Skills (Merged)

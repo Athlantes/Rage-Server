@@ -5,6 +5,8 @@
 const db            = require('../core/database');
 const playerManager = require('../core/playerManager');
 const HouseManager  = require('./houseManager');
+const vehicleManager = require('../core/vehicles/vehicleManager');
+const { catalog }    = require('../data/dealershipCatalog');
 
 // Discord integration (lazy-loaded to avoid circular dep issues)
 let discord = null;
@@ -18,6 +20,10 @@ function getDiscord() {
 const CREATION_COST  = 200000;
 const UPGRADE_COST   = 75000;
 const UPGRADE_AMOUNT = 10;
+const FAMILY_VEHICLE_BASE_CAP = 3;
+const FAMILY_VEHICLE_MAX_CAP  = 15;
+const VEHICLE_UPGRADE_COST    = 75000;
+const VEHICLE_UPGRADE_AMOUNT  = 3;
 const MAX_TAG_LEN    = 4;
 const INVITE_TTL_MS  = 60000; // 1 minute
 
@@ -46,6 +52,8 @@ class FamilyManager {
     // ── Boot ─────────────────────────────────────────────────────────────────
     async loadAll() {
         try {
+            await this._ensureSchema();
+
             const [famRows] = await db.query('SELECT * FROM families');
             const [memRows] = await db.query('SELECT * FROM family_members');
 
@@ -87,6 +95,32 @@ class FamilyManager {
         }
     }
 
+    async _ensureSchema() {
+        try {
+            await db.query("ALTER TABLE families ADD COLUMN vehicle_cap INT NOT NULL DEFAULT 3");
+        } catch (e) {
+            if (!/Duplicate column name/i.test(String(e && e.message))) {
+                console.error('[FamilyManager] schema error (families.vehicle_cap):', e.message || e);
+            }
+        }
+
+        try {
+            await db.query("ALTER TABLE server_vehicles ADD COLUMN family_id INT DEFAULT NULL");
+        } catch (e) {
+            if (!/Duplicate column name/i.test(String(e && e.message))) {
+                console.error('[FamilyManager] schema error (server_vehicles.family_id):', e.message || e);
+            }
+        }
+
+        try {
+            await db.query("ALTER TABLE server_vehicles ADD INDEX idx_family_vehicle (family_id)");
+        } catch (e) {
+            if (!/Duplicate key name/i.test(String(e && e.message))) {
+                console.error('[FamilyManager] schema error (server_vehicles idx):', e.message || e);
+            }
+        }
+    }
+
     _rowToFamily(row) {
         return {
             id:               row.id,
@@ -97,6 +131,7 @@ class FamilyManager {
             bank:             row.bank,
             premiumPoints:    row.premium_points || 0,
             memberCap:        row.member_cap,
+            vehicleCap:       row.vehicle_cap || FAMILY_VEHICLE_BASE_CAP,
             hqHouseId:        row.hq_house_id || null,
             applicationsOpen: !!row.applications_open,
             invitesOpen:      !!row.invites_open,
@@ -205,7 +240,7 @@ class FamilyManager {
             const newFamilyId = res.insertId;
 
             await db.query(
-                'INSERT INTO family_members (family_id, user_id, username, rank) VALUES (?,?,?,5)',
+                'INSERT INTO family_members (family_id, user_id, username, `rank`) VALUES (?,?,?,5)',
                 [newFamilyId, player.data.dbId, player.name]
             );
 
@@ -214,6 +249,7 @@ class FamilyManager {
                 id: newFamilyId, name, tag: finalTag, color,
                 ownerId: player.data.dbId, bank: 0, premiumPoints: 0,
                 memberCap: 25, hqHouseId: null,
+                vehicleCap: FAMILY_VEHICLE_BASE_CAP,
                 applicationsOpen: false, invitesOpen: true,
                 description,
                 ranks: safeRanks.map((r, i) => ({ rank: i + 1, name: r.name, color: r.color })),
@@ -376,7 +412,7 @@ class FamilyManager {
             // Offline join
             try {
                 await db.query(
-                    'INSERT INTO family_members (family_id, user_id, username, rank) VALUES (?,?,?,1)',
+                    'INSERT INTO family_members (family_id, user_id, username, `rank`) VALUES (?,?,?,1)',
                     [fam.id, applicantUserId, rows[0].username]
                 );
                 fam.members.push({ userId: applicantUserId, username: rows[0].username, rank: 1 });
@@ -408,7 +444,7 @@ class FamilyManager {
     async _addMember(player, family, rank) {
         try {
             await db.query(
-                'INSERT INTO family_members (family_id, user_id, username, rank) VALUES (?,?,?,?)',
+                'INSERT INTO family_members (family_id, user_id, username, `rank`) VALUES (?,?,?,?)',
                 [family.id, player.data.dbId, player.name, rank]
             );
             family.members.push({ userId: player.data.dbId, username: player.name, rank });
@@ -496,13 +532,17 @@ class FamilyManager {
             // Demote current owner to rank 4
             const ownerMem = this.getMemberData(fam, owner.data.dbId);
             ownerMem.rank = 4;
-            await db.query('UPDATE family_members SET rank = 4 WHERE family_id = ? AND user_id = ?', [fam.id, owner.data.dbId]);
+            await db.query('UPDATE family_members SET `rank` = 4 WHERE family_id = ? AND user_id = ?', [fam.id, owner.data.dbId]);
 
             // Promote target to rank 5 + update owner_id
             mem.rank = 5;
             fam.ownerId = targetUserId;
-            await db.query('UPDATE family_members SET rank = 5 WHERE family_id = ? AND user_id = ?', [fam.id, targetUserId]);
+            await db.query('UPDATE family_members SET `rank` = 5 WHERE family_id = ? AND user_id = ?', [fam.id, targetUserId]);
             await db.query('UPDATE families SET owner_id = ? WHERE id = ?', [targetUserId, fam.id]);
+            await db.query('UPDATE server_vehicles SET owner_id = ? WHERE family_id = ?', [targetUserId, fam.id]);
+            mp.vehicles.toArray().forEach(v => {
+                if (v.familyId === fam.id) v.ownerId = targetUserId;
+            });
 
             this._applyPlayerVars(owner, fam, 4);
             owner.outputChatBox(`!{FFAA00}You transferred ownership to ${mem.username}. You are now Rank 4.`);
@@ -524,7 +564,7 @@ class FamilyManager {
 
         const prevRank = mem.rank;
         mem.rank = newRank;
-        await db.query('UPDATE family_members SET rank = ? WHERE family_id = ? AND user_id = ?', [newRank, fam.id, targetUserId]);
+        await db.query('UPDATE family_members SET `rank` = ? WHERE family_id = ? AND user_id = ?', [newRank, fam.id, targetUserId]);
 
         const rankInfo = fam.ranks[newRank - 1];
         owner.outputChatBox(`!{00FF00}${mem.username} is now ${rankInfo.name} (Rank ${newRank}).`);
@@ -626,6 +666,30 @@ class FamilyManager {
         owner.outputChatBox(`!{00FF00}Member cap upgraded to ${fam.memberCap}! Cost: $${UPGRADE_COST.toLocaleString()} (from family bank)`);
         this._broadcastToFamily(fam, `!{FFAA00}[Family] Member capacity upgraded to ${fam.memberCap}!`, [owner.data.dbId]);
         await this._pushFreshData(owner);
+    }
+
+    async upgradeVehicleCap(owner) {
+        const fam = this.getFamilyByPlayer(owner);
+        if (!fam || fam.ownerId !== owner.data.dbId)
+            return owner.outputChatBox('!{FF0000}Only the family owner can upgrade vehicle slots.');
+
+        const currentCap = fam.vehicleCap || FAMILY_VEHICLE_BASE_CAP;
+        if (currentCap >= FAMILY_VEHICLE_MAX_CAP) {
+            return owner.outputChatBox(`!{FF0000}Family vehicle slots are already at max (${FAMILY_VEHICLE_MAX_CAP}).`);
+        }
+
+        if (fam.bank < VEHICLE_UPGRADE_COST) {
+            return owner.outputChatBox(`!{FF0000}Insufficient family bank funds. Need $${VEHICLE_UPGRADE_COST.toLocaleString()}, have $${fam.bank.toLocaleString()}.`);
+        }
+
+        fam.bank -= VEHICLE_UPGRADE_COST;
+        fam.vehicleCap = Math.min(FAMILY_VEHICLE_MAX_CAP, currentCap + VEHICLE_UPGRADE_AMOUNT);
+
+        await db.query('UPDATE families SET vehicle_cap = ?, bank = ? WHERE id = ?', [fam.vehicleCap, fam.bank, fam.id]);
+
+        owner.outputChatBox(`!{00FF00}Family vehicle slots upgraded to ${fam.vehicleCap}! Cost: $${VEHICLE_UPGRADE_COST.toLocaleString()} (from family bank)`);
+        this._broadcastToFamily(fam, `!{FFAA00}[Family] Vehicle slots upgraded to ${fam.vehicleCap}!`, [owner.data.dbId]);
+        this._refreshFamilyMenuForOnlineMembers(fam.id);
     }
 
     // ── Toggle Settings ───────────────────────────────────────────────────────
@@ -740,6 +804,14 @@ class FamilyManager {
             if (house) { house.hqFamilyId = null; }
         }
 
+        // Remove spawned family vehicles and delete their records
+        mp.vehicles.toArray().forEach(v => {
+            if (v.familyId === fam.id && mp.vehicles.exists(v)) {
+                v.destroy();
+            }
+        });
+        await db.query('DELETE FROM server_vehicles WHERE family_id = ?', [fam.id]);
+
         // Notify all online members
         mp.players.toArray().forEach(p => {
             if (p.data.familyId === fam.id) {
@@ -763,7 +835,7 @@ class FamilyManager {
 
         // Tell Discord to clean up the category, channels and roles
         const discDisband = getDiscord();
-        if (discDisband) discDisband.familyDisbanded(fam.id, fam.name);
+        if (discDisband) discDisband.familyDisbanded(fam.id, fam.name, fam.tag);
 
         mp.events.call('server:playerMenu:getData', owner);
     }
@@ -786,6 +858,49 @@ class FamilyManager {
         await db.query('DELETE FROM family_applications WHERE user_id = ?', [player.data.dbId]);
         mp.events.call('server:playerMenu:getData', player);
     }
+
+    async familyGarageAction(player, action, vehicleId) {
+        const fam = this.getFamilyByPlayer(player);
+        if (!fam) return player.call('showNotification', ['Family Garage', 'You are not in a family.']);
+
+        const dbId = parseInt(vehicleId);
+        if (isNaN(dbId) || dbId <= 0) {
+            return player.call('showNotification', ['Family Garage', 'Invalid vehicle id.']);
+        }
+
+        const act = String(action || '').toLowerCase();
+
+        if (act === 'spawn') {
+            const veh = await vehicleManager.unparkFamilyVehicle(player, fam.id, dbId);
+            if (veh === false) return player.call('showNotification', ['Family Garage', 'Vehicle not found.']);
+            if (veh) {
+                player.call('showNotification', ['Family Garage', 'Vehicle spawned.']);
+            }
+        } else if (act === 'locate') {
+            const veh = vehicleManager.findActiveVehicle(dbId);
+            if (!veh || veh.familyId !== fam.id) {
+                return player.call('showNotification', ['Family Garage', 'Vehicle is in garage.']);
+            }
+            vehicleManager.startVehicleLocator(player, veh, 'Family Vehicle');
+            player.call('showNotification', ['Family Garage', 'Live vehicle tracker enabled.']);
+        } else if (act === 'tow') {
+            const veh = vehicleManager.findActiveVehicle(dbId);
+            if (!veh || veh.familyId !== fam.id) {
+                return player.call('showNotification', ['Family Garage', 'Vehicle not found.']);
+            }
+            const occupants = veh.getOccupants();
+            if (occupants.length > 0) {
+                return player.call('showNotification', ['Family Garage', 'Someone is inside that vehicle.']);
+            }
+            await vehicleManager.despawnVehicle(veh);
+            player.call('showNotification', ['Family Garage', 'Vehicle towed to garage.']);
+        } else {
+            return player.call('showNotification', ['Family Garage', 'Unknown action.']);
+        }
+
+        this._refreshFamilyMenuForOnlineMembers(fam.id);
+    }
+
     async getPlayerMenuData(player) {
         const fam = this.getFamilyByPlayer(player);
 
@@ -833,6 +948,8 @@ class FamilyManager {
             bank:             fam.bank,
             premiumPoints:    fam.premiumPoints,
             memberCap:        fam.memberCap,
+            vehicleCap:       fam.vehicleCap || FAMILY_VEHICLE_BASE_CAP,
+            vehicleCount:      0,
             memberCount:      fam.members.length,
             hqHouseId:        fam.hqHouseId,
             applicationsOpen: fam.applicationsOpen,
@@ -841,6 +958,9 @@ class FamilyManager {
             isOwner,
             upgradeCost:      UPGRADE_COST,
             upgradeAmount:    UPGRADE_AMOUNT,
+            vehicleUpgradeCost:   VEHICLE_UPGRADE_COST,
+            vehicleUpgradeAmount: VEHICLE_UPGRADE_AMOUNT,
+            vehicleMaxCap:        FAMILY_VEHICLE_MAX_CAP,
             ranks:            fam.ranks,
             members:          fam.members.map(m => ({
                 userId:    m.userId,
@@ -850,8 +970,33 @@ class FamilyManager {
                 rankColor: fam.ranks[m.rank - 1].color,
                 online:    onlineIds.has(m.userId)
             })).sort((a, b) => b.rank - a.rank || a.username.localeCompare(b.username)),
-            applications: []
+            applications: [],
+            garageVehicles: []
         };
+
+        try {
+            const familyVehicles = await vehicleManager.getFamilyVehicles(fam.id);
+            result.vehicleCount = familyVehicles.length;
+            result.garageVehicles = familyVehicles.map(v => {
+                const activeVeh = vehicleManager.findActiveVehicle(v.id);
+                const catEntry = catalog.find(c => c.model === v.model);
+                return {
+                    id: v.id,
+                    model: v.model,
+                    plate: v.plate,
+                    fuel: v.fuel,
+                    parked: v.parked,
+                    spawned: !!activeVeh,
+                    displayName: catEntry ? catEntry.name : v.model,
+                    type: catEntry ? catEntry.type : 'Unknown',
+                    grade: catEntry ? catEntry.grade : '?',
+                    ownerId: v.owner_id
+                };
+            });
+        } catch (e) {
+            result.vehicleCount = 0;
+            result.garageVehicles = [];
+        }
 
         if (isOwner) {
             try {
@@ -905,6 +1050,14 @@ class FamilyManager {
             if (p.data.familyId === family.id && !excludeUserIds.includes(p.data.dbId)) {
                 p.outputChatBox(message);
             }
+        });
+    }
+
+    _refreshFamilyMenuForOnlineMembers(familyId) {
+        mp.players.toArray().forEach(p => {
+            if (!p.logged) return;
+            if (p.data.familyId !== familyId) return;
+            mp.events.call('server:playerMenu:getData', p);
         });
     }
 
@@ -1004,6 +1157,11 @@ mp.events.add('server:family:upgrade', async (player) => {
     await instance.upgradeCap(player);
 });
 
+mp.events.add('server:family:upgradeVehicleSlots', async (player) => {
+    if (!player.logged) return;
+    await instance.upgradeVehicleCap(player);
+});
+
 mp.events.add('server:family:toggleApplications', async (player) => {
     if (!player.logged) return;
     await instance.toggleApplications(player);
@@ -1045,6 +1203,11 @@ mp.events.add('server:family:spawn', (player) => {
     player.position  = new mp.Vector3(pos.x, pos.y, pos.z);
     player.dimension = house.id;
     player.outputChatBox('!{00FF00}Spawned at Family HQ!');
+});
+
+mp.events.add('server:family:garageAction', async (player, action, vehicleId) => {
+    if (!player.logged) return;
+    await instance.familyGarageAction(player, action, vehicleId);
 });
 
 module.exports = instance;

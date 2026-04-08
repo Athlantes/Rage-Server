@@ -14,7 +14,6 @@ module.exports = {
     GUILD_ID:         '1424705128543289367',
 
     // ── Channel IDs ──
-    STATUS_CHANNEL_ID:    '1478516481670119526',     // Channel for auto-updating player count embed
     ADMIN_LOG_CHANNEL_ID: '1478516834838909050',  // Channel for admin/mod notifications
     LINK_LOG_CHANNEL_ID:  '1478529101177290897',   // Channel for account link logs
 
@@ -34,7 +33,7 @@ module.exports = {
     EMBED_COLOR:      0x00A8FF,              // Blue accent color
 
     // ── Update intervals ──
-    STATUS_UPDATE_INTERVAL: 60000,           // Update status channel every 60 seconds
+    PRESENCE_UPDATE_INTERVAL: 60000,         // Update bot presence text every 60 seconds
 
     // ── Family System ──
     // Category position offset for new family categories (higher = lower in channel list)

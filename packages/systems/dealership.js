@@ -3,6 +3,7 @@ const db = require('../core/database');
 const playerManager = require('../core/playerManager');
 const vehicleManager = require('../core/vehicles/vehicleManager');
 const banking = require('../core/banking');
+const FamilyManager = require('./familyManager');
 const { catalog, DEALERSHIPS, DEALERSHIP_DIM_OFFSET } = require('../data/dealershipCatalog');
 
 // Active test drives: playerId -> { timeout, vehicleEntity }
@@ -11,6 +12,14 @@ const testDrives = new Map();
 // Helper: get a unique dimension for a player
 function getPlayerDimension(player) {
     return DEALERSHIP_DIM_OFFSET + player.id;
+}
+
+function refreshFamilyMenus(familyId) {
+    mp.players.forEach(p => {
+        if (!p.logged) return;
+        if (p.data.familyId !== familyId) return;
+        mp.events.call('server:playerMenu:getData', p);
+    });
 }
 
 // ─── Blips, NPCs & Interaction ColShapes ───
@@ -46,7 +55,7 @@ mp.events.add('packagesLoaded', () => {
 });
 
 // ─── Open Dealership ───
-mp.events.add('server:dealership:open', (player, tier) => {
+mp.events.add('server:dealership:open', async (player, tier) => {
     if (!player.logged) return;
     
     const ds = DEALERSHIPS[tier];
@@ -64,12 +73,20 @@ mp.events.add('server:dealership:open', (player, tier) => {
     // Get types available
     const types = [...new Set(vehicles.map(v => v.type))].sort();
 
+    const family = FamilyManager.getFamilyByPlayer(player);
+    const isFamilyOwner = !!family && family.ownerId === player.data.dbId;
+
     // Player info 
     const playerInfo = {
         cash: player.data.money || 0,
         bank: player.data.bank_money || 0,
         vehicleCount: 0,
-        vehicleSlots: player.data.vehicle_slots || 3
+        vehicleSlots: player.data.vehicle_slots || 3,
+        isFamilyOwner,
+        familyName: isFamilyOwner ? family.name : null,
+        familyBank: isFamilyOwner ? (family.bank || 0) : 0,
+        familyVehicleCount: 0,
+        familyVehicleSlots: isFamilyOwner ? (family.vehicleCap || 3) : 0
     };
 
     // Move player to a private dimension so only they exist there
@@ -77,22 +94,31 @@ mp.events.add('server:dealership:open', (player, tier) => {
     player._dealershipReturnDim = player.dimension; // save original dimension
     player.dimension = privateDim;
 
-    // Count owned vehicles
-    db.query("SELECT COUNT(*) as cnt FROM server_vehicles WHERE owner_id = ?", [player.data.dbId])
-        .then(([rows]) => {
-            playerInfo.vehicleCount = rows[0].cnt;
+    try {
+        const [personalRows] = await db.query(
+            "SELECT COUNT(*) as cnt FROM server_vehicles WHERE owner_id = ? AND family_id IS NULL",
+            [player.data.dbId]
+        );
+        playerInfo.vehicleCount = personalRows[0].cnt;
 
-            player.call('client:dealership:open', [
-                tier,
-                ds.name,
-                JSON.stringify(vehicles),
-                JSON.stringify(types),
-                JSON.stringify(playerInfo),
-                JSON.stringify(ds.spawnPos),
-                JSON.stringify(ds.camPos),
-                JSON.stringify(ds.camLookAt)
-            ]);
-        });
+        if (isFamilyOwner) {
+            const [famRows] = await db.query("SELECT COUNT(*) as cnt FROM server_vehicles WHERE family_id = ?", [family.id]);
+            playerInfo.familyVehicleCount = famRows[0].cnt;
+        }
+
+        player.call('client:dealership:open', [
+            tier,
+            ds.name,
+            JSON.stringify(vehicles),
+            JSON.stringify(types),
+            JSON.stringify(playerInfo),
+            JSON.stringify(ds.spawnPos),
+            JSON.stringify(ds.camPos),
+            JSON.stringify(ds.camLookAt)
+        ]);
+    } catch (e) {
+        console.error('[Dealership] open payload error:', e);
+    }
 });
 
 // ─── Preview Vehicle ───
@@ -134,8 +160,10 @@ mp.events.add('server:dealership:preview', (player, model, tier) => {
 });
 
 // ─── Buy Vehicle ───
-mp.events.add('server:dealership:buy', async (player, model, payMethod) => {
+mp.events.add('server:dealership:buy', async (player, model, payMethod, purchaseTarget = 'personal') => {
     if (!player.logged) return;
+
+    const buyForFamily = String(purchaseTarget || '').toLowerCase() === 'family';
 
     const car = catalog.find(v => v.model === model);
     if (!car) return player.call('showNotification', ['Dealership', 'Vehicle not found.']);
@@ -147,36 +175,59 @@ mp.events.add('server:dealership:buy', async (player, model, payMethod) => {
     const dist = player.dist(new mp.Vector3(ds.pos.x, ds.pos.y, ds.pos.z));
     if (dist > 15) return player.call('showNotification', ['Dealership', 'You are too far from the dealership.']);
 
-    // Slot check
-    const [countRows] = await db.query("SELECT COUNT(*) as cnt FROM server_vehicles WHERE owner_id = ?", [player.data.dbId]);
-    const owned = countRows[0].cnt;
-    const maxSlots = player.data.vehicle_slots || 3;
-
-    if (owned >= maxSlots) {
-        return player.call('showNotification', ['Dealership', `Garage full! (${owned}/${maxSlots}). Sell a vehicle first.`]);
-    }
-
-    // Payment
-    let success = false;
-    if (payMethod === 'bank') {
-        const result = await banking.withdraw(player, car.price, `Vehicle Purchase: ${car.name}`);
-        if (result.success) {
-            success = true;
-            // Re-deposit to bank then pay from bank (we already withdrew)
-            // Actually, let's just deduct from bank directly
-        } else {
-            return player.call('showNotification', ['Dealership', `Insufficient bank funds. Need $${car.price.toLocaleString()}.`]);
+    let fam = null;
+    let familyMode = false;
+    if (buyForFamily) {
+        fam = FamilyManager.getFamilyByPlayer(player);
+        if (!fam || fam.ownerId !== player.data.dbId) {
+            return player.call('showNotification', ['Dealership', 'Only the family owner can buy for family.']);
         }
+        familyMode = true;
+
+        const [famCountRows] = await db.query("SELECT COUNT(*) as cnt FROM server_vehicles WHERE family_id = ?", [fam.id]);
+        const famOwned = famCountRows[0].cnt;
+        const famSlots = fam.vehicleCap || 3;
+        if (famOwned >= famSlots) {
+            return player.call('showNotification', ['Dealership', `Family garage full! (${famOwned}/${famSlots}). Upgrade family vehicle slots.`]);
+        }
+        if ((fam.bank || 0) < car.price) {
+            return player.call('showNotification', ['Dealership', `Family safe needs $${car.price.toLocaleString()} (available $${(fam.bank || 0).toLocaleString()}).`]);
+        }
+
+        fam.bank -= car.price;
+        await db.query('UPDATE families SET bank = ? WHERE id = ?', [fam.bank, fam.id]);
     } else {
-        // Cash payment
-        if (player.data.money < car.price) {
-            return player.call('showNotification', ['Dealership', `Insufficient cash. Need $${car.price.toLocaleString()}.`]);
-        }
-        success = await playerManager.removeMoneyAndSave(player, car.price, `Vehicle: ${car.name}`);
-    }
+        // Personal slot check
+        const [countRows] = await db.query(
+            "SELECT COUNT(*) as cnt FROM server_vehicles WHERE owner_id = ? AND family_id IS NULL",
+            [player.data.dbId]
+        );
+        const owned = countRows[0].cnt;
+        const maxSlots = player.data.vehicle_slots || 3;
 
-    if (!success) {
-        return player.call('showNotification', ['Dealership', 'Payment failed.']);
+        if (owned >= maxSlots) {
+            return player.call('showNotification', ['Dealership', `Garage full! (${owned}/${maxSlots}). Sell a vehicle first.`]);
+        }
+
+        // Personal payment
+        let success = false;
+        if (payMethod === 'bank') {
+            const result = await banking.withdraw(player, car.price, `Vehicle Purchase: ${car.name}`);
+            if (result.success) {
+                success = true;
+            } else {
+                return player.call('showNotification', ['Dealership', `Insufficient bank funds. Need $${car.price.toLocaleString()}.`]);
+            }
+        } else {
+            if (player.data.money < car.price) {
+                return player.call('showNotification', ['Dealership', `Insufficient cash. Need $${car.price.toLocaleString()}.`]);
+            }
+            success = await playerManager.removeMoneyAndSave(player, car.price, `Vehicle: ${car.name}`);
+        }
+
+        if (!success) {
+            return player.call('showNotification', ['Dealership', 'Payment failed.']);
+        }
     }
 
     // Destroy preview
@@ -201,18 +252,35 @@ mp.events.add('server:dealership:buy', async (player, model, payMethod) => {
     const parkSpot = spots[Math.floor(Math.random() * spots.length)];
 
     // Create vehicle at the random parking spot
-    await vehicleManager.create(player, car.model, parkSpot);
+    await vehicleManager.create(player, car.model, parkSpot, {
+        ownerId: player.data.dbId,
+        familyId: familyMode ? fam.id : null,
+        plate: familyMode ? fam.tag : null,
+        putIntoVehicle: true,
+        sendMail: true
+    });
 
     // Log transaction
     await db.query(
         "INSERT INTO bank_transactions (sender_id, target_id, amount, type, description, created_at) VALUES (?, NULL, ?, 'purchase', ?, NOW())",
-        [player.data.dbId, car.price, `Vehicle Purchase: ${car.name} ($${car.price.toLocaleString()})`]
+        [
+            player.data.dbId,
+            car.price,
+            familyMode
+                ? `Family Vehicle Purchase: ${car.name} ($${car.price.toLocaleString()})`
+                : `Vehicle Purchase: ${car.name} ($${car.price.toLocaleString()})`
+        ]
     );
 
     player.call('client:dealership:close');
-    player.call('showNotification', ['Dealership', `You purchased a ${car.name} for $${car.price.toLocaleString()}! A marker has been set to your vehicle.`]);
+    if (familyMode) {
+        player.call('showNotification', ['Dealership', `Family purchased a ${car.name} for $${car.price.toLocaleString()} from family safe.`]);
+        refreshFamilyMenus(fam.id);
+    } else {
+        player.call('showNotification', ['Dealership', `You purchased a ${car.name} for $${car.price.toLocaleString()}! A marker has been set to your vehicle.`]);
+    }
     player.call('client:setWaypoint', [parkSpot.x, parkSpot.y]);
-    console.log(`[Dealership] ${player.name} bought ${car.name} ($${car.price}) via ${payMethod}`);
+    console.log(`[Dealership] ${player.name} bought ${car.name} ($${car.price}) via ${familyMode ? 'family-safe' : payMethod}`);
 });
 
 // ─── Test Drive ───
@@ -362,7 +430,7 @@ mp.events.add('playerQuit', (player) => {
 mp.events.add('server:dealership:sell', async (player, vehicleDbId) => {
     if (!player.logged) return;
 
-    const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ? AND owner_id = ?", [vehicleDbId, player.data.dbId]);
+    const [rows] = await db.query("SELECT * FROM server_vehicles WHERE id = ? AND owner_id = ? AND family_id IS NULL", [vehicleDbId, player.data.dbId]);
     if (rows.length === 0) return player.call('showNotification', ['Dealership', 'Vehicle not found.']);
 
     const vehData = rows[0];

@@ -70,6 +70,15 @@ mp.events.add('vehicle:toggleLock', (player) => {
 
 function hasKeys(player, veh) {
     if (veh.ownerId === player.data.dbId) return true;
+    if (veh.familyId) {
+        try {
+            const FamilyManager = require('../../systems/familyManager');
+            const fam = FamilyManager.getFamilyByPlayer(player);
+            if (fam && fam.id === veh.familyId) return true;
+        } catch (e) {
+            // fail safe: fall through to other key checks
+        }
+    }
     if (player.activeJob && player.jobVehicle === veh) return true;
     return false;
 }

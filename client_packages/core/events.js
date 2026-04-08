@@ -24,6 +24,96 @@ mp.events.add('client:setRoute', (blipId, enable, color) => {
     }, 100);
 });
 
+// Backward-compatible waypoint setter used by server modules.
+mp.events.add('client:setWaypoint', (x, y) => {
+    const px = parseFloat(x);
+    const py = parseFloat(y);
+    if (isNaN(px) || isNaN(py)) return;
+    mp.game.ui.setNewWaypoint(px, py);
+});
+
+// --- LIVE VEHICLE LOCATOR (BLIP + ROUTE + MARKER) ---
+let trackedVehicleBlip = null;
+let trackedVehicleMarker = null;
+let trackedVehicleDbId = null;
+let trackedVehicleLabel = 'Tracked Vehicle';
+
+function destroyTrackedVehicleVisuals() {
+    if (trackedVehicleBlip && mp.blips.exists(trackedVehicleBlip)) {
+        try { trackedVehicleBlip.setRoute(false); } catch (_) {}
+        trackedVehicleBlip.destroy();
+    }
+    trackedVehicleBlip = null;
+
+    if (trackedVehicleMarker && mp.markers.exists(trackedVehicleMarker)) {
+        trackedVehicleMarker.destroy();
+    }
+    trackedVehicleMarker = null;
+}
+
+function stopVehicleLocator(showReason, reason) {
+    destroyTrackedVehicleVisuals();
+    trackedVehicleDbId = null;
+    trackedVehicleLabel = 'Tracked Vehicle';
+
+    if (showReason && reason) {
+        mp.events.call('showNotification', 'GPS', reason);
+    }
+}
+
+function updateVehicleLocatorVisuals(vehicleDbId, x, y, z, label) {
+    const px = parseFloat(x);
+    const py = parseFloat(y);
+    const pz = parseFloat(z) || 0;
+    const parsedDbId = parseInt(vehicleDbId);
+
+    if (isNaN(px) || isNaN(py) || isNaN(parsedDbId)) return;
+
+    if (trackedVehicleDbId !== null && trackedVehicleDbId !== parsedDbId) {
+        destroyTrackedVehicleVisuals();
+    }
+
+    trackedVehicleDbId = parsedDbId;
+    trackedVehicleLabel = String(label || 'Tracked Vehicle');
+    const pos = new mp.Vector3(px, py, pz);
+
+    if (!trackedVehicleBlip || !mp.blips.exists(trackedVehicleBlip)) {
+        trackedVehicleBlip = mp.blips.new(225, pos, {
+            name: trackedVehicleLabel,
+            color: 5,
+            scale: 0.9,
+            shortRange: false
+        });
+        trackedVehicleBlip.setRoute(true);
+        trackedVehicleBlip.setRouteColour(5);
+    } else {
+        trackedVehicleBlip.setCoords(pos);
+    }
+
+    if (trackedVehicleMarker && mp.markers.exists(trackedVehicleMarker)) {
+        trackedVehicleMarker.destroy();
+    }
+
+    trackedVehicleMarker = mp.markers.new(36, pos, 1.0, {
+        color: [0, 174, 255, 180],
+        visible: true,
+        dimension: mp.players.local.dimension
+    });
+}
+
+mp.events.add('client:vehicleLocator:start', (vehicleDbId, x, y, z, label) => {
+    updateVehicleLocatorVisuals(vehicleDbId, x, y, z, label);
+    mp.events.call('showNotification', 'GPS', `${trackedVehicleLabel} tracker enabled.`);
+});
+
+mp.events.add('client:vehicleLocator:update', (vehicleDbId, x, y, z, label) => {
+    updateVehicleLocatorVisuals(vehicleDbId, x, y, z, label);
+});
+
+mp.events.add('client:vehicleLocator:stop', (reason) => {
+    stopVehicleLocator(true, reason);
+});
+
 // --- WAYPOINT TELEPORTATION ---
 mp.events.add('client:teleportToWaypoint', () => {
     // 8 is the native GTA V blip ID for the purple custom waypoint

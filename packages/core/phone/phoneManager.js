@@ -472,7 +472,6 @@ mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
             const veh = await vehicleManager.unparkVehicle(player, vehDbId);
             if (veh) {
                 player.call('showNotification', ['Fleet', 'Vehicle spawned.']);
-                player.call('client:setWaypoint', [veh.position.x, veh.position.y]);
             }
         } else if (action === 'despawn') {
             const veh = vehicleManager.findActiveVehicle(vehDbId);
@@ -483,8 +482,8 @@ mp.events.add('server:phone:vehicleAction', async (player, action, id) => {
         } else if (action === 'locate') {
             const veh = vehicleManager.findActiveVehicle(vehDbId);
             if (!veh) return player.call('showNotification', ['Fleet', 'Vehicle is in garage.']);
-            player.call('client:setWaypoint', [veh.position.x, veh.position.y]);
-            player.call('showNotification', ['GPS', 'Location marked.']);
+            vehicleManager.startVehicleLocator(player, veh, 'Personal Vehicle');
+            player.call('showNotification', ['GPS', 'Live vehicle tracker enabled.']);
         }
     } catch (err) { console.error("Phone Action Error:", err); }
 });

@@ -318,8 +318,21 @@ html, body {
     display: flex;
     gap: 6px;
 }
+.action-row.family-owner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        'test test'
+        'buy family';
+}
+.action-row.family-owner #btnTest { grid-area: test; }
+.action-row.family-owner #btnBuy { grid-area: buy; }
+.action-row.family-owner #btnBuyFamily { grid-area: family; display: inline-flex; }
 .action-btn {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 8px 0;
     border-radius: 8px;
     border: none;
@@ -332,6 +345,7 @@ html, body {
     letter-spacing: 1px;
 }
 .action-btn.buy-cash { background: var(--success); color: #fff; }
+.action-btn.buy-family { background: var(--warning); color: #fff; display: none; }
 .action-btn.test-drive {
     background: rgba(255,255,255,0.06);
     color: var(--text-dim);
@@ -518,6 +532,8 @@ html, body {
         <div class="info-item">Cash: <span class="val money" id="playerCash">$0</span></div>
         <div class="info-item">Bank: <span class="val money" id="playerBank">$0</span></div>
         <div class="info-item">Garage: <span class="val" id="playerGarage">0/3</span></div>
+        <div class="info-item" id="familyFundsWrap" style="display:none">Family Safe: <span class="val money" id="familyFunds">$0</span></div>
+        <div class="info-item" id="familyGarageWrap" style="display:none">Family Garage: <span class="val" id="familyGarage">0/3</span></div>
         <button class="close-btn" onclick="closeDS()">&times;</button>
     </div>
 </div>
@@ -571,8 +587,9 @@ html, body {
             <div class="ei">Model: <span id="selModel">—</span></div>
         </div>
 
-        <div class="action-row">
+        <div class="action-row" id="actionRow">
             <button class="action-btn buy-cash" id="btnBuy" onclick="openBuyModal()">Buy Vehicle</button>
+            <button class="action-btn buy-family" id="btnBuyFamily" onclick="buyForFamily()">Buy for Family</button>
             <button class="action-btn test-drive" id="btnTest" onclick="testDrive()">Test Drive</button>
         </div>
     </div>
@@ -629,6 +646,18 @@ function initDealership(tier, name, vehicles, types, pInfo) {
     document.getElementById('playerCash').textContent = '$' + playerInfo.cash.toLocaleString();
     document.getElementById('playerBank').textContent = '$' + playerInfo.bank.toLocaleString();
     document.getElementById('playerGarage').textContent = playerInfo.vehicleCount + '/' + playerInfo.vehicleSlots;
+
+    const familyFundsWrap = document.getElementById('familyFundsWrap');
+    const familyGarageWrap = document.getElementById('familyGarageWrap');
+    if (playerInfo.isFamilyOwner) {
+        familyFundsWrap.style.display = 'flex';
+        familyGarageWrap.style.display = 'flex';
+        document.getElementById('familyFunds').textContent = '$' + (playerInfo.familyBank || 0).toLocaleString();
+        document.getElementById('familyGarage').textContent = (playerInfo.familyVehicleCount || 0) + '/' + (playerInfo.familyVehicleSlots || 3);
+    } else {
+        familyFundsWrap.style.display = 'none';
+        familyGarageWrap.style.display = 'none';
+    }
 
     buildGradeButtons([...new Set(allVehicles.map(v => v.grade))]);
     buildTypeList();
@@ -752,8 +781,21 @@ function selectCar(car) {
     document.getElementById('selModel').textContent = car.model;
 
     const garageFull = playerInfo.vehicleCount >= playerInfo.vehicleSlots;
+    const familyGarageFull = (playerInfo.familyVehicleCount || 0) >= (playerInfo.familyVehicleSlots || 3);
     document.getElementById('btnBuy').disabled = garageFull;
     document.getElementById('btnBuy').textContent = garageFull ? 'Garage Full' : 'Buy Vehicle';
+
+    const actionRow = document.getElementById('actionRow');
+    const familyBtn = document.getElementById('btnBuyFamily');
+    if (playerInfo.isFamilyOwner) {
+        actionRow.classList.add('family-owner');
+        familyBtn.style.display = 'inline-flex';
+        familyBtn.disabled = familyGarageFull;
+        familyBtn.textContent = familyGarageFull ? 'Family Garage Full' : 'Buy for Family';
+    } else {
+        actionRow.classList.remove('family-owner');
+        familyBtn.style.display = 'none';
+    }
 
     try { mp.trigger('cef:dealership:preview', car.model); } catch(e) {}
 }
@@ -793,6 +835,11 @@ function confirmBuy(method) {
     if (!selectedCar) return;
     closeBuyModal();
     try { mp.trigger('cef:dealership:buy', selectedCar.model, method); } catch(e) {}
+}
+
+function buyForFamily() {
+    if (!selectedCar || !playerInfo.isFamilyOwner) return;
+    try { mp.trigger('cef:dealership:buyFamily', selectedCar.model); } catch(e) {}
 }
 
 function testDrive() {

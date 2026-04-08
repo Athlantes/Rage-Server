@@ -50,6 +50,14 @@ mp.events.add('client:family:upgrade', () => {
     mp.events.callRemote('server:family:upgrade');
 });
 
+mp.events.add('client:family:upgradeVehicleSlots', () => {
+    mp.events.callRemote('server:family:upgradeVehicleSlots');
+});
+
+mp.events.add('client:family:garageAction', (action, vehicleId) => {
+    mp.events.callRemote('server:family:garageAction', action, vehicleId);
+});
+
 mp.events.add('client:family:toggleApplications', () => {
     mp.events.callRemote('server:family:toggleApplications');
 });

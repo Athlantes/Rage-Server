@@ -37,7 +37,6 @@ const client = new Client({
     ]
 });
 
-let statusMessage = null;
 let onlinePlayers = []; // Updated via IPC from RAGE:MP
 const pendingLinks = new Map(); // Va stoca temporar cererile de link active (PIN-urile)
 
@@ -70,11 +69,11 @@ async function handleIPC(msg) {
     switch (msg.type) {
         case 'playerList':
             onlinePlayers = msg.players || [];
-            // Immediately refresh the status embed and channel name when player list is pushed
+            // Immediately refresh bot presence when player list is pushed
             try {
-                updateStatusEmbed();
+                updateBotPresence();
             } catch (e) {
-                console.warn('[Discord] Failed to update status on playerList IPC:', e.message);
+                console.warn('[Discord] Failed to update presence on playerList IPC:', e.message);
             }
             break;
         case 'adminLog':
@@ -121,8 +120,6 @@ client.once('ready', async () => {
     console.log(`[Discord] Bot logged in as ${client.user.tag}`);
     sendToRageMP({ type: 'ready', tag: client.user.tag });
 
-    client.user.setActivity(`${config.SERVER_NAME}`, { type: ActivityType.Watching });
-
     await registerCommands();
 
     // Ensure the permanent "Link to Rage" message exists in the configured channel
@@ -132,8 +129,8 @@ client.once('ready', async () => {
         console.warn('[Discord] Could not ensure link message:', e.message);
     }
 
-    updateStatusEmbed();
-    setInterval(updateStatusEmbed, config.STATUS_UPDATE_INTERVAL);
+    updateBotPresence();
+    setInterval(updateBotPresence, config.PRESENCE_UPDATE_INTERVAL || config.STATUS_UPDATE_INTERVAL || 60000);
 
     // Restore family Discord state from disk (survives bot restarts)
     loadFamilyMap();
@@ -488,59 +485,17 @@ async function handleProfile(interaction) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  STATUS CHANNEL — Auto-updating embed
+//  BOT PRESENCE — Auto-updating activity text
 // ─────────────────────────────────────────────────────────────────────────────
-async function updateStatusEmbed() {
-    if (!config.STATUS_CHANNEL_ID || config.STATUS_CHANNEL_ID.startsWith('PASTE_')) return;
-
+async function updateBotPresence() {
     try {
-        const channel = await client.channels.fetch(config.STATUS_CHANNEL_ID);
-        if (!channel) return;
-
-        const embed = buildStatusEmbed(onlinePlayers);
-
-        if (statusMessage) {
-            try {
-                await statusMessage.edit({ embeds: [embed] });
-            } catch (e) {
-                statusMessage = await channel.send({ embeds: [embed] });
-            }
-        } else {
-            const messages = await channel.messages.fetch({ limit: 10 });
-            const existingMsg = messages.find(m => m.author.id === client.user.id && m.embeds.length > 0);
-            if (existingMsg) {
-                statusMessage = existingMsg;
-                await statusMessage.edit({ embeds: [embed] });
-            } else {
-                statusMessage = await channel.send({ embeds: [embed] });
-            }
-        }
-        
+        if (!client.user) return;
         const count = (onlinePlayers && onlinePlayers.length) || 0;
-        const safeName = `${count} Online In-Game`;
-
-        try {
-            const guild = await client.guilds.fetch(config.GUILD_ID);
-            const statusChannel = await guild.channels.fetch(config.STATUS_CHANNEL_ID);
-            if (statusChannel && typeof statusChannel.setName === 'function') {
-                const isVoice = statusChannel.type === ChannelType.GuildVoice || statusChannel.type === ChannelType.GuildStageVoice;
-                if (isVoice) {
-                    if (statusChannel.name !== safeName) {
-                        await statusChannel.setName(safeName);
-                    }
-                } else {
-                    const altName = `${count}-online-in-game`;
-                    if (statusChannel.name !== altName) {
-                        await statusChannel.setName(altName);
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('[Discord] Could not rename status channel:', e.message);
-        }
+        const activityText = `${config.SERVER_NAME} - ${count} Players...`;
+        await client.user.setActivity(activityText, { type: ActivityType.Playing });
 
     } catch (err) {
-        console.error('[Discord] Status embed update failed:', err.message);
+        console.error('[Discord] Presence update failed:', err.message);
     }
 }
 
@@ -627,6 +582,42 @@ async function ensureLinkMessage() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FAMILY_MAP_PATH = path.join(__dirname, 'family_discord_map.json');
+
+function normalizeFamilyId(familyId) {
+    const n = Number(familyId);
+    return Number.isFinite(n) ? n : null;
+}
+
+function getFamilyDiscordData(familyId) {
+    const normalized = normalizeFamilyId(familyId);
+    if (normalized !== null && familyDiscord.has(normalized)) {
+        return familyDiscord.get(normalized);
+    }
+
+    const asString = String(familyId);
+    if (familyDiscord.has(asString)) {
+        return familyDiscord.get(asString);
+    }
+
+    return null;
+}
+
+function setFamilyDiscordData(familyId, data) {
+    const normalized = normalizeFamilyId(familyId);
+    if (normalized !== null) {
+        familyDiscord.set(normalized, data);
+    } else {
+        familyDiscord.set(String(familyId), data);
+    }
+}
+
+function deleteFamilyDiscordData(familyId) {
+    const normalized = normalizeFamilyId(familyId);
+    if (normalized !== null) {
+        familyDiscord.delete(normalized);
+    }
+    familyDiscord.delete(String(familyId));
+}
 
 function saveFamilyMap() {
     try {
@@ -757,7 +748,7 @@ async function familyCreated(msg) {
     }
 
     // ── 5. Store in memory + persist to disk ────────────────────────────────
-    familyDiscord.set(familyId, { categoryId: category.id, channelIds, roleIds });
+    setFamilyDiscordData(familyId, { categoryId: category.id, channelIds, roleIds });
     saveFamilyMap();
 
     // ── 6. Assign owner their rank 5 role ────────────────────────────────────
@@ -797,39 +788,63 @@ async function familyCreated(msg) {
  * Called when a family is disbanded.
  */
 async function familyDisbanded(msg) {
-    const { familyId, familyName } = msg;
-    const data = familyDiscord.get(familyId);
-    if (!data) return;
+    const { familyId, familyName, familyTag } = msg;
+    const data = getFamilyDiscordData(familyId);
+    const safeName = toDiscordName(familyName || 'family');
 
     const guild = await getGuild();
 
+    let categoryDeleted = false;
+    let category = null;
+
+    if (data && data.categoryId) {
+        category = await guild.channels.fetch(data.categoryId).catch(() => null);
+    }
+
+    // Fallback for stale/missing map entries: resolve category by expected family name.
+    if (!category) {
+        await guild.channels.fetch().catch(() => null);
+        category = guild.channels.cache.find(c =>
+            c.type === ChannelType.GuildCategory &&
+            String(c.name || '').toLowerCase() === `╔ ${safeName}`.toLowerCase()
+        ) || null;
+    }
+
     try {
-        if (data.categoryId) {
-            const category = await guild.channels.fetch(data.categoryId).catch(() => null);
-            if (category) {
-                const children = guild.channels.cache.filter(c => c.parentId === category.id);
-                for (const [, ch] of children) {
-                    await ch.delete(`Family "${familyName}" disbanded`).catch(() => {});
-                }
-                await category.delete(`Family "${familyName}" disbanded`).catch(() => {});
+        if (category) {
+            const children = guild.channels.cache.filter(c => c.parentId === category.id);
+            for (const [, ch] of children) {
+                await ch.delete(`Family "${familyName}" disbanded`).catch(() => {});
             }
+            await category.delete(`Family "${familyName}" disbanded`).catch(() => {});
+            categoryDeleted = true;
         }
     } catch (e) {
         console.warn('[Discord/Family] Error deleting category:', e.message);
     }
 
-    for (const roleId of Object.values(data.roleIds || {})) {
-        try {
-            const role = await guild.roles.fetch(roleId).catch(() => null);
-            if (role) await role.delete(`Family "${familyName}" disbanded`).catch(() => {});
-        } catch (e) { /* ignore */ }
+    if (data) {
+        for (const roleId of Object.values(data.roleIds || {})) {
+            try {
+                const role = await guild.roles.fetch(roleId).catch(() => null);
+                if (role) await role.delete(`Family "${familyName}" disbanded`).catch(() => {});
+            } catch (e) { /* ignore */ }
+        }
+    } else if (familyTag) {
+        await guild.roles.fetch().catch(() => null);
+        const tagPrefix = `[${String(familyTag).toUpperCase()}] `;
+        const tagRoles = guild.roles.cache.filter(r => String(r.name || '').startsWith(tagPrefix));
+        for (const [, role] of tagRoles) {
+            await role.delete(`Family "${familyName}" disbanded`).catch(() => {});
+        }
     }
 
-    familyDiscord.delete(familyId);
+    deleteFamilyDiscordData(familyId);
     saveFamilyMap();
 
     if (config.FAMILY_LOG_CHANNEL_ID) {
-        sendLogEmbed('info', `💀 Family **${familyName}** was disbanded — Discord category & roles removed.`, []);
+        const suffix = categoryDeleted ? 'Discord category & roles removed.' : 'Discord cleanup attempted (no mapped category found).';
+        sendLogEmbed('info', `💀 Family **${familyName}** was disbanded — ${suffix}`, []);
     }
 
     console.log(`[Discord/Family] Cleaned up Discord for disbanded family "${familyName}" (ID: ${familyId}).`);
@@ -840,7 +855,7 @@ async function familyDisbanded(msg) {
  */
 async function familyMemberJoined(msg) {
     const { familyId, familyName, userId, username, rank } = msg;
-    const data = familyDiscord.get(familyId);
+    const data = getFamilyDiscordData(familyId);
     if (!data) return;
 
     const guild = await getGuild();
@@ -868,7 +883,7 @@ async function familyMemberJoined(msg) {
  */
 async function familyMemberLeft(msg) {
     const { familyId, familyName, userId, username } = msg;
-    const data = familyDiscord.get(familyId);
+    const data = getFamilyDiscordData(familyId);
     if (!data) return;
 
     const guild = await getGuild();
@@ -893,7 +908,7 @@ async function familyMemberLeft(msg) {
  */
 async function familyRankChanged(msg) {
     const { familyId, familyName, userId, username, oldRank, newRank } = msg;
-    const data = familyDiscord.get(familyId);
+    const data = getFamilyDiscordData(familyId);
     if (!data) return;
 
     const guild = await getGuild();
@@ -928,7 +943,7 @@ async function familyRankChanged(msg) {
  */
 async function familyColorChanged(msg) {
     const { familyId, familyName, newColor } = msg;
-    const data = familyDiscord.get(familyId);
+    const data = getFamilyDiscordData(familyId);
     if (!data) return;
 
     const guild = await getGuild();
@@ -957,7 +972,7 @@ async function onPlayerLinked(msg) {
         if (!rows.length) return;
 
         const { family_id: familyId, rank } = rows[0];
-        const data = familyDiscord.get(familyId);
+        const data = getFamilyDiscordData(familyId);
         if (!data) return;
 
         const guild = await getGuild();
@@ -1005,7 +1020,7 @@ client.on('guildMemberAdd', async (member) => {
         if (!famRows.length) return; // Not in a family
 
         const { family_id: familyId, rank } = famRows[0];
-        const data = familyDiscord.get(familyId);
+        const data = getFamilyDiscordData(familyId);
         if (!data) return; // Family has no Discord structure yet
 
         const roleId = data.roleIds[rank] || data.roleIds[1];

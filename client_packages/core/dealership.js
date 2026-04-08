@@ -90,6 +90,11 @@ mp.events.add('cef:dealership:buy', (model, payMethod) => {
     mp.events.callRemote('server:dealership:buy', model, payMethod);
 });
 
+mp.events.add('cef:dealership:buyFamily', (model) => {
+    if (!dealershipTier) return;
+    mp.events.callRemote('server:dealership:buy', model, 'family-safe', 'family');
+});
+
 mp.events.add('cef:dealership:testDrive', (model) => {
     if (!dealershipTier) return;
     mp.events.callRemote('server:dealership:testDrive', model, dealershipTier);

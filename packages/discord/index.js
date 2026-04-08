@@ -153,8 +153,8 @@ function familyCreated(familyId, familyName, familyTag, familyColor, ownerId, ow
     sendToBot({ type: 'familyCreated', familyId, familyName, familyTag, familyColor, ownerId, ownerName, ranks });
 }
 
-function familyDisbanded(familyId, familyName) {
-    sendToBot({ type: 'familyDisbanded', familyId, familyName });
+function familyDisbanded(familyId, familyName, familyTag) {
+    sendToBot({ type: 'familyDisbanded', familyId, familyName, familyTag });
 }
 
 function familyMemberJoined(familyId, familyName, userId, username, rank) {

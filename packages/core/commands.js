@@ -7,6 +7,7 @@ const jobManager = require('../jobs/jobManager');
 const factionsManager = require('../factions/factionsManager');
 const wardrobeManager = require('../factions/wardrobe/wardrobeManager');
 const dispatchManager = require('../factions/dispatch/dispatchManager');
+const FamilyManager = require('../systems/familyManager');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
@@ -128,7 +129,18 @@ mp.events.addCommand('buycar', (player, model) => {
 mp.events.addCommand('parkcar', (player) => {
     const veh = player.vehicle;
     if (!veh) return player.call('showNotification', ['Garage', 'You must be in a vehicle.']);
-    if (veh.ownerId !== player.data.dbId) return player.call('showNotification', ['Garage', 'You do not own this vehicle.']);
+
+    if (veh.familyId) {
+        const fam = FamilyManager.getFamilyByPlayer(player);
+        if (!fam || fam.id !== veh.familyId) {
+            return player.call('showNotification', ['Garage', 'This is not your family vehicle.']);
+        }
+        if (fam.ownerId !== player.data.dbId) {
+            return player.call('showNotification', ['Garage', 'Only the family owner can park family vehicles.']);
+        }
+    } else if (veh.ownerId !== player.data.dbId) {
+        return player.call('showNotification', ['Garage', 'You do not own this vehicle.']);
+    }
     
     vehicleManager.savePosition(veh); 
     player.call('client:leaveVehicle');
