@@ -40,8 +40,16 @@ const vehicles = {
         
         veh.lastActive = Date.now(); 
 
-        // Apply colors: support new RGB format and legacy index format
-        if (colors.primRGB) {
+        // Apply colors: support RGB format, chameleon format, and legacy index format.
+        if (typeof colors.chameleonIndex === 'number' && colors.chameleonIndex >= 161) {
+            try {
+                veh.setColor(colors.chameleonIndex, colors.chameleonIndex);
+            } catch(e) {
+                veh.setColor(0, 0);
+            }
+            veh.setVariable('paintType', 6);
+            veh.setVariable('chameleonColor', colors.chameleonIndex);
+        } else if (colors.primRGB) {
             // New RGB format: { primRGB: {r,g,b}, secRGB: {r,g,b}, paintType: 0 }
             try {
                 veh.setColorRGB(
@@ -53,9 +61,11 @@ const vehicles = {
             }
             // Store paint type for client-side application
             veh.setVariable('paintType', colors.paintType || 0);
+            veh.setVariable('chameleonColor', -1);
         } else {
             // Legacy format: { prim: 0, sec: 0 }
             veh.setColor(colors.prim || 0, colors.sec || 0);
+            veh.setVariable('chameleonColor', -1);
         }
 
         veh.engineHealth = data.engine_health;

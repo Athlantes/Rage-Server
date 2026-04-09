@@ -119,6 +119,15 @@ class FamilyManager {
                 console.error('[FamilyManager] schema error (server_vehicles idx):', e.message || e);
             }
         }
+
+        // Family Points column on family_members
+        try {
+            await db.query("ALTER TABLE family_members ADD COLUMN family_points INT UNSIGNED NOT NULL DEFAULT 0");
+        } catch (e) {
+            if (!/Duplicate column name/i.test(String(e && e.message))) {
+                console.error('[FamilyManager] schema error (family_members.family_points):', e.message || e);
+            }
+        }
     }
 
     _rowToFamily(row) {
@@ -195,6 +204,40 @@ class FamilyManager {
     }
     getMemberData(family, userId) {
         return family.members.find(m => m.userId === userId) || null;
+    }
+
+    // ── Family Points ─────────────────────────────────────────────────────────
+    static get FAMILY_POINTS_PER_PAYDAY() { return 10;  }
+    static get FAMILY_POINTS_MAX_STORED()  { return 200; }
+
+    // Read current FP from DB (authoritative — not cached in memory)
+    async getMemberFamilyPoints(userId) {
+        try {
+            const [rows] = await db.query(
+                'SELECT family_points FROM family_members WHERE user_id = ?',
+                [userId]
+            );
+            return rows.length ? (rows[0].family_points || 0) : 0;
+        } catch (e) {
+            console.error('[FamilyManager] getMemberFamilyPoints error:', e);
+            return 0;
+        }
+    }
+
+    // Add (positive delta) or deduct (negative delta) FP; clamps to [0, MAX_STORED]
+    async modifyMemberFamilyPoints(userId, delta) {
+        try {
+            const current = await this.getMemberFamilyPoints(userId);
+            const capped  = Math.max(0, Math.min(FamilyManager.FAMILY_POINTS_MAX_STORED, current + delta));
+            await db.query(
+                'UPDATE family_members SET family_points = ? WHERE user_id = ?',
+                [capped, userId]
+            );
+            return capped;
+        } catch (e) {
+            console.error('[FamilyManager] modifyMemberFamilyPoints error:', e);
+            return null;
+        }
     }
 
     // ── Create Family ─────────────────────────────────────────────────────────
@@ -1012,6 +1055,9 @@ class FamilyManager {
             } catch (e) { /* no-op */ }
         }
 
+        // ── Family Points (for the requesting player) ─────────────────────────
+        result.myFamilyPoints = await this.getMemberFamilyPoints(player.data.dbId);
+
         // ── Permit data ───────────────────────────────────────────────────────
         // The family menu only shows the active permit (owned business + delivery status).
         // Raffle browsing and entry is handled exclusively through City Hall (/permits board).
@@ -1033,8 +1079,10 @@ class FamilyManager {
             }
 
             result.permit = {
-                ownedBusiness: ownedBiz,
+                ownedBusiness:    ownedBiz,
                 deliveryDone,
+                activeDelivery:   !!player.data.activePermitDelivery,
+                deliveryFpCost:   100, // mirror of DELIVERY_FP_COST constant
             };
         } catch (e) {
             result.permit = null;
@@ -1209,5 +1257,10 @@ mp.events.add('server:family:garageAction', async (player, action, vehicleId) =>
     if (!player.logged) return;
     await instance.familyGarageAction(player, action, vehicleId);
 });
+
+// Re-export instance methods that permitManager and playerManager need to call
+// using the FamilyManager.method() pattern (matching existing code conventions).
+instance.getMemberFamilyPoints    = instance.getMemberFamilyPoints.bind(instance);
+instance.modifyMemberFamilyPoints = instance.modifyMemberFamilyPoints.bind(instance);
 
 module.exports = instance;

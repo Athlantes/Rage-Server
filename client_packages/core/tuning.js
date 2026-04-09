@@ -7,7 +7,7 @@ let localMarkers = [];   // client-side marker objects
 
 // ─── Preview/Revert tracking ───
 let originalMods = {};       // { modType: modIndex } — state when menu opened
-let originalColor = null;    // { primRGB, secRGB, paintType } — state when menu opened
+let originalColor = null;    // { primRGB, secRGB, paintType, chameleonIndex? } — state when menu opened
 let previewedModTypes = {};  // { modType: true } — mods previewed but not yet purchased
 let colorPreviewed = false;  // whether color was previewed but not yet purchased
 
@@ -184,6 +184,21 @@ function applyCustomSecondaryColor(veh, r, g, b) {
     try { veh.setCustomSecondaryColour(r, g, b); return; } catch(e) {}
     try { mp.game.invoke('0x36CED73BFED89754', veh.handle, r, g, b); return; } catch(e) {}
     try { veh.setCustomSecondaryColor(r, g, b); return; } catch(e) {}
+}
+
+// ─── Helper: clear custom RGB layers so indexed/mod colors are visible ───
+function clearCustomVehicleColors(veh) {
+    try { veh.clearCustomPrimaryColour(); } catch(e) {
+        try { mp.game.invoke('0x55E1D2758F34E437', veh.handle); } catch(e2) {}
+    }
+    try { veh.clearCustomSecondaryColour(); } catch(e) {
+        try { mp.game.invoke('0x5FFBDEEC3E8E2009', veh.handle); } catch(e2) {}
+    }
+}
+
+// ─── Helper: apply indexed (palette) vehicle colors ───
+function applyIndexedVehicleColors(veh, primaryIdx, secondaryIdx) {
+    try { mp.game.invoke('0x4F1D4BE3A7F24601', veh.handle, primaryIdx, secondaryIdx); } catch(e) {}
 }
 
 // ─── Helper: apply xenon headlight color (try multiple API methods) ───
@@ -383,9 +398,9 @@ mp.events.add('client:tuning:open', (initDataJson) => {
     try {
         originalColor = tuningData.paintData && tuningData.paintData.current
             ? tuningData.paintData.current
-            : { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0 };
+            : { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0, chameleonIndex: -1 };
     } catch(e) {
-        originalColor = { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0 };
+        originalColor = { primRGB: {r:0,g:0,b:0}, secRGB: {r:0,g:0,b:0}, paintType: 0, chameleonIndex: -1 };
     }
 
     // Save original special mod state
@@ -489,6 +504,7 @@ mp.events.add('cef:tuning:close', () => {
 function closeTuning() {
     if (!tuningOpen) return;
     tuningOpen = false;
+    previewChameleonIdx = -1;  // Clear preview tracking
 
     // ─── Revert any un-purchased previews ───
     const veh = mp.players.local.vehicle;
@@ -502,11 +518,21 @@ function closeTuning() {
         // Revert color preview
         if (colorPreviewed && originalColor) {
             try {
-                const pt = originalColor.paintType || 0;
-                veh.setModColor1(pt, 0, 0);
-                veh.setModColor2(pt, 0);
-                applyCustomPrimaryColor(veh, originalColor.primRGB.r, originalColor.primRGB.g, originalColor.primRGB.b);
-                applyCustomSecondaryColor(veh, originalColor.secRGB.r, originalColor.secRGB.g, originalColor.secRGB.b);
+                const chIdx = parseInt(originalColor.chameleonIndex);
+                if (!isNaN(chIdx) && chIdx >= 161) {
+                    veh.setVariable('paintType', 6);
+                    veh.setVariable('chameleonColor', chIdx);
+                    veh.setModColor1(6, chIdx, 0);
+                    veh.setModColor2(6, chIdx);
+                } else {
+                    veh.setVariable('paintType', originalColor.paintType || 0);
+                    veh.setVariable('chameleonColor', -1);
+                    const pt = originalColor.paintType || 0;
+                    veh.setModColor1(pt, 0, 0);
+                    veh.setModColor2(pt, 0);
+                    applyCustomPrimaryColor(veh, originalColor.primRGB.r, originalColor.primRGB.g, originalColor.primRGB.b);
+                    applyCustomSecondaryColor(veh, originalColor.secRGB.r, originalColor.secRGB.g, originalColor.secRGB.b);
+                }
             } catch(e) {}
         }
         // Revert special mod previews
@@ -741,6 +767,10 @@ mp.events.add('client:tuning:colorConfirmed', (colorJson) => {
     try {
         originalColor = JSON.parse(colorJson);
         colorPreviewed = false;
+        previewChameleonIdx = -1;  // Purchase confirmed, clear preview tracking
+        if (tuningBrowser && mp.browsers.exists(tuningBrowser)) {
+            tuningBrowser.execute(`if(typeof colorConfirmed==='function')colorConfirmed(${JSON.stringify(originalColor)})`);
+        }
     } catch(e) {}
 });
 
@@ -750,6 +780,20 @@ mp.events.add('client:tuning:applyPaintType', (paintType) => {
     if (!veh) return;
     try {
         const pt = parseInt(paintType) || 0;
+        if (pt === 6) {
+            const chIdx = originalColor && originalColor.chameleonIndex !== undefined
+                ? parseInt(originalColor.chameleonIndex)
+                : -1;
+            if (!isNaN(chIdx) && chIdx >= 161) {
+                veh.setVariable('paintType', 6);
+                veh.setVariable('chameleonColor', chIdx);
+                veh.setModColor1(6, chIdx, 0);
+                veh.setModColor2(6, chIdx);
+                return;
+            }
+        }
+        veh.setVariable('paintType', pt);
+        veh.setVariable('chameleonColor', -1);
         veh.setModColor1(pt, 0, currentPearlIndex || 0);
         veh.setModColor2(pt, 0);
     } catch(e) {}
@@ -1101,9 +1145,14 @@ function applyVehicleCosmetics(vehicle) {
     try {
         // Paint type + pearlescent
         const pt = vehicle.getVariable('paintType');
+        const chameleon = vehicle.getVariable('chameleonColor');
         const pearl = vehicle.getVariable('pearlColor');
         const pearlIdx = (pearl !== undefined && pearl !== null && pearl >= 0) ? pearl : 0;
-        if (pt !== undefined && pt !== null && pt > 0) {
+        if (pt === 6 && chameleon !== undefined && chameleon !== null && chameleon >= 161) {
+            clearCustomVehicleColors(vehicle);
+            vehicle.setModColor1(6, chameleon, 0);
+            vehicle.setModColor2(6, chameleon);
+        } else if (pt !== undefined && pt !== null && pt > 0) {
             vehicle.setModColor1(pt, 0, pearlIdx);
             vehicle.setModColor2(pt, 0);
         }
@@ -1230,10 +1279,38 @@ mp.events.add('render', () => {
     const veh = mp.players.local.vehicle;
     if (!veh || !mp.vehicles.exists(veh)) return;
 
+    // Re-apply preview chameleon color every frame to keep it visible
+    if (tuningOpen && previewChameleonIdx >= 161) {
+        try {
+            veh.setModColor1(6, previewChameleonIdx, 0);
+            veh.setModColor2(6, previewChameleonIdx);
+        } catch(e) {}
+    }
+
     if (activeStance) {
         reapplyStanceFast(veh, activeStance.camber, activeStance.trackWidth);
     }
     if (activeSuspHeight !== null) {
         try { veh.setSuspensionHeight(activeSuspHeight); } catch(e) {}
     }
+});
+
+let previewChameleonIdx = -1;  // Track current preview color for frame re-apply
+
+// ─── CEF: Preview chameleon color (indexed palette) ───
+mp.events.add('cef:tuning:previewChameleon', (colorIndex) => {
+    const veh = mp.players.local.vehicle;
+    if (!veh) return;
+    colorPreviewed = true;
+    try {
+        const idx = parseInt(colorIndex);
+        if (isNaN(idx) || idx < 161) return;
+        previewChameleonIdx = idx;
+        // Set variables to ensure the color persists
+        veh.setVariable('paintType', 6);
+        veh.setVariable('chameleonColor', idx);
+        // Apply the chameleon color
+        veh.setModColor1(6, idx, 0);
+        veh.setModColor2(6, idx);
+    } catch(e) {}
 });

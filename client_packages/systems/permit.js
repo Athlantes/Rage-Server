@@ -3,14 +3,23 @@
 //  Client — Family Business Permit System
 //  Handles:
 //   • Opening the City Hall permit board UI
-//   • Delivery mission flow (drive to pickup → drive to dropoff)
-//   • Receiving passive commission notifications
+//   • Delivery mission flow: pickup area → board van → drive to dropoff → complete
 // ─────────────────────────────────────────────────────────────────────────────
 
 let permitBrowser = null;
-// Delivery variables
-let deliveryActive = false;
-let deliveryData   = null;
+
+// ── Delivery state ────────────────────────────────────────────────────────────
+let delivery = {
+    active:          false,
+    data:            null,
+    phase:           null,   // 'pickup' | 'board' | 'dropoff'
+    pickupColshape:  null,
+    pickupBlip:      null,
+    pickupMarker:    null,
+    dropoffColshape: null,
+    dropoffBlip:     null,
+    dropoffMarker:   null,
+};
 
 // ── City Hall Permit Board ────────────────────────────────────────────────────
 
@@ -18,21 +27,16 @@ mp.events.add('client:permit:openBoard', () => {
     if (permitBrowser) {
         permitBrowser.active = true;
         mp.gui.cursor.show(true, true);
-        // Re-request fresh data when re-opening an existing browser
         mp.events.callRemote('server:permit:getBoardData');
         return;
     }
 
     permitBrowser = mp.browsers.new('package://systems/permit_board/index.html');
     permitBrowser.active = true;
-
     mp.gui.cursor.show(true, true);
-    // NOTE: Do NOT call getBoardData here — the browser HTML fires
-    // mp.trigger('client:permit:browserReady') once its window.load event
-    // fires, guaranteeing the DOM + JS context is ready before data arrives.
+    // Data is sent after 'client:permit:browserReady' fires from the HTML window.onload
 });
 
-// Browser signals it is fully loaded and ready to receive data
 mp.events.add('client:permit:browserReady', () => {
     mp.events.callRemote('server:permit:getBoardData');
 });
@@ -44,7 +48,7 @@ mp.events.add('client:permit:closeBoard', () => {
     }
 });
 
-// ── Board Data from Server ────────────────────────────────────────────────────
+// ── Board data push from server ───────────────────────────────────────────────
 
 mp.events.add('client:permit:boardData', (jsonStr) => {
     if (!permitBrowser || !permitBrowser.active) return;
@@ -60,7 +64,6 @@ mp.events.add('client:permit:raffleEntries', (jsonStr) => {
 
 mp.events.add('client:permit:enterRaffle', (bizId, tickets) => {
     mp.events.callRemote('server:permit:enterRaffle', bizId, tickets);
-    // Close board after entering
     setTimeout(() => mp.events.call('client:permit:closeBoard'), 800);
 });
 
@@ -68,157 +71,170 @@ mp.events.add('client:permit:viewEntries', (cycleId) => {
     mp.events.callRemote('server:permit:getRaffleEntries', cycleId);
 });
 
-// Handle UI button clicks for delivery
-mp.events.add('server:permit:startDelivery', (bizId) => {
+// Called by the family menu UI when the player clicks "Start Delivery"
+mp.events.add('client:permit:requestDelivery', (bizId) => {
+    if (delivery.active) {
+        mp.gui.chat.push('!{#ff4444}[Delivery] You already have an active delivery run!');
+        return;
+    }
     mp.events.callRemote('server:permit:startDelivery', bizId);
 });
 
 // ── Delivery Mission ──────────────────────────────────────────────────────────
+// Triggered by server after all checks pass (FP deducted, van spawned).
 
 mp.events.add('client:permit:startDelivery', (jsonStr) => {
-    if (deliveryActive) return mp.gui.chat.push('!{#ff0000}You already have an active delivery!');
-
-    deliveryData   = JSON.parse(jsonStr);
-    deliveryActive = true;
-
-    // Use dynamic coordinates provided by the server
-    const pickupX = deliveryData.pickup.x;
-    const pickupY = deliveryData.pickup.y;
-    const pickupZ = deliveryData.pickup.z;
-
-    let pickupMsg = `!{#ffff00}[Delivery] !{#ffffff}Head to the !{#00ff00}pickup point!{#ffffff} for !{#ffff00}${deliveryData.bizName}`;
-    if (deliveryData.missionType === 'van') {
-        pickupMsg = `!{#ffff00}[Mission] !{#ffffff}Go to the port and pick up the !{#00ff00}Van!{#ffffff}.`;
+    if (delivery.active) {
+        mp.gui.chat.push('!{#ff4444}[Delivery] You already have an active delivery!');
+        return;
     }
 
-    mp.gui.chat.push(pickupMsg);
+    delivery.data   = JSON.parse(jsonStr);
+    delivery.active = true;
+    delivery.phase  = 'pickup';
 
-    // Create pickup blip
-    if (deliveryData._pickupBlip) deliveryData._pickupBlip.destroy();
-    deliveryData._pickupBlip = mp.blips.new(
-        deliveryData.missionType === 'van' ? 67 : 67, // package icon
-        new mp.Vector3(pickupX, pickupY, pickupZ),
-        { name: `${deliveryData.bizName} Pickup`, shortRange: false, color: 2 }
-    );
-    deliveryData._pickupBlip.setRoute(true);
+    const { pickup, pickupRadius, bizName } = delivery.data;
 
-    if (deliveryData._pickupMarker) deliveryData._pickupMarker.destroy();
-    deliveryData._pickupMarker = mp.markers.new(
-        1, 
-        new mp.Vector3(pickupX, pickupY, pickupZ - 1.0),
-        deliveryData.missionType === 'van' ? 8.0 : 4.0, 
-        {
-            color: [0, 255, 0, 150],
-            visible: true
-        }
+    mp.gui.chat.push(
+        `!{#ffaa00}[Mission] !{#ffffff}Go pick up the delivery van at the !{#00ff00}port!{#ffffff}. ` +
+        `Business: !{#ffff00}${bizName}`
     );
 
-    // Performance Update: Use colshape instead of setInterval
-    deliveryData._pickupColshape = mp.colshapes.newSphere(pickupX, pickupY, pickupZ, deliveryData.missionType === 'van' ? 12.0 : 8.0);
+    // ── Pickup blip + marker ──────────────────────────────────────────────────
+    delivery.pickupBlip = mp.blips.new(
+        67,
+        new mp.Vector3(pickup.x, pickup.y, pickup.z),
+        { name: `${bizName} — Van Pickup`, shortRange: false, color: 2 }
+    );
+    delivery.pickupBlip.setRoute(true);
+
+    delivery.pickupMarker = mp.markers.new(
+        1,
+        new mp.Vector3(pickup.x, pickup.y, pickup.z - 1.0),
+        8.0,
+        { color: [0, 220, 80, 160], visible: true }
+    );
+
+    delivery.pickupColshape = mp.colshapes.newSphere(
+        pickup.x, pickup.y, pickup.z, pickupRadius || 14.0
+    );
 });
+
+// ── Colshape enter handler ────────────────────────────────────────────────────
 
 mp.events.add('playerEnterColshape', (shape) => {
-    if (!deliveryActive || !deliveryData) return;
+    if (!delivery.active || !delivery.data) return;
 
-    if (shape === deliveryData._pickupColshape) {
-        _handlePickupArrival();
-    } else if (shape === deliveryData._dropoffColshape) {
-        _handleDropoffArrival();
+    if (delivery.phase === 'pickup' && shape === delivery.pickupColshape) {
+        _onArrivePickup();
+    } else if (delivery.phase === 'dropoff' && shape === delivery.dropoffColshape) {
+        _onArriveDropoff();
     }
 });
 
-function _handlePickupArrival() {
-    if (deliveryData._pickupColshape) {
-        deliveryData._pickupColshape.destroy();
-        deliveryData._pickupColshape = null;
-    }
-    if (deliveryData._pickupBlip) { 
-        deliveryData._pickupBlip.destroy(); 
-        deliveryData._pickupBlip = null;
-    }
-    if (deliveryData._pickupMarker) {
-        deliveryData._pickupMarker.destroy();
-        deliveryData._pickupMarker = null;
-    }
+// ── Phase: arrived at pickup zone ─────────────────────────────────────────────
+function _onArrivePickup() {
+    _destroyPickupObjects();
 
-    if (deliveryData.missionType === 'van') {
-        mp.gui.chat.push('!{#00ff00}Get in the van and secure the load...');
-        
-        let waitInterval = setInterval(() => {
-            if (!deliveryActive || !deliveryData) {
-                clearInterval(waitInterval);
-                return;
-            }
-            if (mp.players.local.vehicle) {
-                clearInterval(waitInterval);
-                _showDropoff();
-            }
-        }, 1000);
-    } else {
-        mp.gui.chat.push('!{#00ff00}Loading goods...');
-        setTimeout(() => {
-            if (!deliveryActive || !deliveryData) return;
+    mp.gui.chat.push('!{#00ff00}Van is here — get in and secure the load!');
+    delivery.phase = 'board';
+
+    // Poll until the player enters any vehicle (the spawned van)
+    const boardInterval = setInterval(() => {
+        if (!delivery.active || !delivery.data) {
+            clearInterval(boardInterval);
+            return;
+        }
+        if (mp.players.local.vehicle) {
+            clearInterval(boardInterval);
             _showDropoff();
-        }, 3000);
-    }
+        }
+    }, 1000);
+
+    delivery.data._boardInterval = boardInterval;
 }
 
+// ── Phase: boarded, show dropoff ──────────────────────────────────────────────
 function _showDropoff() {
-    // Use dynamic dropoff coordinates provided by the server
-    const dropoffX = deliveryData.dropoff.x;
-    const dropoffY = deliveryData.dropoff.y;
-    const dropoffZ = deliveryData.dropoff.z;
-
-    let dropMsg = `!{#ffff00}[Delivery] !{#ffffff}Bring goods to !{#00ff00}${deliveryData.bizName}`;
-    if (deliveryData.missionType === 'van') {
-        dropMsg = `!{#ffff00}[Mission] !{#ffffff}Deliver the van to the !{#00ff00}24/7 store`;
+    if (delivery.data._boardInterval) {
+        clearInterval(delivery.data._boardInterval);
+        delivery.data._boardInterval = null;
     }
 
-    mp.gui.chat.push(dropMsg);
+    delivery.phase = 'dropoff';
 
-    deliveryData._dropoffBlip = mp.blips.new(
-        1, new mp.Vector3(dropoffX, dropoffY, dropoffZ),
-        { name: `${deliveryData.bizName} Drop-off`, shortRange: false, color: 3 }
-    );
-    deliveryData._dropoffBlip.setRoute(true);
+    const { dropoff, dropoffRadius, bizName } = delivery.data;
 
-    if (deliveryData._dropoffMarker) deliveryData._dropoffMarker.destroy();
-    deliveryData._dropoffMarker = mp.markers.new(
-        1, 
-        new mp.Vector3(dropoffX, dropoffY, dropoffZ - 1.0),
-        deliveryData.missionType === 'van' ? 8.0 : 4.0, 
-        {
-            color: [0, 255, 0, 150],
-            visible: true
-        }
+    mp.gui.chat.push(
+        `!{#ffaa00}[Mission] !{#ffffff}Deliver the goods to the !{#00ff00}24/7 store!{#ffffff}. ` +
+        `Business: !{#ffff00}${bizName}`
     );
 
-    deliveryData._dropoffColshape = mp.colshapes.newSphere(dropoffX, dropoffY, dropoffZ, deliveryData.missionType === 'van' ? 12.0 : 8.0);
+    delivery.dropoffBlip = mp.blips.new(
+        1,
+        new mp.Vector3(dropoff.x, dropoff.y, dropoff.z),
+        { name: `${bizName} — Drop-off`, shortRange: false, color: 3 }
+    );
+    delivery.dropoffBlip.setRoute(true);
+
+    delivery.dropoffMarker = mp.markers.new(
+        1,
+        new mp.Vector3(dropoff.x, dropoff.y, dropoff.z - 1.0),
+        8.0,
+        { color: [255, 165, 0, 160], visible: true }
+    );
+
+    delivery.dropoffColshape = mp.colshapes.newSphere(
+        dropoff.x, dropoff.y, dropoff.z, dropoffRadius || 12.0
+    );
 }
 
-function _handleDropoffArrival() {
-    if (deliveryData.missionType === 'van') {
-        // Enforce that player must be in a vehicle for van missions
-        const playerVeh = mp.players.local.vehicle;
-        if (!playerVeh) {
-            return mp.gui.chat.push('!{#ff0000}You must be inside the delivery van!');
-        }
-    }
-    if (deliveryData._dropoffColshape) {
-        deliveryData._dropoffColshape.destroy();
-        deliveryData._dropoffColshape = null;
-    }
-    if (deliveryData._dropoffBlip) deliveryData._dropoffBlip.destroy();
-    if (deliveryData._dropoffMarker) {
-        deliveryData._dropoffMarker.destroy();
-        deliveryData._dropoffMarker = null;
+// ── Phase: arrived at dropoff ─────────────────────────────────────────────────
+function _onArriveDropoff() {
+    // Must still be in the van
+    if (delivery.data.inVehicle && !mp.players.local.vehicle) {
+        mp.gui.chat.push('!{#ff4444}Stay in the van to complete the drop-off!');
+        return;
     }
 
-    mp.events.callRemote('server:permit:completeDelivery', deliveryData.bizId);
+    _destroyDropoffObjects();
     mp.game.ui.clearGpsMultiRoute();
 
-    deliveryActive = false;
-    deliveryData   = null;
+    mp.events.callRemote('server:permit:completeDelivery', delivery.data.bizId);
+
+    // Reset client state immediately — server confirms and cleans up the van
+    _resetDelivery();
 
     mp.gui.chat.push('!{#00ff00}[Delivery Complete] !{#ffffff}Payment split between you and the family safe!');
 }
+
+// ── Cleanup helpers ───────────────────────────────────────────────────────────
+function _destroyPickupObjects() {
+    if (delivery.pickupColshape) { delivery.pickupColshape.destroy(); delivery.pickupColshape = null; }
+    if (delivery.pickupBlip)     { delivery.pickupBlip.destroy();     delivery.pickupBlip     = null; }
+    if (delivery.pickupMarker)   { delivery.pickupMarker.destroy();   delivery.pickupMarker   = null; }
+}
+
+function _destroyDropoffObjects() {
+    if (delivery.dropoffColshape) { delivery.dropoffColshape.destroy(); delivery.dropoffColshape = null; }
+    if (delivery.dropoffBlip)     { delivery.dropoffBlip.destroy();     delivery.dropoffBlip     = null; }
+    if (delivery.dropoffMarker)   { delivery.dropoffMarker.destroy();   delivery.dropoffMarker   = null; }
+}
+
+function _resetDelivery() {
+    if (delivery.data && delivery.data._boardInterval) {
+        clearInterval(delivery.data._boardInterval);
+    }
+    _destroyPickupObjects();
+    _destroyDropoffObjects();
+    delivery.active = false;
+    delivery.data   = null;
+    delivery.phase  = null;
+}
+
+// ── Cancel delivery (e.g. player dies, disconnects, or cancels manually) ──────
+mp.events.add('client:permit:cancelDelivery', () => {
+    if (!delivery.active) return;
+    _resetDelivery();
+    mp.gui.chat.push('!{#ff4444}[Delivery] Cancelled.');
+});

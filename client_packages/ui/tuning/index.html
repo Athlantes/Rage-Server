@@ -345,7 +345,7 @@ var selCat = null, selBrand = null, pendingSliders = {}, resetPending = false;
 var selVisCat = null, selVisIdx = -2;
 // Paint
 var paintTarget = 'primary', paintState = {prim:{r:0,g:0,b:0},sec:{r:0,g:0,b:0},type:0}, selColorIdx = null;
-var rgbState = {r:128,g:128,b:128}, currentPearlIndex = 0;
+var rgbState = {r:128,g:128,b:128}, currentPearlIndex = 0, currentChameleonIndex = -1;
 // Special
 var selSpecCat = null, selSpecOpt = null;
 var wheelType = 0, wheelCount = 0, selWheelIdx = -1, wheelColorIdx = -1;
@@ -1005,6 +1005,7 @@ function initPaint(){
     if(!DATA||!DATA.paintData) return;
     var cur=DATA.paintData.current||{};
     paintState={prim:cur.primRGB||{r:0,g:0,b:0},sec:cur.secRGB||{r:0,g:0,b:0},type:cur.paintType||0};
+    currentChameleonIndex = (DATA.paintData.currentChameleon!=null ? DATA.paintData.currentChameleon : (cur.chameleonIndex!=null ? cur.chameleonIndex : -1));
     selColorIdx=null; rgbState={r:128,g:128,b:128};
     renderPaintSidebar(); renderPaintMain();
 }
@@ -1012,7 +1013,7 @@ function initPaint(){
 function renderPaintSidebar(){
     var el=$('#paintSidebar'); el.innerHTML='';
     var h=document.createElement('div'); h.className='group-label'; h.textContent='Paint'; el.appendChild(h);
-    var items=[{k:'primary',n:'Primary Color'},{k:'secondary',n:'Secondary Color'},{k:'custom',n:'Custom RGB'},{k:'pearlescent',n:'Pearlescent'},{k:'type',n:'Paint Finish'}];
+    var items=[{k:'primary',n:'Primary Color'},{k:'secondary',n:'Secondary Color'},{k:'custom',n:'Custom RGB'},{k:'pearlescent',n:'Pearlescent'},{k:'chameleon',n:'Chameleon (Gen9)'},{k:'type',n:'Paint Finish'}];
     for(var ti=0;ti<items.length;ti++){
         var t=items[ti]; var r=document.createElement('div');
         r.className='cat-item'+(t.k===paintTarget?' active':'');
@@ -1076,6 +1077,29 @@ function renderPaintMain(){
             +(selColorIdx!==null&&paintState.type===2?'onclick="applyPearl()"':'disabled')+'>Apply Pearlescent</button></div>';
         panel.innerHTML=html; return;
     }
+    if(paintTarget==='chameleon'){
+        var chams=DATA.paintData.chameleons||[];
+        var html='<div class="opts-header"><div class="opts-title">Chameleon (Gen9)</div>'
+            +'<div class="opts-sub">Requires streamed Gen9 paint files · $'+fmt(DATA.paintData.chameleonPrice||DATA.paintData.typePrice||0)+'</div></div>';
+        html+='<div class="option-grid">';
+        for(var ci=0;ci<chams.length;ci++){
+            var cc=chams[ci];
+            var sel=(selColorIdx===ci);
+            var installed=(currentChameleonIndex===cc.index);
+            html+='<div class="opt-card'+(sel?' selected':'')+'" onclick="pickChameleon('+ci+')">'
+                +'<span class="oc-name">#'+cc.index+' · '+cc.name+'</span>'
+                +'<span class="oc-price">'+(installed?'Owned':'$'+fmt(DATA.paintData.chameleonPrice||DATA.paintData.typePrice||0))+'</span></div>';
+        }
+        html+='</div>';
+        if(selColorIdx!==null&&chams[selColorIdx]){
+            var sc=chams[selColorIdx];
+            html+='<div class="color-info"><div class="ci-name">'+sc.name+'</div><div class="ci-price">Index '+sc.index+'</div></div>';
+        }
+        var canApply=(selColorIdx!==null&&chams[selColorIdx]&&currentChameleonIndex!==chams[selColorIdx].index);
+        html+='<div class="action-footer"><button class="btn-upgrade '+(canApply?'ready':'locked')+'" '
+            +(canApply?'onclick="applyChameleon()"':'disabled')+'>Apply Chameleon</button></div>';
+        panel.innerHTML=html; return;
+    }
     var isPrimary=paintTarget==='primary';
     var html='<div class="opts-header"><div class="opts-title">'+(isPrimary?'Primary':'Secondary')+' Color</div>'
         +'<div class="opts-sub">$'+fmt(DATA.paintData.presetPrice||0)+' per color</div></div>';
@@ -1099,10 +1123,25 @@ function renderPaintMain(){
 function pickColor(i){ selColorIdx=i; var c=(DATA.paintData.presets||[])[i]; if(!c) return; if(paintTarget==='primary') paintState.prim={r:c.r,g:c.g,b:c.b}; else paintState.sec={r:c.r,g:c.g,b:c.b}; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,paintState.sec.r,paintState.sec.g,paintState.sec.b,paintState.type); renderPaintMain(); }
 function setPaintType(id){ paintState.type=id; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,paintState.sec.r,paintState.sec.g,paintState.sec.b,paintState.type); renderPaintMain(); }
 function pickPearl(i){ selColorIdx=i; var c=(DATA.paintData.pearls||[])[i]; if(!c) return; mp_trigger('cef:tuning:previewPearl',c.gtaIndex); renderPaintMain(); }
+function pickChameleon(i){ selColorIdx=i; var c=(DATA.paintData.chameleons||[])[i]; if(!c) return; mp_trigger('cef:tuning:previewChameleon',c.index); renderPaintMain(); }
 function applyPearl(){ if(selColorIdx===null||paintState.type!==2) return; var c=(DATA.paintData.pearls||[])[selColorIdx]; if(!c) return; mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,pearlRGB:{r:c.r,g:c.g,b:c.b},pearlIndex:c.gtaIndex,type:'paintType'})); showToast('Pearlescent applied!','success'); }
 function applyPaint(type){ mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:type||'preset'})); showToast('Color applied!','success'); }
+function applyChameleon(){ if(selColorIdx===null) return; var c=(DATA.paintData.chameleons||[])[selColorIdx]; if(!c) return; mp_trigger('cef:tuning:applyColor',JSON.stringify({type:'chameleon',chameleonIndex:c.index,paintType:6,primRGB:paintState.prim,secRGB:paintState.sec})); showToast('Chameleon applied!','success'); renderPaintMain(); }
 function applyRGBToPrimary(){ paintState.prim={r:rgbState.r,g:rgbState.g,b:rgbState.b}; mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:'custom'})); showToast('Custom primary applied!','success'); }
 function applyRGBToSecondary(){ paintState.sec={r:rgbState.r,g:rgbState.g,b:rgbState.b}; mp_trigger('cef:tuning:previewColor',paintState.prim.r,paintState.prim.g,paintState.prim.b,rgbState.r,rgbState.g,rgbState.b,paintState.type); mp_trigger('cef:tuning:applyColor',JSON.stringify({primRGB:paintState.prim,secRGB:paintState.sec,paintType:paintState.type,type:'custom'})); showToast('Custom secondary applied!','success'); }
+
+function colorConfirmed(color){
+    if(!color) return;
+    if(color.chameleonIndex!=null){
+        currentChameleonIndex = color.chameleonIndex;
+    } else {
+        currentChameleonIndex = -1;
+    }
+    if(color.primRGB) paintState.prim = color.primRGB;
+    if(color.secRGB) paintState.sec = color.secRGB;
+    if(color.paintType!=null) paintState.type = color.paintType;
+    if(activeTab==='paint') renderPaintMain();
+}
 
 function bindRGBSliders(){
     $$('.rgb-slider-wrap').forEach(function(wrap){

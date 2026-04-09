@@ -36,6 +36,7 @@ const {
     PAINT_TYPES,
     PRESET_COLORS,
     PEARLESCENT_COLORS,
+    CHAMELEON_COLORS,
     COLOR_PRICES,
     WHEEL_TYPES,
     WHEEL_COLORS,
@@ -422,19 +423,37 @@ async function sendTuningData(player) {
     // Paint
     const cPricing = COLOR_PRICES[grade] || COLOR_PRICES['E'];
     const [vehRows] = await db.query('SELECT color FROM server_vehicles WHERE id = ?', [veh.dbId]);
-    let colorData = { primRGB:{r:0,g:0,b:0}, secRGB:{r:0,g:0,b:0}, paintType:0 };
+    let colorData = { primRGB:{r:0,g:0,b:0}, secRGB:{r:0,g:0,b:0}, paintType:0, chameleonIndex:-1 };
     if (vehRows.length > 0 && vehRows[0].color) {
-        try { const p = JSON.parse(vehRows[0].color); if (p.primRGB) colorData = p; } catch(e) {}
+        try {
+            const p = JSON.parse(vehRows[0].color);
+            if (p.primRGB) {
+                colorData = Object.assign({}, colorData, p);
+            } else if (typeof p.prim === 'number' && typeof p.sec === 'number') {
+                // Legacy indexed color format; treat 161+ as chameleon when primary=secondary.
+                if (p.prim >= 161 && p.prim === p.sec) {
+                    colorData.chameleonIndex = p.prim;
+                    colorData.paintType = 6;
+                }
+            }
+            if (typeof p.chameleonIndex === 'number') {
+                colorData.chameleonIndex = p.chameleonIndex;
+                if (p.chameleonIndex >= 161) colorData.paintType = 6;
+            }
+        } catch(e) {}
     }
     const paintData = {
         types:        PAINT_TYPES,
         presets:      PRESET_COLORS,
         pearls:       PEARLESCENT_COLORS,
+        chameleons:   CHAMELEON_COLORS,
         presetPrice:  cPricing.preset,
         customPrice:  cPricing.custom,
         typePrice:    cPricing.paintType,
+        chameleonPrice: cPricing.chameleon || cPricing.paintType,
         current:      colorData,
-        currentPearl: modsMap[209] !== undefined ? modsMap[209] : -1
+        currentPearl: modsMap[209] !== undefined ? modsMap[209] : -1,
+        currentChameleon: colorData.chameleonIndex
     };
 
     // Special mods
@@ -836,6 +855,7 @@ mp.events.add('server:tuning:applyColor', async (player, colorDataJson) => {
     if (colorReq.type === 'preset')    cost = pricing.preset;
     else if (colorReq.type === 'custom')    cost = pricing.custom;
     else if (colorReq.type === 'paintType') cost = pricing.paintType;
+    else if (colorReq.type === 'chameleon') cost = pricing.chameleon || pricing.paintType;
 
     if (cost > 0) {
         if (player.data.money < cost) {
@@ -845,11 +865,50 @@ mp.events.add('server:tuning:applyColor', async (player, colorDataJson) => {
         if (!ok) return player.call('showNotification', ['Tuning', 'Payment failed.']);
     }
 
+    if (colorReq.type === 'chameleon') {
+        const idx = parseInt(colorReq.chameleonIndex);
+        const valid = CHAMELEON_COLORS.some(c => c.index === idx);
+        if (!valid) {
+            return player.call('showNotification', ['Tuning', 'Invalid chameleon color selected.']);
+        }
+
+        const colorJson = JSON.stringify({
+            prim: idx,
+            sec: idx,
+            paintType: 6,
+            chameleonIndex: idx
+        });
+        await db.query('UPDATE server_vehicles SET color = ? WHERE id = ?', [colorJson, veh.dbId]);
+
+        try {
+            // Keep indexed color as fallback, but runtime rendering should use MOD_COLOR_TYPE 6.
+            veh.setColor(idx, idx);
+            veh.setVariable('paintType', 6);
+            veh.setVariable('chameleonColor', idx);
+        } catch(e) {}
+
+        // Chameleon replaces classic pearlescent layer.
+        await db.query('DELETE FROM vehicle_mods WHERE vehicle_id = ? AND mod_type = 209', [veh.dbId]);
+        veh.setVariable('pearlColor', -1);
+
+        player.call('showNotification', ['Tuning', `Chameleon applied${cost > 0 ? ` for $${cost.toLocaleString()}` : ''}!`]);
+        player.call('client:tuning:updateCash', [player.data.money || 0]);
+        player.call('client:tuning:colorConfirmed', [JSON.stringify({
+            primRGB: colorReq.primRGB || { r:0, g:0, b:0 },
+            secRGB: colorReq.secRGB || { r:0, g:0, b:0 },
+            paintType: 6,
+            chameleonIndex: idx
+        })]);
+        console.log(`[Tuning v2] ${player.name} chameleon ${idx} on #${veh.dbId}`);
+        return;
+    }
+
     const colorJson = JSON.stringify({
         primRGB:   colorReq.primRGB,
         secRGB:    colorReq.secRGB,
         paintType: colorReq.paintType,
-        pearlRGB:  colorReq.pearlRGB || null
+        pearlRGB:  colorReq.pearlRGB || null,
+        chameleonIndex: -1
     });
     await db.query('UPDATE server_vehicles SET color = ? WHERE id = ?', [colorJson, veh.dbId]);
 
@@ -859,6 +918,7 @@ mp.events.add('server:tuning:applyColor', async (player, colorDataJson) => {
             colorReq.secRGB.r,  colorReq.secRGB.g,  colorReq.secRGB.b
         );
         veh.setVariable('paintType', colorReq.paintType || 0);
+        veh.setVariable('chameleonColor', -1);
     } catch(e) {}
 
     if (colorReq.pearlIndex !== undefined && colorReq.pearlIndex >= 0) {

@@ -404,6 +404,30 @@ function triggerPayday(player) {
     if (interest > 0) {
         rewards.push({ type: 'generic', value: `$${interest} Interest` });
     }
+
+    // ── Family Points reward ──────────────────────────────────────────────────
+    // Award FP if this player is a family member; silently skip if not.
+    // Lazy-require to avoid circular dependency (familyManager → playerManager → familyManager).
+    try {
+        const FamilyManager = require('../systems/familyManager');
+        if (player.data.familyId) {
+            const fpGain = FamilyManager.FAMILY_POINTS_PER_PAYDAY; // 10
+            FamilyManager.modifyMemberFamilyPoints(player.data.dbId, fpGain)
+                .then(newTotal => {
+                    if (newTotal === null) return; // DB error, already logged
+                    rewards.push({ type: 'generic', value: `+${fpGain} Family Points` });
+                    player.outputChatBox(
+                        `!{FFAA00}[Family] !{FFFFFF}Payday bonus: !{00FF00}+${fpGain} Family Points ` +
+                        `!{FFFFFF}(${newTotal}/${FamilyManager.FAMILY_POINTS_MAX_STORED})`
+                    );
+                })
+                .catch(e => console.error('[Payday] FP award error:', e));
+        }
+    } catch (e) {
+        // FamilyManager not loaded (e.g. first boot race) — skip silently
+    }
+    // ── End Family Points ─────────────────────────────────────────────────────
+
     const subtitle = `You played ${activeMins} minute${activeMins !== 1 ? 's' : ''} this payday.`;
     player.call('showCenterPopup', [
         'PAYDAY',
