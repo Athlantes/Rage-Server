@@ -1059,7 +1059,7 @@ class FamilyManager {
         result.myFamilyPoints = await this.getMemberFamilyPoints(player.data.dbId);
 
         // ── Permit data ───────────────────────────────────────────────────────
-        // The family menu only shows the active permit (owned business + delivery status).
+        // The family menu only shows the active permit (owned business + current delivery state).
         // Raffle browsing and entry is handled exclusively through City Hall (/permits board).
         try {
             const PermitManager = require('./permitManager');
@@ -1068,19 +1068,8 @@ class FamilyManager {
             // Find the business this family currently holds an active lease on
             const ownedBiz = allBiz.find(b => b.isOwnedByMe) || null;
 
-            // Check if this player already completed a delivery this cycle
-            let deliveryDone = false;
-            if (ownedBiz && ownedBiz.cycleId) {
-                const [delRows] = await db.query(
-                    'SELECT id FROM permit_deliveries WHERE cycle_id = ? AND user_id = ?',
-                    [ownedBiz.cycleId, player.data.dbId]
-                );
-                deliveryDone = delRows.length > 0;
-            }
-
             result.permit = {
                 ownedBusiness:    ownedBiz,
-                deliveryDone,
                 activeDelivery:   !!player.data.activePermitDelivery,
                 deliveryFpCost:   100, // mirror of DELIVERY_FP_COST constant
             };

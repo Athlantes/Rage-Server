@@ -396,7 +396,6 @@ CREATE TABLE IF NOT EXISTS `permit_deliveries` (
   `payout_safe` int unsigned NOT NULL COMMENT '50% to family safe',
   `delivered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_user_cycle` (`user_id`,`cycle_id`) COMMENT 'one delivery per member per cycle',
   KEY `cycle_id` (`cycle_id`),
   CONSTRAINT `permit_deliveries_ibfk_1` FOREIGN KEY (`cycle_id`) REFERENCES `permit_cycles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

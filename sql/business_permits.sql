@@ -50,7 +50,6 @@ CREATE TABLE IF NOT EXISTS permit_deliveries (
     payout_player   INT UNSIGNED NOT NULL COMMENT '50% to player',
     payout_safe     INT UNSIGNED NOT NULL COMMENT '50% to family safe',
     delivered_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_user_cycle (user_id, cycle_id) COMMENT 'one delivery per member per cycle',
     FOREIGN KEY (cycle_id) REFERENCES permit_cycles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

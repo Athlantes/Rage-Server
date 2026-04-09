@@ -5,7 +5,7 @@
 //  • Weighted raffle with PP (Premium Points) tickets
 //  • Full refund for losers
 //  • 5% passive commission on player transactions
-//  • One delivery mission per member per cycle (50/50 split with family safe)
+//  • Delivery missions are repeatable as long as the player has 100 Family Points
 //  • Delivery requires 100 Family Points; points are deducted on mission start
 //  • Anti-monopoly: one permit per family, per tier ticket caps
 //  • Delivery missions are fully modular — see packages/systems/deliveries/index.js
@@ -35,6 +35,10 @@ class PermitManager {
     async loadAll() {
         try {
             await db.query(`ALTER TABLE permit_cycles MODIFY expires_at TIMESTAMP NULL DEFAULT NULL`);
+        } catch (err) {}
+
+        try {
+            await db.query(`ALTER TABLE permit_deliveries DROP INDEX uq_user_cycle`);
         } catch (err) {}
 
         try {
@@ -313,7 +317,6 @@ class PermitManager {
     // Requirements:
     //   • Player must belong to the family that owns the active permit
     //   • Player must not already have an active delivery
-    //   • Player must not have completed a delivery this permit cycle
     //   • Player must have ≥ DELIVERY_FP_COST (100) Family Points
     //   • Business type must have a registered delivery definition
     async startDelivery(player, bizId) {
@@ -332,14 +335,6 @@ class PermitManager {
         // ── Already on a delivery? ────────────────────────────────────────────
         if (player.data.activePermitDelivery)
             return player.outputChatBox('!{FF0000}[Permits] You are already on a delivery run.');
-
-        // ── Already completed this cycle? ─────────────────────────────────────
-        const [done] = await db.query(
-            'SELECT id FROM permit_deliveries WHERE cycle_id = ? AND user_id = ?',
-            [cycle.id, player.data.dbId]
-        );
-        if (done.length)
-            return player.outputChatBox('!{FF0000}[Permits] You already completed a delivery this permit cycle.');
 
         // ── Family Points check ───────────────────────────────────────────────
         const fp = await FamilyManager.getMemberFamilyPoints(player.data.dbId);
@@ -418,15 +413,8 @@ class PermitManager {
         if (!activeDeets || activeDeets.bizId !== bizId) {
             return player.outputChatBox('!{FF0000}[Permits] Invalid delivery context.');
         }
-
-        // ── Double-complete guard ─────────────────────────────────────────────
-        const [alreadyDone] = await db.query(
-            'SELECT id FROM permit_deliveries WHERE cycle_id = ? AND user_id = ?',
-            [cycle.id, player.data.dbId]
-        );
-        if (alreadyDone.length) {
-            this._cleanupDelivery(player);
-            return;
+        if (activeDeets.completing) {
+            return player.outputChatBox('!{FF0000}[Permits] This delivery is already being completed.');
         }
 
         // ── Anti-cheat: distance to dropoff ──────────────────────────────────
@@ -449,6 +437,8 @@ class PermitManager {
                 return player.outputChatBox('!{FF0000}[Anti-Cheat] You must be in the designated delivery van.');
             }
         }
+
+        activeDeets.completing = true;
 
         // ── Payouts ───────────────────────────────────────────────────────────
         const playerPayout = Math.floor(biz.delivery_payout / 2);
