@@ -488,14 +488,14 @@ function onBoardData(jsonStr) {
   else badge.classList.remove('visible');
 
   // Update open raffle count tab
-  const openCount = allBusinesses.filter(b => b.status === 'open_raffle').length;
+  const openCount = allBusinesses.filter(b => b.hasActiveRaffle).length;
   document.getElementById('openCount').textContent = openCount;
 
   renderList();
 
   // Fetch entry counts for all open raffles
   allBusinesses.forEach(b => {
-    if (b.status === 'open_raffle' && b.cycleId) {
+    if (b.hasActiveRaffle && b.cycleId) {
       if (typeof mp !== 'undefined') mp.trigger('client:permit:viewEntries', b.cycleId);
     }
   });
@@ -548,7 +548,7 @@ function renderList() {
   let businesses = allBusinesses;
 
   if (activeTier === 'open') {
-    businesses = businesses.filter(b => b.status === 'open_raffle');
+    businesses = businesses.filter(b => b.hasActiveRaffle);
   } else if (activeTier !== 'all') {
     businesses = businesses.filter(b => String(b.tier) === activeTier);
   }
@@ -567,17 +567,7 @@ function renderList() {
     let actionsHtml = '';
     let extraClass  = '';
 
-    if (b.status === 'leased') {
-      if (b.isOwnedByMe) {
-        extraClass  = 'mine';
-        const exp   = b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : '?';
-        statusHtml  = `<span class="badge badge-yours">⭐ YOUR PERMIT · EXP ${exp}</span>`;
-        actionsHtml = `<button class="btn btn-deliver" onclick="doDelivery(${b.id})">🚚 DELIVERY</button>`;
-      } else {
-        statusHtml  = `<span class="badge badge-leased">🔒 ${esc(b.ownerName || 'LEASED')}</span>`;
-      }
-
-    } else if (b.status === 'open_raffle') {
+    if (b.hasActiveRaffle) {
       extraClass = 'raffle-open';
       const cached   = b.cycleId ? _entryCounts[b.cycleId] : null;
       const entryTxt = cached
@@ -586,7 +576,30 @@ function renderList() {
             : 'No entries yet — be first!')
         : 'Loading...';
 
-      statusHtml = `<span class="badge badge-open"><span class="badge-pulse">●</span> RAFFLE OPEN</span>`;
+      // Timers
+      let timeStr = 'AWAITING ENTRY';
+      if (b.raffleExpiresAt) {
+          const end = new Date(b.raffleExpiresAt);
+          const diff = end - Date.now();
+          if (diff > 0) {
+              const d = Math.floor(diff / 86400000);
+              const h = Math.floor((diff % 86400000) / 3600000);
+              timeStr = `${d}d ${h}h`;
+          } else {
+              timeStr = `DRAWING SOON`;
+          }
+      }
+
+      statusHtml = `<span class="badge badge-open"><span class="badge-pulse">●</span> RAFFLE ENDS: ${timeStr}</span>`;
+      
+      // If someone also has the lease concurrently
+      if (b.status === 'leased') {
+         if (b.isOwnedByMe) {
+            statusHtml += ` <span class="badge badge-yours" style="margin-left:5px">⭐ YOUR PERMIT</span>`;
+         } else {
+            statusHtml += ` <span class="badge badge-leased" style="margin-left:5px">🔒 ${esc(b.ownerName || 'LEASED')}</span>`;
+         }
+      }
 
       const enterBtn = b.canEnter
         ? `<button class="btn btn-raffle" onclick="openModal(${b.id})">🎟 ENTER RAFFLE</button>`
@@ -596,6 +609,20 @@ function renderList() {
         <div class="entry-count-badge" id="entry-count-${b.id}">${entryTxt}</div>
         ${enterBtn}
         <button class="btn btn-view" onclick="viewEntries(${b.cycleId}, ${b.id}, '${esc(b.name)}')">VIEW ENTRIES</button>`;
+        
+      if (b.status === 'leased' && b.isOwnedByMe) {
+         actionsHtml += `<button class="btn btn-deliver" style="margin-top:5px" onclick="doDelivery(${b.id})">🚚 DELIVERY</button>`;
+      }
+
+    } else if (b.status === 'leased') {
+      if (b.isOwnedByMe) {
+        extraClass  = 'mine';
+        const exp   = b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : '?';
+        statusHtml  = `<span class="badge badge-yours">⭐ YOUR PERMIT · EXP ${exp}</span>`;
+        actionsHtml = `<button class="btn btn-deliver" onclick="doDelivery(${b.id})">🚚 DELIVERY</button>`;
+      } else {
+        statusHtml  = `<span class="badge badge-leased">🔒 ${esc(b.ownerName || 'LEASED')}</span>`;
+      }
 
     } else {
       statusHtml = `<span style="color:var(--text-dim);font-size:11px;letter-spacing:1px">NO ACTIVE CYCLE</span>`;

@@ -13,9 +13,6 @@ CREATE TABLE IF NOT EXISTS businesses (
     passive_pct     DECIMAL(5,2) NOT NULL DEFAULT 5.00 COMMENT '% commission on player transactions',
     delivery_payout INT UNSIGNED NOT NULL DEFAULT 5000  COMMENT 'Total delivery mission reward (split 50/50)',
     max_tickets     TINYINT      NOT NULL DEFAULT 5     COMMENT 'Max raffle entries per family',
-    world_x         FLOAT        NOT NULL DEFAULT 0,
-    world_y         FLOAT        NOT NULL DEFAULT 0,
-    world_z         FLOAT        NOT NULL DEFAULT 0,
     active          TINYINT(1)   NOT NULL DEFAULT 1,
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -26,7 +23,7 @@ CREATE TABLE IF NOT EXISTS permit_cycles (
     business_id     INT UNSIGNED NOT NULL,
     family_id       INT UNSIGNED NULL COMMENT 'NULL = no winner yet / cycle just created',
     started_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at      TIMESTAMP    NOT NULL,
+    expires_at      TIMESTAMP    NULL DEFAULT NULL,
     status          ENUM('open','active','expired') NOT NULL DEFAULT 'open',
     FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -69,18 +66,8 @@ CREATE TABLE IF NOT EXISTS permit_passive_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── 6. Seed default businesses ────────────────────────────────────────────────
-INSERT IGNORE INTO businesses (id, name, tier, type, description, passive_pct, delivery_payout, max_tickets, world_x, world_y, world_z) VALUES
--- Tier 1 — High profit
-(1, 'Paleto Bay Gas Station',  1, 'gas_station',  'The busiest fuel stop in Blaine County.',  5.00, 8000,  5,  -99.01,  6417.39, 31.63),
-(2, 'Sandy Shores Gas Station',1, 'gas_station',  'Desert highway hub with heavy traffic.',   5.00, 8000,  5,  1795.47, 3778.16, 34.27),
-(3, 'Alta Street Mechanic',    1, 'mechanic',     'High-end auto repair in downtown LS.',     5.00, 7500,  5, -349.65, -133.49, 38.44),
-
--- Tier 2 — Medium profit
-(4, 'Rockford Hills Bistro',   2, 'restaurant',   'Upscale dining in the hills.',            5.00, 5500,  4, -716.44,  57.41, 52.49),
-(5, 'Vespucci Tow Service',    2, 'mechanic',     'Beach-side recovery & repairs.',           5.00, 5000,  4, -434.40, -351.00, 34.50),
-(6, 'Mirror Park Corner Store',2, 'convenience',  'Grab-and-go for Mirror Park locals.',      5.00, 4500,  4,  938.47, -268.10, 65.04),
-
--- Tier 3 — Entry-level / small families
-(7, 'Davis Gas Station',       3, 'gas_station',  'Quiet station in South LS.',              5.00, 3000,  3,  218.47,-1738.25, 29.50),
-(8, 'Strawberry Diner',        3, 'restaurant',   'Comfort food for the locals.',            5.00, 2500,  3, -248.15,-1558.25, 28.37),
-(9, 'Cypress Flats Scrapyard', 3, 'mechanic',     'Budget repairs and part sales.',           5.00, 2500,  3,  920.97,-2022.79, 30.10);
+INSERT IGNORE INTO businesses (id, name, tier, type, description, passive_pct, delivery_payout, max_tickets) VALUES
+(1, 'Gas Station',    1, 'gas_station', 'Controls the permit for every gas station in the state.', 5.00, 8000, 5),
+(2, 'Car Dealership', 1, 'dealership',  'Controls the permit for vehicle sales.',                  5.00, 8000, 5),
+(3, 'Tuning Shop',    2, 'tuning',      'Controls the permit for all mechanic and tuning shops.',  5.00, 6000, 4),
+(4, '24/7 Store',     3, 'convenience', 'Controls the permit for every convenience store.',        5.00, 4000, 3);

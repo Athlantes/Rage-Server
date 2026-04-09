@@ -8,6 +8,7 @@ const factionsManager = require('../factions/factionsManager');
 const wardrobeManager = require('../factions/wardrobe/wardrobeManager');
 const dispatchManager = require('../factions/dispatch/dispatchManager');
 const FamilyManager = require('../systems/familyManager');
+const permitManager = require('../systems/permitManager');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
@@ -966,4 +967,112 @@ mp.events.addCommand('currentzone', (player) => {
     const preciseZones = broadZones.filter(id => ZoneManager.isPlayerInZone(player, id));
     
     player.outputChatBox(`${COLORS.INFO}Zones: ${preciseZones.join(', ') || 'None'}`);
+});
+
+mp.events.addCommand('setpp', async (player, _, targetName, amount) => {
+    if (player.data.adminLevel < RANKS.ADMIN) return player.outputChatBox(COLORS.ERROR + 'No permission.');
+    if (!targetName || !amount) return player.outputChatBox(COLORS.INFO + 'Usage: /setpp [id/name] [amount]');
+    
+    const target = getPlayer(targetName);
+    amount = parseInt(amount);
+    
+    if (!target) return player.outputChatBox(COLORS.ERROR + 'Player not found.');
+    if (isNaN(amount) || amount < 0) return player.outputChatBox(COLORS.ERROR + 'Invalid amount.');
+    
+    target.data.premiumPoints = amount;
+    target.setVariable('premiumPoints', amount);
+    
+    try {
+        await db.query('UPDATE users SET premium_points = ? WHERE id = ?', [target.data.premiumPoints, target.data.dbId]);
+        player.outputChatBox(COLORS.SUCCESS + `Set ${target.name}'s PP to ${amount}.`);
+        target.outputChatBox(COLORS.INFO + `An admin set your PP to ${amount}.`);
+    } catch (err) {
+        console.error(err);
+        player.outputChatBox(COLORS.ERROR + 'Database error.');
+    }
+});
+
+mp.events.addCommand('givepp', async (player, _, targetName, amount) => {
+    if (player.data.adminLevel < RANKS.ADMIN) return player.outputChatBox(COLORS.ERROR + 'No permission.');
+    if (!targetName || !amount) return player.outputChatBox(COLORS.INFO + 'Usage: /givepp [id/name] [amount]');
+    
+    const target = getPlayer(targetName);
+    amount = parseInt(amount);
+    
+    if (!target) return player.outputChatBox(COLORS.ERROR + 'Player not found.');
+    if (isNaN(amount)) return player.outputChatBox(COLORS.ERROR + 'Invalid amount.');
+    
+    target.data.premiumPoints = (target.data.premiumPoints || 0) + amount;
+    if (target.data.premiumPoints < 0) target.data.premiumPoints = 0;
+    target.setVariable('premiumPoints', target.data.premiumPoints);
+    
+    try {
+        await db.query('UPDATE users SET premium_points = ? WHERE id = ?', [target.data.premiumPoints, target.data.dbId]);
+        player.outputChatBox(COLORS.SUCCESS + `Gave ${amount} PP to ${target.name}. New total: ${target.data.premiumPoints}.`);
+        target.outputChatBox(COLORS.INFO + `An admin gave you ${amount} PP.`);
+    } catch (err) {
+        console.error(err);
+        player.outputChatBox(COLORS.ERROR + 'Database error.');
+    }
+});
+
+mp.events.addCommand('setfamilypp', async (player, _, familyId, amount) => {
+    if (player.data.adminLevel < RANKS.ADMIN) return player.outputChatBox(COLORS.ERROR + 'No permission.');
+    if (!familyId || !amount) return player.outputChatBox(COLORS.INFO + 'Usage: /setfamilypp [familyId] [amount]');
+    
+    familyId = parseInt(familyId);
+    amount = parseInt(amount);
+    
+    const family = FamilyManager.getFamilyById(familyId);
+    if (!family) return player.outputChatBox(COLORS.ERROR + 'Family not found.');
+    if (isNaN(amount) || amount < 0) return player.outputChatBox(COLORS.ERROR + 'Invalid amount.');
+    
+    family.premiumPoints = amount;
+    try {
+        await db.query('UPDATE families SET premium_points = ? WHERE id = ?', [family.premiumPoints, family.id]);
+        player.outputChatBox(COLORS.SUCCESS + `Set family '${family.name}'s PP to ${family.premiumPoints}.`);
+    } catch (err) {
+        console.error(err);
+        player.outputChatBox(COLORS.ERROR + 'Database error.');
+    }
+});
+
+mp.events.addCommand('givefamilypp', async (player, _, familyId, amount) => {
+    if (player.data.adminLevel < RANKS.ADMIN) return player.outputChatBox(COLORS.ERROR + 'No permission.');
+    if (!familyId || !amount) return player.outputChatBox(COLORS.INFO + 'Usage: /givefamilypp [familyId] [amount]');
+    
+    familyId = parseInt(familyId);
+    amount = parseInt(amount);
+    
+    const family = FamilyManager.getFamilyById(familyId);
+    if (!family) return player.outputChatBox(COLORS.ERROR + 'Family not found.');
+    if (isNaN(amount)) return player.outputChatBox(COLORS.ERROR + 'Invalid amount.');
+    
+    family.premiumPoints += amount;
+    if (family.premiumPoints < 0) family.premiumPoints = 0;
+    
+    try {
+        await db.query('UPDATE families SET premium_points = ? WHERE id = ?', [family.premiumPoints, family.id]);
+        player.outputChatBox(COLORS.SUCCESS + `Gave ${amount} PP to ${family.name}. New total: ${family.premiumPoints}.`);
+    } catch (err) {
+        console.error(err);
+        player.outputChatBox(COLORS.ERROR + 'Database error.');
+    }
+});
+mp.events.addCommand('endbussraffle', async (player, bizId) => {
+    if (!player.data || player.data.adminLevel < RANKS.ADMIN) return player.outputChatBox(COLORS.ERROR + 'No permission.');
+    if (!bizId) return player.outputChatBox(COLORS.INFO + 'Usage: /endbussraffle [bizId]');
+
+    bizId = parseInt(bizId);
+    const cycle = permitManager.openCycles.get(bizId);
+    if (!cycle) return player.outputChatBox(COLORS.ERROR + 'There is no open raffle for this business right now.');
+
+    // Artificially expire it immediately by setting time slightly in the past
+    cycle.expires_at = new Date(Date.now() - 1000);
+    await db.query('UPDATE permit_cycles SET expires_at = ? WHERE id = ?', [cycle.expires_at, cycle.id]);
+    
+    player.outputChatBox(COLORS.SUCCESS + `Raffle for business ${bizId} forced to expire immediately.`);
+    // The background interval will pick it up on the next tick (max 60s)
+    // We'll manually trigger it here so it's instant
+    await permitManager._checkExpirations();
 });

@@ -16,7 +16,28 @@ const FamilyManager = require('./familyManager');
 // ── Config ────────────────────────────────────────────────────────────────────
 const PP_PER_TICKET   = 100;          // Premium Points cost per raffle ticket
 const CYCLE_DAYS      = 30;           // Lease duration in days
+const RAFFLE_DAYS     = 7;            // Raffle duration in days
 const TICK_INTERVAL   = 60 * 1000;    // How often to check for expired cycles (60s)
+
+// ── Modular Delivery Missions ───────────────────────────────────────────────
+const MISSIONS = {
+    convenience: {
+        missionType: 'van',
+        spawn: { x: 12.8, y: -2478.4, z: 6.0, heading: 0 }, // Docks/Port
+        dropoffs: [
+            { x: 373.87, y: 325.85, z: 103.56 }, // Clinton Ave 24/7
+            { x: 25.49, y: -1345.73, z: 29.49 }, // Innocence Blvd 24/7
+            { x: -707.67, y: -914.22, z: 19.21 },// Little Seoul 24/7
+            { x: 1135.80, y: -982.28, z: 46.41 } // El Rancho Blvd 24/7
+        ],
+        model: 'rumpo3' // A delivery van
+    },
+    default: {
+        missionType: 'checkpoint',
+        pickup: { x: 47.83, y: -1761.50, z: 29.42 }, // default point
+        dropoff: { x: -49.93, y: -1747.13, z: 29.42 } // default point
+    }
+};
 
 // ── In-memory state ───────────────────────────────────────────────────────────
 //  businesses   : Map<businessId, businessRow>
@@ -33,6 +54,10 @@ class PermitManager {
 
     // ── Boot ──────────────────────────────────────────────────────────────────
     async loadAll() {
+        try {
+            await db.query(`ALTER TABLE permit_cycles MODIFY expires_at TIMESTAMP NULL DEFAULT NULL`);
+        } catch (err) {}
+
         try {
             const [bizRows] = await db.query(
                 'SELECT * FROM businesses WHERE active = 1 ORDER BY tier ASC, id ASC'
@@ -66,13 +91,13 @@ class PermitManager {
 
     // ── Cycle helpers ─────────────────────────────────────────────────────────
     async _openNewCycle(bizId) {
-        const expiresAt = new Date(Date.now() + CYCLE_DAYS * 24 * 60 * 60 * 1000);
+        // Starts with NULL expires_at to indicate timer hasn't started
         const [res] = await db.query(
             `INSERT INTO permit_cycles (business_id, family_id, expires_at, status)
-             VALUES (?, NULL, ?, 'open')`,
-            [bizId, expiresAt]
+             VALUES (?, NULL, NULL, 'open')`,
+            [bizId]
         );
-        const cycle = { id: res.insertId, business_id: bizId, family_id: null, expires_at: expiresAt, status: 'open' };
+        const cycle = { id: res.insertId, business_id: bizId, family_id: null, expires_at: null, status: 'open' };
         this.openCycles.set(bizId, cycle);
         return cycle;
     }
@@ -82,25 +107,38 @@ class PermitManager {
 
         // Check active cycles
         for (const [bizId, cycle] of this.activeCycles) {
-            if (new Date(cycle.expires_at).getTime() <= now) {
+            const expireTime = new Date(cycle.expires_at).getTime();
+            
+            // Check if within 7 days of expiration, and open a new raffle if one doesn't exist
+            if (expireTime - now <= RAFFLE_DAYS * 24 * 60 * 60 * 1000) {
+                if (!this.openCycles.has(bizId)) {
+                    await this._openNewCycle(bizId);
+                    const biz = this.businesses.get(bizId);
+                    mp.players.forEach(p => {
+                        if (p.logged) p.outputChatBox(`!{FFFF00}[City Hall] Raffle for !{FFFFFF}${biz.name}!{FFFF00} is now open! It will remain open for 7 days once first entry is placed.`);
+                    });
+                }
+            }
+
+            // Check if lease expired
+            if (expireTime <= now) {
                 await this._expireCycle(bizId, cycle);
             }
         }
 
         // Check open cycles that somehow passed the draw window (safety net)
         for (const [bizId, cycle] of this.openCycles) {
-            if (new Date(cycle.expires_at).getTime() <= now) {
+            if (cycle.expires_at && new Date(cycle.expires_at).getTime() <= now) {
                 
                 // Attempt to draw the raffle automatically
                 const drawResult = await this.drawRaffle(bizId);
                 
                 if (!drawResult.success) {
-                    // If it failed because NOBODY entered, just cycle it
+                    // If it failed because NOBODY entered, clear the timer
                     if (drawResult.error === 'No entries in this raffle.') {
-                        await db.query(`UPDATE permit_cycles SET status='expired' WHERE id=?`, [cycle.id]);
-                        this.openCycles.delete(bizId);
-                        await this._openNewCycle(bizId);
-                        console.log(`[PermitManager] Raffle for biz ${bizId} expired with zero entries. Resetting.`);
+                        await db.query(`UPDATE permit_cycles SET expires_at=NULL WHERE id=?`, [cycle.id]);
+                        cycle.expires_at = null;
+                        console.log(`[PermitManager] Raffle timer for biz ${bizId} paused due to zero entries.`);
                     } else {
                         console.error(`[PermitManager] Failed to draw raffle for biz ${bizId}: ${drawResult.error}`);
                     }
@@ -127,15 +165,10 @@ class PermitManager {
 
             console.log(`[PermitManager] Permit for "${biz.name}" (cycle ${cycle.id}) expired.`);
 
-            // Open a fresh raffle immediately
-            await this._openNewCycle(bizId);
-
-            // Broadcast server-wide
-            mp.players.forEach(p => {
-                if (p.logged) {
-                    p.outputChatBox(`!{FFFF00}[City Hall] Permit for !{FFFFFF}${biz.name}!{FFFF00} is now available! Check City Hall to enter the raffle.`);
-                }
-            });
+            // Open a fresh raffle immediately if none exists
+            if (!this.openCycles.has(bizId)) {
+                await this._openNewCycle(bizId);
+            }
         } catch (err) {
             console.error('[PermitManager] _expireCycle error:', err);
         }
@@ -151,9 +184,29 @@ class PermitManager {
         );
         if (!entries.length) return { success: false, error: 'No entries in this raffle.' };
 
+        // Filter out monopolies
+        const validEntries = [];
+        for (const entry of entries) {
+            let hasMonopoly = false;
+            for (const [, actCycle] of this.activeCycles) {
+                if (actCycle.family_id === entry.family_id) {
+                    hasMonopoly = true; break;
+                }
+            }
+            if (hasMonopoly) {
+                // Refund them now since they can't win
+                if (!entry.refunded) await this._refundEntry(entry);
+                continue;
+            } else {
+                validEntries.push(entry);
+            }
+        }
+
+        if (!validEntries.length) return { success: false, error: 'No entries in this raffle.' };
+
         // Build weighted pool
         const pool = [];
-        for (const entry of entries) {
+        for (const entry of validEntries) {
             for (let t = 0; t < entry.tickets; t++) pool.push(entry.family_id);
         }
         const winnerFamilyId = pool[Math.floor(Math.random() * pool.length)];
@@ -283,6 +336,16 @@ class PermitManager {
             `!{FFAA00}[Permit] ${player.name} entered the raffle for !{FFFFFF}${biz.name}!{FFAA00} ` +
             `with ${ticketCount} ticket(s) (${ppCost} PP).`
         );
+
+        // Start timer if this is the first entry
+        if (!cycle.expires_at) {
+            const expireDate = new Date(Date.now() + RAFFLE_DAYS * 24 * 60 * 60 * 1000);
+            cycle.expires_at = expireDate;
+            await db.query('UPDATE permit_cycles SET expires_at = ? WHERE id = ?', [expireDate, cycle.id]);
+            mp.players.forEach(p => {
+                if (p.logged) p.outputChatBox(`!{FFFF00}[City Hall] The countdown for the "${biz.name}" permit has started! Raffle draws in 7 days.`);
+            });
+        }
     }
 
     // ── Passive Commission ────────────────────────────────────────────────────
@@ -339,14 +402,57 @@ class PermitManager {
         if (done.length)
             return player.outputChatBox('!{FF0000}[Permits] You already completed a delivery for this permit cycle.');
 
-        // Kick off client-side delivery job
-        player.call('client:permit:startDelivery', [JSON.stringify({
+        if (player.data.activePermitDelivery)
+            return player.outputChatBox('!{FF0000}[Permits] You are already on a delivery run.');
+
+        const missionDef = MISSIONS[biz.type] || MISSIONS.default;
+
+        let deliveryPayload = {
             bizId,
             bizName:      biz.name,
             bizType:      biz.type,
+            missionType:  missionDef.missionType,
             playerPayout: Math.floor(biz.delivery_payout / 2),
             safePayout:   Math.floor(biz.delivery_payout / 2),
-        })]);
+        };
+
+        if (missionDef.missionType === 'van') {
+            const dropoffArr = missionDef.dropoffs;
+            const dropoff = dropoffArr[Math.floor(Math.random() * dropoffArr.length)];
+
+            // Spawn the mission vehicle
+            const van = mp.vehicles.new(mp.joaat(missionDef.model), new mp.Vector3(missionDef.spawn.x, missionDef.spawn.y, missionDef.spawn.z), {
+                heading: missionDef.spawn.heading || 0,
+                dimension: player.dimension
+            });
+            van.numberPlate = "DELIVERY";
+            van.locked = false;
+
+            player.data.activePermitDelivery = {
+                type: 'van',
+                vehicle: van,
+                dropoff: dropoff,
+                bizId: bizId
+            };
+
+            deliveryPayload.pickup = missionDef.spawn;
+            deliveryPayload.dropoff = dropoff;
+
+            player.outputChatBox('!{00FF00}[Mission] A delivery van has been spawned for you at the port. Go get it!');
+        } else {
+            // Default checkpoint behavior
+            player.data.activePermitDelivery = {
+                type: 'checkpoint',
+                dropoff: missionDef.dropoff,
+                bizId: bizId
+            };
+
+            deliveryPayload.pickup = missionDef.pickup;
+            deliveryPayload.dropoff = missionDef.dropoff;
+        }
+
+        // Kick off client-side delivery job
+        player.call('client:permit:startDelivery', [JSON.stringify(deliveryPayload)]);
     }
 
     async completeDelivery(player, bizId) {
@@ -360,12 +466,41 @@ class PermitManager {
         const family = FamilyManager.getFamilyByPlayer(player);
         if (!family || family.id !== cycle.family_id) return;
 
+        const activeDeets = player.data.activePermitDelivery;
+        if (!activeDeets || activeDeets.bizId !== bizId) {
+            return player.outputChatBox('!{FF0000}[Permits] Invalid delivery payload context.');
+        }
+
         // Guard against double-complete exploits
         const [done] = await db.query(
             'SELECT id FROM permit_deliveries WHERE cycle_id = ? AND user_id = ?',
             [cycle.id, player.data.dbId]
         );
-        if (done.length) return;
+        if (done.length) {
+            this._cleanupDelivery(player);
+            return;
+        }
+
+        const dropoff = activeDeets.dropoff;
+        // Anti-Cheat: Verify distance to drop-off point
+        const dist = Math.sqrt(
+            Math.pow(player.position.x - dropoff.x, 2) +
+            Math.pow(player.position.y - dropoff.y, 2) +
+            Math.pow(player.position.z - dropoff.z, 2)
+        );
+
+        // A van check may be further compared, allow a wider radius due to vehicle footprint
+        if (dist > 35.0) {
+            console.log(`[Anti-Cheat] Player ${player.name} tried to complete delivery from far away.`);
+            return player.outputChatBox('!{FF0000}[Anti-Cheat] You must be at the physical drop-off location.');
+        }
+
+        // Validate vehicle for van missions
+        if (activeDeets.type === 'van') {
+            if (!player.vehicle || player.vehicle.id !== activeDeets.vehicle.id) {
+                return player.outputChatBox('!{FF0000}[Anti-Cheat] You must be in your designated delivery van to finish this.');
+            }
+        }
 
         const playerPayout = Math.floor(biz.delivery_payout / 2);
         const safePayout   = biz.delivery_payout - playerPayout;
@@ -392,6 +527,17 @@ class PermitManager {
             `!{FFAA00}[Permit] ${player.name} completed a delivery for !{FFFFFF}${biz.name}!{FFAA00}! ` +
             `$${safePayout.toLocaleString()} added to the safe.`
         );
+
+        this._cleanupDelivery(player);
+    }
+
+    _cleanupDelivery(player) {
+        if (player.data.activePermitDelivery) {
+            if (player.data.activePermitDelivery.vehicle && mp.vehicles.exists(player.data.activePermitDelivery.vehicle)) {
+                player.data.activePermitDelivery.vehicle.destroy();
+            }
+            player.data.activePermitDelivery = null;
+        }
     }
 
     // ── Data getters (for UI) ─────────────────────────────────────────────────
@@ -433,6 +579,8 @@ class PermitManager {
                 isOwnedByMe,
                 cycleId:        openCycle?.id || activeCycle?.id || null,
                 expiresAt:      activeCycle?.expires_at || null,
+                raffleExpiresAt: openCycle?.expires_at || null,
+                hasActiveRaffle: !!openCycle,
                 canEnter:       canEnter // <-- SEND TO UI
             });
         }
